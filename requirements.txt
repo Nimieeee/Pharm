@@ -1,0 +1,15 @@
+streamlit>=1.20
+supabase
+supabase-py
+langchain>=0.0.300
+langchain-community
+requests
+python-dotenv
+PyPDF2
+pdfplumber
+python-docx
+beautifulsoup4
+sentence-transformers
+transformers
+torch   # if your chosen sentence-transformers requires it (Cloud will need this)
+tiktoken
