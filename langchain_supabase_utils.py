@@ -1,29 +1,32 @@
 # langchain_supabase_utils.py
 import os
 from typing import List
-
 from supabase import create_client
 
-# import updated vectorstore location
 try:
     from langchain_community.vectorstores import SupabaseVectorStore
 except Exception:
     SupabaseVectorStore = None
 
-from embeddings import get_embeddings  # local wrapper
-
 def get_supabase_client(url: str, key: str):
     return create_client(url, key)
 
-def upsert_documents(docs: List[dict], supabase_client):
+def get_vectorstore(supabase_client, embedding_fn, table_name: str = "documents"):
     """
-    Compute embeddings locally (sentence-transformers) and upsert to Supabase `documents` table.
-    docs: [{'id','source','content','metadata'}, ...]
+    Returns a LangChain-compatible SupabaseVectorStore instance.
+    embedding_fn must be an object with embed_documents and embed_query methods.
     """
-    embedder = get_embeddings()
-    texts = [d["content"] for d in docs]
-    embs = embedder.embed_documents(texts)
+    if SupabaseVectorStore is None:
+        raise ImportError("Install langchain_community (pip install langchain-community).")
+    return SupabaseVectorStore(client=supabase_client, embedding=embedding_fn, table_name=table_name)
 
+def upsert_documents(docs: List[dict], supabase_client, embedding_fn):
+    """
+    docs: list of {"id","source","content","metadata"}
+    Computes embeddings locally and upserts rows to Supabase documents table.
+    """
+    texts = [d["content"] for d in docs]
+    embs = embedding_fn.embed_documents(texts)
     rows = []
     for d, emb in zip(docs, embs):
         rows.append({
@@ -33,14 +36,4 @@ def upsert_documents(docs: List[dict], supabase_client):
             "metadata": d.get("metadata", {}),
             "embedding": emb
         })
-
     return supabase_client.table("documents").upsert(rows).execute()
-
-from langchain_community.vectorstores import SupabaseVectorStore
-
-def get_vectorstore(supabase, embeddings):
-    return SupabaseVectorStore(
-        client=supabase,
-        table_name="document_embeddings",
-        embedding=embeddings
-    )
