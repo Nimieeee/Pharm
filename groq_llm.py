@@ -26,6 +26,11 @@ else:
 HEADERS = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
 
 def generate_completion(messages: List[Dict], model: str = FAST_MODE, temperature: float = 0.0, max_tokens: int = 1024) -> str:
+    # Temporary fallback for testing when GROQ_API_KEY is not configured
+    if not GROQ_API_KEY:
+        user_message = messages[-1].get('content', '') if messages else ''
+        return f"🧬 **Pharmacology Assistant** (Demo Mode)\n\nI received your message: '{user_message}'\n\nThis is a demo response since the GROQ API key is not configured. To get real AI responses:\n\n1. Add your GROQ_API_KEY to Streamlit secrets\n2. The key should be added in your Streamlit Cloud dashboard under 'Manage app' → 'Settings' → 'Secrets'\n\nFor now, I can confirm that:\n✅ Your app is working\n✅ Database is connected\n✅ Message processing is functional\n✅ UI is responsive\n\nTry asking about pharmacokinetics, drug interactions, or any pharmacology topic once the API key is configured!"
+    
     if _GROQ_AVAILABLE and _client:
         resp = _client.chat.completions.create(model=model, messages=messages, temperature=temperature, max_completion_tokens=max_tokens)
         return resp.choices[0].message.content
@@ -42,6 +47,16 @@ def generate_completion_stream(messages: List[Dict], model: str = FAST_MODE, tem
     Yields chunks of text for a streaming UI effect.
     If Groq SDK streaming is available we iterate its stream; otherwise we fallback to a simple chunked yield of the full completion.
     """
+    if not GROQ_API_KEY:
+        # Fallback demo response when no API key is configured
+        full = generate_completion(messages=messages, model=model, temperature=temperature, max_tokens=max_tokens)
+        chunk_size = 20  # Smaller chunks for better streaming effect
+        import time
+        for i in range(0, len(full), chunk_size):
+            yield full[i:i+chunk_size]
+            time.sleep(0.1)  # Small delay for streaming effect
+        return
+    
     if _GROQ_AVAILABLE and _client:
         stream = _client.chat.completions.create(model=model, messages=messages, temperature=temperature, max_completion_tokens=max_tokens, stream=True)
         for chunk in stream:
