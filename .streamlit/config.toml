@@ -1,0 +1,30 @@
+[global]
+# Development mode settings
+developmentMode = false
+showWarningOnDirectExecution = false
+
+[server]
+# Server configuration for Streamlit Cloud
+headless = true
+enableXsrfProtection = true
+maxUploadSize = 200
+maxMessageSize = 200
+
+# Port configuration (Streamlit Cloud handles this automatically)
+port = 8501
+
+[browser]
+# Browser settings
+gatherUsageStats = false
+
+[theme]
+# Default theme settings (users can override)
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
+[runner]
+# Runner configuration for better performance
+magicEnabled = true

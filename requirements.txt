@@ -1,17 +1,50 @@
-streamlit>=1.20
-supabase==1.0.2
-langchain>=0.0.300
-langchain-community
-requests
-python-dotenv
-PyPDF2
-pdfplumber
-python-docx
-beautifulsoup4
-sentence-transformers>=2.2.2
-tiktoken
-# torch is typically required for sentence-transformers; if Streamlit Cloud build fails you may need to remove or provide a custom Docker image.
-torch
+# Core Streamlit and Web Framework
+streamlit>=1.28.0
+streamlit-authenticator>=0.2.3
+
+# Supabase Integration
+supabase==2.0.0
+gotrue>=2.0.0
+postgrest>=0.13.0
+realtime>=1.0.0
+
+# LangChain and RAG Components
+langchain>=0.1.0
+langchain-community>=0.0.20
+langchain-groq>=0.1.0
+langchain-openai>=0.0.8
+
+# AI/ML Models and APIs
+groq>=0.4.0
 openai>=1.30.0
-groq
-langchain-groq
+sentence-transformers>=2.2.2
+
+# Document Processing
+PyPDF2>=3.0.0
+pdfplumber>=0.9.0
+python-docx>=0.8.11
+beautifulsoup4>=4.12.0
+
+# Utilities and Core Dependencies
+requests>=2.31.0
+tiktoken>=0.5.0
+numpy>=1.24.0
+pandas>=2.0.0
+python-dotenv>=1.0.0
+
+# Authentication and Security
+bcrypt>=4.0.0
+pyjwt>=2.8.0
+
+# Monitoring and Logging
+psutil>=5.9.0
+
+# Vector Database and Embeddings
+pgvector>=0.2.0
+
+# Optional: Reduce memory footprint on Streamlit Cloud
+# Use CPU-only torch for sentence-transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0+cpu
+torchvision>=0.15.0+cpu
+torchaudio>=2.0.0+cpu

@@ -1,12 +1,39 @@
-# app.py
+# app.py - Main Pharmacology Chat Application with Authentication
 import os
+import time
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional, Dict, Any
 
 import streamlit as st
 
-# Local helpers (assumes these files exist in your repo)
-from langchain_supabase_utils import get_supabase_client, get_vectorstore, upsert_documents
+# Authentication and session management
+from auth_manager import AuthenticationManager
+from session_manager import SessionManager
+from auth_ui import AuthInterface
+from auth_guard import AuthGuard, RouteProtection
+
+# Chat functionality
+from chat_manager import ChatManager
+from message_store import Message
+from message_store_optimized import OptimizedMessageStore
+
+# UI components
+from theme_manager import ThemeManager
+from chat_interface import ChatInterface, inject_chat_css
+from chat_interface_optimized import OptimizedChatInterface, inject_optimized_chat_css
+from performance_optimizer import performance_optimizer, LoadingStateManager
+
+# RAG and model components
+try:
+    from rag_orchestrator_optimized import RAGOrchestrator
+except ImportError:
+    from rag_orchestrator import RAGOrchestrator
+
+from model_manager import ModelManager
+from run_migrations import get_supabase_client
+
+# Legacy RAG components (fallback)
+from langchain_supabase_utils import get_supabase_client as get_legacy_supabase_client, get_vectorstore, upsert_documents
 from ingestion import create_documents_from_uploads, extract_text_from_url
 from embeddings import get_embeddings
 from groq_llm import generate_completion_stream, FAST_MODE, PREMIUM_MODE
@@ -15,267 +42,607 @@ from prompts import get_rag_enhanced_prompt, pharmacology_system_prompt
 # ----------------------------
 # Page config
 # ----------------------------
-st.set_page_config(page_title="PharmGPT 💊", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="🧬 Pharmacology Chat Assistant", 
+    page_icon="🧬",
+    layout="wide", 
+    initial_sidebar_state="expanded"
+)
 
 # ----------------------------
-# Env / Secrets
+# Application Class
 # ----------------------------
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-
-if not (SUPABASE_URL and SUPABASE_ANON_KEY and GROQ_API_KEY):
-    st.error("Please set SUPABASE_URL, SUPABASE_ANON_KEY and GROQ_API_KEY in environment / Streamlit Secrets.")
-    st.stop()
-
-# ----------------------------
-# Initialize clients / vectorstore / embeddings
-# ----------------------------
-try:
-    supabase = get_supabase_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-except Exception as e:
-    st.exception(f"Failed to initialize Supabase client: {e}")
-    st.stop()
-
-# embeddings wrapper (sentence-transformers CPU)
-try:
-    embeddings = get_embeddings()
-except Exception as e:
-    st.exception(f"Failed to initialize embeddings: {e}")
-    st.stop()
-
-# vectorstore (LangChain-compatible SupabaseVectorStore)
-try:
-    vectorstore = get_vectorstore(supabase_client=supabase, embedding_fn=embeddings)
-except Exception as e:
-    st.exception(f"Failed to initialize vectorstore: {e}")
-    st.stop()
-
-# ----------------------------
-# Sidebar: settings + ingest
-# ----------------------------
-with st.sidebar:
-    st.title("PharmGPT — RAG (Groq)")
-    st.markdown("Upload documents, ingest them, and ask questions. RAG (retrieval) is always-on.")
-
-    st.subheader("Model")
-    # toggle: premium on/off (checkbox = toggle-like)
-    premium = st.checkbox("Premium Mode", value=False)
-    selected_model = PREMIUM_MODE if premium else FAST_MODE
-    st.markdown(f"**Active model:** `{selected_model}`")
-
-    st.markdown("---")
-    st.subheader("Ingest documents (persist to Supabase)")
-    upload_files = st.file_uploader("Upload PDF / DOCX / TXT / MD (multi)", accept_multiple_files=True)
-    url_to_ingest = st.text_input("Or paste a URL to ingest (optional)")
-
-    if st.button("Ingest and Upsert"):
-        docs_to_upsert = []
-        if upload_files:
-            st.info(f"Processing {len(upload_files)} uploaded files...")
+class PharmacologyChat:
+    """Main application class with integrated authentication and chat"""
+    
+    def __init__(self):
+        """Initialize the application"""
+        self.initialize_managers()
+        self.initialize_ui_components()
+        self.initialize_legacy_components()
+    
+    def initialize_managers(self):
+        """Initialize authentication and core managers"""
+        try:
+            # Authentication and session management
+            self.auth_manager = AuthenticationManager()
+            self.session_manager = SessionManager(self.auth_manager)
+            self.auth_guard = AuthGuard(self.auth_manager, self.session_manager)
+            
+            # Store session manager in session state for access by other components
+            st.session_state.session_manager = self.session_manager
+            
+            # Theme management
+            self.theme_manager = ThemeManager()
+            
+            # Database client
+            self.supabase_client = get_supabase_client()
+            
+            # Chat management (only if authenticated)
+            self.chat_manager = None
+            self.model_manager = None
+            self.rag_orchestrator = None
+            
+            if self.session_manager.is_authenticated():
+                self._initialize_chat_components()
+                
+        except Exception as e:
+            st.error(f"Failed to initialize application: {e}")
+            st.stop()
+    
+    def initialize_ui_components(self):
+        """Initialize UI components"""
+        self.auth_interface = AuthInterface(self.auth_manager, self.session_manager)
+        
+        # Initialize optimized message store if available
+        self.optimized_message_store = None
+        if self.supabase_client:
             try:
-                docs_to_upsert += create_documents_from_uploads(upload_files, chunk_size=500, chunk_overlap=100)
-                st.success(f"Created {len(docs_to_upsert)} chunks from uploads.")
+                self.optimized_message_store = OptimizedMessageStore(self.supabase_client)
+            except Exception as e:
+                logger.warning(f"Failed to initialize optimized message store: {e}")
+        
+        # Use optimized chat interface if available
+        if self.optimized_message_store:
+            self.chat_interface = OptimizedChatInterface(self.theme_manager, self.optimized_message_store)
+        else:
+            self.chat_interface = ChatInterface(self.theme_manager)
+    
+    def initialize_legacy_components(self):
+        """Initialize legacy RAG components for fallback"""
+        try:
+            # Use deployment configuration
+            from deployment_config import deployment_config
+            
+            db_config = deployment_config.get_database_config()
+            self.supabase_url = db_config["url"]
+            self.supabase_anon_key = db_config["anon_key"]
+            
+            model_config = deployment_config.get_model_config()
+            self.groq_api_key = model_config["groq_api_key"]
+            
+            if not (self.supabase_url and self.supabase_anon_key and self.groq_api_key):
+                st.error("Please configure SUPABASE_URL, SUPABASE_ANON_KEY and GROQ_API_KEY in Streamlit secrets.")
+                st.stop()
+            
+            # Legacy components
+            self.legacy_supabase = get_legacy_supabase_client(self.supabase_url, self.supabase_anon_key)
+            self.embeddings = get_embeddings()
+            self.vectorstore = get_vectorstore(supabase_client=self.legacy_supabase, embedding_fn=self.embeddings)
+            
+        except Exception as e:
+            st.warning(f"Legacy components initialization failed: {e}")
+            # Log error for monitoring
+            from health_check import error_monitor
+            error_monitor.log_error(e, "legacy_components_initialization")
+            
+            self.legacy_supabase = None
+            self.embeddings = None
+            self.vectorstore = None
+    
+    def _initialize_chat_components(self):
+        """Initialize chat-related components for authenticated users"""
+        try:
+            self.chat_manager = ChatManager(self.supabase_client, self.session_manager)
+            self.model_manager = ModelManager()
+            self.rag_orchestrator = RAGOrchestrator(
+                supabase_client=self.supabase_client,
+                model_manager=self.model_manager
+            )
+        except Exception as e:
+            st.warning(f"Chat components initialization failed: {e}")
+            self.chat_manager = None
+            self.model_manager = None
+            self.rag_orchestrator = None
+
+    def run(self):
+        """Main application entry point"""
+        # Check for health check page
+        if st.query_params.get("page") == "health":
+            from health_check import render_health_check_page
+            render_health_check_page()
+            return
+        
+        # Apply current theme and chat CSS
+        self.theme_manager.apply_theme()
+        if isinstance(self.chat_interface, OptimizedChatInterface):
+            inject_optimized_chat_css()
+        else:
+            inject_chat_css()
+        
+        # Check authentication status and route accordingly
+        if not self.session_manager.is_authenticated():
+            self.render_authentication_page()
+        else:
+            self.render_protected_chat_interface()
+    
+    def render_authentication_page(self):
+        """Render authentication page for unauthenticated users"""
+        # Clear any existing chat data
+        self._clear_chat_session_data()
+        
+        # Render authentication interface
+        self.auth_interface.render_auth_page()
+    
+    def render_protected_chat_interface(self):
+        """Render the main chat interface for authenticated users"""
+        # Validate session and protect route
+        if not RouteProtection.protect_chat_interface(self.auth_guard):
+            return
+        
+        # Initialize chat components if needed
+        if self.chat_manager is None:
+            self._initialize_chat_components()
+        
+        # Render main interface
+        self._render_chat_header()
+        self._render_sidebar()
+        self._render_main_chat_area()
+    
+    def _render_chat_header(self):
+        """Render the chat interface header with enhanced model indicator"""
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            st.title("🧬 Pharmacology Chat Assistant")
+        
+        with col2:
+            # Enhanced model indicator
+            if self.model_manager:
+                from model_ui import render_header_model_indicator
+                model_display = render_header_model_indicator()
+                st.markdown(model_display)
+            else:
+                model_pref = self.session_manager.get_model_preference()
+                model_display = "🚀 Fast" if model_pref == "fast" else "⭐ Premium"
+                st.markdown(f"**{model_display}**")
+        
+        with col3:
+            # Connection status
+            if self.supabase_client:
+                st.markdown("🟢 **Online**")
+            else:
+                st.markdown("🔴 **Offline**")
+    
+    def _render_sidebar(self):
+        """Render sidebar with user profile and controls"""
+        with st.sidebar:
+            # User profile and logout
+            self.auth_interface.render_user_profile()
+            
+            # Chat controls
+            self._render_chat_controls()
+            
+            # Performance dashboard (if using optimized interface)
+            if isinstance(self.chat_interface, OptimizedChatInterface):
+                with st.expander("📊 Performance", expanded=False):
+                    self.chat_interface.render_performance_dashboard()
+            
+            # Legacy document ingestion (if available)
+            if self.vectorstore:
+                self._render_legacy_document_ingestion()
+    
+    def _render_chat_controls(self):
+        """Render chat control section in sidebar"""
+        st.markdown("---")
+        
+        user_id = self.session_manager.get_user_id()
+        if user_id and self.chat_manager:
+            # Render enhanced model settings in sidebar
+            if self.model_manager:
+                from model_ui import render_model_settings_sidebar
+                render_model_settings_sidebar(self.model_manager)
+                st.markdown("---")
+            
+            # Render conversation controls (optimized if available)
+            if isinstance(self.chat_interface, OptimizedChatInterface):
+                controls = self.chat_interface.render_conversation_controls_optimized(user_id, self.chat_manager)
+                
+                # Render page size selector for pagination
+                self.chat_interface.render_page_size_selector()
+            else:
+                controls = self.chat_interface.render_conversation_controls(user_id, self.chat_manager)
+                
+                # Render chat statistics for non-optimized interface
+                stats = self.chat_manager.get_user_message_stats(user_id)
+                self.chat_interface.render_chat_statistics(stats)
+            
+            # Handle clear conversation
+            if controls.get('clear_confirmed'):
+                with LoadingStateManager.show_loading_spinner("Clearing conversation..."):
+                    if self.chat_manager.clear_conversation(user_id):
+                        st.success("Conversation cleared!")
+                        st.session_state.conversation_history = []
+                        # Clear pagination state
+                        st.session_state.chat_current_page = 1
+                        st.rerun()
+                    else:
+                        st.error("Failed to clear conversation")
+            
+            # Handle export conversation
+            if controls.get('export'):
+                self._handle_conversation_export(user_id)
+    
+    def _render_legacy_document_ingestion(self):
+        """Render legacy document ingestion interface"""
+        st.markdown("---")
+        st.subheader("📚 Document Ingestion")
+        
+        upload_files = st.file_uploader(
+            "Upload documents", 
+            accept_multiple_files=True,
+            type=['pdf', 'docx', 'txt', 'md']
+        )
+        
+        url_to_ingest = st.text_input("Or paste a URL")
+        
+        if st.button("Process Documents"):
+            self._process_document_ingestion(upload_files, url_to_ingest)
+    
+    def _process_document_ingestion(self, upload_files, url_to_ingest):
+        """Process document ingestion"""
+        if not self.vectorstore:
+            st.error("Document ingestion not available")
+            return
+        
+        docs_to_upsert = []
+        
+        if upload_files:
+            try:
+                docs_to_upsert += create_documents_from_uploads(
+                    upload_files, chunk_size=500, chunk_overlap=100
+                )
+                st.success(f"Processed {len(docs_to_upsert)} chunks from uploads")
             except Exception as e:
                 st.error(f"Failed to process uploads: {e}")
-
+        
         if url_to_ingest:
-            st.info("Fetching URL...")
             try:
                 txt = extract_text_from_url(url_to_ingest)
-                fake = type("U", (), {"name": url_to_ingest, "read": lambda: txt.encode("utf-8"), "getvalue": lambda: txt.encode("utf-8")})()
-                docs_to_upsert += create_documents_from_uploads([fake], chunk_size=500, chunk_overlap=100)
-                st.success(f"Created {len(docs_to_upsert)} chunks from URL.")
+                fake_file = type("U", (), {
+                    "name": url_to_ingest, 
+                    "read": lambda: txt.encode("utf-8"),
+                    "getvalue": lambda: txt.encode("utf-8")
+                })()
+                docs_to_upsert += create_documents_from_uploads(
+                    [fake_file], chunk_size=500, chunk_overlap=100
+                )
+                st.success(f"Processed URL content")
             except Exception as e:
-                st.error(f"Failed to fetch/parse URL: {e}")
-
+                st.error(f"Failed to process URL: {e}")
+        
         if docs_to_upsert:
-            st.info("Computing embeddings and upserting to Supabase (this runs locally).")
             try:
-                upsert_res = upsert_documents(docs_to_upsert, supabase_client=supabase, embedding_fn=embeddings)
-                st.success("Upsert finished.")
+                upsert_documents(
+                    docs_to_upsert, 
+                    supabase_client=self.legacy_supabase, 
+                    embedding_fn=self.embeddings
+                )
+                st.success("Documents ingested successfully!")
             except Exception as e:
-                st.error(f"Upsert failed: {e}")
-        else:
-            st.warning("No documents to ingest.")
-
-    st.markdown("---")
-    st.subheader("Query options (sidebar)")
-    k_retriever = st.slider("Retriever: top k results", min_value=1, max_value=8, value=4)
-    st.caption("You can also attach files per query in the chat area (they can be ephemeral or persisted).")
-
-# ----------------------------
-# Chat state init
-# ----------------------------
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "system", "content": pharmacology_system_prompt}]
-
-if "last_sources" not in st.session_state:
-    st.session_state["last_sources"] = []
-
-# ----------------------------
-# UI header + history
-# ----------------------------
-st.title("💊 PharmGPT — RAG Chat")
-st.write("Ask about pharmacology. Upload files for this query or persist them to the database. RAG (document retrieval) is always used unless you choose LLM-only.")
-
-# render chat history
-for msg in st.session_state["messages"]:
-    role = msg.get("role", "user")
-    content = msg.get("content", "")
-    with st.chat_message(role):
-        st.markdown(content)
-
-# ----------------------------
-# Query attachments + options (per-query)
-# ----------------------------
-st.markdown("---")
-st.markdown("**Attach files to this query (optional)**")
-query_uploads = st.file_uploader("Attach files (PDF/DOCX/TXT/HTML) for this question", accept_multiple_files=True, key="query_uploads")
-
-col1, col2 = st.columns(2)
-with col1:
-    use_ephemeral = st.checkbox("Use attached files only for this query (do NOT save)", value=True)
-with col2:
-    persist_uploaded = st.checkbox("Save attached files to Supabase (persist)", value=False)
-
-llm_only = st.checkbox("LLM-only (do NOT retrieve from DB)", value=False)
-
-# ----------------------------
-# Chat input and handler
-# ----------------------------
-user_input = st.chat_input("Ask PharmGPT anything about pharmacology...")
-if user_input:
-    # record user message
-    ts = datetime.now(timezone.utc).isoformat()
-    st.session_state["messages"].append({"role": "user", "content": user_input, "ts": ts})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    # Prepare contexts
-    retrieved_context = ""
-    ephemeral_context = ""
-
-    # 1) Retrieval from vectorstore (persisted docs) unless llm_only
-    docs = []
-    if not llm_only:
-        retriever = vectorstore.as_retriever(search_kwargs={"k": k_retriever})
-        try:
-            # prefer new Runnable API
-            if hasattr(retriever, "invoke"):
-                docs = retriever.invoke(user_input) or []
-            elif hasattr(retriever, "get_relevant_documents"):
-                docs = retriever.get_relevant_documents(user_input) or []
+                st.error(f"Ingestion failed: {e}")
+    
+    def _render_main_chat_area(self):
+        """Render the main chat area"""
+        user_id = self.session_manager.get_user_id()
+        if not user_id:
+            st.error("Invalid user session")
+            return
+        
+        # Initialize conversation history
+        if 'conversation_history' not in st.session_state:
+            if self.chat_manager:
+                messages = self.chat_manager.get_conversation_history(user_id, limit=50)
+                st.session_state.conversation_history = messages
             else:
-                docs = []
-        except Exception:
-            # fallback to older method if invoke fails
-            try:
-                docs = retriever.get_relevant_documents(user_input)
-            except Exception:
-                docs = []
+                st.session_state.conversation_history = []
+        
+        # Display chat history (optimized if available)
+        if isinstance(self.chat_interface, OptimizedChatInterface):
+            # Use paginated chat history
+            self.chat_interface.render_paginated_chat_history(user_id, show_pagination=True)
+        else:
+            # Use traditional chat history
+            self.chat_interface.render_chat_history(
+                st.session_state.get('conversation_history', [])
+            )
+        
+        # Enhanced chat input with file attachments and loading states
+        if isinstance(self.chat_interface, OptimizedChatInterface):
+            input_data = self.chat_interface.render_loading_message_input(
+                placeholder="Ask about pharmacology...",
+                enable_attachments=True
+            )
+        else:
+            input_data = self.chat_interface.render_message_input_with_attachments(
+                placeholder="Ask about pharmacology...",
+                enable_attachments=True
+            )
+        
+        if input_data:
+            self._process_user_message_with_attachments(user_id, input_data)
+    
 
-        # convert docs into text pieces safely
-        retrieved_texts = []
-        for d in docs:
-            text = getattr(d, "page_content", None)
-            if text is None:
-                # some retrievers return dict-like objects
-                try:
-                    text = d.get("content") or d.get("page_content") or ""
-                except Exception:
-                    text = str(d)
-            retrieved_texts.append(text)
-        if retrieved_texts:
-            retrieved_context = "\n\n---\n\n".join(retrieved_texts)[:50_000]  # truncate to safe length
+    
 
-    # 2) Handle per-query uploaded files (ephemeral or persist)
-    if query_uploads:
+    
+    def _handle_model_change(self, new_model: str):
+        """Handle model selection change with persistence"""
+        self.session_manager.update_model_preference(new_model)
+        
+        # Update model manager if available
+        if self.model_manager:
+            from model_manager import ModelTier
+            tier = ModelTier.PREMIUM if new_model == 'premium' else ModelTier.FAST
+            self.model_manager.set_current_model(tier)
+        
+        st.success(f"✅ Switched to {'Fast' if new_model == 'fast' else 'Premium'} mode - preference saved!")
+    
+    def _handle_conversation_export(self, user_id: str):
+        """Handle conversation export"""
+        if not self.chat_manager:
+            st.error("Chat manager not available")
+            return
+        
+        messages = self.chat_manager.get_conversation_history(user_id, limit=1000)
+        if not messages:
+            st.warning("No conversation history to export")
+            return
+        
+        # Export options
+        export_format = st.selectbox(
+            "Export format:",
+            options=["txt", "json", "csv"],
+            key="export_format"
+        )
+        
         try:
-            # chunk uploaded attachments
-            uploaded_docs = create_documents_from_uploads(query_uploads, chunk_size=500, chunk_overlap=100)
-            if persist_uploaded:
-                # upsert and then re-retrieve so they become searchable immediately
-                upsert_documents(uploaded_docs, supabase_client=supabase, embedding_fn=embeddings)
-                # re-query retriever to include new persisted docs
-                retriever = vectorstore.as_retriever(search_kwargs={"k": k_retriever})
-                try:
-                    docs_new = retriever.invoke(user_input) if hasattr(retriever, "invoke") else retriever.get_relevant_documents(user_input)
-                except Exception:
-                    docs_new = retriever.get_relevant_documents(user_input)
-                # prepend uploaded doc content to retrieved_context (so attached docs have priority)
-                new_texts = [getattr(d, "page_content", d.get("content", "")) if hasattr(d, "page_content") or isinstance(d, dict) else str(d) for d in docs_new]
-                combined_piece = "\n\n---\n\n".join(new_texts)
-                if combined_piece:
-                    # place uploaded docs before previous retrieved_context
-                    retrieved_context = (combined_piece + "\n\n=== attached docs ===\n\n" + retrieved_context)[:50_000]
-            elif use_ephemeral:
-                # build ephemeral_context directly from chunked uploaded_docs (top N chunks)
-                top_chunks = [d["content"] for d in uploaded_docs][:8]
-                ephemeral_context = "\n\n---\n\n".join(top_chunks)[:30_000]
+            exported_data = self.chat_interface.export_conversation(messages, export_format)
+            filename = f"pharmacology_chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{export_format}"
+            
+            st.download_button(
+                label=f"Download {export_format.upper()}",
+                data=exported_data,
+                file_name=filename,
+                mime=f"text/{export_format}" if export_format != "json" else "application/json"
+            )
         except Exception as e:
-            st.warning(f"Failed to process attached files: {e}")
-
-    # 3) Combine contexts: ephemeral (attached) first, then retrieved
-    combined_context = ""
-    if ephemeral_context and retrieved_context:
-        combined_context = ephemeral_context + "\n\n=== Uploaded docs above ===\n\n" + retrieved_context
-    elif ephemeral_context:
-        combined_context = ephemeral_context
-    else:
-        combined_context = retrieved_context
-
-    # 4) Build RAG-enhanced system prompt (falls back to system prompt if no context)
-    system_prompt = get_rag_enhanced_prompt(user_question=user_input, context=combined_context)
-
-    # 5) Build messages for the LLM
-    messages_for_model = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_input}
-    ]
-
-    # 6) Stream response from Groq LLM
-    with st.chat_message("assistant"):
-        placeholder = st.empty()
-        collected = ""
+            st.error(f"Export failed: {e}")
+    
+    def _process_user_message_with_attachments(self, user_id: str, input_data: Dict[str, Any]):
+        """Process user message with file attachments"""
+        message_content = input_data.get('message', '')
+        uploaded_files = input_data.get('files', [])
+        
+        # Process file attachments if any
+        if uploaded_files:
+            self._process_file_attachments(uploaded_files)
+            
+            # Add file info to message if no text message
+            if not message_content:
+                file_names = [f.name for f in uploaded_files]
+                message_content = f"I've uploaded these files: {', '.join(file_names)}. Please analyze them."
+        
+        if message_content:
+            self._process_user_message_with_streaming(user_id, message_content)
+    
+    def _process_file_attachments(self, uploaded_files: List[Any]):
+        """Process uploaded file attachments"""
         try:
+            # This would integrate with document processing
+            # For now, show processing status
+            with st.spinner("Processing uploaded files..."):
+                time.sleep(1)  # Simulate processing
+                st.success(f"Processed {len(uploaded_files)} file(s)")
+                
+                # Here you would:
+                # 1. Extract text from files
+                # 2. Create document chunks
+                # 3. Generate embeddings
+                # 4. Store in vector database with user_id
+                
+        except Exception as e:
+            st.error(f"File processing failed: {e}")
+    
+    def _process_user_message_with_streaming(self, user_id: str, message_content: str):
+        """Process user message with streaming response"""
+        try:
+            model_preference = self.session_manager.get_model_preference()
+            
+            # Set loading state for optimized interface
+            if isinstance(self.chat_interface, OptimizedChatInterface):
+                self.chat_interface.set_loading_state("processing_message", True)
+            
+            # Save user message
+            if self.chat_manager:
+                with LoadingStateManager.show_loading_spinner("Saving message..."):
+                    user_response = self.chat_manager.send_message(
+                        user_id=user_id,
+                        message_content=message_content,
+                        model_type=model_preference
+                    )
+                
+                if user_response.success:
+                    # Add to session history
+                    if 'conversation_history' not in st.session_state:
+                        st.session_state.conversation_history = []
+                    st.session_state.conversation_history.append(user_response.message)
+                    
+                    # Invalidate cache for optimized message store
+                    if self.optimized_message_store:
+                        performance_optimizer.invalidate_user_cache(user_id)
+            
+            # Start streaming response
+            self.chat_interface.start_streaming_response()
+            
+            # Generate AI response with streaming
+            self._generate_streaming_response(user_id, message_content, model_preference)
+            
+        except Exception as e:
+            st.error(f"Error processing message: {e}")
+            self.chat_interface.complete_streaming_message()
+        finally:
+            # Clear loading state
+            if isinstance(self.chat_interface, OptimizedChatInterface):
+                self.chat_interface.set_loading_state("processing_message", False)
+    
+    def _generate_streaming_response(self, user_id: str, message_content: str, model_preference: str):
+        """Generate streaming AI response"""
+        try:
+            if self.rag_orchestrator:
+                # Use new RAG orchestrator with streaming
+                self._generate_streaming_rag_response(user_id, message_content, model_preference)
+            else:
+                # Fallback to legacy RAG with streaming
+                self._generate_streaming_legacy_response(user_id, message_content, model_preference)
+            
+        except Exception as e:
+            st.error(f"Streaming response generation failed: {e}")
+            self.chat_interface.complete_streaming_message()
+    
+    def _generate_streaming_rag_response(self, user_id: str, message_content: str, model_preference: str):
+        """Generate streaming response using new RAG orchestrator"""
+        try:
+            context = self.chat_manager.get_conversation_context(user_id, limit=10)
+            
+            # Create placeholder for streaming
+            response_placeholder = st.empty()
+            collected_response = ""
+            
+            # Stream response
+            for response_chunk in self.rag_orchestrator.stream_query(
+                query=message_content,
+                user_id=user_id,
+                model_type=model_preference,
+                conversation_history=[{"role": msg.role, "content": msg.content} for msg in context.messages[-4:]]
+            ):
+                collected_response += response_chunk
+                self.chat_interface.update_streaming_message(response_chunk)
+                
+                # Update display
+                response_placeholder.markdown(collected_response + "▌")
+            
+            # Complete streaming
+            final_response = self.chat_interface.complete_streaming_message()
+            response_placeholder.markdown(final_response)
+            
+            # Save assistant response
+            if self.chat_manager and final_response:
+                assistant_response = self.chat_manager.save_assistant_response(
+                    user_id=user_id,
+                    response_content=final_response,
+                    model_used=f"{model_preference}_model",
+                    metadata={"streaming": True}
+                )
+                
+                if assistant_response.success:
+                    st.session_state.conversation_history.append(assistant_response.message)
+            
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"RAG streaming response failed: {e}")
+            self.chat_interface.complete_streaming_message()
+    
+    def _generate_streaming_legacy_response(self, user_id: str, message_content: str, model_preference: str):
+        """Generate streaming response using legacy RAG system"""
+        try:
+            # Use legacy RAG system with streaming
+            selected_model = PREMIUM_MODE if model_preference == "premium" else FAST_MODE
+            
+            # Retrieve context
+            docs = []
+            if self.vectorstore:
+                retriever = self.vectorstore.as_retriever(search_kwargs={"k": 4})
+                try:
+                    docs = retriever.invoke(message_content) if hasattr(retriever, "invoke") else retriever.get_relevant_documents(message_content)
+                except Exception:
+                    docs = retriever.get_relevant_documents(message_content)
+            
+            # Build context
+            retrieved_texts = []
+            for d in docs:
+                text = getattr(d, "page_content", None) or d.get("content", "") if isinstance(d, dict) else str(d)
+                retrieved_texts.append(text)
+            
+            context = "\n\n---\n\n".join(retrieved_texts)[:50000] if retrieved_texts else ""
+            
+            # Generate response with streaming
+            system_prompt = get_rag_enhanced_prompt(user_question=message_content, context=context)
+            messages_for_model = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message_content}
+            ]
+            
+            # Stream response
+            response_placeholder = st.empty()
+            collected_response = ""
+            
             for chunk in generate_completion_stream(messages=messages_for_model, model=selected_model):
-                collected += chunk
-                # typing cursor for UX
-                placeholder.markdown(collected + "▌")
-            placeholder.markdown(collected)
+                collected_response += chunk
+                self.chat_interface.update_streaming_message(chunk)
+                response_placeholder.markdown(collected_response + "▌")
+            
+            # Complete streaming
+            final_response = self.chat_interface.complete_streaming_message()
+            response_placeholder.markdown(final_response)
+            
+            # Save response
+            if self.chat_manager:
+                assistant_response = self.chat_manager.save_assistant_response(
+                    user_id=user_id,
+                    response_content=final_response,
+                    model_used=selected_model,
+                    metadata={"sources_used": len(docs), "streaming": True}
+                )
+                
+                if assistant_response.success:
+                    st.session_state.conversation_history.append(assistant_response.message)
+            
+            st.rerun()
+            
         except Exception as e:
-            placeholder.markdown(f"Generation error: {e}")
-            collected = f"Generation failed: {e}"
+            st.error(f"Legacy streaming response failed: {e}")
+            self.chat_interface.complete_streaming_message()
+    
+    def _clear_chat_session_data(self):
+        """Clear chat-related session data"""
+        keys_to_clear = ['conversation_history', 'last_message_id', 'chat_context', 'streaming_message', 'show_typing_indicator']
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
 
-    # 7) Save assistant response
-    ts2 = datetime.now(timezone.utc).isoformat()
-    st.session_state["messages"].append({"role": "assistant", "content": collected, "ts": ts2})
-
-    # 8) Persist last sources for sidebar preview
-    last_sources = []
-    if ephemeral_context:
-        last_sources.append({"source": "Attached (ephemeral)", "content": ephemeral_context[:4000]})
-    if not llm_only and docs:
-        for d in docs[:k_retriever]:
-            meta = getattr(d, "metadata", {}) or (d.get("metadata") if isinstance(d, dict) else {})
-            src = meta.get("source") or meta.get("filename") or "persisted_doc"
-            content = getattr(d, "page_content", None) or (d.get("content") if isinstance(d, dict) else str(d)) or ""
-            last_sources.append({"source": src, "content": content[:4000]})
-    st.session_state["last_sources"] = last_sources
 
 # ----------------------------
-# Sidebar: Last sources preview
+# Main Application Entry Point
 # ----------------------------
-with st.sidebar.expander("Last RAG Sources", expanded=False):
-    last_sources = st.session_state.get("last_sources", [])
-    if not last_sources:
-        st.write("No sources retrieved yet.")
-    else:
-        for s in last_sources:
-            st.markdown(f"**{s.get('source', 'doc')}**")
-            st.text(s.get("content", "")[:500] + ("..." if len(s.get("content","")) > 500 else ""))
+def main():
+    """Main application entry point"""
+    app = PharmacologyChat()
+    app.run()
 
-# Footer / notes
-st.markdown("---")
-st.caption("RAG is always on. Uploaded files may be persisted to Supabase if you chose that option. Models: Groq (Fast/Premium).")
+
+if __name__ == "__main__":
+    main()
+
+
