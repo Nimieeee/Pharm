@@ -5,6 +5,7 @@ import streamlit as st
 from datetime import datetime, timezone
 
 from langchain_supabase_utils import get_supabase_client, get_vectorstore
+from embeddings import get_embeddings
 
 from rag_chain import build_rag_chain
 from groq_llm import generate_completion_stream, FAST_MODE, PREMIUM_MODE
@@ -31,28 +32,24 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY or not GROQ_API_KEY:
     st.stop()
 
 supabase = get_supabase_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-from embeddings import get_embeddings
-
 embeddings = get_embeddings()
 vectorstore = get_vectorstore(supabase, embeddings)
-
-rag_chain = build_rag_chain(vectorstore, client, model)
-
 
 # ----------------------------
 # Sidebar (Mode Toggle)
 # ----------------------------
 st.sidebar.title("⚙️ Settings")
-mode = st.sidebar.radio(
-    "Select Mode",
-    options=["⚡ Fast", "💎 Premium"],
-    index=0
-)
+mode = st.sidebar.radio("Choose Mode:", ["⚡ Fast", "💎 Premium"])
 
 if mode == "⚡ Fast":
     selected_model = FAST_MODE
 else:
     selected_model = PREMIUM_MODE
+
+# ----------------------------
+# Build RAG Chain
+# ----------------------------
+rag_chain = build_rag_chain(vectorstore)
 
 # ----------------------------
 # Chat State
