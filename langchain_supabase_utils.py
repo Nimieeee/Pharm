@@ -6,7 +6,7 @@ from supabase import create_client
 
 # LangChain imports (SupabaseVectorStore)
 try:
-    from langchain.vectorstores import SupabaseVectorStore
+    from langchain_community.vectorstores import SupabaseVectorStore
 except Exception:
     SupabaseVectorStore = None
 
