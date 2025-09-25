@@ -161,6 +161,35 @@ BEGIN
     WHERE user_id = user_uuid;
 END;
 $$;
+
+-- Function for user-scoped vector similarity search
+CREATE OR REPLACE FUNCTION match_documents(
+    query_embedding VECTOR(384),
+    match_threshold FLOAT,
+    match_count INT,
+    user_id UUID
+)
+RETURNS TABLE(
+    id UUID,
+    content TEXT,
+    source TEXT,
+    metadata JSONB,
+    similarity FLOAT
+)
+LANGUAGE SQL STABLE
+AS $
+    SELECT
+        documents.id,
+        documents.content,
+        documents.source,
+        documents.metadata,
+        1 - (documents.embedding <=> query_embedding) AS similarity
+    FROM documents
+    WHERE documents.user_id = match_documents.user_id
+        AND 1 - (documents.embedding <=> query_embedding) > match_threshold
+    ORDER BY documents.embedding <=> query_embedding
+    LIMIT match_count;
+$;
 ```
 
 4. **Click "Run" after pasting each section**
