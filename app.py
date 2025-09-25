@@ -30,6 +30,7 @@ except ImportError:
     from rag_orchestrator import RAGOrchestrator
 
 from model_manager import ModelManager
+from database_init import check_and_initialize_database, render_database_setup_instructions
 
 # Supabase client for main app (uses anon key)
 def get_supabase_client():
@@ -170,6 +171,14 @@ class PharmacologyChat:
             from health_check import render_health_check_page
             render_health_check_page()
             return
+        
+        # Check database initialization
+        if self.supabase_client:
+            db_initializer = check_and_initialize_database(self.supabase_client)
+            if not db_initializer.schema_status.get('initialized', False):
+                st.title("🧬 Pharmacology Chat Assistant")
+                render_database_setup_instructions(db_initializer)
+                return
         
         # Apply current theme and chat CSS
         self.theme_manager.apply_theme()
