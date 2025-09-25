@@ -35,7 +35,7 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     st.stop()
 
 supabase = get_supabase_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-ensure_tables_exist(supabase)  # no-op placeholder (use SQL editor for schema)
+#ensure_tables_exist(supabase)  # no-op placeholder (use SQL editor for schema)
 
 # Groq model envs
 GROQ_FAST_MODEL = os.environ.get("GROQ_FAST_MODEL", "gemma2-9b-it")
