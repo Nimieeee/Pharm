@@ -15,7 +15,7 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 API_BASE = "https://api.groq.com/openai/v1/chat/completions"
 
 # Default mode names (override with env vars if desired)
-FAST_MODE = os.environ.get("GROQ_FAST_MODEL", "gemma-7b-it")
+FAST_MODE = os.environ.get("GROQ_FAST_MODEL", "gemma-9b-it")
 PREMIUM_MODE = os.environ.get("GROQ_PREMIUM_MODEL", "openai/gpt-oss-20b")
 
 if _GROQ_AVAILABLE:
