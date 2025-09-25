@@ -13,3 +13,4 @@ tiktoken
 # torch is typically required for sentence-transformers; if Streamlit Cloud build fails you may need to remove or provide a custom Docker image.
 torch
 openai>=1.30.0
+groq
