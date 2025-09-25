@@ -97,7 +97,7 @@ The application supports both Streamlit secrets and environment variables:
 |----------|----------|-------------|
 | `SUPABASE_URL` | Yes | Your Supabase project URL |
 | `SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
-| `SUPABASE_SERVICE_KEY` | No | Supabase service key (for admin operations) |
+| `SUPABASE_SERVICE_KEY` | No | Supabase service key (only needed for database migrations) |
 | `GROQ_API_KEY` | Yes | Groq API key for AI models |
 | `GROQ_FAST_MODEL` | No | Fast model name (default: gemma2-9b-it) |
 | `GROQ_PREMIUM_MODEL` | No | Premium model name (default: qwen/qwen3-32b) |
