@@ -52,6 +52,11 @@ class MessageStore:
             Message object if successful, None otherwise
         """
         try:
+            print(f"🔍 MessageStore.save_message called")
+            print(f"🔍 User ID: {user_id}")
+            print(f"🔍 Role: {role}")
+            print(f"🔍 Content length: {len(content)}")
+            
             # Validate role
             if role not in ["user", "assistant"]:
                 raise ValueError(f"Invalid role: {role}. Must be 'user' or 'assistant'")
@@ -64,10 +69,13 @@ class MessageStore:
                 'metadata': metadata or {}
             }
             
+            print(f"🔍 Attempting database insert...")
             result = self.client.table('messages').insert(message_data).execute()
+            print(f"🔍 Database insert result: {result}")
             
             if result.data and len(result.data) > 0:
                 data = result.data[0]
+                print(f"🔍 Message saved with ID: {data['id']}")
                 return Message(
                     id=data['id'],
                     user_id=data['user_id'],
@@ -77,11 +85,16 @@ class MessageStore:
                     created_at=datetime.fromisoformat(data['created_at'].replace('Z', '+00:00')),
                     metadata=data.get('metadata', {})
                 )
+            else:
+                print(f"🔍 No data returned from database insert")
             
             return None
             
         except Exception as e:
             logger.error(f"Error saving message for user {user_id}: {e}")
+            print(f"🔍 Exception in save_message: {e}")
+            import traceback
+            print(f"🔍 Traceback: {traceback.format_exc()}")
             raise
     
     def get_user_messages(self, user_id: str, limit: int = 50, 

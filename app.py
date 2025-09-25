@@ -359,16 +359,34 @@ class PharmacologyChat:
     def _render_main_chat_area(self):
         """Render the main chat area"""
         user_id = self.session_manager.get_user_id()
+        
+        # Debug info
+        st.write(f"🔍 DEBUG: User ID: {user_id}")
+        st.write(f"🔍 DEBUG: Is authenticated: {self.session_manager.is_authenticated()}")
+        st.write(f"🔍 DEBUG: Chat manager available: {self.chat_manager is not None}")
+        st.write(f"🔍 DEBUG: Supabase client available: {self.supabase_client is not None}")
+        
         if not user_id:
             st.error("Invalid user session")
             return
         
+        # Test database connection
+        if st.button("🔍 Test Database Connection"):
+            try:
+                result = self.supabase_client.table('users').select('count').limit(1).execute()
+                st.success(f"✅ Database connection working! Result: {result}")
+            except Exception as e:
+                st.error(f"❌ Database connection failed: {e}")
+        
         # Initialize conversation history
         if 'conversation_history' not in st.session_state:
             if self.chat_manager:
+                st.write("🔍 DEBUG: Loading conversation history...")
                 messages = self.chat_manager.get_conversation_history(user_id, limit=50)
+                st.write(f"🔍 DEBUG: Loaded {len(messages)} messages from database")
                 st.session_state.conversation_history = messages
             else:
+                st.write("🔍 DEBUG: No chat manager, using empty history")
                 st.session_state.conversation_history = []
         
         # Display chat history (optimized if available)
@@ -481,7 +499,12 @@ class PharmacologyChat:
     def _process_user_message_with_streaming(self, user_id: str, message_content: str):
         """Process user message with streaming response"""
         try:
+            # Debug: Show what's happening
+            st.write(f"🔍 DEBUG: Processing message for user {user_id}")
+            st.write(f"🔍 DEBUG: Message content: {message_content}")
+            
             model_preference = self.session_manager.get_model_preference()
+            st.write(f"🔍 DEBUG: Model preference: {model_preference}")
             
             # Set loading state for optimized interface
             if isinstance(self.chat_interface, OptimizedChatInterface):
@@ -489,24 +512,37 @@ class PharmacologyChat:
             
             # Save user message
             if self.chat_manager:
-                with LoadingStateManager.show_loading_spinner("Saving message..."):
-                    user_response = self.chat_manager.send_message(
-                        user_id=user_id,
-                        message_content=message_content,
-                        model_type=model_preference
-                    )
+                st.write("🔍 DEBUG: Chat manager available, attempting to save message...")
+                
+                user_response = self.chat_manager.send_message(
+                    user_id=user_id,
+                    message_content=message_content,
+                    model_type=model_preference
+                )
+                
+                st.write(f"🔍 DEBUG: User response success: {user_response.success}")
+                if not user_response.success:
+                    st.write(f"🔍 DEBUG: Error: {user_response.error_message}")
                 
                 if user_response.success:
                     # Add to session history
                     if 'conversation_history' not in st.session_state:
                         st.session_state.conversation_history = []
                     st.session_state.conversation_history.append(user_response.message)
+                    st.write(f"🔍 DEBUG: Added message to session history. Total messages: {len(st.session_state.conversation_history)}")
                     
                     # Invalidate cache for optimized message store
                     if self.optimized_message_store:
                         performance_optimizer.invalidate_user_cache(user_id)
+                else:
+                    st.error(f"Failed to save message: {user_response.error_message}")
+                    return
+            else:
+                st.write("🔍 DEBUG: No chat manager available!")
+                return
             
             # Start streaming response
+            st.write("🔍 DEBUG: Starting streaming response...")
             self.chat_interface.start_streaming_response()
             
             # Generate AI response with streaming
@@ -514,6 +550,8 @@ class PharmacologyChat:
             
         except Exception as e:
             st.error(f"Error processing message: {e}")
+            import traceback
+            st.code(traceback.format_exc())
             self.chat_interface.complete_streaming_message()
         finally:
             # Clear loading state

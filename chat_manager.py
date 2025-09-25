@@ -60,8 +60,13 @@ class ChatManager:
             ChatResponse with the saved user message
         """
         try:
+            print(f"🔍 ChatManager.send_message called with user_id: {user_id}")
+            
             # Validate user authentication
-            if not self.session_manager.is_authenticated():
+            is_authenticated = self.session_manager.is_authenticated()
+            print(f"🔍 Is authenticated: {is_authenticated}")
+            
+            if not is_authenticated:
                 return ChatResponse(
                     success=False,
                     error_message="User not authenticated"
@@ -69,13 +74,16 @@ class ChatManager:
             
             # Validate that the user_id matches the session
             session_user_id = self.session_manager.get_user_id()
+            print(f"🔍 Session user ID: {session_user_id}")
+            
             if session_user_id != user_id:
                 return ChatResponse(
                     success=False,
-                    error_message="User ID mismatch"
+                    error_message=f"User ID mismatch: session={session_user_id}, provided={user_id}"
                 )
             
             # Save user message
+            print(f"🔍 Attempting to save message to database...")
             user_message = self.message_store.save_message(
                 user_id=user_id,
                 role="user",
@@ -83,11 +91,15 @@ class ChatManager:
                 metadata={"model_requested": model_type}
             )
             
+            print(f"🔍 Message save result: {user_message is not None}")
+            
             if not user_message:
                 return ChatResponse(
                     success=False,
                     error_message="Failed to save user message"
                 )
+            
+            print(f"🔍 Message saved successfully with ID: {user_message.id}")
             
             return ChatResponse(
                 success=True,
@@ -96,6 +108,9 @@ class ChatManager:
             
         except Exception as e:
             logger.error(f"Error processing message for user {user_id}: {e}")
+            print(f"🔍 Exception in send_message: {e}")
+            import traceback
+            print(f"🔍 Traceback: {traceback.format_exc()}")
             return ChatResponse(
                 success=False,
                 error_message=f"Error processing message: {str(e)}"
