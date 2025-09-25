@@ -31,7 +31,11 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY or not GROQ_API_KEY:
     st.stop()
 
 supabase = get_supabase_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-vectorstore = get_vectorstore(supabase)
+from embeddings import get_embeddings
+
+embeddings = get_embeddings()
+vectorstore = get_vectorstore(supabase, embeddings)
+
 rag_chain = build_rag_chain(vectorstore)
 
 # ----------------------------
