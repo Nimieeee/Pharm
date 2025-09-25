@@ -14,9 +14,26 @@ from langchain_supabase_utils import (
     get_vectorstore,
 )
 from rag_chain import build_rag_chain
-from groq_llm import GroqChat
+from groq_llm import generate_completion, stream_completion, FAST_MODEL, PREMIUM_MODEL
 from prompts import get_rag_enhanced_prompt, pharmacology_system_prompt
 
+# Example
+messages = [
+    {"role": "system", "content": "You are PharmGPT, a pharmacology tutor."},
+    {"role": "user", "content": "Explain beta blockers in simple terms."}
+]
+
+# Non-streaming
+reply = generate_completion(messages, model=FAST_MODEL)
+print("FAST MODE:", reply)
+
+# Streaming
+collected = ""
+for token in stream_completion(messages, model=PREMIUM_MODEL):
+    collected += token
+    print(token, end="", flush=True)
+
+    
 # --- Page config
 st.set_page_config(page_title="PharmGPT — RAG (Groq)", layout="wide", initial_sidebar_state="expanded")
 

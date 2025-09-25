@@ -36,11 +36,11 @@ def upsert_documents(docs: List[dict], supabase_client):
 
     return supabase_client.table("documents").upsert(rows).execute()
 
-def get_vectorstore(supabase_client):
-    """
-    Return a LangChain-compatible SupabaseVectorStore using the local embedding wrapper.
-    """
-    if SupabaseVectorStore is None:
-        raise ImportError("SupabaseVectorStore from langchain_community is required. Install langchain_community.")
-    embedding_fn = get_embeddings()
-    return SupabaseVectorStore(supabase_client=supabase_client, embedding_function=embedding_fn, table_name="documents")
+from langchain_community.vectorstores import SupabaseVectorStore
+
+def get_vectorstore(supabase, embeddings):
+    return SupabaseVectorStore(
+        client=supabase,
+        table_name="document_embeddings",
+        embedding=embeddings
+    )
