@@ -30,7 +30,15 @@ except ImportError:
     from rag_orchestrator import RAGOrchestrator
 
 from model_manager import ModelManager
-from run_migrations import get_supabase_client
+
+# Supabase client for main app (uses anon key)
+def get_supabase_client():
+    """Get Supabase client for main application using anon key"""
+    from supabase import create_client
+    from deployment_config import deployment_config
+    
+    db_config = deployment_config.get_database_config()
+    return create_client(db_config["url"], db_config["anon_key"])
 
 # Legacy RAG components (fallback)
 from langchain_supabase_utils import get_supabase_client as get_legacy_supabase_client, get_vectorstore, upsert_documents
