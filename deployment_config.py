@@ -39,12 +39,12 @@ class DeploymentConfig:
         # Required configuration keys
         required_keys = [
             "SUPABASE_URL",
-            "SUPABASE_ANON_KEY", 
-            "GROQ_API_KEY"
+            "SUPABASE_ANON_KEY"
         ]
         
         # Optional configuration keys with defaults
         optional_keys = {
+            "GROQ_API_KEY": None,  # Made optional for demo mode
             "SUPABASE_SERVICE_KEY": None,
             "GROQ_FAST_MODEL": "gemma2-9b-it",
             "GROQ_PREMIUM_MODEL": "qwen/qwen3-32b",
