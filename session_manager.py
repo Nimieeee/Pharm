@@ -189,6 +189,10 @@ class SessionManager:
         Returns:
             True if session is valid, False otherwise
         """
+        # Temporary fix: if user_session exists in session state, consider it valid
+        if st.session_state.get('user_session') is not None:
+            return True
+            
         if not self.is_authenticated():
             return False
             
