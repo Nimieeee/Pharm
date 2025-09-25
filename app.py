@@ -4,7 +4,8 @@ import os
 import streamlit as st
 from datetime import datetime, timezone
 
-from db import get_supabase_client, get_vectorstore
+from langchain_supabase_utils import get_supabase_client, get_vectorstore
+
 from rag_chain import build_rag_chain
 from groq_llm import generate_completion_stream, FAST_MODE, PREMIUM_MODE
 from prompts import get_rag_enhanced_prompt, pharmacology_system_prompt
