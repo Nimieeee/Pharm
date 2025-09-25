@@ -1,15 +1,27 @@
-streamlit>=1.20
-supabase
-supabase-py
+# Core
+streamlit==1.50.0
+
+# Supabase Python client (pip name: supabase)
+supabase==1.0.2
+
+# LangChain & friends (pin carefully if you hit compatibility issues)
 langchain>=0.0.300
 langchain-community
+
+# Groq / HTTP
 requests
-python-dotenv
+
+# File parsing & embeddings
 PyPDF2
 pdfplumber
 python-docx
 beautifulsoup4
-sentence-transformers
-transformers
-torch   # if your chosen sentence-transformers requires it (Cloud will need this)
+sentence-transformers>=2.2.2
+
+# token counting (optional)
 tiktoken
+
+# If running sentence-transformers with PyTorch, you'll need torch;
+# but be cautious: torch is large and can cause build/cold-start issues on Streamlit Cloud.
+# Consider using a hosted embedding API instead if Streamlit's build fails.
+# torch==2.2.2  # uncomment only if you know your runtime supports it
