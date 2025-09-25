@@ -151,14 +151,19 @@ class SessionManager:
         Args:
             model_preference: "fast" or "premium"
         """
-        if self.is_authenticated():
-            st.session_state.model_preference = model_preference
-            user_session = st.session_state.user_session
-            user_session.model_preference = model_preference
-            st.session_state.user_session = user_session
-            
-            # Persist to database
-            self._persist_user_preferences()
+        # Temporary fix: Just update session state, ignore user_session object
+        st.session_state.model_preference = model_preference
+        
+        # Original code (commented out temporarily)
+        # if self.is_authenticated():
+        #     st.session_state.model_preference = model_preference
+        #     user_session = st.session_state.user_session
+        #     if user_session:
+        #         user_session.model_preference = model_preference
+        #         st.session_state.user_session = user_session
+        #     
+        #     # Persist to database
+        #     self._persist_user_preferences()
     
     def update_theme(self, theme: str) -> None:
         """
@@ -167,14 +172,19 @@ class SessionManager:
         Args:
             theme: "light" or "dark"
         """
-        if self.is_authenticated():
-            st.session_state.theme = theme
-            user_session = st.session_state.user_session
-            user_session.theme = theme
-            st.session_state.user_session = user_session
-            
-            # Persist to database
-            self._persist_user_preferences()
+        # Temporary fix: Just update session state, ignore user_session object
+        st.session_state.theme = theme
+        
+        # Original code (commented out temporarily)
+        # if self.is_authenticated():
+        #     st.session_state.theme = theme
+        #     user_session = st.session_state.user_session
+        #     if user_session:
+        #         user_session.theme = theme
+        #         st.session_state.user_session = user_session
+        #     
+        #     # Persist to database
+        #     self._persist_user_preferences()
     
     def get_model_preference(self) -> str:
         """
