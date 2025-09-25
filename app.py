@@ -154,10 +154,7 @@ class PharmacologyChat:
         try:
             self.chat_manager = ChatManager(self.supabase_client, self.session_manager)
             self.model_manager = ModelManager()
-            self.rag_orchestrator = RAGOrchestrator(
-                supabase_client=self.supabase_client,
-                model_manager=self.model_manager
-            )
+            self.rag_orchestrator = RAGOrchestrator()
         except Exception as e:
             st.warning(f"Chat components initialization failed: {e}")
             self.chat_manager = None
