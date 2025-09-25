@@ -36,7 +36,8 @@ from embeddings import get_embeddings
 embeddings = get_embeddings()
 vectorstore = get_vectorstore(supabase, embeddings)
 
-rag_chain = build_rag_chain(vectorstore)
+rag_chain = build_rag_chain(vectorstore, client, model)
+
 
 # ----------------------------
 # Sidebar (Mode Toggle)
