@@ -123,12 +123,18 @@ class SessionManager:
         Returns:
             User ID if authenticated, None otherwise
         """
-        # Temporary fix: Return a valid UUID format for mock user
-        return "12345678-1234-1234-1234-123456789012"
+        # Try to get the actual Supabase auth user ID first
+        try:
+            current_user = self.auth_manager.get_current_user()
+            if current_user and current_user.id:
+                print(f"🔍 Using real Supabase user ID: {current_user.id}")
+                return current_user.id
+        except Exception as e:
+            print(f"🔍 Could not get real user ID: {e}")
         
-        # Original code (commented out temporarily)
-        # user_session = self.get_user_session()
-        # return user_session.user_id if user_session else None
+        # Fallback to mock user ID (but this won't work with RLS)
+        print("🔍 Using mock user ID - this may cause RLS issues")
+        return "12345678-1234-1234-1234-123456789012"
     
     def get_user_email(self) -> Optional[str]:
         """

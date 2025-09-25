@@ -370,13 +370,53 @@ class PharmacologyChat:
             st.error("Invalid user session")
             return
         
-        # Test database connection
-        if st.button("🔍 Test Database Connection"):
-            try:
-                result = self.supabase_client.table('users').select('count').limit(1).execute()
-                st.success(f"✅ Database connection working! Result: {result}")
-            except Exception as e:
-                st.error(f"❌ Database connection failed: {e}")
+        # Debug buttons
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🔍 Test Database"):
+                try:
+                    result = self.supabase_client.table('users').select('count').limit(1).execute()
+                    st.success(f"✅ Database connection working!")
+                except Exception as e:
+                    st.error(f"❌ Database connection failed: {e}")
+        
+        with col2:
+            if st.button("🔍 Test Auth"):
+                try:
+                    current_user = self.auth_manager.get_current_user()
+                    if current_user:
+                        st.success(f"✅ Authenticated as: {current_user.email}")
+                        st.write(f"User ID: {current_user.id}")
+                    else:
+                        st.warning("⚠️ Not authenticated with Supabase")
+                except Exception as e:
+                    st.error(f"❌ Auth check failed: {e}")
+        
+        with col3:
+            if st.button("🔍 Test RLS"):
+                try:
+                    # Try to insert a test message
+                    test_result = self.supabase_client.table('messages').insert({
+                        'user_id': user_id,
+                        'role': 'user',
+                        'content': 'RLS test message',
+                        'metadata': {'test': True}
+                    }).execute()
+                    
+                    if test_result.data:
+                        st.success("✅ RLS allows message insertion")
+                        # Clean up test message
+                        self.supabase_client.table('messages').delete().eq('id', test_result.data[0]['id']).execute()
+                    else:
+                        st.warning("⚠️ RLS test inconclusive")
+                        
+                except Exception as e:
+                    if "row-level security policy" in str(e).lower():
+                        st.error("❌ RLS is blocking message insertion")
+                        st.info("💡 This is why your messages aren't saving!")
+                    else:
+                        st.error(f"❌ RLS test failed: {e}")
         
         # Initialize conversation history
         if 'conversation_history' not in st.session_state:
@@ -535,8 +575,44 @@ class PharmacologyChat:
                     if self.optimized_message_store:
                         performance_optimizer.invalidate_user_cache(user_id)
                 else:
-                    st.error(f"Failed to save message: {user_response.error_message}")
-                    return
+                    # Handle RLS error specifically
+                    if "row-level security policy" in user_response.error_message.lower():
+                        st.error("🔒 **Database Access Issue**")
+                        st.markdown("""
+                        **The message couldn't be saved due to database security policies.**
+                        
+                        **Quick Fix Options:**
+                        1. **For testing**: Temporarily disable Row-Level Security on the messages table
+                        2. **For production**: Ensure proper Supabase authentication is working
+                        
+                        **To fix this:**
+                        - Go to your Supabase dashboard
+                        - Navigate to Authentication > Policies
+                        - Temporarily disable RLS on the `messages` table
+                        - Or ensure you're properly logged in with Supabase Auth
+                        """)
+                        
+                        # Show the message in session anyway for UI testing
+                        if 'conversation_history' not in st.session_state:
+                            st.session_state.conversation_history = []
+                        
+                        # Create a mock message for UI testing
+                        from message_store import Message
+                        from datetime import datetime
+                        mock_message = Message(
+                            id="mock-" + str(len(st.session_state.conversation_history)),
+                            user_id=user_id,
+                            role="user",
+                            content=message_content,
+                            model_used=None,
+                            created_at=datetime.now(),
+                            metadata={"mock": True, "error": "RLS policy violation"}
+                        )
+                        st.session_state.conversation_history.append(mock_message)
+                        st.info("💡 Message added to UI for testing (not saved to database)")
+                    else:
+                        st.error(f"Failed to save message: {user_response.error_message}")
+                        return
             else:
                 st.write("🔍 DEBUG: No chat manager available!")
                 return

@@ -93,6 +93,20 @@ class MessageStore:
         except Exception as e:
             logger.error(f"Error saving message for user {user_id}: {e}")
             print(f"🔍 Exception in save_message: {e}")
+            
+            # Check for specific RLS error
+            error_str = str(e).lower()
+            if "row-level security policy" in error_str:
+                print("🔍 RLS POLICY VIOLATION DETECTED!")
+                print("🔍 This means the user_id doesn't match the authenticated Supabase user")
+                print("🔍 Solutions:")
+                print("   1. Use actual Supabase auth user ID")
+                print("   2. Temporarily disable RLS for testing")
+                print("   3. Fix the authentication flow")
+                
+                # Create a more helpful error message
+                raise Exception(f"Database access denied: The user ID ({user_id}) doesn't match the authenticated user. This is a Row-Level Security policy violation. Please ensure you're properly authenticated with Supabase.")
+            
             import traceback
             print(f"🔍 Traceback: {traceback.format_exc()}")
             raise
