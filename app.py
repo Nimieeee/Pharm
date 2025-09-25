@@ -12,21 +12,16 @@ from langchain_supabase_utils import (
     get_supabase_client,
     upsert_documents,
     get_vectorstore,
-    get_embeddings_function,  # ✅ now it exists again
 )
+
 
 from rag_chain import build_rag_chain
 from groq_llm import GroqChat
 
 st.set_page_config(page_title="PharmGPT (Groq-only)", layout="wide", initial_sidebar_state="expanded")
 
-def get_embeddings_function():
-    """
-    Wrapper for backwards compatibility.
-    Returns the embeddings function that uses Groq + sentence-transformers.
-    """
-    from embeddings import get_embeddings  # import from your embeddings.py
-    return get_embeddings()
+from embeddings import get_embeddings
+embeddings = get_embeddings()
 
 
 # --------------------------
