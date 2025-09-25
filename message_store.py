@@ -52,11 +52,6 @@ class MessageStore:
             Message object if successful, None otherwise
         """
         try:
-            print(f"🔍 MessageStore.save_message called")
-            print(f"🔍 User ID: {user_id}")
-            print(f"🔍 Role: {role}")
-            print(f"🔍 Content length: {len(content)}")
-            
             # Validate role
             if role not in ["user", "assistant"]:
                 raise ValueError(f"Invalid role: {role}. Must be 'user' or 'assistant'")
@@ -69,13 +64,10 @@ class MessageStore:
                 'metadata': metadata or {}
             }
             
-            print(f"🔍 Attempting database insert...")
             result = self.client.table('messages').insert(message_data).execute()
-            print(f"🔍 Database insert result: {result}")
             
             if result.data and len(result.data) > 0:
                 data = result.data[0]
-                print(f"🔍 Message saved with ID: {data['id']}")
                 return Message(
                     id=data['id'],
                     user_id=data['user_id'],
@@ -85,30 +77,17 @@ class MessageStore:
                     created_at=datetime.fromisoformat(data['created_at'].replace('Z', '+00:00')),
                     metadata=data.get('metadata', {})
                 )
-            else:
-                print(f"🔍 No data returned from database insert")
             
             return None
             
         except Exception as e:
             logger.error(f"Error saving message for user {user_id}: {e}")
-            print(f"🔍 Exception in save_message: {e}")
             
-            # Check for specific RLS error
+            # Check for specific RLS error and provide helpful message
             error_str = str(e).lower()
             if "row-level security policy" in error_str:
-                print("🔍 RLS POLICY VIOLATION DETECTED!")
-                print("🔍 This means the user_id doesn't match the authenticated Supabase user")
-                print("🔍 Solutions:")
-                print("   1. Use actual Supabase auth user ID")
-                print("   2. Temporarily disable RLS for testing")
-                print("   3. Fix the authentication flow")
-                
-                # Create a more helpful error message
-                raise Exception(f"Database access denied: The user ID ({user_id}) doesn't match the authenticated user. This is a Row-Level Security policy violation. Please ensure you're properly authenticated with Supabase.")
+                raise Exception(f"Authentication required: Please sign in with a valid Supabase account to save messages.")
             
-            import traceback
-            print(f"🔍 Traceback: {traceback.format_exc()}")
             raise
     
     def get_user_messages(self, user_id: str, limit: int = 50, 

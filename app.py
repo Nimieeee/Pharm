@@ -185,7 +185,7 @@ class PharmacologyChat:
             inject_chat_css()
         
         # Check authentication status and route accordingly
-        if not self.session_manager.is_authenticated():
+        if not self.session_manager.validate_session():
             self.render_authentication_page()
         else:
             self.render_protected_chat_interface()
@@ -360,73 +360,16 @@ class PharmacologyChat:
         """Render the main chat area"""
         user_id = self.session_manager.get_user_id()
         
-        # Debug info
-        st.write(f"🔍 DEBUG: User ID: {user_id}")
-        st.write(f"🔍 DEBUG: Is authenticated: {self.session_manager.is_authenticated()}")
-        st.write(f"🔍 DEBUG: Chat manager available: {self.chat_manager is not None}")
-        st.write(f"🔍 DEBUG: Supabase client available: {self.supabase_client is not None}")
-        
         if not user_id:
-            st.error("Invalid user session")
+            st.error("Invalid user session. Please refresh the page and sign in again.")
             return
-        
-        # Debug buttons
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("🔍 Test Database"):
-                try:
-                    result = self.supabase_client.table('users').select('count').limit(1).execute()
-                    st.success(f"✅ Database connection working!")
-                except Exception as e:
-                    st.error(f"❌ Database connection failed: {e}")
-        
-        with col2:
-            if st.button("🔍 Test Auth"):
-                try:
-                    current_user = self.auth_manager.get_current_user()
-                    if current_user:
-                        st.success(f"✅ Authenticated as: {current_user.email}")
-                        st.write(f"User ID: {current_user.id}")
-                    else:
-                        st.warning("⚠️ Not authenticated with Supabase")
-                except Exception as e:
-                    st.error(f"❌ Auth check failed: {e}")
-        
-        with col3:
-            if st.button("🔍 Test RLS"):
-                try:
-                    # Try to insert a test message
-                    test_result = self.supabase_client.table('messages').insert({
-                        'user_id': user_id,
-                        'role': 'user',
-                        'content': 'RLS test message',
-                        'metadata': {'test': True}
-                    }).execute()
-                    
-                    if test_result.data:
-                        st.success("✅ RLS allows message insertion")
-                        # Clean up test message
-                        self.supabase_client.table('messages').delete().eq('id', test_result.data[0]['id']).execute()
-                    else:
-                        st.warning("⚠️ RLS test inconclusive")
-                        
-                except Exception as e:
-                    if "row-level security policy" in str(e).lower():
-                        st.error("❌ RLS is blocking message insertion")
-                        st.info("💡 This is why your messages aren't saving!")
-                    else:
-                        st.error(f"❌ RLS test failed: {e}")
         
         # Initialize conversation history
         if 'conversation_history' not in st.session_state:
             if self.chat_manager:
-                st.write("🔍 DEBUG: Loading conversation history...")
                 messages = self.chat_manager.get_conversation_history(user_id, limit=50)
-                st.write(f"🔍 DEBUG: Loaded {len(messages)} messages from database")
                 st.session_state.conversation_history = messages
             else:
-                st.write("🔍 DEBUG: No chat manager, using empty history")
                 st.session_state.conversation_history = []
         
         # Display chat history (optimized if available)
@@ -539,12 +482,7 @@ class PharmacologyChat:
     def _process_user_message_with_streaming(self, user_id: str, message_content: str):
         """Process user message with streaming response"""
         try:
-            # Debug: Show what's happening
-            st.write(f"🔍 DEBUG: Processing message for user {user_id}")
-            st.write(f"🔍 DEBUG: Message content: {message_content}")
-            
             model_preference = self.session_manager.get_model_preference()
-            st.write(f"🔍 DEBUG: Model preference: {model_preference}")
             
             # Set loading state for optimized interface
             if isinstance(self.chat_interface, OptimizedChatInterface):
@@ -552,73 +490,48 @@ class PharmacologyChat:
             
             # Save user message
             if self.chat_manager:
-                st.write("🔍 DEBUG: Chat manager available, attempting to save message...")
-                
-                user_response = self.chat_manager.send_message(
-                    user_id=user_id,
-                    message_content=message_content,
-                    model_type=model_preference
-                )
-                
-                st.write(f"🔍 DEBUG: User response success: {user_response.success}")
-                if not user_response.success:
-                    st.write(f"🔍 DEBUG: Error: {user_response.error_message}")
+                with st.spinner("Saving message..."):
+                    user_response = self.chat_manager.send_message(
+                        user_id=user_id,
+                        message_content=message_content,
+                        model_type=model_preference
+                    )
                 
                 if user_response.success:
                     # Add to session history
                     if 'conversation_history' not in st.session_state:
                         st.session_state.conversation_history = []
                     st.session_state.conversation_history.append(user_response.message)
-                    st.write(f"🔍 DEBUG: Added message to session history. Total messages: {len(st.session_state.conversation_history)}")
                     
                     # Invalidate cache for optimized message store
                     if self.optimized_message_store:
                         performance_optimizer.invalidate_user_cache(user_id)
                 else:
-                    # Handle RLS error specifically
+                    # Handle authentication/RLS errors
                     if "row-level security policy" in user_response.error_message.lower():
-                        st.error("🔒 **Database Access Issue**")
+                        st.error("🔒 **Authentication Required**")
                         st.markdown("""
-                        **The message couldn't be saved due to database security policies.**
+                        Your message couldn't be saved because you're not properly authenticated.
                         
-                        **Quick Fix Options:**
-                        1. **For testing**: Temporarily disable Row-Level Security on the messages table
-                        2. **For production**: Ensure proper Supabase authentication is working
-                        
-                        **To fix this:**
-                        - Go to your Supabase dashboard
-                        - Navigate to Authentication > Policies
-                        - Temporarily disable RLS on the `messages` table
-                        - Or ensure you're properly logged in with Supabase Auth
+                        **Please:**
+                        1. Sign out and sign back in
+                        2. Ensure you're using a valid Supabase account
+                        3. Check that your session hasn't expired
                         """)
                         
-                        # Show the message in session anyway for UI testing
-                        if 'conversation_history' not in st.session_state:
-                            st.session_state.conversation_history = []
-                        
-                        # Create a mock message for UI testing
-                        from message_store import Message
-                        from datetime import datetime
-                        mock_message = Message(
-                            id="mock-" + str(len(st.session_state.conversation_history)),
-                            user_id=user_id,
-                            role="user",
-                            content=message_content,
-                            model_used=None,
-                            created_at=datetime.now(),
-                            metadata={"mock": True, "error": "RLS policy violation"}
-                        )
-                        st.session_state.conversation_history.append(mock_message)
-                        st.info("💡 Message added to UI for testing (not saved to database)")
+                        # Suggest re-authentication
+                        if st.button("🔄 Sign Out and Re-authenticate"):
+                            self.session_manager.clear_session()
+                            st.rerun()
+                        return
                     else:
                         st.error(f"Failed to save message: {user_response.error_message}")
                         return
             else:
-                st.write("🔍 DEBUG: No chat manager available!")
+                st.error("Chat system not available. Please refresh the page.")
                 return
             
             # Start streaming response
-            st.write("🔍 DEBUG: Starting streaming response...")
             self.chat_interface.start_streaming_response()
             
             # Generate AI response with streaming

@@ -109,12 +109,21 @@ class SessionManager:
         Returns:
             True if authenticated, False otherwise
         """
-        # Temporary fix: Always return True to bypass authentication issues
-        return True
+        # Check if we have a valid Supabase auth session
+        try:
+            current_user = self.auth_manager.get_current_user()
+            if current_user:
+                # Ensure our session state matches the auth state
+                if not st.session_state.get('user_session'):
+                    # Initialize session from Supabase auth
+                    self.initialize_session(current_user.id, current_user.email, current_user.preferences)
+                return True
+        except Exception:
+            pass  # Fall through to session state check
         
-        # Original code (commented out temporarily)
-        # user_session = self.get_user_session()
-        # return user_session is not None and user_session.is_authenticated
+        # Check session state as fallback
+        user_session = self.get_user_session()
+        return user_session is not None and user_session.is_authenticated
     
     def get_user_id(self) -> Optional[str]:
         """
@@ -123,18 +132,20 @@ class SessionManager:
         Returns:
             User ID if authenticated, None otherwise
         """
-        # Try to get the actual Supabase auth user ID first
+        # First try to get from Supabase auth (most reliable)
         try:
             current_user = self.auth_manager.get_current_user()
             if current_user and current_user.id:
-                print(f"🔍 Using real Supabase user ID: {current_user.id}")
                 return current_user.id
-        except Exception as e:
-            print(f"🔍 Could not get real user ID: {e}")
+        except Exception:
+            pass  # Fall through to session state
         
-        # Fallback to mock user ID (but this won't work with RLS)
-        print("🔍 Using mock user ID - this may cause RLS issues")
-        return "12345678-1234-1234-1234-123456789012"
+        # Fallback to session state
+        user_session = self.get_user_session()
+        if user_session:
+            return user_session.user_id
+        
+        return None
     
     def get_user_email(self) -> Optional[str]:
         """
@@ -143,12 +154,17 @@ class SessionManager:
         Returns:
             User email if authenticated, None otherwise
         """
-        # Temporary fix: Return a mock email to bypass session issues
-        return "temp-user@example.com"
+        # First try to get from Supabase auth
+        try:
+            current_user = self.auth_manager.get_current_user()
+            if current_user and current_user.email:
+                return current_user.email
+        except Exception:
+            pass  # Fall through to session state
         
-        # Original code (commented out temporarily)
-        # user_session = self.get_user_session()
-        # return user_session.email if user_session else None
+        # Fallback to session state
+        user_session = self.get_user_session()
+        return user_session.email if user_session else None
     
     def update_model_preference(self, model_preference: str) -> None:
         """
@@ -217,23 +233,25 @@ class SessionManager:
         Returns:
             True if session is valid, False otherwise
         """
-        # Temporary fix: Always return True to bypass session validation issues
-        # This allows the app to work while we resolve the Supabase session handling
-        return True
-        
-        # Original validation code (commented out temporarily)
-        # if st.session_state.get('user_session') is not None:
-        #     return True
-        #     
-        # if not self.is_authenticated():
-        #     return False
-        #     
-        # current_user = self.auth_manager.get_current_user()
-        # if not current_user:
-        #     self.clear_session()
-        #     return False
-        #     
-        # return True
+        try:
+            # Check if we have a valid Supabase auth session
+            current_user = self.auth_manager.get_current_user()
+            if current_user:
+                # Ensure session state is in sync
+                user_session = st.session_state.get('user_session')
+                if not user_session or user_session.user_id != current_user.id:
+                    # Re-initialize session from auth
+                    self.initialize_session(current_user.id, current_user.email, current_user.preferences)
+                return True
+            else:
+                # No valid auth session, clear our session
+                self.clear_session()
+                return False
+                
+        except Exception:
+            # On error, clear session to be safe
+            self.clear_session()
+            return False
     
     def refresh_session(self) -> bool:
         """
