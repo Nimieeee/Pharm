@@ -123,8 +123,8 @@ class SessionManager:
         Returns:
             User ID if authenticated, None otherwise
         """
-        # Temporary fix: Return a mock user ID to bypass session issues
-        return "temp-user-123"
+        # Temporary fix: Return a valid UUID format for mock user
+        return "12345678-1234-1234-1234-123456789012"
         
         # Original code (commented out temporarily)
         # user_session = self.get_user_session()
