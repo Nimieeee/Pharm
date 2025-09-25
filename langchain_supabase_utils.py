@@ -88,3 +88,23 @@ def get_vectorstore(supabase_client):
     model_name = os.environ.get("ST_EMBEDDINGS_MODEL", "all-MiniLM-L6-v2")
     embedder = SentenceTransformersEmbeddings(model_name=model_name)
     return SupabaseVectorStore(supabase_client=supabase_client, embedding_function=embedder, table_name="documents")
+
+def ensure_tables_exist(supabase):
+    """
+    No-op placeholder.
+    In production, you should create the tables manually in Supabase SQL Editor.
+
+    Example schema (already shared earlier):
+      CREATE TABLE documents (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          content text,
+          metadata jsonb
+      );
+
+      CREATE TABLE document_embeddings (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          document_id uuid REFERENCES documents(id) ON DELETE CASCADE,
+          embedding vector(768)  -- matches sentence-transformers dimension
+      );
+    """
+    return True
