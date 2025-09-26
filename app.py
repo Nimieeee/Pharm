@@ -68,7 +68,7 @@ def get_authenticated_supabase_client(auth_manager):
 from langchain_supabase_utils import get_supabase_client as get_legacy_supabase_client, get_vectorstore, upsert_documents
 from ingestion import create_documents_from_uploads, extract_text_from_url
 from embeddings import get_embeddings
-from groq_llm import generate_completion_stream, FAST_MODE, PREMIUM_MODE
+from groq_llm import generate_completion_stream, generate_completion, FAST_MODE, PREMIUM_MODE
 from prompts import get_rag_enhanced_prompt, pharmacology_system_prompt
 
 # ----------------------------
@@ -709,7 +709,18 @@ class PharmacologyChat:
             st.write("🔍 DEBUG: Starting legacy response generation...")
             
             # Use legacy RAG system with streaming
-            selected_model = PREMIUM_MODE if model_preference == "premium" else FAST_MODE
+            # Get model from deployment config to ensure correct names
+            try:
+                from deployment_config import deployment_config
+                model_config = deployment_config.get_model_config()
+                if model_preference == "premium":
+                    selected_model = model_config.get("premium_model", "llama-3.1-70b-versatile")
+                else:
+                    selected_model = model_config.get("fast_model", "gemma2-9b-it")
+            except:
+                # Fallback to constants
+                selected_model = PREMIUM_MODE if model_preference == "premium" else FAST_MODE
+                
             st.write(f"🔍 DEBUG: Selected model: {selected_model}")
             
             # Retrieve context
