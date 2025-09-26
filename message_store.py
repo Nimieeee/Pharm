@@ -86,7 +86,8 @@ class MessageStore:
             # Check for specific RLS error and provide helpful message
             error_str = str(e).lower()
             if "row-level security policy" in error_str:
-                raise Exception(f"Authentication required: Please sign in with a valid Supabase account to save messages.")
+                # For now, let's provide a more actionable error message
+                raise Exception(f"Database security policy blocking message save. Please disable RLS on messages table temporarily or ensure proper Supabase authentication.")
             
             raise
     

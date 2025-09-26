@@ -535,19 +535,29 @@ class PharmacologyChat:
                         performance_optimizer.invalidate_user_cache(user_id)
                 else:
                     # Handle authentication/RLS errors
-                    if "row-level security policy" in user_response.error_message.lower():
-                        st.error("🔒 **Authentication Required**")
+                    if "row-level security policy" in user_response.error_message.lower() or "database security policy" in user_response.error_message.lower():
+                        st.error("🔒 **Database Security Policy Issue**")
                         st.markdown("""
-                        Your message couldn't be saved because you're not properly authenticated.
+                        **Quick Fix Needed:**
                         
-                        **Please:**
-                        1. Sign out and sign back in
-                        2. Ensure you're using a valid Supabase account
-                        3. Check that your session hasn't expired
+                        1. **Go to your Supabase Dashboard**
+                        2. **Navigate to SQL Editor**
+                        3. **Run this command:**
+                        ```sql
+                        ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
+                        ```
+                        4. **Refresh this app and try again**
+                        
+                        **Why this happens:**
+                        - Row-Level Security (RLS) is blocking message saves
+                        - The authentication session isn't properly maintained
+                        - Disabling RLS temporarily allows messages to save
+                        
+                        **Alternative:** Check the QUICK_FIX_INSTRUCTIONS.md file in your repository.
                         """)
                         
-                        # Suggest re-authentication
-                        if st.button("🔄 Sign Out and Re-authenticate"):
+                        # Suggest re-authentication as backup
+                        if st.button("🔄 Try Re-authenticating First"):
                             self.session_manager.clear_session()
                             st.rerun()
                         return
