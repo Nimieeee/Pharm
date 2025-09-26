@@ -194,8 +194,21 @@ class PharmacologyChat:
         else:
             inject_chat_css()
         
+        # Debug: Check authentication status
+        user_session = self.session_manager.get_user_session()
+        is_authenticated = self.session_manager.is_authenticated()
+        is_valid = self.session_manager.validate_session()
+        
+        st.sidebar.write("🔍 **Debug Info:**")
+        st.sidebar.write(f"User session exists: {user_session is not None}")
+        st.sidebar.write(f"Is authenticated: {is_authenticated}")
+        st.sidebar.write(f"Session valid: {is_valid}")
+        if user_session:
+            st.sidebar.write(f"User ID: {user_session.user_id}")
+            st.sidebar.write(f"Email: {user_session.email}")
+        
         # Check authentication status and route accordingly
-        if not self.session_manager.validate_session():
+        if not is_valid:
             self.render_authentication_page()
         else:
             self.render_protected_chat_interface()

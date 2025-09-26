@@ -233,25 +233,24 @@ class SessionManager:
         Returns:
             True if session is valid, False otherwise
         """
+        # First check if we have a session in session state
+        user_session = st.session_state.get('user_session')
+        if user_session and user_session.is_authenticated:
+            # We have a valid session state, that's good enough for now
+            return True
+        
+        # Try to get from Supabase auth as backup
         try:
-            # Check if we have a valid Supabase auth session
             current_user = self.auth_manager.get_current_user()
             if current_user:
-                # Ensure session state is in sync
-                user_session = st.session_state.get('user_session')
-                if not user_session or user_session.user_id != current_user.id:
-                    # Re-initialize session from auth
-                    self.initialize_session(current_user.id, current_user.email, current_user.preferences)
+                # Initialize session from Supabase auth
+                self.initialize_session(current_user.id, current_user.email, current_user.preferences)
                 return True
-            else:
-                # No valid auth session, clear our session
-                self.clear_session()
-                return False
-                
         except Exception:
-            # On error, clear session to be safe
-            self.clear_session()
-            return False
+            pass  # Fall through to return False
+        
+        # No valid session found
+        return False
     
     def refresh_session(self) -> bool:
         """
