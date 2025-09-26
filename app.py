@@ -17,6 +17,10 @@ from chat_manager import ChatManager
 from message_store import Message
 from message_store_optimized import OptimizedMessageStore
 
+# Conversation management
+from conversation_manager import ConversationManager
+from conversation_ui import ConversationUI, inject_conversation_css
+
 # UI components
 from theme_manager import ThemeManager
 from chat_interface import ChatInterface, inject_chat_css
@@ -117,6 +121,8 @@ class PharmacologyChat:
             self.chat_manager = None
             self.model_manager = None
             self.rag_orchestrator = None
+            self.conversation_manager = None
+            self.conversation_ui = None
             
             if self.session_manager.is_authenticated():
                 self._initialize_chat_components()
@@ -182,11 +188,18 @@ class PharmacologyChat:
             self.chat_manager = ChatManager(self.auth_supabase_client, self.session_manager)
             self.model_manager = ModelManager()
             self.rag_orchestrator = RAGOrchestrator()
+            
+            # Initialize conversation management
+            self.conversation_manager = ConversationManager(self.auth_supabase_client)
+            self.conversation_ui = ConversationUI(self.conversation_manager, self.theme_manager, self.session_manager)
+            
         except Exception as e:
             st.warning(f"Chat components initialization failed: {e}")
             self.chat_manager = None
             self.model_manager = None
             self.rag_orchestrator = None
+            self.conversation_manager = None
+            self.conversation_ui = None
 
     def run(self):
         """Main application entry point"""
@@ -204,12 +217,15 @@ class PharmacologyChat:
                 render_database_setup_instructions(db_initializer)
                 return
         
-        # Apply current theme and chat CSS
-        self.theme_manager.apply_theme()
+        # Apply permanent dark theme and chat CSS
+        self.theme_manager.apply_theme()  # Always applies dark theme
         if isinstance(self.chat_interface, OptimizedChatInterface):
             inject_optimized_chat_css()
         else:
             inject_chat_css()
+        
+        # Inject conversation management CSS
+        inject_conversation_css()
         
         # Check authentication status and route accordingly
         if not self.session_manager.validate_session():
@@ -241,19 +257,28 @@ class PharmacologyChat:
         self._render_main_chat_area()
     
     def _render_chat_header(self):
-        """Render the chat interface header with enhanced model indicator"""
-        col1, col2, col3 = st.columns([3, 1, 1])
+        """Render the chat interface header with model toggle switch"""
+        col1, col2, col3 = st.columns([2, 2, 1])
         
         with col1:
             st.title("🧬 Pharmacology Chat Assistant")
         
         with col2:
-            # Enhanced model indicator
-            if self.model_manager:
-                from model_ui import render_header_model_indicator
-                model_display = render_header_model_indicator()
-                st.markdown(model_display)
+            # Model toggle switch in header
+            if self.model_manager and self.chat_interface:
+                current_model = self.session_manager.get_model_preference()
+                
+                # Use optimized header toggle if available
+                if isinstance(self.chat_interface, OptimizedChatInterface):
+                    selected_model = self.chat_interface.render_header_model_toggle_optimized(
+                        current_model, self._handle_model_change
+                    )
+                else:
+                    selected_model = self.chat_interface.render_header_model_toggle(
+                        current_model, self._handle_model_change
+                    )
             else:
+                # Fallback display
                 model_pref = self.session_manager.get_model_preference()
                 model_display = "🚀 Fast" if model_pref == "fast" else "⭐ Premium"
                 st.markdown(f"**{model_display}**")
@@ -270,6 +295,15 @@ class PharmacologyChat:
         with st.sidebar:
             # User profile and logout
             self.auth_interface.render_user_profile()
+            
+            # Model toggle switch in sidebar (alternative location)
+            st.markdown("---")
+            st.markdown("### 🤖 Model Selection")
+            if self.model_manager and self.chat_interface:
+                current_model = self.session_manager.get_model_preference()
+                selected_model = self.chat_interface.render_model_toggle_switch(
+                    current_model, self._handle_model_change
+                )
             
             # Chat controls
             self._render_chat_controls()
@@ -298,15 +332,8 @@ class PharmacologyChat:
             # Render conversation controls (optimized if available)
             if isinstance(self.chat_interface, OptimizedChatInterface):
                 controls = self.chat_interface.render_conversation_controls_optimized(user_id, self.chat_manager)
-                
-                # Render page size selector for pagination
-                self.chat_interface.render_page_size_selector()
             else:
                 controls = self.chat_interface.render_conversation_controls(user_id, self.chat_manager)
-                
-                # Render chat statistics for non-optimized interface
-                stats = self.chat_manager.get_user_message_stats(user_id)
-                self.chat_interface.render_chat_statistics(stats)
             
             # Handle clear conversation
             if controls.get('clear_confirmed'):
@@ -314,8 +341,9 @@ class PharmacologyChat:
                     if self.chat_manager.clear_conversation(user_id):
                         st.success("Conversation cleared!")
                         st.session_state.conversation_history = []
-                        # Clear pagination state
-                        st.session_state.chat_current_page = 1
+                        # Clear unlimited message cache
+                        if self.optimized_message_store:
+                            performance_optimizer.invalidate_user_cache(user_id)
                         st.rerun()
                     else:
                         st.error("Failed to clear conversation")
@@ -384,27 +412,58 @@ class PharmacologyChat:
                 st.error(f"Ingestion failed: {e}")
     
     def _render_main_chat_area(self):
-        """Render the main chat area"""
+        """Render the main chat area with conversation management"""
         user_id = self.session_manager.get_user_id()
         
         if not user_id:
             st.error("Invalid user session. Please refresh the page and sign in again.")
             return
         
-
+        # Render conversation tabs if conversation UI is available
+        current_conversation_id = None
+        if self.conversation_ui:
+            conversation_result = self.conversation_ui.render_conversation_tabs(user_id)
+            current_conversation_id = conversation_result.get('current_conversation_id')
+            
+            # Handle conversation changes
+            if conversation_result.get('conversation_changed') or conversation_result.get('new_conversation_created'):
+                # Clear cached conversation history when switching conversations
+                if 'conversation_history' in st.session_state:
+                    del st.session_state.conversation_history
+                st.rerun()
         
-        # Initialize conversation history
-        if 'conversation_history' not in st.session_state:
-            if self.chat_manager:
+        # Get current conversation
+        current_conversation = None
+        if self.conversation_ui and current_conversation_id:
+            current_conversation = self.conversation_ui.get_current_conversation(user_id)
+        
+        # Initialize conversation history for current conversation
+        if 'conversation_history' not in st.session_state or st.session_state.get('current_conversation_id') != current_conversation_id:
+            st.session_state.current_conversation_id = current_conversation_id
+            
+            if self.chat_manager and current_conversation_id:
+                # Get messages for specific conversation
+                messages = self.chat_manager.get_conversation_messages(user_id, current_conversation_id)
+                st.session_state.conversation_history = messages
+            elif self.chat_manager:
+                # Fallback to general conversation history
                 messages = self.chat_manager.get_conversation_history(user_id, limit=50)
                 st.session_state.conversation_history = messages
             else:
                 st.session_state.conversation_history = []
         
+        # Display current conversation title if available
+        if current_conversation:
+            st.markdown(f"### 💬 {current_conversation.title}")
+            st.markdown("---")
+        
         # Display chat history (optimized if available)
         if isinstance(self.chat_interface, OptimizedChatInterface):
-            # Use paginated chat history
-            self.chat_interface.render_paginated_chat_history(user_id, show_pagination=True)
+            # Use unlimited chat history without pagination controls
+            if current_conversation_id:
+                self.chat_interface.render_unlimited_conversation_history(user_id, current_conversation_id)
+            else:
+                self.chat_interface.render_unlimited_chat_history(user_id)
         else:
             # Use traditional chat history
             self.chat_interface.render_chat_history(
@@ -424,7 +483,7 @@ class PharmacologyChat:
             )
         
         if input_data:
-            self._process_user_message_with_attachments(user_id, input_data)
+            self._process_user_message_with_attachments(user_id, input_data, current_conversation_id)
     
 
     
@@ -473,10 +532,18 @@ class PharmacologyChat:
         except Exception as e:
             st.error(f"Export failed: {e}")
     
-    def _process_user_message_with_attachments(self, user_id: str, input_data: Dict[str, Any]):
+    def _process_user_message_with_attachments(self, user_id: str, input_data: Dict[str, Any], conversation_id: Optional[str] = None):
         """Process user message with file attachments"""
         message_content = input_data.get('message', '')
         uploaded_files = input_data.get('files', [])
+        
+        # Ensure we have a conversation ID
+        if not conversation_id and self.conversation_manager:
+            # Get or create default conversation
+            default_conv = self.conversation_manager.get_or_create_default_conversation(user_id)
+            if default_conv:
+                conversation_id = default_conv.id
+                st.session_state.current_conversation_id = conversation_id
         
         # Process file attachments if any
         if uploaded_files:
@@ -488,7 +555,7 @@ class PharmacologyChat:
                 message_content = f"I've uploaded these files: {', '.join(file_names)}. Please analyze them."
         
         if message_content:
-            self._process_user_message_with_streaming(user_id, message_content)
+            self._process_user_message_with_streaming(user_id, message_content, conversation_id)
     
     def _process_file_attachments(self, uploaded_files: List[Any]):
         """Process uploaded file attachments"""
@@ -508,7 +575,7 @@ class PharmacologyChat:
         except Exception as e:
             st.error(f"File processing failed: {e}")
     
-    def _process_user_message_with_streaming(self, user_id: str, message_content: str):
+    def _process_user_message_with_streaming(self, user_id: str, message_content: str, conversation_id: Optional[str] = None):
         """Process user message with streaming response"""
         try:
             model_preference = self.session_manager.get_model_preference()
@@ -523,7 +590,8 @@ class PharmacologyChat:
                     user_response = self.chat_manager.send_message(
                         user_id=user_id,
                         message_content=message_content,
-                        model_type=model_preference
+                        model_type=model_preference,
+                        conversation_id=conversation_id
                     )
                 
                 if user_response.success:
@@ -531,6 +599,12 @@ class PharmacologyChat:
                     if 'conversation_history' not in st.session_state:
                         st.session_state.conversation_history = []
                     st.session_state.conversation_history.append(user_response.message)
+                    
+                    # Auto-generate conversation title if this is the first message
+                    if self.conversation_ui and conversation_id:
+                        self.conversation_ui.auto_generate_title_from_message(
+                            user_id, conversation_id, message_content
+                        )
                     
                     # Invalidate cache for optimized message store
                     if self.optimized_message_store:
@@ -587,7 +661,8 @@ class PharmacologyChat:
                         user_id=user_id,
                         response_content=fallback_response,
                         model_used="error_fallback",
-                        metadata={"error": str(e)}
+                        metadata={"error": str(e)},
+                        conversation_id=conversation_id
                     )
                     
                     if assistant_response.success:
@@ -609,13 +684,13 @@ class PharmacologyChat:
         """Generate streaming AI response"""
         try:
             # Use legacy system (RAG orchestrator has dependency issues)
-            self._generate_streaming_legacy_response(user_id, message_content, model_preference)
+            self._generate_streaming_legacy_response(user_id, message_content, model_preference, conversation_id)
             
         except Exception as e:
             st.error(f"I encountered an error generating a response. Please try again.")
             self.chat_interface.complete_streaming_message()
     
-    def _generate_streaming_rag_response(self, user_id: str, message_content: str, model_preference: str):
+    def _generate_streaming_rag_response(self, user_id: str, message_content: str, model_preference: str, conversation_id: Optional[str] = None):
         """Generate streaming response using new RAG orchestrator"""
         try:
             context = self.chat_manager.get_conversation_context(user_id, limit=10)
@@ -654,7 +729,8 @@ class PharmacologyChat:
                     user_id=user_id,
                     response_content=final_response,
                     model_used=f"{model_preference}_model",
-                    metadata={"streaming": True}
+                    metadata={"streaming": True},
+                    conversation_id=conversation_id
                 )
                 
                 if assistant_response.success:
@@ -666,7 +742,7 @@ class PharmacologyChat:
             st.error("I encountered an error generating a response. Please try again.")
             self.chat_interface.complete_streaming_message()
     
-    def _generate_streaming_legacy_response(self, user_id: str, message_content: str, model_preference: str):
+    def _generate_streaming_legacy_response(self, user_id: str, message_content: str, model_preference: str, conversation_id: Optional[str] = None):
         """Generate streaming response using legacy RAG system"""
         try:
             # Get model from deployment config to ensure correct names
@@ -739,7 +815,8 @@ class PharmacologyChat:
                     user_id=user_id,
                     response_content=final_response,
                     model_used=selected_model,
-                    metadata={"sources_used": len(docs), "streaming": True}
+                    metadata={"sources_used": len(docs), "streaming": True},
+                    conversation_id=conversation_id
                 )
                 
                 if assistant_response.success:

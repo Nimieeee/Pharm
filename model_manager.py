@@ -85,7 +85,7 @@ class ModelManager:
                 model_id=premium_model,
                 tier=ModelTier.PREMIUM,
                 description="High-quality responses with advanced reasoning for complex pharmacology topics",
-                max_tokens=2048,
+                max_tokens=8000,
                 temperature=0.0,
                 cost_per_token=0.00005,  # Example cost
                 speed_rating=6,

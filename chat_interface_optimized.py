@@ -23,79 +23,158 @@ class OptimizedChatInterface(ChatInterface):
     def __init__(self, theme_manager: ThemeManager, message_store: Optional[OptimizedMessageStore] = None):
         super().__init__(theme_manager)
         self.message_store = message_store
-        self.page_size = 20  # Messages per page
-        self._initialize_pagination_state()
+        self._initialize_unlimited_history_state()
     
-    def _initialize_pagination_state(self):
-        """Initialize pagination-related session state"""
-        if 'chat_current_page' not in st.session_state:
-            st.session_state.chat_current_page = 1
-        if 'chat_page_size' not in st.session_state:
-            st.session_state.chat_page_size = self.page_size
-        if 'chat_total_pages' not in st.session_state:
-            st.session_state.chat_total_pages = 1
+    def _initialize_unlimited_history_state(self):
+        """Initialize unlimited history-related session state"""
         if 'loading_states' not in st.session_state:
             st.session_state.loading_states = {}
+        if 'unlimited_history_loaded' not in st.session_state:
+            st.session_state.unlimited_history_loaded = False
     
-    def render_paginated_chat_history(self, user_id: str, show_pagination: bool = True) -> None:
+    def render_unlimited_chat_history(self, user_id: str) -> None:
         """
-        Render paginated chat history with loading states
+        Render unlimited chat history without pagination controls
         
         Args:
             user_id: User's unique identifier
-            show_pagination: Whether to show pagination controls
         """
         if not self.message_store:
             st.error("Message store not available")
             return
         
         # Show loading state
-        with LoadingStateManager.show_loading_spinner("Loading conversation history..."):
-            # Get paginated messages
-            message_page = self.message_store.get_paginated_messages(
-                user_id=user_id,
-                page=st.session_state.chat_current_page,
-                page_size=st.session_state.chat_page_size
-            )
-        
-        # Update session state with pagination info
-        st.session_state.chat_total_pages = message_page.pagination_info.get("total_pages", 1)
+        with LoadingStateManager.show_loading_spinner("Loading complete conversation history..."):
+            # Get all messages without pagination limits
+            all_messages = self.message_store.get_all_user_messages(user_id)
         
         # Show cache hit indicator for debugging
-        if message_page.cache_hit:
+        if hasattr(all_messages, 'cache_hit') and all_messages.cache_hit:
             st.caption("📋 Loaded from cache")
         
-        # Render pagination controls at top if enabled and multiple pages
-        if show_pagination and message_page.pagination_info.get("total_pages", 1) > 1:
-            self._render_top_pagination_controls(message_page.pagination_info)
-        
         # Render messages
-        if not message_page.messages and not st.session_state.show_typing_indicator:
+        if not all_messages and not st.session_state.show_typing_indicator:
             self._render_welcome_message()
         else:
-            # Create container for messages
-            chat_container = st.container()
+            # Create scrollable container for unlimited messages
+            self._render_unlimited_message_container(all_messages)
+        
+        # Always auto-scroll to bottom for unlimited history
+        self._inject_auto_scroll_script()
+    
+    def render_unlimited_conversation_history(self, user_id: str, conversation_id: Optional[str] = None) -> None:
+        """
+        Render unlimited conversation history for a specific conversation with tabs support
+        
+        Args:
+            user_id: User's unique identifier
+            conversation_id: Optional conversation ID to filter messages
+        """
+        if not self.message_store:
+            st.error("Message store not available")
+            return
+        
+        # Show loading state
+        with LoadingStateManager.show_loading_spinner("Loading complete conversation history..."):
+            if conversation_id:
+                # Get messages for specific conversation
+                all_messages = self.message_store.get_conversation_messages(user_id, conversation_id)
+            else:
+                # Get all messages for user
+                all_messages = self.message_store.get_all_user_messages(user_id)
+        
+        # Show cache hit indicator for debugging
+        if hasattr(all_messages, 'cache_hit') and all_messages.cache_hit:
+            st.caption("📋 Loaded from cache")
+        
+        # Render messages
+        if not all_messages and not st.session_state.show_typing_indicator:
+            self._render_welcome_message()
+        else:
+            # Create scrollable container for unlimited messages with conversation context
+            self._render_unlimited_message_container_with_tabs(all_messages, conversation_id)
+        
+        # Always auto-scroll to bottom for unlimited history
+        self._inject_auto_scroll_script()
+    
+    def _render_unlimited_message_container(self, messages: List[Message]) -> None:
+        """
+        Render unlimited message container with efficient scrolling
+        
+        Args:
+            messages: List of all messages to display
+        """
+        # Render header
+        self._render_unlimited_history_header()
+        
+        # Show message count
+        if messages:
+            st.caption(f"📊 Displaying {len(messages)} messages")
+        
+        # Create container with custom styling for unlimited scrolling
+        st.markdown(
+            '<div class="unlimited-chat-container" id="unlimited-chat-container">',
+            unsafe_allow_html=True
+        )
+        
+        # Use container for better performance with large message lists
+        chat_container = st.container()
+        
+        with chat_container:
+            # Render messages in chronological order (oldest first)
+            for message in messages:
+                self._render_message_bubble(message)
             
-            with chat_container:
-                # Render messages in chronological order for the current page
-                for message in reversed(message_page.messages):  # Reverse to show oldest first
-                    self._render_message_bubble(message)
-                
-                # Render streaming message if active
-                if st.session_state.streaming_message:
-                    self._render_streaming_message(st.session_state.streaming_message)
-                
-                # Render typing indicator if active
-                elif st.session_state.show_typing_indicator:
-                    self._render_typing_indicator()
+            # Render streaming message if active
+            if st.session_state.streaming_message:
+                self._render_streaming_message(st.session_state.streaming_message)
+            
+            # Render typing indicator if active
+            elif st.session_state.show_typing_indicator:
+                self._render_typing_indicator()
         
-        # Render pagination controls at bottom if enabled and multiple pages
-        if show_pagination and message_page.pagination_info.get("total_pages", 1) > 1:
-            self._render_bottom_pagination_controls(message_page.pagination_info)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    def _render_unlimited_message_container_with_tabs(self, messages: List[Message], conversation_id: Optional[str] = None) -> None:
+        """
+        Render unlimited message container with conversation tabs support
         
-        # Auto-scroll to bottom for first page (most recent messages)
-        if st.session_state.chat_current_page == 1:
-            self._inject_auto_scroll_script()
+        Args:
+            messages: List of all messages to display
+            conversation_id: Optional conversation ID for context
+        """
+        # Render header with conversation context
+        self._render_unlimited_history_header_with_tabs(len(messages), conversation_id)
+        
+        # Show message count and conversation info
+        if messages:
+            st.caption(f"📊 Displaying {len(messages)} messages")
+            if conversation_id:
+                st.caption(f"🔗 Conversation ID: {conversation_id}")
+        
+        # Create container with custom styling for unlimited scrolling
+        st.markdown(
+            '<div class="unlimited-chat-container conversation-tab-content" id="unlimited-chat-container">',
+            unsafe_allow_html=True
+        )
+        
+        # Use container for better performance with large message lists
+        chat_container = st.container()
+        
+        with chat_container:
+            # Render messages in chronological order (oldest first)
+            for message in messages:
+                self._render_message_bubble(message)
+            
+            # Render streaming message if active
+            if st.session_state.streaming_message:
+                self._render_streaming_message(st.session_state.streaming_message)
+            
+            # Render typing indicator if active
+            elif st.session_state.show_typing_indicator:
+                self._render_typing_indicator()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
     def render_conversation_controls_optimized(self, user_id: str, chat_manager) -> Dict[str, bool]:
         """
@@ -327,103 +406,125 @@ class OptimizedChatInterface(ChatInterface):
             # Clear loading state
             self.set_loading_state(operation_name, False)
     
-    def _render_top_pagination_controls(self, pagination_info: Dict[str, Any]) -> None:
-        """Render pagination controls at the top"""
-        st.markdown("#### 📄 Conversation History")
-        
-        new_page = PaginationHelper.render_pagination_controls(
-            pagination_info, 
-            key_prefix="chat_top"
-        )
-        
-        if new_page:
-            st.session_state.chat_current_page = new_page
-            st.rerun()
+    def _render_unlimited_history_header(self) -> None:
+        """Render header for unlimited conversation history"""
+        st.markdown("#### 📜 Complete Conversation History")
+        st.caption("Showing all messages without pagination limits")
     
-    def _render_bottom_pagination_controls(self, pagination_info: Dict[str, Any]) -> None:
-        """Render pagination controls at the bottom"""
-        st.markdown("---")
+    def _render_unlimited_history_header_with_tabs(self, message_count: int, conversation_id: Optional[str] = None) -> None:
+        """Render header for unlimited conversation history with tabs context"""
+        if conversation_id:
+            st.markdown("#### 📜 Complete Conversation History")
+            st.caption("Showing all messages in this conversation without pagination limits")
+        else:
+            st.markdown("#### 📜 Complete Conversation History")
+            st.caption("Showing all messages without pagination limits")
         
-        new_page = PaginationHelper.render_pagination_controls(
-            pagination_info, 
-            key_prefix="chat_bottom"
-        )
-        
-        if new_page:
-            st.session_state.chat_current_page = new_page
-            st.rerun()
+        if message_count > 0:
+            st.caption(f"Total messages: {message_count}")
+        else:
+            st.caption("No messages yet - start a conversation!")
     
     def _render_enhanced_statistics(self, stats: Dict[str, Any]) -> None:
-        """Render enhanced conversation statistics"""
-        col1, col2, col3 = st.columns(3)
+        """Render enhanced conversation statistics for unlimited history"""
+        total_messages = stats.get('total_messages', 0)
         
-        with col1:
-            st.metric("Total Messages", stats.get('total_messages', 0))
-        
-        with col2:
-            st.metric("Recent (24h)", stats.get('recent_messages', 0))
-        
-        with col3:
-            avg_per_day = stats.get('avg_messages_per_day', 0)
-            st.metric("Avg/Day", f"{avg_per_day:.1f}")
-        
-        # Model usage breakdown
-        models_used = stats.get('models_used', {})
-        if models_used:
-            st.markdown("**Model Usage:**")
-            for model, count in models_used.items():
-                if model and model != 'unknown':
-                    model_display = "🚀 Fast" if "gemma" in model.lower() else "⭐ Premium"
-                    st.write(f"• {model_display}: {count} responses")
-        
-        # Activity information
-        if stats.get('first_message_date'):
-            first_date = datetime.fromisoformat(stats['first_message_date']).strftime("%Y-%m-%d")
-            st.caption(f"First message: {first_date}")
+        if total_messages > 0:
+            st.markdown("**📊 Conversation Statistics:**")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.metric("Total Messages", total_messages)
+            
+            with col2:
+                recent_messages = stats.get('recent_messages', 0)
+                st.metric("Recent (24h)", recent_messages)
+            
+            # Model usage breakdown
+            models_used = stats.get('models_used', {})
+            if models_used:
+                st.markdown("**Model Usage:**")
+                for model, count in models_used.items():
+                    if model and model != 'unknown':
+                        model_display = "🚀 Fast" if "gemma" in model.lower() else "⭐ Premium"
+                        st.write(f"• {model_display}: {count} responses")
+        else:
+            st.info("No conversation history yet")
     
     def _handle_refresh_action(self, user_id: str) -> None:
-        """Handle refresh action - clear caches and reset pagination"""
+        """Handle refresh action - clear caches and reload unlimited history"""
         # Clear user-specific caches
         performance_optimizer.invalidate_user_cache(user_id)
         
-        # Reset pagination to first page
-        st.session_state.chat_current_page = 1
+        # Reset unlimited history state
+        st.session_state.unlimited_history_loaded = False
         
         # Clear any loading states
         st.session_state.loading_states = {}
         
-        st.success("🔄 Conversation refreshed and cache cleared!")
+        st.success("🔄 Unlimited conversation history refreshed and cache cleared!")
     
-    def render_page_size_selector(self) -> None:
-        """Render page size selector for pagination"""
+    def render_unlimited_history_settings(self) -> None:
+        """Render settings for unlimited history display"""
         st.markdown("#### ⚙️ Display Settings")
         
-        page_size_options = [10, 20, 50, 100]
-        current_page_size = st.session_state.get('chat_page_size', 20)
+        # Show unlimited history status
+        st.info("📜 **Unlimited History Mode**\nShowing complete conversation history without pagination")
         
-        new_page_size = st.selectbox(
-            "Messages per page:",
-            options=page_size_options,
-            index=page_size_options.index(current_page_size) if current_page_size in page_size_options else 1,
-            key="page_size_selector"
-        )
+        # Option to refresh cache
+        if st.button("🔄 Refresh History", key="refresh_unlimited_history"):
+            # Clear cache to force reload
+            user_id = st.session_state.get('user_id')
+            if user_id and self.message_store:
+                performance_optimizer.invalidate_user_cache(user_id)
+                st.success("History cache refreshed!")
+                st.rerun()
+    
+    def render_header_model_toggle_optimized(self, current_model: str, on_change_callback=None) -> str:
+        """
+        Render optimized model toggle switch for chat header with performance tracking
         
-        if new_page_size != current_page_size:
-            st.session_state.chat_page_size = new_page_size
-            st.session_state.chat_current_page = 1  # Reset to first page
-            st.rerun()
+        Args:
+            current_model: Currently selected model
+            on_change_callback: Callback function when model changes
+            
+        Returns:
+            Selected model identifier
+        """
+        # Track performance of model toggle rendering
+        start_time = time.time()
+        
+        try:
+            # Use the parent class method
+            selected_model = self.render_header_model_toggle(current_model, on_change_callback)
+            
+            # Record performance metric
+            performance_optimizer._record_metric(
+                operation_name="render_header_model_toggle",
+                start_time=start_time,
+                cache_hit=False
+            )
+            
+            return selected_model
+            
+        except Exception as e:
+            logger.error(f"Error rendering header model toggle: {e}")
+            return current_model
 
 def inject_optimized_chat_css() -> None:
-    """Inject optimized CSS for enhanced chat interface"""
+    """Inject optimized CSS for enhanced chat interface with dark theme and model toggle"""
     css = """
     <style>
-    /* Performance optimizations */
+    /* Performance optimizations with dark theme */
     .message-bubble {
         will-change: transform;
         transform: translateZ(0);
+        contain: layout style paint;
+        backface-visibility: hidden;
     }
     
-    /* Loading states */
+    /* Loading states with dark theme */
     .loading-overlay {
         position: relative;
         opacity: 0.6;
@@ -434,9 +535,9 @@ def inject_optimized_chat_css() -> None:
         display: inline-block;
         width: 20px;
         height: 20px;
-        border: 3px solid rgba(0,0,0,.1);
+        border: 3px solid rgba(255,255,255,.1);
         border-radius: 50%;
-        border-top-color: var(--primary-color, #1f77b4);
+        border-top-color: var(--primary-color, #4fc3f7);
         animation: spin 1s ease-in-out infinite;
     }
     
@@ -444,44 +545,27 @@ def inject_optimized_chat_css() -> None:
         to { transform: rotate(360deg); }
     }
     
-    /* Pagination controls */
-    .pagination-controls {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        margin: 20px 0;
-        padding: 10px;
-        background-color: var(--background-color, #ffffff);
-        border-radius: 8px;
-        border: 1px solid var(--border-color, #e0e0e0);
-    }
-    
-    .pagination-info {
-        font-size: 14px;
-        color: var(--text-color-secondary, #666);
-        margin: 0 15px;
-    }
-    
-    /* Performance dashboard */
+    /* Performance dashboard with dark theme */
     .performance-metric {
         text-align: center;
         padding: 10px;
-        background-color: var(--secondary-bg, #f8f9fa);
+        background-color: var(--secondary-bg, #262730);
         border-radius: 6px;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border-color, #4b5563);
+        color: var(--text-color, #ffffff);
     }
     
     .performance-metric .metric-value {
         font-size: 24px;
         font-weight: bold;
-        color: var(--primary-color, #1f77b4);
+        color: var(--primary-color, #4fc3f7);
     }
     
     .performance-metric .metric-label {
         font-size: 12px;
-        color: var(--text-color-secondary, #666);
+        color: var(--text-color, #ffffff);
         margin-top: 5px;
+        opacity: 0.8;
     }
     
     /* Optimized message rendering */
@@ -489,16 +573,270 @@ def inject_optimized_chat_css() -> None:
         contain: layout style paint;
     }
     
-    /* Responsive improvements */
+    /* Unlimited chat container for efficient scrolling with dark theme */
+    .unlimited-chat-container {
+        max-height: 70vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 1rem;
+        border: 1px solid var(--border-color, #4b5563);
+        border-radius: 0.5rem;
+        background-color: var(--background-color, #0e1117);
+        scroll-behavior: smooth;
+        /* Performance optimizations for large message lists */
+        contain: layout style paint;
+        will-change: scroll-position;
+        transform: translateZ(0);
+    }
+    
+    /* Optimize message rendering for unlimited scrolling */
+    .unlimited-chat-container .message-bubble {
+        contain: layout style paint;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
+    
+    /* Custom scrollbar for unlimited chat with dark theme */
+    .unlimited-chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .unlimited-chat-container::-webkit-scrollbar-track {
+        background: var(--secondary-bg, #262730);
+        border-radius: 4px;
+    }
+    
+    .unlimited-chat-container::-webkit-scrollbar-thumb {
+        background: var(--border-color, #4b5563);
+        border-radius: 4px;
+    }
+    
+    .unlimited-chat-container::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-color, #4fc3f7);
+    }
+    
+    /* Model Toggle Switch Styles for Optimized Interface */
+    .model-toggle-container {
+        background: linear-gradient(135deg, var(--secondary-bg, #262730), color-mix(in srgb, var(--secondary-bg, #262730) 95%, white));
+        border: 1px solid var(--border-color, #4b5563);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 8px var(--shadow-color, rgba(0, 0, 0, 0.4));
+        text-align: center;
+    }
+    
+    .model-toggle-header h4 {
+        color: var(--text-color, #ffffff);
+        margin: 0 0 1rem 0;
+        font-weight: 600;
+    }
+    
+    .model-toggle-labels {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        font-weight: 500;
+        margin: 1rem 0;
+    }
+    
+    .model-toggle-labels.compact {
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+    
+    .toggle-label {
+        color: var(--text-color, #ffffff);
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        min-width: 80px;
+        text-align: center;
+        opacity: 0.7;
+    }
+    
+    .toggle-label.active {
+        color: var(--primary-color, #4fc3f7);
+        font-weight: 600;
+        transform: scale(1.05);
+        opacity: 1;
+    }
+    
+    .toggle-switch-wrapper {
+        display: flex;
+        align-items: center;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+        cursor: pointer;
+    }
+    
+    .toggle-switch.compact {
+        width: 45px;
+        height: 24px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border-radius: 30px;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 24px;
+        width: 24px;
+        left: 3px;
+        bottom: 3px;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    
+    .toggle-switch.compact .toggle-slider:before {
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, var(--primary-color, #4fc3f7), color-mix(in srgb, var(--primary-color, #4fc3f7) 80%, #000));
+    }
+    
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+        background: linear-gradient(135deg, #ffffff, #f0f8ff);
+    }
+    
+    .toggle-switch.compact input:checked + .toggle-slider:before {
+        transform: translateX(21px);
+    }
+    
+    .toggle-switch:hover .toggle-slider {
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 8px rgba(79, 195, 247, 0.3);
+    }
+    
+    .model-description {
+        color: var(--text-color, #ffffff);
+        font-size: 0.85rem;
+        text-align: center;
+        font-style: italic;
+        margin-top: 0.5rem;
+        opacity: 0.8;
+    }
+    
+    /* Header Model Toggle */
+    .header-model-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        background: var(--secondary-bg, #262730);
+        border: 1px solid var(--border-color, #4b5563);
+        border-radius: 0.5rem;
+    }
+    
+    .model-status-text {
+        font-size: 0.75rem;
+        color: var(--text-color, #ffffff);
+        font-weight: 500;
+        opacity: 0.9;
+    }
+    
+    /* Conversation tabs integration with dark theme */
+    .conversation-tab-content {
+        background-color: var(--background-color, #0e1117);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        border: 1px solid var(--border-color, #4b5563);
+    }
+    
+    /* Unlimited history status indicator */
+    .unlimited-history-status {
+        background: linear-gradient(135deg, var(--primary-color, #4fc3f7) 20%, transparent);
+        border: 1px solid var(--primary-color, #4fc3f7);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin: 1rem 0;
+        color: var(--text-color, #ffffff);
+        text-align: center;
+    }
+    
+    /* Responsive improvements with dark theme */
     @media (max-width: 768px) {
-        .pagination-controls {
-            flex-wrap: wrap;
-            gap: 5px;
+        .unlimited-chat-container {
+            max-height: 60vh;
+            padding: 0.5rem;
         }
         
-        .pagination-info {
-            margin: 5px 0;
-            font-size: 12px;
+        .model-toggle-container {
+            padding: 1rem;
+            margin: 0.75rem 0;
+        }
+        
+        .model-toggle-labels {
+            gap: 0.75rem;
+        }
+        
+        .toggle-label {
+            font-size: 0.8rem;
+            min-width: 60px;
+        }
+        
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+        }
+        
+        .toggle-slider:before {
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .unlimited-chat-container {
+            max-height: 50vh;
+            padding: 0.25rem;
+        }
+        
+        .model-toggle-container {
+            padding: 0.75rem;
+        }
+        
+        .header-model-toggle {
+            padding: 0.25rem;
+        }
+        
+        .model-status-text {
+            font-size: 0.7rem;
         }
     }
     </style>

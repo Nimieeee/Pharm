@@ -94,31 +94,73 @@ class ChatInterface:
         st.markdown(typing_html, unsafe_allow_html=True)
     
     def render_model_selector(self, current_model: str, available_models: List[Dict[str, str]]) -> str:
-        """Render model selection interface."""
+        """Render model toggle switch interface."""
         st.markdown('<div class="model-selector">', unsafe_allow_html=True)
         
-        col1, col2 = st.columns([1, 3])
+        # Determine current state based on model
+        is_premium = current_model in ["qwen/qwen3-32b", "qwen3-32b", "premium"]
         
-        with col1:
-            st.markdown("**Model:**")
+        # Create toggle switch HTML
+        toggle_html = self._create_toggle_switch_html(is_premium)
+        st.markdown(toggle_html, unsafe_allow_html=True)
         
-        with col2:
-            model_options = {model["name"]: model["id"] for model in available_models}
-            selected_model = st.selectbox(
-                "Select AI Model",
-                options=list(model_options.keys()),
-                index=list(model_options.values()).index(current_model) if current_model in model_options.values() else 0,
-                key="model_selector",
-                label_visibility="collapsed"
-            )
-            
-            # Show model description
-            selected_model_info = next((m for m in available_models if m["name"] == selected_model), None)
-            if selected_model_info and "description" in selected_model_info:
-                st.caption(selected_model_info["description"])
+        # Handle toggle state change
+        toggle_key = "model_toggle_switch"
+        if toggle_key not in st.session_state:
+            st.session_state[toggle_key] = is_premium
+        
+        # Create invisible checkbox to capture state changes
+        new_state = st.checkbox(
+            "Toggle Model",
+            value=st.session_state[toggle_key],
+            key=f"{toggle_key}_checkbox",
+            label_visibility="collapsed"
+        )
+        
+        # Update session state and provide visual feedback
+        if new_state != st.session_state[toggle_key]:
+            st.session_state[toggle_key] = new_state
+            if new_state:
+                st.success("✅ Switched to Premium Mode")
+            else:
+                st.success("✅ Switched to Fast Mode")
+            # Store the preference for session persistence
+            st.session_state["selected_model"] = "qwen/qwen3-32b" if new_state else "gemma2-9b-it"
+            st.rerun()
+        
+        # Return appropriate model ID based on current state
+        selected_model = "qwen/qwen3-32b" if st.session_state[toggle_key] else "gemma2-9b-it"
+        
+        # Update session state for persistence
+        st.session_state["selected_model"] = selected_model
         
         st.markdown('</div>', unsafe_allow_html=True)
-        return model_options[selected_model]
+        return selected_model
+    
+    def _create_toggle_switch_html(self, is_premium: bool) -> str:
+        """Create HTML for the toggle switch with labels."""
+        checked = "checked" if is_premium else ""
+        
+        return f"""
+        <div class="model-toggle-container">
+            <div class="model-toggle-labels">
+                <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
+                <div class="toggle-switch-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" {checked} onchange="
+                            const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\'] input');
+                            if (checkbox) checkbox.click();
+                        ">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <span class="toggle-label {'active' if is_premium else ''}">🎯 Premium</span>
+            </div>
+            <div class="model-description">
+                {'High-quality responses for complex topics' if is_premium else 'Quick responses for general questions'}
+            </div>
+        </div>
+        """
     
     def render_status_indicator(self, status: str, message: str = "") -> None:
         """Render connection/status indicator."""
@@ -243,19 +285,8 @@ class SettingsInterface:
         with st.sidebar:
             st.markdown("### Settings")
             
-            # Theme selection
-            current_theme = self.theme_manager.get_current_theme()
-            theme_options = ["light", "dark"]
-            selected_theme = st.selectbox(
-                "Theme",
-                options=theme_options,
-                index=theme_options.index(current_theme),
-                key="theme_setting"
-            )
-            
-            if selected_theme != current_theme:
-                self.theme_manager.set_theme(selected_theme)
-                settings["theme_changed"] = True
+            # Theme selection removed - permanent dark theme
+            st.markdown("**Theme:** Dark Mode (Permanent)")
             
             # Chat preferences
             st.markdown("#### Chat Preferences")
@@ -299,8 +330,8 @@ class ResponsiveLayout:
             st.markdown("**Pharmacology Chat**")
         
         with col3:
-            # Theme toggle for mobile
-            pass
+            # Theme toggle removed - permanent dark theme
+            st.markdown("🌙")  # Dark mode indicator
     
     @staticmethod
     def apply_responsive_css() -> str:

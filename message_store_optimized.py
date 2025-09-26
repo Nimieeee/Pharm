@@ -359,6 +359,57 @@ class OptimizedMessageStore(MessageStore):
             logger.error(f"Error getting activity stats: {e}")
             return {}
     
+    def get_all_user_messages(self, user_id: str) -> List[Message]:
+        """
+        Get all messages for a user without pagination limits
+        
+        Args:
+            user_id: User's unique identifier
+            
+        Returns:
+            List of all Message objects ordered chronologically (oldest first)
+        """
+        cache_key = f"all_messages:{user_id}"
+        
+        # Try cache first
+        cached_messages = performance_optimizer.get_cached_user_data(user_id, "all_messages")
+        if cached_messages is not None:
+            logger.debug(f"Cache hit for all messages: {cache_key}")
+            return cached_messages
+        
+        try:
+            # Fetch all messages from database without limits
+            result = self.client.table('messages').select('*').eq(
+                'user_id', user_id
+            ).order('created_at', desc=False).execute()  # Oldest first for chronological display
+            
+            messages = []
+            for data in result.data or []:
+                messages.append(Message(
+                    id=data['id'],
+                    user_id=data['user_id'],
+                    role=data['role'],
+                    content=data['content'],
+                    model_used=data.get('model_used'),
+                    created_at=datetime.fromisoformat(data['created_at'].replace('Z', '+00:00')),
+                    metadata=data.get('metadata', {})
+                ))
+            
+            # Cache the result with shorter TTL for unlimited messages to ensure freshness
+            performance_optimizer.set_cached_user_data(
+                user_id, 
+                "all_messages", 
+                messages, 
+                ttl=60  # 1 minute cache for unlimited messages
+            )
+            
+            logger.info(f"Loaded {len(messages)} unlimited messages for user {user_id}")
+            return messages
+            
+        except Exception as e:
+            logger.error(f"Error getting all messages for user {user_id}: {e}")
+            return []
+    
     def _invalidate_message_caches(self, user_id: str) -> None:
         """Invalidate message-related caches for a user"""
         # Invalidate specific cache types that would be affected by new messages
@@ -366,7 +417,8 @@ class OptimizedMessageStore(MessageStore):
             "message_count",
             "recent_history_",
             "messages_page_",
-            "message_stats"
+            "message_stats",
+            "all_messages"  # Add unlimited messages cache
         ]
         
         for pattern in cache_patterns:
