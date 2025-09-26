@@ -391,6 +391,24 @@ class PharmacologyChat:
             st.error("Invalid user session. Please refresh the page and sign in again.")
             return
         
+        # Debug: Test GROQ API availability
+        with st.expander("🔍 Debug Info", expanded=False):
+            try:
+                from deployment_config import deployment_config
+                model_config = deployment_config.get_model_config()
+                groq_key = model_config.get("groq_api_key")
+                
+                if groq_key:
+                    st.success("✅ GROQ API key is configured")
+                else:
+                    st.error("❌ GROQ API key is missing - add GROQ_API_KEY to Streamlit secrets")
+                    
+                st.write(f"User ID: {user_id}")
+                st.write(f"Chat manager available: {self.chat_manager is not None}")
+                
+            except Exception as e:
+                st.error(f"Configuration error: {e}")
+        
         # Initialize conversation history
         if 'conversation_history' not in st.session_state:
             if self.chat_manager:
@@ -571,8 +589,27 @@ class PharmacologyChat:
             # Start streaming response
             self.chat_interface.start_streaming_response()
             
-            # Generate AI response with streaming
-            self._generate_streaming_response(user_id, message_content, model_preference)
+            # Generate AI response with streaming and error handling
+            try:
+                self._generate_streaming_response(user_id, message_content, model_preference)
+            except Exception as e:
+                # Fallback to simple response if RAG fails
+                st.error(f"AI processing error: {e}")
+                fallback_response = f"I apologize, but I encountered an error processing your question about '{message_content}'. This might be due to API configuration issues. Please check that your GROQ_API_KEY is properly configured in Streamlit secrets."
+                
+                # Save fallback response
+                if self.chat_manager:
+                    assistant_response = self.chat_manager.save_assistant_response(
+                        user_id=user_id,
+                        response_content=fallback_response,
+                        model_used="error_fallback",
+                        metadata={"error": str(e)}
+                    )
+                    
+                    if assistant_response.success:
+                        st.session_state.conversation_history.append(assistant_response.message)
+                
+                st.rerun()
             
         except Exception as e:
             st.error(f"Error processing message: {e}")
