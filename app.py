@@ -27,7 +27,17 @@ from performance_optimizer import performance_optimizer, LoadingStateManager
 try:
     from rag_orchestrator_optimized import RAGOrchestrator
 except ImportError:
-    from rag_orchestrator import RAGOrchestrator
+    try:
+        from rag_orchestrator import RAGOrchestrator
+    except ImportError:
+        # Fallback if no RAG orchestrator is available
+        class RAGOrchestrator:
+            def __init__(self, *args, **kwargs):
+                pass
+            
+            def stream_query(self, *args, **kwargs):
+                yield "RAG system temporarily unavailable"
+                return None
 
 from model_manager import ModelManager
 from database_init import check_and_initialize_database, render_database_setup_instructions

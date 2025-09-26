@@ -4,10 +4,66 @@ import gc
 import logging
 from typing import List, Dict, Any, Optional, Generator
 from dataclasses import dataclass
-from vector_retriever import VectorRetriever, Document
-from context_builder import ContextBuilder, ContextConfig
-from groq_llm import GroqLLM
-from error_handler import ErrorHandler, ErrorType, RetryConfig
+try:
+    from vector_retriever import VectorRetriever, Document
+except ImportError:
+    # Fallback classes
+    class Document:
+        def __init__(self, content="", metadata=None):
+            self.content = content
+            self.metadata = metadata or {}
+    
+    class VectorRetriever:
+        def similarity_search(self, query, user_id, k=3, similarity_threshold=0.2):
+            return []
+
+try:
+    from context_builder import ContextBuilder, ContextConfig
+except ImportError:
+    # Fallback classes
+    class ContextConfig:
+        pass
+    
+    class ContextBuilder:
+        def build_context(self, documents, query, user_preferences=None):
+            return ""
+        
+        def get_context_stats(self, context, documents):
+            return {"context_length": len(context), "document_count": len(documents)}
+try:
+    from groq_llm import GroqLLM
+except ImportError:
+    # Fallback if GroqLLM is not available
+    class GroqLLM:
+        def __init__(self, *args, **kwargs):
+            pass
+        
+        def generate_response(self, messages, model_type="fast"):
+            return "RAG system temporarily unavailable - GroqLLM import failed"
+        
+        def stream_response(self, messages, model_type="fast"):
+            yield "RAG system temporarily unavailable - GroqLLM import failed"
+try:
+    from error_handler import ErrorHandler, ErrorType, RetryConfig
+except ImportError:
+    # Fallback error handling classes
+    from enum import Enum
+    
+    class ErrorType(Enum):
+        RAG_PIPELINE = "rag_pipeline"
+        MODEL_API = "model_api"
+    
+    class RetryConfig:
+        def __init__(self, max_attempts=2, base_delay=1.0):
+            self.max_attempts = max_attempts
+            self.base_delay = base_delay
+    
+    class ErrorHandler:
+        def handle_error(self, error, error_type, context):
+            return type('ErrorInfo', (), {'user_message': str(error)})()
+        
+        def get_retry_delay(self, attempt, config):
+            return config.base_delay * attempt
 
 logger = logging.getLogger(__name__)
 
