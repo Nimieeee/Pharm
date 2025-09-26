@@ -55,6 +55,9 @@ class SessionManager:
             email: User's email address
             preferences: User preferences dictionary
         """
+        # Ensure user exists in database
+        self._ensure_user_exists(user_id, email)
+        
         # Load preferences from database if not provided
         if preferences is None:
             preferences = self.load_user_preferences(user_id)
@@ -316,6 +319,53 @@ class SessionManager:
             st.error(f"Failed to persist user preferences: {e}")
             return False
     
+    def _ensure_user_exists(self, user_id: str, email: str) -> bool:
+        """
+        Ensure user exists in the users table, create if not exists
+        
+        Args:
+            user_id: User's unique identifier
+            email: User's email address
+            
+        Returns:
+            True if user exists or was created successfully
+        """
+        try:
+            # Use the auth manager's client to ensure we have the right permissions
+            db_client = self.auth_manager.supabase
+            
+            # Check if user already exists
+            result = db_client.table('users').select('id').eq('id', user_id).execute()
+            
+            if result.data and len(result.data) > 0:
+                # User already exists
+                return True
+            
+            # User doesn't exist, create them
+            user_data = {
+                'id': user_id,
+                'email': email,
+                'preferences': {
+                    'model_preference': 'fast',
+                    'theme': 'light'
+                },
+                'subscription_tier': 'free'
+            }
+            
+            create_result = db_client.table('users').insert(user_data).execute()
+            
+            if create_result.data:
+                print(f"✅ Created user record for {email}")
+                return True
+            else:
+                print(f"❌ Failed to create user record for {email}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error ensuring user exists: {e}")
+            # Don't fail the session initialization, just log the error
+            return False
+    
     def load_user_preferences(self, user_id: str) -> Dict[str, Any]:
         """
         Load user preferences from database
@@ -327,8 +377,8 @@ class SessionManager:
             Dictionary of user preferences
         """
         try:
-            from database_utils import get_database_client
-            db_client = get_database_client()
+            # Use the auth manager's client
+            db_client = self.auth_manager.supabase
             
             if db_client:
                 result = db_client.table('users').select('preferences').eq('id', user_id).execute()
@@ -336,8 +386,14 @@ class SessionManager:
                 if result.data and len(result.data) > 0:
                     return result.data[0].get('preferences', {})
             
-            return {}
+            return {
+                'model_preference': 'fast',
+                'theme': 'light'
+            }
             
         except Exception as e:
-            st.error(f"Failed to load user preferences: {e}")
-            return {}
+            print(f"Failed to load user preferences: {e}")
+            return {
+                'model_preference': 'fast',
+                'theme': 'light'
+            }
