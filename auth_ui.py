@@ -72,30 +72,11 @@ class AuthInterface:
                     
                 if result.success:
                     st.success("Successfully signed in!")
-                    # Debug: Show what we got from auth
-                    st.write(f"Debug: User ID: {result.user_id}")
-                    st.write(f"Debug: Email: {result.email}")
-                    
-                    # Initialize session
                     self.session_manager.initialize_session(
                         user_id=result.user_id,
                         email=result.email,
                         preferences=result.user_data or {}
                     )
-                    
-                    # Debug: Check session after initialization
-                    user_session = self.session_manager.get_user_session()
-                    st.write(f"Debug: Session created: {user_session is not None}")
-                    if user_session:
-                        st.write(f"Debug: Session user ID: {user_session.user_id}")
-                        st.write(f"Debug: Session authenticated: {user_session.is_authenticated}")
-                    
-                    # Check validation
-                    is_valid = self.session_manager.validate_session()
-                    st.write(f"Debug: Session valid: {is_valid}")
-                    
-                    st.info("Redirecting to chat interface...")
-                    time.sleep(2)  # Give user time to see debug info
                     st.rerun()
                 else:
                     st.error(result.error_message)

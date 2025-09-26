@@ -51,6 +51,19 @@ def get_supabase_client():
     db_config = deployment_config.get_database_config()
     return create_client(db_config["url"], db_config["anon_key"])
 
+def get_authenticated_supabase_client(auth_manager):
+    """Get Supabase client with authenticated user context"""
+    try:
+        # Use the auth manager's client directly since it has the authenticated session
+        return auth_manager.supabase
+    except Exception as e:
+        print(f"Warning: Could not get authenticated client: {e}")
+        # Fallback to anonymous client
+        from supabase import create_client
+        from deployment_config import deployment_config
+        db_config = deployment_config.get_database_config()
+        return create_client(db_config["url"], db_config["anon_key"])
+
 # Legacy RAG components (fallback)
 from langchain_supabase_utils import get_supabase_client as get_legacy_supabase_client, get_vectorstore, upsert_documents
 from ingestion import create_documents_from_uploads, extract_text_from_url
@@ -94,8 +107,11 @@ class PharmacologyChat:
             # Theme management
             self.theme_manager = ThemeManager()
             
-            # Database client
+            # Database client (anonymous for basic operations)
             self.supabase_client = get_supabase_client()
+            
+            # Authenticated database client (for user-specific operations)
+            self.auth_supabase_client = get_authenticated_supabase_client(self.auth_manager)
             
             # Chat management (only if authenticated)
             self.chat_manager = None
@@ -113,11 +129,11 @@ class PharmacologyChat:
         """Initialize UI components"""
         self.auth_interface = AuthInterface(self.auth_manager, self.session_manager)
         
-        # Initialize optimized message store if available
+        # Initialize optimized message store if available (use authenticated client)
         self.optimized_message_store = None
-        if self.supabase_client:
+        if self.auth_supabase_client:
             try:
-                self.optimized_message_store = OptimizedMessageStore(self.supabase_client)
+                self.optimized_message_store = OptimizedMessageStore(self.auth_supabase_client)
             except Exception as e:
                 logger.warning(f"Failed to initialize optimized message store: {e}")
         
@@ -162,7 +178,8 @@ class PharmacologyChat:
     def _initialize_chat_components(self):
         """Initialize chat-related components for authenticated users"""
         try:
-            self.chat_manager = ChatManager(self.supabase_client, self.session_manager)
+            # Use authenticated client for chat operations
+            self.chat_manager = ChatManager(self.auth_supabase_client, self.session_manager)
             self.model_manager = ModelManager()
             self.rag_orchestrator = RAGOrchestrator()
         except Exception as e:
@@ -194,21 +211,8 @@ class PharmacologyChat:
         else:
             inject_chat_css()
         
-        # Debug: Check authentication status
-        user_session = self.session_manager.get_user_session()
-        is_authenticated = self.session_manager.is_authenticated()
-        is_valid = self.session_manager.validate_session()
-        
-        st.sidebar.write("🔍 **Debug Info:**")
-        st.sidebar.write(f"User session exists: {user_session is not None}")
-        st.sidebar.write(f"Is authenticated: {is_authenticated}")
-        st.sidebar.write(f"Session valid: {is_valid}")
-        if user_session:
-            st.sidebar.write(f"User ID: {user_session.user_id}")
-            st.sidebar.write(f"Email: {user_session.email}")
-        
         # Check authentication status and route accordingly
-        if not is_valid:
+        if not self.session_manager.validate_session():
             self.render_authentication_page()
         else:
             self.render_protected_chat_interface()
