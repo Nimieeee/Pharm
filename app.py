@@ -627,14 +627,9 @@ class PharmacologyChat:
             st.write(f"🔍 DEBUG: Starting response generation...")
             st.write(f"🔍 DEBUG: RAG orchestrator available: {self.rag_orchestrator is not None}")
             
-            if self.rag_orchestrator:
-                st.write("🔍 DEBUG: Using RAG orchestrator...")
-                # Use new RAG orchestrator with streaming
-                self._generate_streaming_rag_response(user_id, message_content, model_preference)
-            else:
-                st.write("🔍 DEBUG: Using legacy RAG...")
-                # Fallback to legacy RAG with streaming
-                self._generate_streaming_legacy_response(user_id, message_content, model_preference)
+            # Temporarily bypass RAG orchestrator and use legacy system
+            st.write("🔍 DEBUG: Bypassing RAG orchestrator, using legacy system...")
+            self._generate_streaming_legacy_response(user_id, message_content, model_preference)
             
         except Exception as e:
             st.error(f"Streaming response generation failed: {e}")
@@ -645,27 +640,44 @@ class PharmacologyChat:
     def _generate_streaming_rag_response(self, user_id: str, message_content: str, model_preference: str):
         """Generate streaming response using new RAG orchestrator"""
         try:
+            st.write("🔍 DEBUG: Getting conversation context...")
             context = self.chat_manager.get_conversation_context(user_id, limit=10)
+            st.write(f"🔍 DEBUG: Got context with {len(context.messages)} messages")
             
             # Create placeholder for streaming
             response_placeholder = st.empty()
             collected_response = ""
             
+            st.write("🔍 DEBUG: Starting RAG orchestrator stream_query...")
+            
             # Stream response
-            for response_chunk in self.rag_orchestrator.stream_query(
-                query=message_content,
-                user_id=user_id,
-                model_type=model_preference,
-                conversation_history=[{"role": msg.role, "content": msg.content} for msg in context.messages[-4:]]
-            ):
-                collected_response += response_chunk
-                self.chat_interface.update_streaming_message(response_chunk)
+            try:
+                for response_chunk in self.rag_orchestrator.stream_query(
+                    query=message_content,
+                    user_id=user_id,
+                    model_type=model_preference,
+                    conversation_history=[{"role": msg.role, "content": msg.content} for msg in context.messages[-4:]]
+                ):
+                    collected_response += response_chunk
+                    self.chat_interface.update_streaming_message(response_chunk)
+                    
+                    # Update display
+                    response_placeholder.markdown(collected_response + "▌")
                 
-                # Update display
-                response_placeholder.markdown(collected_response + "▌")
+                st.write("🔍 DEBUG: RAG streaming completed successfully")
+            except Exception as e:
+                st.write(f"🔍 DEBUG: RAG streaming failed: {e}")
+                import traceback
+                st.code(traceback.format_exc())
+                
+                # Fallback to simple response
+                collected_response = f"I apologize, but I encountered an error processing your question about '{message_content}'. The RAG system failed with: {str(e)}"
             
             # Complete streaming
             final_response = self.chat_interface.complete_streaming_message()
+            if not final_response:
+                final_response = collected_response
+                
             response_placeholder.markdown(final_response)
             
             # Save assistant response
@@ -679,11 +691,16 @@ class PharmacologyChat:
                 
                 if assistant_response.success:
                     st.session_state.conversation_history.append(assistant_response.message)
+                    st.write("🔍 DEBUG: RAG response saved successfully")
+                else:
+                    st.write(f"🔍 DEBUG: Failed to save RAG response: {assistant_response.error_message}")
             
             st.rerun()
             
         except Exception as e:
             st.error(f"RAG streaming response failed: {e}")
+            import traceback
+            st.code(traceback.format_exc())
             self.chat_interface.complete_streaming_message()
     
     def _generate_streaming_legacy_response(self, user_id: str, message_content: str, model_preference: str):
