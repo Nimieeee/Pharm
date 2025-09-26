@@ -1,10 +1,14 @@
 # rag_orchestrator.py
 import os
+import logging
 from typing import List, Dict, Any, Optional, Generator
 from dataclasses import dataclass
 from vector_retriever import VectorRetriever, Document
 from context_builder import ContextBuilder, ContextConfig
 from groq_llm import GroqLLM
+from ui_error_handler import UIErrorHandler, UIErrorType, UIErrorContext
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class RAGResponse:
@@ -40,6 +44,7 @@ class RAGOrchestrator:
         self.context_builder = context_builder or ContextBuilder()
         self.llm = llm or GroqLLM()
         self.config = config or RAGConfig()
+        self.ui_error_handler = UIErrorHandler()
         
         # Initialize context config if not provided
         if not self.config.context_config:
@@ -67,36 +72,29 @@ class RAGOrchestrator:
             RAGResponse with generated answer and metadata
         """
         try:
-            # Step 1: Retrieve relevant documents for the user
-            documents = self.vector_retriever.similarity_search(
-                query=query,
-                user_id=user_id,
-                k=self.config.retrieval_k,
-                similarity_threshold=self.config.similarity_threshold
-            )
+            # Step 1: Retrieve relevant documents for the user with error handling
+            documents = self._retrieve_documents_with_error_handling(query, user_id)
             
-            # Step 2: Build context from retrieved documents
-            context = self.context_builder.build_context(
-                documents=documents,
-                query=query,
-                user_preferences=user_preferences
-            )
+            # Step 2: Build context from retrieved documents with error handling
+            context = self._build_context_with_error_handling(documents, query, user_preferences)
             
-            # Step 3: Generate response using LLM
+            # Step 3: Generate response using LLM with error handling
             if context.strip():
                 # Use RAG mode with context
-                response = self._generate_with_context(
+                response = self._generate_with_context_safe(
                     query=query,
                     context=context,
                     model_type=model_type,
-                    conversation_history=conversation_history
+                    conversation_history=conversation_history,
+                    user_id=user_id
                 )
             elif self.config.fallback_to_llm_only:
                 # Fallback to LLM-only mode
-                response = self._generate_without_context(
+                response = self._generate_without_context_safe(
                     query=query,
                     model_type=model_type,
-                    conversation_history=conversation_history
+                    conversation_history=conversation_history,
+                    user_id=user_id
                 )
                 context = "No relevant documents found. Using general knowledge."
             else:
@@ -123,9 +121,24 @@ class RAGOrchestrator:
             )
             
         except Exception as e:
+            logger.error(f"RAG pipeline error for user {user_id}: {e}")
+            
+            # Handle the error with UI error handler
+            context_obj = UIErrorContext(
+                user_id=user_id,
+                action="process_query",
+                component="RAGOrchestrator",
+                additional_data={'query': query[:100], 'model_type': model_type}
+            )
+            
+            error_result = self.ui_error_handler.handle_rag_pipeline_error(e, context_obj)
+            
+            # Return fallback response
+            fallback_response = self._get_fallback_response(query, model_type, conversation_history, user_id)
+            
             return RAGResponse(
-                response="I encountered an error while processing your question. Please try again.",
-                context_used="",
+                response=fallback_response,
+                context_used="Error occurred - using fallback response",
                 documents_retrieved=[],
                 context_stats={},
                 model_used=model_type,
@@ -356,3 +369,114 @@ Instructions:
 - For specific drug information, dosages, or medical advice, always recommend consulting healthcare professionals
 - Provide educational information while emphasizing the importance of professional medical guidance
 - Be concise but thorough in your explanations"""
+    
+    # Error handling helper methods
+    def _retrieve_documents_with_error_handling(self, query: str, user_id: str) -> List[Document]:
+        """Retrieve documents with comprehensive error handling"""
+        try:
+            return self.vector_retriever.similarity_search(
+                query=query,
+                user_id=user_id,
+                k=self.config.retrieval_k,
+                similarity_threshold=self.config.similarity_threshold
+            )
+        except Exception as e:
+            logger.error(f"Document retrieval error for user {user_id}: {e}")
+            
+            # Try with reduced parameters as fallback
+            try:
+                logger.info("Attempting document retrieval with reduced parameters")
+                return self.vector_retriever.similarity_search(
+                    query=query,
+                    user_id=user_id,
+                    k=min(2, self.config.retrieval_k),
+                    similarity_threshold=max(0.5, self.config.similarity_threshold)
+                )
+            except Exception as fallback_error:
+                logger.error(f"Fallback document retrieval also failed: {fallback_error}")
+                return []
+    
+    def _build_context_with_error_handling(self, documents: List[Document], query: str, 
+                                          user_preferences: Optional[Dict[str, Any]]) -> str:
+        """Build context with error handling"""
+        try:
+            return self.context_builder.build_context(
+                documents=documents,
+                query=query,
+                user_preferences=user_preferences
+            )
+        except Exception as e:
+            logger.error(f"Context building error: {e}")
+            
+            # Try with simplified context building
+            try:
+                logger.info("Attempting simplified context building")
+                if documents:
+                    # Simple concatenation fallback
+                    context_parts = []
+                    for doc in documents[:3]:  # Limit to first 3 documents
+                        context_parts.append(f"Source: {doc.source}\nContent: {doc.content[:500]}...")
+                    return "\n\n".join(context_parts)
+                else:
+                    return ""
+            except Exception as fallback_error:
+                logger.error(f"Simplified context building also failed: {fallback_error}")
+                return ""
+    
+    def _generate_with_context_safe(self, query: str, context: str, model_type: str,
+                                   conversation_history: Optional[List[Dict[str, str]]], 
+                                   user_id: str) -> str:
+        """Generate response with context using error handling"""
+        try:
+            return self._generate_with_context(query, context, model_type, conversation_history)
+        except Exception as e:
+            logger.error(f"Context-based generation error for user {user_id}: {e}")
+            
+            # Try without conversation history as fallback
+            try:
+                logger.info("Attempting generation without conversation history")
+                return self._generate_with_context(query, context, model_type, None)
+            except Exception as fallback_error:
+                logger.error(f"Fallback context generation also failed: {fallback_error}")
+                # Final fallback to general knowledge
+                return self._generate_without_context_safe(query, model_type, None, user_id)
+    
+    def _generate_without_context_safe(self, query: str, model_type: str,
+                                      conversation_history: Optional[List[Dict[str, str]]], 
+                                      user_id: str) -> str:
+        """Generate response without context using error handling"""
+        try:
+            return self._generate_without_context(query, model_type, conversation_history)
+        except Exception as e:
+            logger.error(f"General knowledge generation error for user {user_id}: {e}")
+            
+            # Try with different model as fallback
+            try:
+                fallback_model = "fast" if model_type == "premium" else "premium"
+                logger.info(f"Attempting generation with fallback model: {fallback_model}")
+                return self._generate_without_context(query, fallback_model, None)
+            except Exception as fallback_error:
+                logger.error(f"Fallback model generation also failed: {fallback_error}")
+                return self._get_error_fallback_response(query)
+    
+    def _get_fallback_response(self, query: str, model_type: str, 
+                              conversation_history: Optional[List[Dict[str, str]]], 
+                              user_id: str) -> str:
+        """Get fallback response when all else fails"""
+        try:
+            return self._generate_without_context_safe(query, model_type, conversation_history, user_id)
+        except Exception as e:
+            logger.error(f"All generation methods failed for user {user_id}: {e}")
+            return self._get_error_fallback_response(query)
+    
+    def _get_error_fallback_response(self, query: str) -> str:
+        """Get final error fallback response"""
+        return f"""I apologize, but I'm experiencing technical difficulties and cannot process your question about "{query[:50]}..." right now. 
+
+Here are some things you can try:
+• Refresh the page and try again
+• Simplify your question
+• Check your internet connection
+• Try again in a few moments
+
+If the problem persists, please contact support. Thank you for your patience."""

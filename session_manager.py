@@ -15,7 +15,7 @@ class UserSession:
     email: str
     preferences: Dict[str, Any]
     model_preference: str = "fast"
-    theme: str = "light"
+    theme: str = "dark"
     is_authenticated: bool = True
 
 class SessionManager:
@@ -42,9 +42,19 @@ class SessionManager:
         if 'model_preference' not in st.session_state:
             st.session_state.model_preference = "fast"
         if 'theme' not in st.session_state:
-            st.session_state.theme = "light"
+            st.session_state.theme = "dark"
         if 'conversation_history' not in st.session_state:
             st.session_state.conversation_history = []
+        
+        # Conversation management session state
+        if 'current_conversation_id' not in st.session_state:
+            st.session_state.current_conversation_id = None
+        if 'user_conversations' not in st.session_state:
+            st.session_state.user_conversations = []
+        if 'conversation_switched' not in st.session_state:
+            st.session_state.conversation_switched = False
+        if 'conversation_isolation_user_id' not in st.session_state:
+            st.session_state.conversation_isolation_user_id = None
     
     def initialize_session(self, user_id: str, email: str, preferences: Dict[str, Any] = None) -> None:
         """
@@ -67,7 +77,7 @@ class SessionManager:
             email=email,
             preferences=preferences,
             model_preference=preferences.get('model_preference', 'fast'),
-            theme=preferences.get('theme', 'light'),
+            theme=preferences.get('theme', 'dark'),
             is_authenticated=True
         )
         
@@ -80,6 +90,12 @@ class SessionManager:
         
         # Initialize empty conversation history for new session
         st.session_state.conversation_history = []
+        
+        # Initialize conversation management session state with proper isolation
+        st.session_state.current_conversation_id = None
+        st.session_state.user_conversations = []
+        st.session_state.conversation_switched = False
+        st.session_state.conversation_isolation_user_id = user_id
     
     def get_user_session(self) -> Optional[UserSession]:
         """
@@ -96,12 +112,23 @@ class SessionManager:
         st.session_state.authentication_status = None
         st.session_state.user_preferences = {}
         st.session_state.model_preference = "fast"
-        st.session_state.theme = "light"
+        st.session_state.theme = "dark"
         st.session_state.conversation_history = []
         
-        # Clear any other session-specific data
+        # Clear conversation management session state
+        st.session_state.current_conversation_id = None
+        st.session_state.user_conversations = []
+        st.session_state.conversation_switched = False
+        st.session_state.conversation_isolation_user_id = None
+        
+        # Clear any other session-specific data (but preserve the core conversation management keys we just set)
+        core_conversation_keys = {
+            'current_conversation_id', 'user_conversations', 
+            'conversation_switched', 'conversation_isolation_user_id'
+        }
         keys_to_clear = [key for key in st.session_state.keys() 
-                        if key.startswith('user_') or key.startswith('chat_')]
+                        if (key.startswith('user_') or key.startswith('chat_') or key.startswith('conversation_'))
+                        and key not in core_conversation_keys]
         for key in keys_to_clear:
             del st.session_state[key]
     
@@ -192,24 +219,13 @@ class SessionManager:
     
     def update_theme(self, theme: str) -> None:
         """
-        Update user's theme preference in session and database
+        Update user's theme preference - enforces permanent dark theme
         
         Args:
-            theme: "light" or "dark"
+            theme: Theme preference (always forced to "dark")
         """
-        # Temporary fix: Just update session state, ignore user_session object
-        st.session_state.theme = theme
-        
-        # Original code (commented out temporarily)
-        # if self.is_authenticated():
-        #     st.session_state.theme = theme
-        #     user_session = st.session_state.user_session
-        #     if user_session:
-        #         user_session.theme = theme
-        #         st.session_state.user_session = user_session
-        #     
-        #     # Persist to database
-        #     self._persist_user_preferences()
+        # Force dark theme regardless of input
+        st.session_state.theme = "dark"
     
     def get_model_preference(self) -> str:
         """
@@ -222,12 +238,13 @@ class SessionManager:
     
     def get_theme(self) -> str:
         """
-        Get current theme
+        Get current theme - always returns dark theme
         
         Returns:
-            Theme ("light" or "dark")
+            Theme ("dark" - permanent dark theme)
         """
-        return st.session_state.get('theme', 'light')
+        # Always return dark theme
+        return "dark"
     
     def validate_session(self) -> bool:
         """
@@ -347,7 +364,7 @@ class SessionManager:
                 'email': email,
                 'preferences': {
                     'model_preference': 'fast',
-                    'theme': 'light'
+                    'theme': 'dark'
                 },
                 'subscription_tier': 'free'
             }
@@ -397,3 +414,167 @@ class SessionManager:
                 'model_preference': 'fast',
                 'theme': 'light'
             }
+    
+    def switch_conversation(self, conversation_id: str) -> bool:
+        """
+        Switch to a different conversation and ensure proper isolation
+        
+        Args:
+            conversation_id: ID of the conversation to switch to
+            
+        Returns:
+            True if switch was successful, False otherwise
+        """
+        if not self.is_authenticated():
+            return False
+        
+        user_id = self.get_user_id()
+        if not user_id:
+            return False
+        
+        # Ensure conversation isolation - verify the conversation belongs to the current user
+        if not self._verify_conversation_ownership(user_id, conversation_id):
+            return False
+        
+        # Clear current conversation history to prevent data leakage
+        st.session_state.conversation_history = []
+        
+        # Update current conversation
+        old_conversation_id = st.session_state.current_conversation_id
+        st.session_state.current_conversation_id = conversation_id
+        st.session_state.conversation_switched = True
+        
+        # Update isolation tracking
+        st.session_state.conversation_isolation_user_id = user_id
+        
+        return True
+    
+    def get_current_conversation_id(self) -> Optional[str]:
+        """
+        Get the current conversation ID with user isolation check
+        
+        Returns:
+            Current conversation ID if valid, None otherwise
+        """
+        if not self.is_authenticated():
+            return None
+        
+        user_id = self.get_user_id()
+        if not user_id:
+            return None
+        
+        # Verify conversation isolation
+        if st.session_state.conversation_isolation_user_id != user_id:
+            # User has changed, clear conversation state
+            st.session_state.current_conversation_id = None
+            st.session_state.conversation_isolation_user_id = user_id
+            return None
+        
+        return st.session_state.current_conversation_id
+    
+    def set_current_conversation_id(self, conversation_id: str) -> bool:
+        """
+        Set the current conversation ID with proper isolation
+        
+        Args:
+            conversation_id: ID of the conversation to set as current
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.is_authenticated():
+            return False
+        
+        user_id = self.get_user_id()
+        if not user_id:
+            return False
+        
+        # Verify conversation ownership
+        if not self._verify_conversation_ownership(user_id, conversation_id):
+            return False
+        
+        st.session_state.current_conversation_id = conversation_id
+        st.session_state.conversation_isolation_user_id = user_id
+        return True
+    
+    def update_user_conversations(self, conversations: list) -> None:
+        """
+        Update the list of user conversations in session state
+        
+        Args:
+            conversations: List of conversation objects for the current user
+        """
+        if not self.is_authenticated():
+            return
+        
+        user_id = self.get_user_id()
+        if not user_id:
+            return
+        
+        # Only update if conversations belong to current user (additional safety check)
+        st.session_state.user_conversations = conversations
+        st.session_state.conversation_isolation_user_id = user_id
+    
+    def get_user_conversations(self) -> list:
+        """
+        Get user conversations from session state with isolation check
+        
+        Returns:
+            List of conversations for current user
+        """
+        if not self.is_authenticated():
+            return []
+        
+        user_id = self.get_user_id()
+        if not user_id:
+            return []
+        
+        # Verify conversation isolation
+        if st.session_state.conversation_isolation_user_id != user_id:
+            # User has changed, clear conversation state
+            st.session_state.user_conversations = []
+            st.session_state.conversation_isolation_user_id = user_id
+            return []
+        
+        return st.session_state.user_conversations
+    
+    def was_conversation_switched(self) -> bool:
+        """
+        Check if conversation was recently switched
+        
+        Returns:
+            True if conversation was switched, False otherwise
+        """
+        switched = st.session_state.get('conversation_switched', False)
+        if switched:
+            # Reset the flag after checking
+            st.session_state.conversation_switched = False
+        return switched
+    
+    def _verify_conversation_ownership(self, user_id: str, conversation_id: str) -> bool:
+        """
+        Verify that a conversation belongs to the specified user
+        
+        Args:
+            user_id: User ID to verify ownership for
+            conversation_id: Conversation ID to verify
+            
+        Returns:
+            True if conversation belongs to user, False otherwise
+        """
+        try:
+            # Use the auth manager's client to verify ownership
+            db_client = self.auth_manager.supabase
+            
+            if db_client:
+                result = db_client.table('conversations').select('user_id').eq(
+                    'id', conversation_id
+                ).eq('user_id', user_id).eq('is_active', True).execute()
+                
+                return len(result.data or []) > 0
+            
+            return False
+            
+        except Exception as e:
+            print(f"Error verifying conversation ownership: {e}")
+            return False

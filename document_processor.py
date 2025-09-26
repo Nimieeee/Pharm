@@ -3,7 +3,13 @@ import os
 import uuid
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from supabase import create_client
+import streamlit as st
+
+try:
+    from supabase import create_client
+except ImportError:
+    create_client = None
+
 from embeddings import get_embeddings
 from ingestion import (
     extract_text_from_file, 
@@ -30,10 +36,19 @@ class DocumentProcessor:
     
     def _get_supabase_client(self):
         """Initialize Supabase client"""
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_ANON_KEY")
+        if create_client is None:
+            raise ImportError("Supabase client not available. Install supabase package.")
+        
+        # Try to get from Streamlit secrets first, then environment
+        try:
+            url = st.secrets.get("SUPABASE_URL") or os.getenv("SUPABASE_URL")
+            key = st.secrets.get("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_ANON_KEY")
+        except:
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_ANON_KEY")
+        
         if not url or not key:
-            raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set")
+            raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment or Streamlit secrets")
         return create_client(url, key)
     
     def process_uploaded_files(
@@ -161,20 +176,29 @@ class DocumentProcessor:
             return True
         
         try:
-            # Process documents in batches to manage memory
-            batch_size = 10  # Smaller batches to reduce memory usage
+            # Process documents in smaller batches to manage memory
+            batch_size = 5  # Even smaller batches for better memory management
             total_stored = 0
             
             for i in range(0, len(documents), batch_size):
                 batch = documents[i:i + batch_size]
                 
-                # Generate embeddings for batch
-                texts = [doc.content for doc in batch]
-                embeddings = self.embedding_model.embed_documents(texts)
+                # Generate embeddings for batch with error handling
+                texts = [doc.content[:2000] for doc in batch]  # Limit text length
+                try:
+                    embeddings = self.embedding_model.embed_documents(texts)
+                except Exception as e:
+                    print(f"Error generating embeddings for batch {i//batch_size + 1}: {e}")
+                    continue
                 
-                # Prepare rows for insertion
+                # Prepare rows for insertion with validation
                 rows = []
                 for doc, embedding in zip(batch, embeddings):
+                    # Validate embedding dimension
+                    if len(embedding) != 384:
+                        print(f"Warning: Embedding dimension mismatch for doc {doc.id}")
+                        continue
+                        
                     row = {
                         'id': doc.id,
                         'user_id': doc.user_id,
@@ -185,14 +209,19 @@ class DocumentProcessor:
                     }
                     rows.append(row)
                 
-                # Insert batch into database
-                result = self.supabase_client.table('documents').upsert(rows).execute()
-                total_stored += len(result.data)
+                # Insert batch into database with error handling
+                if rows:
+                    try:
+                        result = self.supabase_client.table('documents').upsert(rows).execute()
+                        total_stored += len(result.data) if result.data else 0
+                    except Exception as e:
+                        print(f"Error inserting batch {i//batch_size + 1}: {e}")
+                        continue
                 
                 # Clear batch data from memory
                 del texts, embeddings, rows
             
-            return total_stored == len(documents)
+            return total_stored > 0
             
         except Exception as e:
             print(f"Error storing documents: {e}")

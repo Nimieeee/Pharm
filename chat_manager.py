@@ -47,7 +47,7 @@ class ChatManager:
         self.message_store = MessageStore(supabase_client)
     
     def send_message(self, user_id: str, message_content: str, 
-                    model_type: str = "fast") -> ChatResponse:
+                    model_type: str = "fast", conversation_id: Optional[str] = None) -> ChatResponse:
         """
         Process a user message and prepare for AI response
         
@@ -55,6 +55,7 @@ class ChatManager:
             user_id: User's unique identifier
             message_content: User's message content
             model_type: AI model type ("fast" or "premium")
+            conversation_id: Conversation ID to associate the message with
             
         Returns:
             ChatResponse with the saved user message
@@ -80,7 +81,8 @@ class ChatManager:
                 user_id=user_id,
                 role="user",
                 content=message_content,
-                metadata={"model_requested": model_type}
+                metadata={"model_requested": model_type},
+                conversation_id=conversation_id
             )
             
             if not user_message:
@@ -102,7 +104,8 @@ class ChatManager:
             )
     
     def save_assistant_response(self, user_id: str, response_content: str, 
-                              model_used: str, metadata: Optional[Dict[str, Any]] = None) -> ChatResponse:
+                              model_used: str, metadata: Optional[Dict[str, Any]] = None,
+                              conversation_id: Optional[str] = None) -> ChatResponse:
         """
         Save an assistant response message
         
@@ -111,6 +114,7 @@ class ChatManager:
             response_content: Assistant's response content
             model_used: AI model that generated the response
             metadata: Additional metadata for the response
+            conversation_id: Conversation ID to associate the message with
             
         Returns:
             ChatResponse with the saved assistant message
@@ -137,7 +141,8 @@ class ChatManager:
                 role="assistant",
                 content=response_content,
                 model_used=model_used,
-                metadata=metadata or {}
+                metadata=metadata or {},
+                conversation_id=conversation_id
             )
             
             if not assistant_message:
@@ -329,3 +334,99 @@ class ChatManager:
         except Exception as e:
             logger.error(f"Error validating user access: {e}")
             return False
+    
+    def get_conversation_messages(self, user_id: str, conversation_id: str, 
+                                limit: Optional[int] = None) -> List[Message]:
+        """
+        Get messages for a specific conversation
+        
+        Args:
+            user_id: User's unique identifier
+            conversation_id: Conversation's unique identifier
+            limit: Maximum number of messages to retrieve (None for unlimited)
+            
+        Returns:
+            List of Message objects in chronological order
+        """
+        try:
+            # Validate user authentication and access
+            if not self.validate_user_access(user_id):
+                return []
+            
+            return self.message_store.get_conversation_messages(user_id, conversation_id, limit)
+            
+        except Exception as e:
+            logger.error(f"Error getting conversation messages for user {user_id}, conversation {conversation_id}: {e}")
+            return []
+    
+    def clear_conversation_messages(self, user_id: str, conversation_id: str) -> bool:
+        """
+        Clear all messages for a specific conversation
+        
+        Args:
+            user_id: User's unique identifier
+            conversation_id: Conversation's unique identifier
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Validate user authentication and access
+            if not self.validate_user_access(user_id):
+                return False
+            
+            success = self.message_store.delete_conversation_messages(user_id, conversation_id)
+            
+            if success:
+                logger.info(f"Cleared messages for conversation {conversation_id}, user {user_id}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error clearing conversation messages for user {user_id}, conversation {conversation_id}: {e}")
+            return False
+    
+    def get_conversation_context_for_conversation(self, user_id: str, conversation_id: str, 
+                                                limit: int = 10) -> ConversationContext:
+        """
+        Get conversation context for a specific conversation
+        
+        Args:
+            user_id: User's unique identifier
+            conversation_id: Conversation's unique identifier
+            limit: Maximum number of recent messages to include
+            
+        Returns:
+            ConversationContext with recent messages and metadata
+        """
+        try:
+            # Validate user authentication and access
+            if not self.validate_user_access(user_id):
+                return ConversationContext(
+                    user_id=user_id,
+                    messages=[],
+                    model_preference="fast",
+                    total_messages=0
+                )
+            
+            # Get recent messages for the conversation
+            messages = self.message_store.get_conversation_messages(user_id, conversation_id, limit)
+            
+            # Get user's model preference
+            model_preference = self.session_manager.get_model_preference()
+            
+            return ConversationContext(
+                user_id=user_id,
+                messages=messages,
+                model_preference=model_preference,
+                total_messages=len(messages)
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting conversation context for user {user_id}, conversation {conversation_id}: {e}")
+            return ConversationContext(
+                user_id=user_id,
+                messages=[],
+                model_preference="fast",
+                total_messages=0
+            )
