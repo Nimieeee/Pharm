@@ -511,9 +511,6 @@ def initialize_session_state():
     if 'messages' not in st.session_state:
         st.session_state.messages = []
     
-    if 'model_type' not in st.session_state:
-        st.session_state.model_type = 'fast'
-    
     if 'model_manager' not in st.session_state:
         st.session_state.model_manager = ModelManager()
     
@@ -522,6 +519,9 @@ def initialize_session_state():
     
     if 'db_manager' not in st.session_state:
         st.session_state.db_manager = SimpleChatbotDB()
+    
+    if 'custom_system_prompt' not in st.session_state:
+        st.session_state.custom_system_prompt = ""
 
 # ----------------------------
 # UI Components
@@ -532,109 +532,116 @@ def render_header():
     
     with col1:
         st.title("💬 PharmGPT")
-        st.markdown("*Chat with Pharmacology Assistant*")
+        st.markdown("*Advanced Pharmacology Assistant powered by Mistral AI*")
     
     with col2:
         # Connection status indicator
-        if st.session_state.db_manager.is_connected():
-            st.markdown("🟢 **Connected**")
+        if st.session_state.model_manager.is_model_available():
+            st.markdown("🟢 **Mistral Ready**")
         else:
-            st.markdown("🔴 **Disconnected**")
+            st.markdown("🔴 **API Key Required**")
 
-def render_model_toggle():
-    """Render model selection toggle switch in sidebar"""
-    st.sidebar.markdown("### 🤖 AI Model Selection")
+def render_model_configuration():
+    """Render Mistral AI model configuration and system prompt settings"""
+    st.sidebar.markdown("### 🤖 Mistral AI Configuration")
     
-    # Current model state
-    is_premium = st.session_state.model_type == "premium"
-    has_messages = len(st.session_state.messages) > 0
+    # Model status and info
+    model_info = st.session_state.model_manager.get_model_info()
+    availability = st.session_state.model_manager.is_model_available()
+    status_icon = "🟢" if availability else "🔴"
     
-    # Create toggle switch HTML
-    toggle_html = f"""
-    <div class="toggle-switch-container">
-        <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
-        <label class="toggle-switch">
-            <input type="checkbox" {'checked' if is_premium else ''} 
-                   onchange="document.getElementById('model_toggle_hidden').click();">
-            <span class="toggle-slider"></span>
-        </label>
-        <span class="toggle-label {'active' if is_premium else ''}">💎 Premium</span>
-    </div>
-    """
+    st.sidebar.markdown(f"""
+    **Model:** {status_icon} {model_info['name']}
     
-    st.sidebar.markdown(toggle_html, unsafe_allow_html=True)
+    *{model_info['description']}*
+    """)
     
-    # Hidden checkbox to capture state changes
-    new_is_premium = st.sidebar.checkbox(
-        "Toggle Model",
-        value=is_premium,
-        key="model_toggle_hidden",
-        label_visibility="collapsed"
-    )
-    
-    # Handle model switch
-    if new_is_premium != is_premium:
-        new_model = "premium" if new_is_premium else "fast"
+    # API Key status
+    if not availability:
+        st.sidebar.error("⚠️ Mistral API key required")
+        st.sidebar.info("💡 Set MISTRAL_API_KEY in environment or secrets")
         
-        # Show confirmation if there are existing messages
-        if has_messages and 'model_switch_confirmed' not in st.session_state:
-            st.sidebar.warning("⚠️ Switching models mid-conversation")
-            col1, col2 = st.sidebar.columns(2)
-            with col1:
-                if st.button("✅ Confirm", key="confirm_model_switch"):
-                    st.session_state.model_switch_confirmed = True
-                    st.rerun()
-            with col2:
-                if st.button("❌ Cancel", key="cancel_model_switch"):
-                    st.rerun()
-            return
-        
-        # Perform the model switch
-        old_model = st.session_state.model_type
-        st.session_state.model_type = new_model
-        st.session_state.model_manager.set_model(new_model)
-        
-        # Add model switch notification to chat history if there are messages
-        if has_messages:
-            switch_message = {
-                "role": "system",
-                "content": f"🔄 Model switched from {old_model} to {new_model}",
-                "timestamp": time.time(),
-                "model_switch": True
-            }
-            st.session_state.messages.append(switch_message)
-        
-        # Clear confirmation flag
-        if 'model_switch_confirmed' in st.session_state:
-            del st.session_state.model_switch_confirmed
-        
-        model_name = "Premium Model" if new_is_premium else "Fast Model"
-        st.sidebar.success(f"✅ Switched to {model_name}")
-        st.rerun()
-    
-    # Display current model info and availability
-    model_info = st.session_state.model_manager.get_model_info(st.session_state.model_type)
-    if model_info:
-        availability = st.session_state.model_manager.is_model_available(st.session_state.model_type)
-        status_icon = "🟢" if availability else "🔴"
-        
-        st.sidebar.markdown(f"""
-        **Current Model:** {status_icon}  
-        {model_info['name']}
-        
-        *{model_info['description']}*
-        """)
-        
-        # Show detailed availability info
-        if not availability:
-            st.sidebar.error("⚠️ Model not available. Check API keys in environment variables or Streamlit secrets.")
-            
-            # Show available models
-            available_models = st.session_state.model_manager.get_available_models()
-            if available_models:
-                st.sidebar.info(f"Available models: {', '.join(available_models.keys())}")
+        # Test connection button
+        if st.sidebar.button("🔍 Test Connection"):
+            success, message = st.session_state.model_manager.test_connection()
+            if success:
+                st.sidebar.success("✅ Connection successful!")
+                st.rerun()
             else:
-                st.sidebar.error("No models are currently available. Please check your API configuration.")
+                st.sidebar.error(f"❌ {message}")
+    else:
+        st.sidebar.success("✅ API key configured")
+    
+    # System Prompt Configuration
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📝 System Prompt")
+    
+    # Show current system prompt type
+    current_prompt = st.session_state.model_manager.get_custom_system_prompt()
+    if current_prompt:
+        st.sidebar.info("🎯 Custom prompt active")
+    else:
+        st.sidebar.info("🔧 Default prompt active")
+    
+    # System prompt editor
+    with st.sidebar.expander("✏️ Edit System Prompt", expanded=False):
+        # Show default prompt
+        default_prompt = st.session_state.model_manager.get_default_system_prompt()
+        st.markdown("**Default Prompt:**")
+        st.text_area(
+            "Default System Prompt",
+            value=default_prompt,
+            height=100,
+            disabled=True,
+            label_visibility="collapsed"
+        )
+        
+        # Custom prompt editor
+        st.markdown("**Custom Prompt:**")
+        custom_prompt = st.text_area(
+            "Enter your custom system prompt (leave empty to use default)",
+            value=current_prompt or "",
+            height=150,
+            placeholder="Enter custom instructions for the AI assistant...",
+            help="This will override the default system prompt. Leave empty to use the default pharmacology-focused prompt."
+        )
+        
+        # Update buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("💾 Save", key="save_prompt"):
+                st.session_state.model_manager.set_custom_system_prompt(custom_prompt)
+                if custom_prompt.strip():
+                    st.success("✅ Custom prompt saved!")
+                else:
+                    st.success("✅ Reset to default!")
+                st.rerun()
+        
+        with col2:
+            if st.button("🔄 Reset", key="reset_prompt"):
+                st.session_state.model_manager.set_custom_system_prompt("")
+                st.success("✅ Reset to default!")
+                st.rerun()
+    
+    # Response Settings
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### ⚙️ Response Settings")
+    
+    st.sidebar.info("📋 **Current Settings:**")
+    st.sidebar.markdown("""
+    - **Style:** Elaborate & Detailed
+    - **Context:** RAG-Enhanced
+    - **Focus:** Pharmacology
+    - **Max Tokens:** 2000
+    """)
+    
+    # RAG Status
+    stats = st.session_state.rag_manager.get_document_stats()
+    if stats['total_chunks'] > 0:
+        st.sidebar.success(f"📚 RAG Active: {stats['total_chunks']} chunks")
+    else:
+        st.sidebar.warning("📚 No documents uploaded")
+        st.sidebar.info("💡 Upload documents for enhanced responses")
 
 def render_document_upload_inline():
     """Render document upload interface above chat input with auto-processing"""
@@ -1575,12 +1582,9 @@ def render_message(message: Dict[str, Any]):
         is_error = message.get("error", False)
         
         # Determine model icon and display name
-        if model_used == "fast" or "gemma" in model_used.lower():
-            model_icon = "⚡"
-            model_display = "Fast Model"
-        elif model_used == "premium" or "qwen" in model_used.lower() or "gpt" in model_used.lower():
-            model_icon = "💎"
-            model_display = "Premium Model"
+        if model_used == "mistral" or "mistral" in model_used.lower():
+            model_icon = "🧠"
+            model_display = "Mistral Small"
         else:
             model_icon = "🤖"
             model_display = model_used.title()
@@ -1710,9 +1714,8 @@ def render_message_input():
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            model_status = validate_model_availability()
-            model_info = model_status.get('model_info')
-            model_available = model_status.get('available', False)
+            model_available = st.session_state.model_manager.is_model_available()
+            model_info = st.session_state.model_manager.get_model_info()
             
             if model_info:
                 status_icon = "🟢" if model_available else "🔴"
@@ -1726,12 +1729,7 @@ def render_message_input():
                 """, unsafe_allow_html=True)
                 
                 if not model_available:
-                    st.error("⚠️ Current model is not available. Please check API configuration or switch models.")
-                    
-                    # Show available alternatives
-                    available_models = model_status.get('available_models', {})
-                    if available_models:
-                        st.info(f"💡 Available models: {', '.join(available_models.keys())}")
+                    st.error("⚠️ Mistral API key required. Check your configuration.")
             else:
                 st.error("❌ No model information available")
         
@@ -1759,17 +1757,17 @@ def render_message_input():
                 st.warning(f"⚠️ Document system error: {str(rag_error)}")
         
         # Enhanced chat input with dynamic placeholder and validation
-        model_available = model_status.get('available', False)
+        model_available = st.session_state.model_manager.is_model_available()
         stats = st.session_state.rag_manager.get_document_stats()
         chunk_count = stats.get('total_chunks', 0)
         
         # Dynamic placeholder based on system status
         if not model_available:
-            placeholder_text = "Model not available - check API configuration"
+            placeholder_text = "Mistral API key required - check configuration"
         elif chunk_count > 0:
-            placeholder_text = f"Ask me anything... (I can search {chunk_count} document chunks)"
+            placeholder_text = f"Ask me about pharmacology... (I can search {chunk_count} document chunks)"
         else:
-            placeholder_text = "Ask me anything... (using general knowledge)"
+            placeholder_text = "Ask me about pharmacology... (using general knowledge)"
         
         # Input validation and enhancement
         user_input = st.chat_input(
@@ -2003,22 +2001,10 @@ def display_error_with_recovery(error_message: str, error_type: str = "error", r
                     if action.get('rerun', True):
                         st.rerun()
 
-def validate_model_availability() -> dict:
-    """Validate model availability and return status"""
-    model_manager = st.session_state.model_manager
-    current_model = st.session_state.model_type
-    
-    status = {
-        'available': model_manager.is_model_available(current_model),
-        'model_info': model_manager.get_model_info(current_model),
-        'available_models': model_manager.get_available_models(),
-        'current_model': current_model
-    }
-    
-    return status
+
 
 def process_user_message(user_input: str):
-    """Process user message and generate AI response with comprehensive error handling"""
+    """Process user message and generate AI response with RAG integration"""
     if not user_input.strip():
         return
     
@@ -2030,44 +2016,27 @@ def process_user_message(user_input: str):
     }
     st.session_state.messages.append(user_message)
     
-    # Validate model availability first
-    model_status = validate_model_availability()
-    
-    if not model_status['available']:
-        error_message = f"""
-        🚫 **Model Unavailable**
+    # Check model availability
+    if not st.session_state.model_manager.is_model_available():
+        error_message = """
+        🚫 **Mistral API Unavailable**
         
-        The {st.session_state.model_type} model is currently unavailable.
-        
-        **Available models:** {', '.join(model_status['available_models'].keys()) if model_status['available_models'] else 'None'}
+        The Mistral AI model is currently unavailable.
         
         **Please:**
-        - Check your API configuration
-        - Try switching to an available model
-        - Refresh the page and try again
+        - Check your MISTRAL_API_KEY configuration
+        - Verify your API key is valid
+        - Check your internet connection
         """
         
-        recovery_actions = []
-        if model_status['available_models']:
-            available_model = list(model_status['available_models'].keys())[0]
-            recovery_actions.append({
-                'label': f'Switch to {available_model.title()}',
-                'callback': lambda: setattr(st.session_state, 'model_type', available_model)
-            })
-        
-        recovery_actions.append({
-            'label': '🔄 Refresh Page',
-            'callback': lambda: st.rerun()
-        })
-        
-        display_error_with_recovery(error_message, "critical", recovery_actions)
+        st.error(error_message)
         
         # Add error message to chat history
         assistant_message = {
             "role": "assistant",
-            "content": "I'm currently unable to process your request due to model availability issues. Please try the recovery actions above.",
+            "content": "I'm currently unable to process your request due to API configuration issues. Please check your Mistral API key.",
             "timestamp": time.time(),
-            "model": st.session_state.model_type,
+            "model": "mistral",
             "error": True,
             "context_used": False,
             "context_chunks": 0
@@ -2076,134 +2045,149 @@ def process_user_message(user_input: str):
         st.rerun()
         return
     
-    # Generate AI response with comprehensive error handling
+    # Generate AI response with RAG integration
     try:
-        with st.spinner(f"Generating response using {st.session_state.model_type} model..."):
-            # Get RAG context if available with enhanced feedback
+        with st.spinner("🤖 Generating response with Mistral AI..."):
+            # Get RAG context if available
             context = ""
             context_chunks = 0
-            rag_error_occurred = False
             
             try:
                 # Check if documents are available
                 stats = st.session_state.rag_manager.get_document_stats()
                 if stats['total_chunks'] > 0:
                     with st.spinner("🔍 Searching document context..."):
-                        context = st.session_state.rag_manager.search_relevant_context(user_input, max_chunks=3)
-                        if context:
+                        context = st.session_state.rag_manager.search_relevant_context(user_input, max_chunks=5)
+                        if context and context.strip():
+                            # Count actual content chunks
                             context_chunks = len([chunk for chunk in context.split('\n\n') if chunk.strip()])
                             if context_chunks > 0:
                                 st.success(f"📚 Found {context_chunks} relevant document chunks")
                             else:
-                                st.info("📚 No relevant document context found for this query")
+                                st.info("📚 No relevant document context found")
+                                context = ""
                         else:
                             st.info("📚 No relevant document context found")
+                            context = ""
                 else:
-                    st.info("📚 No documents available for context search")
+                    st.info("📚 No documents available - using general knowledge")
             except Exception as rag_error:
-                rag_error_occurred = True
-                rag_error_message = handle_rag_error(rag_error)
-                display_error_with_recovery(rag_error_message, "warning")
+                st.warning(f"⚠️ Document search error: {str(rag_error)}")
+                st.info("📚 Falling back to general knowledge")
                 context = ""
                 context_chunks = 0
             
-            # Generate AI response with retry logic
-            max_retries = 3
-            retry_count = 0
-            response_generated = False
-            
-            while retry_count < max_retries and not response_generated:
-                try:
-                    with st.spinner(f"Generating response (attempt {retry_count + 1}/{max_retries})..."):
-                        # Generate response using model manager
-                        ai_response = st.session_state.model_manager.generate_response(
-                            message=user_input,
-                            model_type=st.session_state.model_type,
-                            context=context if context else None
-                        )
-                        
-                        if ai_response and not ai_response.startswith("Error:"):
-                            # Success - add to message history
-                            assistant_message = {
-                                "role": "assistant",
-                                "content": ai_response,
-                                "timestamp": time.time(),
-                                "model": st.session_state.model_type,
-                                "context_used": bool(context),
-                                "context_chunks": context_chunks,
-                                "error": False
-                            }
-                            st.session_state.messages.append(assistant_message)
-                            response_generated = True
-                            
-                            # Show success indicators
-                            if context_chunks > 0:
-                                st.success(f"✅ Response generated using {context_chunks} document sources")
-                            else:
-                                st.success("✅ Response generated using general knowledge")
-                        else:
-                            raise Exception(ai_response or "Empty response from model")
-                            
-                except Exception as model_error:
-                    retry_count += 1
+            # Generate AI response with context
+            try:
+                with st.spinner("✨ Generating detailed response..."):
+                    ai_response = st.session_state.model_manager.generate_response(
+                        message=user_input,
+                        context=context if context else None
+                    )
                     
-                    if retry_count < max_retries:
-                        st.warning(f"⚠️ Attempt {retry_count} failed, retrying... ({max_retries - retry_count} attempts remaining)")
-                        time.sleep(1)  # Brief delay before retry
-                    else:
-                        # All retries exhausted - handle the error
-                        api_error_message = handle_api_error(model_error, st.session_state.model_type)
-                        
-                        recovery_actions = [
-                            {
-                                'label': '🔄 Try Again',
-                                'callback': lambda: process_user_message(user_input)
-                            }
-                        ]
-                        
-                        # Add model switching option if other models are available
-                        available_models = st.session_state.model_manager.get_available_models()
-                        other_models = [m for m in available_models.keys() if m != st.session_state.model_type]
-                        
-                        if other_models:
-                            other_model = other_models[0]
-                            recovery_actions.append({
-                                'label': f'Switch to {other_model.title()}',
-                                'callback': lambda: setattr(st.session_state, 'model_type', other_model)
-                            })
-                        
-                        display_error_with_recovery(api_error_message, "critical", recovery_actions)
-                        
-                        # Add error response to chat history
-                        error_response = f"I apologize, but I'm currently unable to process your request due to technical difficulties with the {st.session_state.model_type} model. Please try the recovery options above."
-                        
+                    if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
+                        # Success - add to message history
                         assistant_message = {
                             "role": "assistant",
-                            "content": error_response,
+                            "content": ai_response,
                             "timestamp": time.time(),
-                            "model": st.session_state.model_type,
-                            "error": True,
-                            "context_used": False,
-                            "context_chunks": 0
+                            "model": "mistral",
+                            "context_used": bool(context),
+                            "context_chunks": context_chunks,
+                            "error": False
                         }
                         st.session_state.messages.append(assistant_message)
+                        
+                        # Show success indicators
+                        if context_chunks > 0:
+                            st.success(f"✅ Response generated using {context_chunks} document sources")
+                        else:
+                            st.success("✅ Response generated using general pharmacology knowledge")
+                    else:
+                        raise Exception(ai_response or "Empty response from model")
+                        
+            except Exception as model_error:
+                # Handle API errors
+                error_str = str(model_error)
+                
+                if "api key" in error_str.lower() or "authentication" in error_str.lower():
+                    error_message = """
+                    🔑 **API Authentication Error**
+                    
+                    Your Mistral API key is invalid or missing.
+                    
+                    **To fix:**
+                    - Check your MISTRAL_API_KEY in environment variables
+                    - Verify the API key is correct and active
+                    - Try refreshing the page
+                    """
+                elif "rate limit" in error_str.lower() or "quota" in error_str.lower():
+                    error_message = """
+                    ⏱️ **Rate Limit Exceeded**
+                    
+                    You've reached your Mistral API rate limit.
+                    
+                    **What to do:**
+                    - Wait a few minutes before trying again
+                    - Check your API usage limits
+                    - Consider upgrading your plan
+                    """
+                elif "timeout" in error_str.lower():
+                    error_message = """
+                    ⏰ **Request Timeout**
+                    
+                    The request took too long to process.
+                    
+                    **Try:**
+                    - Asking a shorter question
+                    - Retrying your request
+                    - Checking your internet connection
+                    """
+                else:
+                    error_message = f"""
+                    ❌ **API Error**
+                    
+                    Mistral API error: {error_str}
+                    
+                    **Try:**
+                    - Refreshing the page
+                    - Checking your API configuration
+                    - Retrying your request
+                    """
+                
+                st.error(error_message)
+                
+                # Add error response to chat history
+                error_response = "I apologize, but I'm currently experiencing technical difficulties. Please check the error message above and try again."
+                
+                assistant_message = {
+                    "role": "assistant",
+                    "content": error_response,
+                    "timestamp": time.time(),
+                    "model": "mistral",
+                    "error": True,
+                    "context_used": False,
+                    "context_chunks": 0
+                }
+                st.session_state.messages.append(assistant_message)
     
     except Exception as unexpected_error:
-        # Handle any unexpected errors in the processing pipeline
+        # Handle unexpected errors
         st.error(f"""
-        🚨 **Unexpected System Error**
+        🚨 **Unexpected Error**
         
-        An unexpected error occurred while processing your message: {str(unexpected_error)}
+        An unexpected error occurred: {str(unexpected_error)}
         
-        **What happened:** The message processing pipeline encountered an unexpected issue.
-        **Impact:** Your message could not be processed.
-        **Next steps:** Please try refreshing the page or contact support if the issue persists.
+        **Please:**
+        - Refresh the page and try again
+        - Check your internet connection
+        - Contact support if the issue persists
         """)
         
         # Add system error message to chat history
         system_error_message = {
             "role": "system",
-            "content": f"System error occurred: {str(unexpected_error)}",
+            "content": f"System error: {str(unexpected_error)}",
             "timestamp": time.time(),
             "error": True
         }
@@ -2298,12 +2282,12 @@ def main():
         # Sidebar components with comprehensive error handling
         try:
             with st.sidebar:
-                # Model toggle with error handling
+                # Model configuration with error handling
                 try:
-                    render_model_toggle()
+                    render_model_configuration()
                 except Exception as model_error:
-                    st.sidebar.error(f"Model toggle error: {str(model_error)}")
-                    st.sidebar.info("💡 Try refreshing the page to restore model selection")
+                    st.sidebar.error(f"Model configuration error: {str(model_error)}")
+                    st.sidebar.info("💡 Try refreshing the page to restore configuration")
                 
                 # Document upload is now inline above chat input
                 # No sidebar document upload needed

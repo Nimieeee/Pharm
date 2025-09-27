@@ -5,9 +5,11 @@ A clean, modern Streamlit chatbot application with dark mode styling, model swit
 ## ✨ Features
 
 - **🌙 Dark Mode UI**: Consistent dark theme with enhanced accessibility
-- **🤖 Model Switching**: Toggle between Fast (Groq Gemma2) and Premium (Groq GPT-OSS) models
+- **🧠 Mistral AI Integration**: Powered by Mistral Small for detailed, elaborate responses
 - **📚 Document Upload**: Upload PDF, DOCX, TXT, and MD files for RAG functionality
 - **🔍 Smart Search**: Vector-based document search with context-aware responses
+- **📝 Custom System Prompts**: Personalize the AI assistant's behavior and expertise
+- **⚕️ Pharmacology Focus**: Specialized for pharmaceutical and medical queries
 - **📱 Responsive Design**: Works seamlessly on mobile, tablet, and desktop
 - **🛡️ Error Handling**: Comprehensive error handling with user-friendly messages
 - **♿ Accessibility**: WCAG 2.1 compliant with focus indicators and high contrast
@@ -18,7 +20,7 @@ A clean, modern Streamlit chatbot application with dark mode styling, model swit
 
 - Python 3.8+
 - Supabase account (for database)
-- Groq API key (for AI models)
+- Mistral AI API key (for AI responses)
 
 ### Installation
 

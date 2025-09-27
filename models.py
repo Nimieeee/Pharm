@@ -1,188 +1,198 @@
 """
 AI Model Management for Simple Chatbot
-Handles fast (Groq) and premium (OpenAI) model integrations
+Handles Mistral Small model integration with RAG context and custom system prompts
 """
 
 import os
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import streamlit as st
-from groq import Groq
+import requests
+import json
 
 
-class BaseModel:
-    """Base interface for AI models"""
-    
-    def generate_response(self, prompt: str) -> str:
-        """Generate response from the model"""
-        raise NotImplementedError
-    
-    def is_available(self) -> bool:
-        """Check if model is available"""
-        raise NotImplementedError
-    
-    def get_model_info(self) -> Dict[str, Any]:
-        """Get model information"""
-        raise NotImplementedError
-
-
-class GroqFastModel(BaseModel):
-    """Fast model implementation using Groq Gemma2"""
+class MistralModel:
+    """Mistral Small model implementation with enhanced RAG integration"""
     
     def __init__(self):
-        self.client = None
-        self.model_name = "gemma2-9b-it"
+        self.api_key = None
+        self.model_name = "mistral-small-latest"
+        self.api_url = "https://api.mistral.ai/v1/chat/completions"
+        self.default_system_prompt = """You are PharmGPT, an expert pharmacology assistant. You provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications.
+
+Key guidelines:
+- Always provide elaborate and detailed explanations unless specifically asked for brevity
+- Use scientific terminology appropriately while ensuring clarity
+- Include relevant context from uploaded documents when available
+- Structure your responses with clear sections and bullet points when helpful
+- Cite specific information from the provided context when applicable
+- If you don't have enough information, clearly state the limitations
+- Always prioritize patient safety and evidence-based information"""
         self._initialize()
     
     def _initialize(self):
-        """Initialize Groq client"""
+        """Initialize Mistral client"""
         try:
-            api_key = os.getenv("GROQ_API_KEY")
+            # Try environment variable first
+            api_key = os.getenv("MISTRAL_API_KEY")
+            
+            # Fallback to Streamlit secrets
+            if not api_key:
+                try:
+                    api_key = st.secrets.get("MISTRAL_API_KEY")
+                except:
+                    pass
+            
+            # Check for the specific API key provided by user
+            if not api_key:
+                api_key = "uBrKHYN5sBzrvdTYgel7zyNuPVbnhijvi"
+            
             if api_key:
-                self.client = Groq(api_key=api_key)
+                self.api_key = api_key
+                st.success("✅ Mistral API key configured")
+            else:
+                st.error("❌ Mistral API key not found")
+                
         except Exception as e:
-            st.error(f"Error initializing Groq client: {str(e)}")
+            st.error(f"Error initializing Mistral client: {str(e)}")
     
-    def generate_response(self, prompt: str) -> str:
-        """Generate response using Groq Fast Model"""
+    def generate_response(self, message: str, context: Optional[str] = None, system_prompt: Optional[str] = None) -> str:
+        """Generate response using Mistral Small with RAG context"""
         if not self.is_available():
-            return "Groq fast model is not available. Please check API key."
+            return "Mistral model is not available. Please check API key configuration."
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1000,
-                temperature=0.7
-            )
-            return response.choices[0].message.content
+            # Use custom system prompt or default
+            active_system_prompt = system_prompt or self.default_system_prompt
+            
+            # Build messages array
+            messages = [
+                {"role": "system", "content": active_system_prompt}
+            ]
+            
+            # Add context if available
+            if context and context.strip():
+                context_message = f"""**Relevant Context from Uploaded Documents:**
+
+{context}
+
+**End of Context**
+
+Please use this context to provide a comprehensive and detailed answer to the following question. If the context contains relevant information, reference it specifically in your response."""
+                messages.append({"role": "user", "content": context_message})
+            
+            # Add user message
+            messages.append({"role": "user", "content": message})
+            
+            # Prepare API request
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": self.model_name,
+                "messages": messages,
+                "max_tokens": 2000,  # Increased for elaborate responses
+                "temperature": 0.7,
+                "top_p": 1,
+                "stream": False
+            }
+            
+            # Make API request
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result["choices"][0]["message"]["content"]
+            else:
+                error_detail = ""
+                try:
+                    error_data = response.json()
+                    error_detail = error_data.get("error", {}).get("message", "Unknown error")
+                except:
+                    error_detail = f"HTTP {response.status_code}"
+                
+                return f"Mistral API error: {error_detail}"
+                
+        except requests.exceptions.Timeout:
+            return "Request timed out. Please try again."
+        except requests.exceptions.ConnectionError:
+            return "Connection error. Please check your internet connection."
         except Exception as e:
-            return f"Groq Fast API error: {str(e)}"
+            return f"Error generating response: {str(e)}"
     
     def is_available(self) -> bool:
-        """Check if Groq model is available"""
-        return self.client is not None
+        """Check if Mistral model is available"""
+        return self.api_key is not None
     
     def get_model_info(self) -> Dict[str, Any]:
-        """Get Groq fast model information"""
+        """Get Mistral model information"""
         return {
-            "name": "Fast Model (Groq Gemma2)",
+            "name": "Mistral Small",
             "model": self.model_name,
-            "type": "fast",
-            "description": "Fast, cost-effective responses using Gemma2"
-        }
-
-
-class GroqPremiumModel(BaseModel):
-    """Premium model implementation using Groq GPT-OSS"""
-    
-    def __init__(self):
-        self.client = None
-        self.model_name = "openai/gpt-oss-20b"
-        self._initialize()
-    
-    def _initialize(self):
-        """Initialize Groq client for premium model"""
-        try:
-            api_key = os.getenv("GROQ_API_KEY")
-            if api_key:
-                self.client = Groq(api_key=api_key)
-        except Exception as e:
-            st.error(f"Error initializing Groq premium client: {str(e)}")
-    
-    def generate_response(self, prompt: str) -> str:
-        """Generate response using Groq Premium Model"""
-        if not self.is_available():
-            return "Groq premium model is not available. Please check API key."
-        
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1000,
-                temperature=0.7
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            return f"Groq Premium API error: {str(e)}"
-    
-    def is_available(self) -> bool:
-        """Check if Groq premium model is available"""
-        return self.client is not None
-    
-    def get_model_info(self) -> Dict[str, Any]:
-        """Get Groq premium model information"""
-        return {
-            "name": "Premium Model (Groq GPT-OSS)",
-            "model": self.model_name,
-            "type": "premium",
-            "description": "High-quality, advanced responses using GPT-OSS"
+            "type": "mistral",
+            "description": "Advanced AI model optimized for detailed pharmaceutical and scientific responses",
+            "provider": "Mistral AI",
+            "features": ["RAG Integration", "Custom System Prompts", "Elaborate Responses"]
         }
 
 
 class ModelManager:
-    """Manages AI model selection and interactions"""
+    """Manages Mistral AI model interactions with enhanced RAG and customization"""
     
     def __init__(self):
-        self.models = {
-            "fast": GroqFastModel(),
-            "premium": GroqPremiumModel()
-        }
-        self.current_model = "fast"
+        self.model = MistralModel()
+        self.custom_system_prompt = None
     
-    def set_model(self, model_type: str):
-        """Set the current active model"""
-        if model_type in self.models:
-            self.current_model = model_type
-        else:
-            raise ValueError(f"Unknown model type: {model_type}")
+    def set_custom_system_prompt(self, prompt: str):
+        """Set a custom system prompt"""
+        self.custom_system_prompt = prompt.strip() if prompt and prompt.strip() else None
     
-    def get_current_model(self) -> str:
-        """Get the currently active model type"""
-        return self.current_model
+    def get_custom_system_prompt(self) -> Optional[str]:
+        """Get the current custom system prompt"""
+        return self.custom_system_prompt
     
-    def generate_response(self, message: str, model_type: Optional[str] = None, context: Optional[str] = None) -> str:
+    def get_default_system_prompt(self) -> str:
+        """Get the default system prompt"""
+        return self.model.default_system_prompt
+    
+    def generate_response(self, message: str, context: Optional[str] = None) -> str:
         """
-        Generate AI response using selected model
+        Generate AI response using Mistral Small with RAG context
         
         Args:
             message: User message
-            model_type: "fast" for Groq Gemma2, "premium" for Groq GPT-OSS (uses current if None)
-            context: Optional RAG context to include
+            context: Optional RAG context from documents
             
         Returns:
-            AI generated response
+            AI generated response with context integration
         """
-        # Use specified model or current model
-        selected_model = model_type or self.current_model
+        # Use custom system prompt if set
+        system_prompt = self.custom_system_prompt or self.model.default_system_prompt
         
-        if selected_model not in self.models:
-            return f"Error: Unknown model type '{selected_model}'"
-        
-        model = self.models[selected_model]
-        
-        # Prepare prompt with context if available
-        prompt = message
-        if context:
-            prompt = f"Context: {context}\n\nQuestion: {message}"
-        
-        return model.generate_response(prompt)
+        return self.model.generate_response(
+            message=message,
+            context=context,
+            system_prompt=system_prompt
+        )
     
-    def is_model_available(self, model_type: str) -> bool:
-        """Check if a model is available"""
-        if model_type in self.models:
-            return self.models[model_type].is_available()
-        return False
+    def is_model_available(self) -> bool:
+        """Check if the model is available"""
+        return self.model.is_available()
     
-    def get_available_models(self) -> Dict[str, Dict[str, Any]]:
-        """Get information about all available models"""
-        available = {}
-        for model_type, model in self.models.items():
-            if model.is_available():
-                available[model_type] = model.get_model_info()
-        return available
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get model information"""
+        return self.model.get_model_info()
     
-    def get_model_info(self, model_type: str) -> Optional[Dict[str, Any]]:
-        """Get information about a specific model"""
-        if model_type in self.models:
-            return self.models[model_type].get_model_info()
-        return None
+    def test_connection(self) -> tuple[bool, str]:
+        """Test the API connection"""
+        if not self.is_model_available():
+            return False, "API key not configured"
+        
+        try:
+            test_response = self.generate_response("Hello, this is a connection test.")
+            if "error" in test_response.lower():
+                return False, test_response
+            return True, "Connection successful"
+        except Exception as e:
+            return False, f"Connection failed: {str(e)}"
