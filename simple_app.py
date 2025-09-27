@@ -7,10 +7,32 @@ import streamlit as st
 from typing import Dict, Any, List, Optional
 import time
 
-# Import our core modules
-from models import ModelManager
-from rag import RAGManager
-from database import SimpleChatbotDB
+# Import our core modules with error handling
+import sys
+import os
+
+# Add current directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+try:
+    from models import ModelManager
+except ImportError as e:
+    st.error(f"Cannot import ModelManager: {e}")
+    st.stop()
+
+try:
+    from rag import RAGManager
+except ImportError as e:
+    st.error(f"Cannot import RAGManager: {e}")
+    st.stop()
+
+try:
+    from database import SimpleChatbotDB
+except ImportError as e:
+    st.error(f"Cannot import SimpleChatbotDB: {e}")
+    st.stop()
 
 # ----------------------------
 # Page Configuration
@@ -540,56 +562,7 @@ def render_header():
         else:
             st.markdown("🔴 **API Key Required**")
 
-def render_model_configuration():
-    """Render simplified Mistral AI model status"""
-    st.sidebar.markdown("### 🤖 PharmGPT Status")
-    
-    # Model status and info
-    availability = st.session_state.model_manager.is_model_available()
-    status_icon = "🟢" if availability else "🔴"
-    
-    st.sidebar.markdown(f"""
-    **Status:** {status_icon} {"Ready" if availability else "API Key Required"}
-    """)
-    
-    # API Key status
-    if not availability:
-        st.sidebar.error("⚠️ Mistral API key required")
-        
-        with st.sidebar.expander("🔑 How to get API key", expanded=True):
-            st.markdown("""
-            **Steps:**
-            1. Visit [Mistral Console](https://console.mistral.ai/)
-            2. Create account & generate API key
-            3. Set `MISTRAL_API_KEY` environment variable
-            4. Refresh this page
-            
-            **Note:** The provided key was invalid.
-            You need your own Mistral API key.
-            """)
-        
-        # Test connection button
-        if st.sidebar.button("🔍 Test Connection"):
-            success, message = st.session_state.model_manager.test_connection()
-            if success:
-                st.sidebar.success("✅ Connection successful!")
-                st.rerun()
-            else:
-                st.sidebar.error(f"❌ {message}")
-    else:
-        st.sidebar.success("✅ Ready for pharmacology queries")
-    
-    # RAG Status
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📚 Document Status")
-    
-    stats = st.session_state.rag_manager.get_document_stats()
-    if stats['total_chunks'] > 0:
-        st.sidebar.success(f"📚 {stats['total_chunks']} chunks available")
-        st.sidebar.info("Documents will enhance responses")
-    else:
-        st.sidebar.warning("📚 No documents uploaded")
-        st.sidebar.info("💡 Upload documents for enhanced responses")
+
 
 def render_document_upload_inline():
     """Render document upload interface above chat input with auto-processing"""
@@ -2226,12 +2199,14 @@ def main():
         # Sidebar components with comprehensive error handling
         try:
             with st.sidebar:
-                # Model configuration with error handling
+                # Minimal model check - only show if there's an issue
                 try:
-                    render_model_configuration()
-                except Exception as model_error:
-                    st.sidebar.error(f"Model configuration error: {str(model_error)}")
-                    st.sidebar.info("💡 Try refreshing the page to restore configuration")
+                    if not st.session_state.model_manager.is_model_available():
+                        st.sidebar.error("⚠️ Mistral API key required")
+                        with st.sidebar.expander("🔑 Setup"):
+                            st.markdown("Add `MISTRAL_API_KEY` to Streamlit secrets")
+                except Exception:
+                    pass  # Silent fail - don't clutter sidebar
                 
                 # Document upload is now inline above chat input
                 # No sidebar document upload needed
