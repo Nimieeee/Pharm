@@ -404,38 +404,60 @@ def apply_dark_mode_styling():
         animation: pulse 1s infinite;
     }
     
-    /* Creative loading spinner */
+    /* Modern morphing loader */
     .loading-spinner {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 1rem;
         padding: 1rem;
         font-size: 1rem;
         color: var(--primary-color);
     }
     
-    .pill-spinner {
-        display: flex;
-        gap: 0.3rem;
+    .loader {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        animation: ellipseAnimation 2s linear infinite;
     }
     
-    .pill-dot {
-        font-size: 1.2rem;
-        animation: pill-bounce 1.4s ease-in-out infinite;
-    }
-    
-    .pill-dot:nth-child(1) { animation-delay: -0.32s; }
-    .pill-dot:nth-child(2) { animation-delay: -0.16s; }
-    .pill-dot:nth-child(3) { animation-delay: 0s; }
-    
-    @keyframes pill-bounce {
-        0%, 80%, 100% {
-            transform: scale(0.8) translateY(0);
-            opacity: 0.5;
+    @keyframes ellipseAnimation {
+        0% {
+            border-radius: 50%;
         }
-        40% {
-            transform: scale(1.2) translateY(-10px);
-            opacity: 1;
+        12.5% {
+            border-radius: 0 50% 50% 50%;
+            transform: rotate(45deg);
+        }
+        25% {
+            border-radius: 0 0 50% 50%;
+            transform: rotate(90deg);
+        }
+        37.5% {
+            border-radius: 0 0 0 50%;
+            transform: rotate(135deg);
+        }
+        50% {
+            border-radius: 0;
+            transform: rotate(180deg);
+        }
+        62.5% {
+            border-radius: 50% 0 0 0;
+            transform: rotate(225deg);
+        }
+        75% {
+            border-radius: 50% 50% 0 0;
+            transform: rotate(270deg);
+        }
+        87.5% {
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(315deg);
+        }
+        100% {
+            border-radius: 50%;
+            transform: rotate(360deg);
         }
     }
     
@@ -1996,11 +2018,7 @@ def process_user_message(user_input: str):
                     spinner_placeholder = st.empty()
                     spinner_placeholder.markdown("""
                     <div class="loading-spinner">
-                        <div class="pill-spinner">
-                            <span class="pill-dot">💊</span>
-                            <span class="pill-dot">💊</span>
-                            <span class="pill-dot">💊</span>
-                        </div>
+                        <div class="loader"></div>
                         <span class="thinking-text">PharmGPT is thinking...</span>
                     </div>
                     """, unsafe_allow_html=True)
