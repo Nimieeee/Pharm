@@ -97,14 +97,14 @@ class SimpleChatbotDB:
             st.error(f"Error storing document chunk: {str(e)}")
             return False
     
-    def search_similar_chunks(self, query_embedding: List[float], conversation_id: str, limit: int = 5, threshold: float = 0.7) -> List[Dict[str, Any]]:
+    def search_similar_chunks(self, query_embedding: List[float], conversation_id: str, limit: int = None, threshold: float = 0.7) -> List[Dict[str, Any]]:
         """
         Search for similar document chunks using vector similarity within a conversation
         
         Args:
             query_embedding: Vector embedding of the query (384 dimensions)
             conversation_id: ID of the conversation to search within
-            limit: Maximum number of results to return
+            limit: Maximum number of results to return (None for unlimited)
             threshold: Similarity threshold (0.0 to 1.0)
             
         Returns:
@@ -116,13 +116,16 @@ class SimpleChatbotDB:
                 return []
             
             # Use the match_document_chunks function for vector similarity search
+            # Set a high limit if unlimited is requested
+            search_limit = limit if limit is not None else 1000
+            
             result = self.client.rpc(
                 'match_document_chunks',
                 {
                     'query_embedding': query_embedding,
                     'conversation_uuid': conversation_id,
                     'match_threshold': threshold,
-                    'match_count': limit
+                    'match_count': search_limit
                 }
             ).execute()
             
@@ -220,16 +223,19 @@ class SimpleChatbotDB:
             st.error(f"❌ Error getting documents by filename: {str(e)}")
             return []
     
-    def get_random_chunks(self, conversation_id: str, limit: int = 3) -> List[Dict[str, Any]]:
+    def get_random_chunks(self, conversation_id: str, limit: int = None) -> List[Dict[str, Any]]:
         """Get recent chunks for fallback (better than random for context) within a conversation"""
         try:
             if not self.client:
                 return []
             
+            # Set a high limit if unlimited is requested
+            search_limit = limit if limit is not None else 1000
+            
             # Get most recent chunks (likely more relevant) for this conversation
             result = self.client.table("document_chunks").select(
                 "id, content, metadata"
-            ).eq("conversation_id", conversation_id).order("created_at", desc=True).limit(limit).execute()
+            ).eq("conversation_id", conversation_id).order("created_at", desc=True).limit(search_limit).execute()
             
             # Format to match similarity search results
             chunks = []
@@ -454,6 +460,33 @@ class SimpleChatbotDB:
         except Exception as e:
             st.error(f"❌ Error getting conversation stats: {str(e)}")
             return {"message_count": 0, "document_count": 0, "last_activity": None}
+    
+    def get_all_conversation_chunks(self, conversation_id: str) -> List[Dict[str, Any]]:
+        """Get ALL document chunks for a conversation (unlimited)"""
+        try:
+            if not self.client:
+                return []
+            
+            result = self.client.table("document_chunks").select(
+                "id, content, metadata, created_at"
+            ).eq("conversation_id", conversation_id).order("created_at").execute()
+            
+            # Format to match similarity search results
+            chunks = []
+            for row in result.data:
+                chunks.append({
+                    "id": row.get("id"),
+                    "content": row.get("content"),
+                    "metadata": row.get("metadata"),
+                    "similarity": 0.5,  # Neutral similarity score
+                    "created_at": row.get("created_at")
+                })
+            
+            return chunks
+            
+        except Exception as e:
+            st.error(f"❌ Error getting all conversation chunks: {str(e)}")
+            return []
 
 
 # Convenience function to get database instance

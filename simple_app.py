@@ -1954,13 +1954,15 @@ def process_user_message(user_input: str):
                         ]
                         
                         is_comprehensive = any(keyword in user_input.lower() for keyword in comprehensive_keywords)
-                        max_chunks = 15 if is_comprehensive else 8
+                        # Use unlimited chunks but with smart context management
+                        max_chunks = None if is_comprehensive else None  # Unlimited for both cases
                         
                         context = st.session_state.rag_manager.search_relevant_context(
                             user_input, 
                             conversation_id=st.session_state.current_conversation_id,
                             max_chunks=max_chunks,
-                            include_document_overview=is_comprehensive
+                            include_document_overview=is_comprehensive,
+                            unlimited_context=True
                         )
                         st.write(f"Debug - Retrieved context length: {len(context) if context else 0}")  # Debug info
                         st.write(f"Debug - Context preview: {context[:200] if context else 'No context'}...")  # Debug info
