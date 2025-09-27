@@ -349,16 +349,11 @@ class RAGManager:
             # Generate query embedding
             query_embedding = self._generate_embedding(query)
             if not query_embedding:
-                st.write("Debug - Failed to generate query embedding")
                 return ""
-            
-            st.write(f"Debug - Query embedding generated, length: {len(query_embedding)}")
             
             # Search for similar chunks - use unlimited if requested
             search_limit = 1000 if unlimited_context or max_chunks is None else (max_chunks or 10)
             similar_chunks = self.db_manager.search_similar_chunks(query_embedding, conversation_id, user_session_id, search_limit, threshold=0.1)
-            
-            st.write(f"Debug - Found {len(similar_chunks)} similar chunks")
             
             # If no similar chunks found, try getting any chunks as fallback
             if not similar_chunks:
@@ -392,7 +387,7 @@ class RAGManager:
             
             if is_comprehensive_query or include_document_overview:
                 # For comprehensive queries, get more chunks and add document metadata
-                st.write("Debug - Comprehensive query detected, retrieving more context...")
+                # Comprehensive query detected, retrieving more context
                 
                 # Get additional chunks for comprehensive coverage
                 additional_limit = 1000 if unlimited_context else (max_chunks * 3 if max_chunks else 50)
@@ -424,7 +419,7 @@ class RAGManager:
                 similarity = chunk.get("similarity", 0)
                 metadata = chunk.get("metadata", {})
                 
-                st.write(f"Debug - Chunk {i+1}: similarity={similarity:.3f}, content_length={len(content)}")
+                # Processing chunk content
                 
                 if content:
                     context_parts.append(content)
@@ -453,7 +448,7 @@ class RAGManager:
             max_context_chars = 100000  # ~25k tokens approximately
             
             if len(full_context) > max_context_chars:
-                st.write(f"Debug - Context too large ({len(full_context)} chars), truncating to {max_context_chars} chars")
+                # Context too large, truncating for performance
                 
                 # Prioritize chunks by similarity score
                 sorted_chunks = sorted(similar_chunks, key=lambda x: x.get("similarity", 0), reverse=True)
@@ -478,7 +473,7 @@ class RAGManager:
                         break
                 
                 full_context = "\n\n".join(truncated_parts)
-                st.write(f"Debug - Final context length: {len(full_context)} chars with {len(truncated_parts)} parts")
+                # Context truncated for optimal performance
             
             # Context is ready for use
             
@@ -500,13 +495,22 @@ class RAGManager:
             Complete document content as context
         """
         try:
-            # Get ALL chunks for this conversation and user session
+            # Get ALL chunks for this conversation and user session ONLY
             all_chunks = self.db_manager.get_all_conversation_chunks(conversation_id, user_session_id)
             
-            st.write(f"Debug - Retrieved {len(all_chunks)} total chunks for complete context")
+            # Verify conversation isolation - double-check that all chunks belong to this conversation
+            verified_chunks = []
+            for chunk in all_chunks:
+                chunk_conv_id = chunk.get("conversation_id")
+                chunk_user_id = chunk.get("user_session_id") 
+                
+                # Only include chunks that definitely belong to this conversation and user
+                if chunk_conv_id == conversation_id and chunk_user_id == user_session_id:
+                    verified_chunks.append(chunk)
+            
+            all_chunks = verified_chunks
             
             if not all_chunks:
-                st.write("Debug - No document chunks found")
                 return ""
             
             # Organize chunks by document/filename
@@ -559,7 +563,6 @@ class RAGManager:
             max_context_chars = 150000  # ~37k tokens - very generous limit
             
             if len(full_context) > max_context_chars:
-                st.write(f"Debug - Context very large ({len(full_context)} chars), truncating to {max_context_chars} chars")
                 
                 # Keep document overview and truncate content proportionally
                 if len(documents) > 1:
@@ -581,9 +584,6 @@ class RAGManager:
                 else:
                     full_context = full_context[:max_context_chars]
                 
-                st.write(f"Debug - Final context length: {len(full_context)} chars")
-            
-            st.write(f"Debug - Providing complete document context ({len(full_context)} characters)")
             return full_context
             
         except Exception as e:

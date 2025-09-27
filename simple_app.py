@@ -16,10 +16,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-# Debug info
-st.write(f"Debug - Current directory: {current_dir}")
-st.write(f"Debug - Files in directory: {os.listdir(current_dir)}")
-st.write(f"Debug - Python path: {sys.path[:3]}")  # Show first 3 entries
+# System info (hidden in production)
 
 try:
     import models
@@ -642,33 +639,31 @@ def render_document_upload_inline():
                     # Basic validation - allow larger files for images and presentations
                     max_size = 50 * 1024 * 1024  # 50MB for images/presentations
                     if uploaded_file.size > max_size or uploaded_file.size == 0:
-                        st.write(f"Debug - Skipping {uploaded_file.name}: size={uploaded_file.size} (max: {max_size})")
+                        st.warning(f"⚠️ Skipping {uploaded_file.name}: File too large or empty")
                         continue
                     
-                    st.write(f"Debug - Processing {uploaded_file.name} (size: {uploaded_file.size} bytes)")
-                    
-                    # Process file with progress
+                    # Process file silently
                     success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
                         uploaded_file,
                         conversation_id=st.session_state.current_conversation_id,
                         user_session_id=st.session_state.user_session_id,
-                        progress_callback=lambda msg: st.write(f"Debug - {msg}")
+                        progress_callback=None  # No debug messages
                     )
                     
-                    st.write(f"Debug - File {uploaded_file.name}: success={success}, chunks={chunk_count}")
+                    if success and chunk_count > 0:
+                        st.success(f"✅ Processed {uploaded_file.name} ({chunk_count} sections)")
                     
                     if success and chunk_count > 0:
                         success_count += 1
                             
                 except Exception as e:
-                    st.write(f"Debug - Error processing {uploaded_file.name}: {str(e)}")
+                    st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
                     continue
             
             # Update processed files list
             if success_count > 0:
                 successful_files = [f.name for f in new_files[:success_count]]
                 st.session_state.last_processed_files.extend(successful_files)
-                st.write(f"Debug - Successfully processed {success_count} files")
     
     # Minimal system check (no UI clutter)
     
@@ -1991,8 +1986,6 @@ def process_user_message(user_input: str):
                     st.session_state.current_conversation_id,
                     st.session_state.user_session_id
                 )
-                st.write(f"Debug - Conversation document stats: {stats}")  # Debug info
-                st.write("Debug - Using COMPLETE document content as context (not just relevant chunks)")
                 
                 if stats['total_chunks'] > 0:
                     with st.spinner("🔍 Searching document context..."):
@@ -2001,8 +1994,7 @@ def process_user_message(user_input: str):
                             conversation_id=st.session_state.current_conversation_id,
                             user_session_id=st.session_state.user_session_id
                         )
-                        st.write(f"Debug - Retrieved context length: {len(context) if context else 0}")  # Debug info
-                        st.write(f"Debug - Context preview: {context[:200] if context else 'No context'}...")  # Debug info
+                        # Context retrieved successfully
                         
                         if context and context.strip():
                             # Count actual content chunks
@@ -2015,13 +2007,11 @@ def process_user_message(user_input: str):
                 else:
                     context = ""
                     context_chunks = 0
-                    st.write("Debug - No documents available in database")  # Debug info
                     
             except Exception as rag_error:
                 # Silent fallback to general knowledge
                 context = ""
                 context_chunks = 0
-                st.write(f"Debug - RAG error: {str(rag_error)}")  # Debug info
             
             # Generate AI response with context
             try:

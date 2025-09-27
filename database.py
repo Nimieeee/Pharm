@@ -113,7 +113,6 @@ class SimpleChatbotDB:
         """
         try:
             if not self.client:
-                st.write("Debug - No database client available")
                 return []
             
             # Use the match_document_chunks function for vector similarity search
@@ -131,13 +130,13 @@ class SimpleChatbotDB:
                 }
             ).execute()
             
-            st.write(f"Debug - Vector search found: {len(result.data) if result.data else 0} chunks")
+            # Vector search completed
             
             return result.data if result.data else []
             
         except Exception as e:
             st.error(f"❌ Error searching document chunks: {str(e)}")
-            st.write(f"Debug - Search error details: {e}")
+            # Search error occurred
             return []
     
     def get_chunk_count(self) -> int:
@@ -473,19 +472,24 @@ class SimpleChatbotDB:
                 return []
             
             result = self.client.table("document_chunks").select(
-                "id, content, metadata, created_at"
+                "id, content, metadata, created_at, conversation_id, user_session_id"
             ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at").execute()
             
-            # Format to match similarity search results
+            # Format to match similarity search results with conversation isolation verification
             chunks = []
             for row in result.data:
-                chunks.append({
-                    "id": row.get("id"),
-                    "content": row.get("content"),
-                    "metadata": row.get("metadata"),
-                    "similarity": 0.5,  # Neutral similarity score
-                    "created_at": row.get("created_at")
-                })
+                # Double-check conversation isolation
+                if (row.get("conversation_id") == conversation_id and 
+                    row.get("user_session_id") == user_session_id):
+                    chunks.append({
+                        "id": row.get("id"),
+                        "content": row.get("content"),
+                        "metadata": row.get("metadata"),
+                        "similarity": 0.5,  # Neutral similarity score
+                        "created_at": row.get("created_at"),
+                        "conversation_id": row.get("conversation_id"),
+                        "user_session_id": row.get("user_session_id")
+                    })
             
             return chunks
             
