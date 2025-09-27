@@ -587,66 +587,31 @@ def render_document_upload_inline():
         new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
         
         if new_files:
-            st.info(f"🔄 Auto-processing {len(new_files)} new document(s)...")
-            
-            # Process new files automatically with detailed error handling
+            # Process new files silently
             success_count = 0
             for uploaded_file in new_files:
                 try:
-                    # Validate file first
-                    if uploaded_file.size > 10 * 1024 * 1024:  # 10MB limit
-                        st.error(f"❌ {uploaded_file.name}: File too large (max 10MB)")
+                    # Basic validation
+                    if uploaded_file.size > 10 * 1024 * 1024 or uploaded_file.size == 0:
                         continue
                     
-                    if uploaded_file.size == 0:
-                        st.error(f"❌ {uploaded_file.name}: File is empty")
-                        continue
+                    # Process file silently
+                    success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
+                        uploaded_file, 
+                        progress_callback=None  # No progress messages
+                    )
                     
-                    with st.spinner(f"Processing {uploaded_file.name}..."):
-                        # Check if RAG manager is properly initialized
-                        if not hasattr(st.session_state, 'rag_manager') or not st.session_state.rag_manager:
-                            st.error("❌ RAG system not initialized. Please refresh the page.")
-                            break
-                        
-                        # Check if embedding model is available
-                        if not st.session_state.rag_manager.embedding_model:
-                            st.error("❌ Embedding model not available. Please check your configuration.")
-                            break
-                        
-                        # Check database connection
-                        if not st.session_state.rag_manager.db_manager.is_connected():
-                            st.error("❌ Database not connected. Please check your Supabase configuration.")
-                            break
-                        
-                        success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
-                            uploaded_file, 
-                            progress_callback=lambda msg: st.info(f"🔄 {msg}")
-                        )
-                        
-                        if success and chunk_count > 0:
-                            success_count += 1
-                            st.success(f"✅ {uploaded_file.name}: {chunk_count} chunks processed")
-                        else:
-                            st.error(f"❌ {uploaded_file.name}: Processing failed - no chunks created")
+                    if success and chunk_count > 0:
+                        success_count += 1
                             
-                except Exception as e:
-                    error_msg = str(e)
-                    if "embedding" in error_msg.lower():
-                        st.error(f"❌ {uploaded_file.name}: Embedding generation failed. Check your API keys.")
-                    elif "database" in error_msg.lower():
-                        st.error(f"❌ {uploaded_file.name}: Database error. Check your Supabase connection.")
-                    elif "document" in error_msg.lower():
-                        st.error(f"❌ {uploaded_file.name}: Document format error. Try a different file.")
-                    else:
-                        st.error(f"❌ {uploaded_file.name}: {error_msg}")
+                except Exception:
+                    continue  # Silent fail
             
-            # Update processed files list only for successful files
+            # Update processed files list and show minimal success message
             if success_count > 0:
                 successful_files = [f.name for f in new_files[:success_count]]
                 st.session_state.last_processed_files.extend(successful_files)
-                st.success(f"🎉 Successfully processed {success_count} document(s)!")
-            else:
-                st.warning("⚠️ No documents were processed successfully. Please check your configuration.")
+                st.success(f"✅ {success_count} document(s) processed")
     
     # Show current document status and system health
     try:
@@ -1981,13 +1946,9 @@ def process_user_message(user_input: str):
                             if context_chunks > 0:
                                 st.success(f"📚 Found {context_chunks} relevant document chunks")
                             else:
-                                st.info("📚 No relevant document context found")
                                 context = ""
                         else:
-                            st.info("📚 No relevant document context found")
                             context = ""
-                else:
-                    st.info("📚 No documents available - using general knowledge")
             except Exception as rag_error:
                 st.warning(f"⚠️ Document search error: {str(rag_error)}")
                 st.info("📚 Falling back to general knowledge")

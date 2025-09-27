@@ -99,25 +99,15 @@ class RAGManager:
             # Process and store chunks with progress tracking
             success_count = 0
             for i, chunk in enumerate(chunks):
-                if progress_callback:
-                    progress_callback(f"Processing chunk {i+1}/{len(chunks)}")
-                
                 # Check if chunk has content
                 if not chunk.page_content.strip():
                     continue
                 
                 if self._process_and_store_chunk(chunk, uploaded_file.name):
                     success_count += 1
-                else:
-                    st.warning(f"Failed to store chunk {i+1} from '{uploaded_file.name}'")
             
             # Clean up temporary file
             os.unlink(tmp_file_path)
-            
-            if success_count > 0:
-                st.success(f"Successfully processed {success_count}/{len(chunks)} chunks from {uploaded_file.name}")
-            else:
-                st.error(f"Failed to process any chunks from {uploaded_file.name}")
             
             return success_count > 0, success_count
             
@@ -145,48 +135,30 @@ class RAGManager:
                 return documents
                 
             elif file_extension == 'docx':
-                # Use direct python-docx approach for better reliability
-                st.info(f"🔄 Processing DOCX file: {filename}")
-                
-                # First, let's check if python-docx is available
+                # Process DOCX silently
                 try:
                     import docx
-                    st.info("✅ python-docx imported successfully")
-                except ImportError as e:
-                    st.error(f"❌ python-docx import failed: {str(e)}")
-                    st.error("Please install python-docx: pip install python-docx")
+                except ImportError:
                     return []
                 
-                # Now process the document
+                # Process the document
                 try:
                     doc = docx.Document(file_path)
-                    st.info(f"✅ DOCX document loaded: {filename}")
                     
                     # Extract text from all paragraphs
                     text_content = []
-                    paragraph_count = 0
                     for paragraph in doc.paragraphs:
                         if paragraph.text.strip():
                             text_content.append(paragraph.text.strip())
-                            paragraph_count += 1
-                    
-                    st.info(f"📄 Found {paragraph_count} paragraphs with text")
                     
                     # Extract text from tables
-                    table_count = 0
                     for table in doc.tables:
                         for row in table.rows:
                             for cell in row.cells:
                                 if cell.text.strip():
                                     text_content.append(cell.text.strip())
-                                    table_count += 1
-                    
-                    if table_count > 0:
-                        st.info(f"📊 Found {table_count} table cells with text")
                     
                     if not text_content:
-                        st.warning(f"DOCX '{filename}' contains no readable text content")
-                        st.info("The document may be empty or contain only images/formatting")
                         return []
                     
                     # Create a Document object
@@ -196,7 +168,6 @@ class RAGManager:
                         metadata={"source": filename, "file_type": "docx"}
                     )
                     
-                    st.success(f"✅ DOCX '{filename}' processed successfully ({len(full_text)} characters)")
                     return [document]
                     
                 except Exception as docx_error:
@@ -285,8 +256,8 @@ class RAGManager:
             if not query_embedding:
                 return ""
             
-            # Search for similar chunks
-            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, max_chunks)
+            # Search for similar chunks with lower threshold
+            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, max_chunks, threshold=0.3)
             
             if not similar_chunks:
                 return ""

@@ -100,7 +100,7 @@ class SimpleChatbotDB:
         Search for similar document chunks using vector similarity
         
         Args:
-            query_embedding: Vector embedding of the query (1536 dimensions)
+            query_embedding: Vector embedding of the query (384 dimensions)
             limit: Maximum number of results to return
             threshold: Similarity threshold (0.0 to 1.0)
             
