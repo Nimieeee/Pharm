@@ -6,7 +6,13 @@ Handles Mistral Small model integration with RAG context and system prompts from
 import os
 from typing import Optional, Dict, Any, List
 import streamlit as st
-from prompts import pharmacology_system_prompt
+
+# Import system prompt from prompts.py
+try:
+    from prompts import pharmacology_system_prompt
+except ImportError:
+    # Fallback system prompt if prompts.py is not available
+    pharmacology_system_prompt = """You are PharmGPT, an expert pharmacology assistant. Provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Always provide elaborate and detailed explanations unless specifically asked for brevity."""
 
 try:
     from mistralai import Mistral
@@ -125,7 +131,11 @@ class ModelManager:
     """Manages Mistral AI model interactions with RAG integration"""
     
     def __init__(self):
-        self.model = MistralModel()
+        try:
+            self.model = MistralModel()
+        except Exception as e:
+            st.error(f"Error initializing MistralModel: {e}")
+            raise
     
     def generate_response(self, message: str, context: Optional[str] = None) -> str:
         """
