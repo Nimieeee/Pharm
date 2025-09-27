@@ -26,6 +26,9 @@ Pillow>=10.0.0
 pytesseract>=0.3.10
 opencv-python-headless>=4.8.0
 
+# Document Intelligence and Extraction
+langextract>=0.1.0
+
 # Note: For OCR functionality, you also need to install Tesseract OCR on your system:
 # Ubuntu/Debian: sudo apt-get install tesseract-ocr
 # macOS: brew install tesseract
