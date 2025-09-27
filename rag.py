@@ -537,6 +537,151 @@ class RAGManager:
             st.error(f"Error searching context: {str(e)}")
             return ""
     
+    def get_all_document_context(self, conversation_id: str, user_session_id: str) -> str:
+        """
+        Get ALL document content for complete context (no chunking limitations)
+        
+        Args:
+            conversation_id: ID of the conversation
+            user_session_id: ID of the user session for privacy isolation
+            
+        Returns:
+            Complete document content as context
+        """
+        try:
+            # Get ALL chunks for this conversation and user session
+            all_chunks = self.db_manager.get_all_conversation_chunks(conversation_id, user_session_id)
+            
+            st.write(f"Debug - Retrieved {len(all_chunks)} total chunks for complete context")
+            
+            if not all_chunks:
+                st.write("Debug - No document chunks found")
+                return ""
+            
+            # Organize chunks by document/filename
+            documents = {}
+            for chunk in all_chunks:
+                metadata = chunk.get("metadata", {})
+                filename = metadata.get("filename", "Unknown Document")
+                
+                if filename not in documents:
+                    documents[filename] = {
+                        "chunks": [],
+                        "file_type": metadata.get("file_type", "unknown")
+                    }
+                
+                documents[filename]["chunks"].append({
+                    "content": chunk.get("content", ""),
+                    "created_at": chunk.get("created_at", "")
+                })
+            
+            # Build complete context with document organization
+            context_parts = []
+            
+            # Add document overview
+            if len(documents) > 1:
+                context_parts.append("=== UPLOADED DOCUMENTS OVERVIEW ===")
+                for filename, doc_info in documents.items():
+                    context_parts.append(f"📄 {filename} ({doc_info['file_type']}) - {len(doc_info['chunks'])} sections")
+                context_parts.append("")
+            
+            # Add complete content for each document
+            for filename, doc_info in documents.items():
+                if len(documents) > 1:
+                    context_parts.append(f"=== DOCUMENT: {filename} ===")
+                
+                # Sort chunks by creation time to maintain document order
+                sorted_chunks = sorted(doc_info["chunks"], key=lambda x: x.get("created_at", ""))
+                
+                for chunk in sorted_chunks:
+                    content = chunk["content"].strip()
+                    if content:
+                        context_parts.append(content)
+                
+                if len(documents) > 1:
+                    context_parts.append("")  # Separator between documents
+            
+            # Combine all content
+            full_context = "\n\n".join(context_parts)
+            
+            # Smart truncation if context is too large (keep most important parts)
+            max_context_chars = 150000  # ~37k tokens - very generous limit
+            
+            if len(full_context) > max_context_chars:
+                st.write(f"Debug - Context very large ({len(full_context)} chars), truncating to {max_context_chars} chars")
+                
+                # Keep document overview and truncate content proportionally
+                if len(documents) > 1:
+                    # Find where content starts (after overview)
+                    overview_end = full_context.find("=== DOCUMENT:")
+                    if overview_end > 0:
+                        overview = full_context[:overview_end]
+                        content_section = full_context[overview_end:]
+                        
+                        # Truncate content section
+                        available_chars = max_context_chars - len(overview)
+                        if available_chars > 0:
+                            truncated_content = content_section[:available_chars]
+                            full_context = overview + truncated_content
+                        else:
+                            full_context = overview
+                    else:
+                        full_context = full_context[:max_context_chars]
+                else:
+                    full_context = full_context[:max_context_chars]
+                
+                st.write(f"Debug - Final context length: {len(full_context)} chars")
+            
+            st.write(f"Debug - Providing complete document context ({len(full_context)} characters)")
+            return full_context
+            
+        except Exception as e:
+            st.error(f"Error getting complete document context: {str(e)}")
+            return ""
+    
+    def get_conversation_document_stats(self, conversation_id: str, user_session_id: str) -> Dict[str, Any]:
+        """Get document statistics for a specific conversation and user session"""
+        try:
+            all_chunks = self.db_manager.get_all_conversation_chunks(conversation_id, user_session_id)
+            
+            if not all_chunks:
+                return {
+                    "total_chunks": 0,
+                    "unique_documents": 0,
+                    "total_size_mb": 0,
+                    "documents": []
+                }
+            
+            # Process chunks to get document info
+            documents = {}
+            total_content_size = 0
+            
+            for chunk in all_chunks:
+                metadata = chunk.get("metadata", {})
+                filename = metadata.get("filename", "Unknown")
+                content = chunk.get("content", "")
+                
+                total_content_size += len(content.encode('utf-8'))
+                
+                if filename not in documents:
+                    documents[filename] = {
+                        "chunks": 0,
+                        "file_type": metadata.get("file_type", "unknown")
+                    }
+                
+                documents[filename]["chunks"] += 1
+            
+            return {
+                "total_chunks": len(all_chunks),
+                "unique_documents": len(documents),
+                "total_size_mb": round(total_content_size / (1024 * 1024), 2),
+                "documents": [{"name": name, **info} for name, info in documents.items()]
+            }
+            
+        except Exception as e:
+            st.error(f"❌ Error getting conversation document stats: {str(e)}")
+            return {"total_chunks": 0, "unique_documents": 0, "total_size_mb": 0, "documents": []}
+    
     def get_document_stats(self) -> Dict[str, Any]:
         """Get comprehensive statistics about stored documents"""
         try:

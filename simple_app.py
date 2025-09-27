@@ -55,7 +55,7 @@ except ImportError as e:
 # ----------------------------
 st.set_page_config(
     page_title="PharmGPT",
-    page_icon="",
+    page_icon="💊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -1943,29 +1943,20 @@ def process_user_message(user_input: str):
             
             try:
                 # Check if documents are available
-                stats = st.session_state.rag_manager.get_document_stats()
-                st.write(f"Debug - Document stats: {stats}")  # Debug info
+                # Get conversation-specific document stats
+                stats = st.session_state.rag_manager.get_conversation_document_stats(
+                    st.session_state.current_conversation_id,
+                    st.session_state.user_session_id
+                )
+                st.write(f"Debug - Conversation document stats: {stats}")  # Debug info
+                st.write("Debug - Using COMPLETE document content as context (not just relevant chunks)")
                 
                 if stats['total_chunks'] > 0:
                     with st.spinner("🔍 Searching document context..."):
-                        # Determine if user wants comprehensive information
-                        comprehensive_keywords = [
-                            "entire", "whole", "complete", "full", "summarize", "summary", 
-                            "overview", "explain the document", "what is this document about",
-                            "document content", "all information", "everything", "comprehensive"
-                        ]
-                        
-                        is_comprehensive = any(keyword in user_input.lower() for keyword in comprehensive_keywords)
-                        # Use unlimited chunks but with smart context management
-                        max_chunks = None if is_comprehensive else None  # Unlimited for both cases
-                        
-                        context = st.session_state.rag_manager.search_relevant_context(
-                            user_input, 
+                        # Always use ALL available document chunks for complete context
+                        context = st.session_state.rag_manager.get_all_document_context(
                             conversation_id=st.session_state.current_conversation_id,
-                            user_session_id=st.session_state.user_session_id,
-                            max_chunks=max_chunks,
-                            include_document_overview=is_comprehensive,
-                            unlimited_context=True
+                            user_session_id=st.session_state.user_session_id
                         )
                         st.write(f"Debug - Retrieved context length: {len(context) if context else 0}")  # Debug info
                         st.write(f"Debug - Context preview: {context[:200] if context else 'No context'}...")  # Debug info
@@ -2186,8 +2177,6 @@ def main():
             # Enhanced main area layout
             col1, col2 = st.columns([3, 1])
             
-            with col1:
-                st.markdown("### 💬 Chat")
             
             with col2:
                 # Document processing status indicator with error handling

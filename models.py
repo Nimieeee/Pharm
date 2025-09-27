@@ -66,27 +66,11 @@ class MistralModel:
             # Build user message with context if available
             user_message = message
             if context and context.strip():
-                # Check if this is a comprehensive query
-                comprehensive_keywords = [
-                    "entire", "whole", "complete", "full", "summarize", "summary", 
-                    "overview", "explain the document", "what is this document about"
-                ]
-                is_comprehensive = any(keyword in message.lower() for keyword in comprehensive_keywords)
-                
-                if is_comprehensive:
-                    user_message = f"""**Document Content from Uploaded Files:**
+                user_message = f"""**Complete Document Content from Uploaded Files:**
 
 {context}
 
-**Instructions:** The user is asking for comprehensive information about the document(s). Use ALL the provided context to give a thorough, detailed explanation. Organize the information logically and reference specific sections when relevant.
-
-**User Question:** {message}"""
-                else:
-                    user_message = f"""**Relevant Context from Uploaded Documents:**
-
-{context}
-
-**Instructions:** Use this context to provide a comprehensive and detailed answer. Reference the document content specifically and explain how it relates to the question.
+**Instructions:** You have access to the COMPLETE content of the user's uploaded documents above. Use this comprehensive information to provide detailed, accurate answers. Reference specific sections, quote relevant parts, and provide thorough explanations based on the document content. If the user asks about anything in the documents, you have all the information needed to give a complete response.
 
 **User Question:** {message}"""
             
