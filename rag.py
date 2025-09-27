@@ -64,12 +64,13 @@ class RAGManager:
             except Exception as fallback_e:
                 st.error(f"Fallback embedding initialization failed: {str(fallback_e)}")
     
-    def process_uploaded_file(self, uploaded_file, progress_callback=None) -> tuple[bool, int]:
+    def process_uploaded_file(self, uploaded_file, conversation_id: str, progress_callback=None) -> tuple[bool, int]:
         """
         Process uploaded file and store chunks in database with enhanced feedback
         
         Args:
             uploaded_file: Streamlit uploaded file object
+            conversation_id: ID of the conversation to associate chunks with
             progress_callback: Optional callback function for progress updates
             
         Returns:
@@ -118,7 +119,7 @@ class RAGManager:
                 if not chunk.page_content.strip():
                     continue
                 
-                if self._process_and_store_chunk(chunk, uploaded_file.name):
+                if self._process_and_store_chunk(chunk, uploaded_file.name, conversation_id):
                     success_count += 1
             
             # Clean up temporary file
@@ -301,7 +302,7 @@ class RAGManager:
                 st.info("💡 Make sure Tesseract OCR is installed on your system")
             return []
     
-    def _process_and_store_chunk(self, chunk: Document, filename: str) -> bool:
+    def _process_and_store_chunk(self, chunk: Document, filename: str, conversation_id: str) -> bool:
         """Process chunk and store in database"""
         try:
             # Generate embedding
@@ -320,7 +321,8 @@ class RAGManager:
             return self.db_manager.store_document_chunk(
                 content=chunk.page_content,
                 embedding=embedding,
-                metadata=metadata
+                metadata=metadata,
+                conversation_id=conversation_id
             )
             
         except Exception as e:
@@ -357,12 +359,13 @@ class RAGManager:
                 st.info("💡 Check your OpenAI API key or try using sentence-transformers")
             return None
     
-    def search_relevant_context(self, query: str, max_chunks: int = 3) -> str:
+    def search_relevant_context(self, query: str, conversation_id: str, max_chunks: int = 3) -> str:
         """
-        Search for relevant context based on query
+        Search for relevant context based on query within a conversation
         
         Args:
             query: User query
+            conversation_id: ID of the conversation to search within
             max_chunks: Maximum number of chunks to retrieve
             
         Returns:
@@ -378,14 +381,14 @@ class RAGManager:
             st.write(f"Debug - Query embedding generated, length: {len(query_embedding)}")
             
             # Search for similar chunks with very low threshold to test
-            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, max_chunks, threshold=0.1)
+            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, conversation_id, max_chunks, threshold=0.1)
             
             st.write(f"Debug - Found {len(similar_chunks)} similar chunks")
             
             # If no similar chunks found, try getting any chunks as fallback
             if not similar_chunks:
                 st.write("Debug - No similar chunks found, trying fallback query...")
-                fallback_chunks = self.db_manager.get_random_chunks(max_chunks)
+                fallback_chunks = self.db_manager.get_random_chunks(conversation_id, max_chunks)
                 st.write(f"Debug - Fallback found {len(fallback_chunks)} chunks")
                 if fallback_chunks:
                     similar_chunks = fallback_chunks
@@ -393,7 +396,7 @@ class RAGManager:
             # For now, always use fallback until vector search is fixed
             if len(similar_chunks) == 0:
                 st.write("Debug - Using fallback chunks for context...")
-                similar_chunks = self.db_manager.get_random_chunks(max_chunks)
+                similar_chunks = self.db_manager.get_random_chunks(conversation_id, max_chunks)
             
             if not similar_chunks:
                 return ""

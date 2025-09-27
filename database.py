@@ -10,7 +10,7 @@ from supabase import create_client, Client
 
 
 class SimpleChatbotDB:
-    """Simple database manager for chatbot with document chunks"""
+    """Simple database manager for chatbot with document chunks and conversations"""
     
     def __init__(self):
         self.client: Optional[Client] = None
@@ -66,7 +66,7 @@ class SimpleChatbotDB:
                 st.error(f"❌ Database connection test failed: {str(e)}")
             return False
     
-    def store_document_chunk(self, content: str, embedding: List[float], metadata: Dict[str, Any]) -> bool:
+    def store_document_chunk(self, content: str, embedding: List[float], metadata: Dict[str, Any], conversation_id: str) -> bool:
         """
         Store document chunk with embedding in database
         
@@ -74,6 +74,7 @@ class SimpleChatbotDB:
             content: Text content of the chunk
             embedding: Vector embedding of the content
             metadata: Additional metadata about the chunk
+            conversation_id: ID of the conversation this chunk belongs to
             
         Returns:
             True if successful, False otherwise
@@ -85,7 +86,8 @@ class SimpleChatbotDB:
             data = {
                 "content": content,
                 "embedding": embedding,
-                "metadata": metadata
+                "metadata": metadata,
+                "conversation_id": conversation_id
             }
             
             result = self.client.table("document_chunks").insert(data).execute()
@@ -95,12 +97,13 @@ class SimpleChatbotDB:
             st.error(f"Error storing document chunk: {str(e)}")
             return False
     
-    def search_similar_chunks(self, query_embedding: List[float], limit: int = 5, threshold: float = 0.7) -> List[Dict[str, Any]]:
+    def search_similar_chunks(self, query_embedding: List[float], conversation_id: str, limit: int = 5, threshold: float = 0.7) -> List[Dict[str, Any]]:
         """
-        Search for similar document chunks using vector similarity
+        Search for similar document chunks using vector similarity within a conversation
         
         Args:
             query_embedding: Vector embedding of the query (384 dimensions)
+            conversation_id: ID of the conversation to search within
             limit: Maximum number of results to return
             threshold: Similarity threshold (0.0 to 1.0)
             
@@ -117,6 +120,7 @@ class SimpleChatbotDB:
                 'match_document_chunks',
                 {
                     'query_embedding': query_embedding,
+                    'conversation_uuid': conversation_id,
                     'match_threshold': threshold,
                     'match_count': limit
                 }
@@ -216,16 +220,16 @@ class SimpleChatbotDB:
             st.error(f"❌ Error getting documents by filename: {str(e)}")
             return []
     
-    def get_random_chunks(self, limit: int = 3) -> List[Dict[str, Any]]:
-        """Get recent chunks for fallback (better than random for context)"""
+    def get_random_chunks(self, conversation_id: str, limit: int = 3) -> List[Dict[str, Any]]:
+        """Get recent chunks for fallback (better than random for context) within a conversation"""
         try:
             if not self.client:
                 return []
             
-            # Get most recent chunks (likely more relevant)
+            # Get most recent chunks (likely more relevant) for this conversation
             result = self.client.table("document_chunks").select(
                 "id, content, metadata"
-            ).order("created_at", desc=True).limit(limit).execute()
+            ).eq("conversation_id", conversation_id).order("created_at", desc=True).limit(limit).execute()
             
             # Format to match similarity search results
             chunks = []
@@ -305,6 +309,133 @@ class SimpleChatbotDB:
     def is_connected(self) -> bool:
         """Check if database client is initialized"""
         return self.client is not None
+    
+    # Conversation Management Methods
+    
+    def create_conversation(self, title: str) -> Optional[str]:
+        """Create a new conversation and return its ID"""
+        try:
+            if not self.client:
+                return None
+            
+            result = self.client.table("conversations").insert({
+                "title": title
+            }).execute()
+            
+            if result.data and len(result.data) > 0:
+                return result.data[0]["id"]
+            return None
+            
+        except Exception as e:
+            st.error(f"❌ Error creating conversation: {str(e)}")
+            return None
+    
+    def get_conversations(self) -> List[Dict[str, Any]]:
+        """Get all conversations ordered by last update"""
+        try:
+            if not self.client:
+                return []
+            
+            result = self.client.table("conversations").select(
+                "id, title, created_at, updated_at"
+            ).order("updated_at", desc=True).execute()
+            
+            return result.data if result.data else []
+            
+        except Exception as e:
+            st.error(f"❌ Error getting conversations: {str(e)}")
+            return []
+    
+    def update_conversation_timestamp(self, conversation_id: str) -> bool:
+        """Update the conversation's updated_at timestamp"""
+        try:
+            if not self.client:
+                return False
+            
+            result = self.client.table("conversations").update({
+                "updated_at": "now()"
+            }).eq("id", conversation_id).execute()
+            
+            return len(result.data) > 0
+            
+        except Exception as e:
+            st.error(f"❌ Error updating conversation timestamp: {str(e)}")
+            return False
+    
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """Delete a conversation and all its associated data"""
+        try:
+            if not self.client:
+                return False
+            
+            # Delete conversation (cascades to messages and document_chunks)
+            result = self.client.table("conversations").delete().eq("id", conversation_id).execute()
+            
+            return len(result.data) > 0
+            
+        except Exception as e:
+            st.error(f"❌ Error deleting conversation: {str(e)}")
+            return False
+    
+    def get_conversation_messages(self, conversation_id: str) -> List[Dict[str, Any]]:
+        """Get all messages for a conversation"""
+        try:
+            if not self.client:
+                return []
+            
+            result = self.client.table("messages").select(
+                "id, role, content, metadata, created_at"
+            ).eq("conversation_id", conversation_id).order("created_at").execute()
+            
+            return result.data if result.data else []
+            
+        except Exception as e:
+            st.error(f"❌ Error getting conversation messages: {str(e)}")
+            return []
+    
+    def store_message(self, conversation_id: str, role: str, content: str, metadata: Dict[str, Any] = None) -> bool:
+        """Store a message in the conversation"""
+        try:
+            if not self.client:
+                return False
+            
+            data = {
+                "conversation_id": conversation_id,
+                "role": role,
+                "content": content,
+                "metadata": metadata or {}
+            }
+            
+            result = self.client.table("messages").insert(data).execute()
+            
+            # Update conversation timestamp
+            if len(result.data) > 0:
+                self.update_conversation_timestamp(conversation_id)
+            
+            return len(result.data) > 0
+            
+        except Exception as e:
+            st.error(f"❌ Error storing message: {str(e)}")
+            return False
+    
+    def get_conversation_stats(self, conversation_id: str) -> Dict[str, Any]:
+        """Get statistics for a conversation"""
+        try:
+            if not self.client:
+                return {"message_count": 0, "document_count": 0, "last_activity": None}
+            
+            result = self.client.rpc('get_conversation_stats', {
+                'conversation_uuid': conversation_id
+            }).execute()
+            
+            if result.data and len(result.data) > 0:
+                return result.data[0]
+            
+            return {"message_count": 0, "document_count": 0, "last_activity": None}
+            
+        except Exception as e:
+            st.error(f"❌ Error getting conversation stats: {str(e)}")
+            return {"message_count": 0, "document_count": 0, "last_activity": None}
 
 
 # Convenience function to get database instance

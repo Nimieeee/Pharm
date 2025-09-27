@@ -4,9 +4,28 @@
 -- Enable the pgvector extension for vector similarity search
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- Create conversations table for multi-conversation support
+CREATE TABLE IF NOT EXISTS conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create messages table for storing chat history
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Create the document_chunks table for storing processed documents
 CREATE TABLE IF NOT EXISTS document_chunks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     embedding VECTOR(384), -- Sentence-transformers embedding dimension (all-MiniLM-L6-v2)
     metadata JSONB DEFAULT '{}',
@@ -50,6 +69,9 @@ $$;
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS document_chunks_created_at_idx ON document_chunks(created_at);
 CREATE INDEX IF NOT EXISTS document_chunks_metadata_idx ON document_chunks USING GIN(metadata);
+CREATE INDEX IF NOT EXISTS document_chunks_conversation_id_idx ON document_chunks(conversation_id);
+CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS conversations_updated_at_idx ON conversations(updated_at);
 
 -- Add a comment to the table
 COMMENT ON TABLE document_chunks IS 'Stores processed document chunks with vector embeddings for RAG functionality';

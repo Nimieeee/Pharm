@@ -39,6 +39,12 @@ except ImportError as e:
     st.stop()
 
 try:
+    from conversation_manager import ConversationManager
+except ImportError as e:
+    st.error(f"Cannot import ConversationManager: {e}")
+    st.stop()
+
+try:
     from database import SimpleChatbotDB
 except ImportError as e:
     st.error(f"Cannot import SimpleChatbotDB: {e}")
@@ -540,9 +546,6 @@ def apply_dark_mode_styling():
 # ----------------------------
 def initialize_session_state():
     """Initialize session state variables"""
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
-    
     if 'model_manager' not in st.session_state:
         st.session_state.model_manager = ModelManager()
     
@@ -551,6 +554,14 @@ def initialize_session_state():
     
     if 'db_manager' not in st.session_state:
         st.session_state.db_manager = SimpleChatbotDB()
+    
+    if 'conversation_manager' not in st.session_state:
+        st.session_state.conversation_manager = ConversationManager(
+            st.session_state.rag_manager.db_manager
+        )
+    
+    # Ensure there's always a current conversation
+    st.session_state.conversation_manager.ensure_conversation_exists()
     
 
 
@@ -611,7 +622,8 @@ def render_document_upload_inline():
                     
                     # Process file with progress
                     success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
-                        uploaded_file, 
+                        uploaded_file,
+                        conversation_id=st.session_state.current_conversation_id,
                         progress_callback=lambda msg: st.write(f"Debug - {msg}")
                     )
                     
@@ -633,6 +645,60 @@ def render_document_upload_inline():
     # Minimal system check (no UI clutter)
     
     return uploaded_files
+
+def render_conversation_sidebar():
+    """Render conversation management in sidebar"""
+    st.sidebar.markdown("## 💬 Conversations")
+    
+    # New conversation button
+    if st.sidebar.button("➕ New Conversation", use_container_width=True):
+        st.session_state.conversation_manager.create_new_conversation()
+        st.rerun()
+    
+    st.sidebar.markdown("---")
+    
+    # Load conversations
+    st.session_state.conversation_manager.load_conversations()
+    conversations = st.session_state.conversations
+    
+    if not conversations:
+        st.sidebar.info("No conversations yet. Create your first one!")
+        return
+    
+    # Current conversation indicator
+    current_id = st.session_state.current_conversation_id
+    current_title = st.session_state.conversation_manager.get_current_conversation_title()
+    
+    st.sidebar.markdown(f"**Current:** {current_title}")
+    st.sidebar.markdown("---")
+    
+    # List all conversations
+    for conv in conversations:
+        is_current = conv['id'] == current_id
+        
+        # Create columns for conversation item
+        col1, col2 = st.sidebar.columns([3, 1])
+        
+        with col1:
+            # Conversation button
+            button_label = f"{'🔵' if is_current else '⚪'} {conv['title']}"
+            if st.button(button_label, key=f"conv_{conv['id']}", use_container_width=True):
+                if not is_current:
+                    st.session_state.conversation_manager.switch_conversation(conv['id'])
+                    st.rerun()
+        
+        with col2:
+            # Delete button (only for non-current conversations or if multiple exist)
+            if len(conversations) > 1:
+                if st.button("🗑️", key=f"del_{conv['id']}", help="Delete conversation"):
+                    if st.session_state.conversation_manager.delete_conversation(conv['id']):
+                        st.rerun()
+        
+        # Show conversation stats
+        if is_current:
+            stats = st.session_state.conversation_manager.get_conversation_stats(conv['id'])
+            st.sidebar.caption(f"📝 {stats.get('message_count', 0)} messages • 📄 {stats.get('document_count', 0)} docs")
+
 
 def render_document_upload():
     """Simplified sidebar - no document status shown"""
@@ -1831,13 +1897,11 @@ def process_user_message(user_input: str):
     if not user_input.strip():
         return
     
-    # Add user message to history
-    user_message = {
-        "role": "user",
-        "content": user_input,
-        "timestamp": time.time()
-    }
-    st.session_state.messages.append(user_message)
+    # Add user message using conversation manager
+    st.session_state.conversation_manager.add_message_to_current_conversation(
+        role="user",
+        content=user_input
+    )
     
     # Check model availability
     if not st.session_state.model_manager.is_model_available():
@@ -1882,7 +1946,11 @@ def process_user_message(user_input: str):
                 
                 if stats['total_chunks'] > 0:
                     with st.spinner("🔍 Searching document context..."):
-                        context = st.session_state.rag_manager.search_relevant_context(user_input, max_chunks=5)
+                        context = st.session_state.rag_manager.search_relevant_context(
+                            user_input, 
+                            conversation_id=st.session_state.current_conversation_id,
+                            max_chunks=5
+                        )
                         st.write(f"Debug - Retrieved context length: {len(context) if context else 0}")  # Debug info
                         st.write(f"Debug - Context preview: {context[:200] if context else 'No context'}...")  # Debug info
                         
@@ -1914,17 +1982,15 @@ def process_user_message(user_input: str):
                     )
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
-                        # Success - add to message history
-                        assistant_message = {
-                            "role": "assistant",
-                            "content": ai_response,
-                            "timestamp": time.time(),
-                            "model": "mistral",
-                            "context_used": bool(context),
-                            "context_chunks": context_chunks,
-                            "error": False
-                        }
-                        st.session_state.messages.append(assistant_message)
+                        # Success - add to message history using conversation manager
+                        st.session_state.conversation_manager.add_message_to_current_conversation(
+                            role="assistant",
+                            content=ai_response,
+                            model="mistral",
+                            context_used=bool(context),
+                            context_chunks=context_chunks,
+                            error=False
+                        )
                         
                         # Success - no verbose messages
                     else:
@@ -2070,18 +2136,17 @@ def main():
         
         # Sidebar components with comprehensive error handling
         try:
-            with st.sidebar:
-                # Minimal model check - only show if there's an issue
-                try:
-                    if not st.session_state.model_manager.is_model_available():
-                        st.sidebar.error("⚠️ Mistral API key required")
-                        with st.sidebar.expander("🔑 Setup"):
-                            st.markdown("Add `MISTRAL_API_KEY` to Streamlit secrets")
-                except Exception:
-                    pass  # Silent fail - don't clutter sidebar
-                
-                # Document upload is now inline above chat input
-                # No sidebar document upload needed
+            # Render conversation management sidebar
+            render_conversation_sidebar()
+            
+            # Minimal model check - only show if there's an issue
+            try:
+                if not st.session_state.model_manager.is_model_available():
+                    st.sidebar.error("⚠️ Mistral API key required")
+                    with st.sidebar.expander("🔑 Setup"):
+                        st.markdown("Add `MISTRAL_API_KEY` to Streamlit secrets")
+            except Exception:
+                pass  # Silent fail - don't clutter sidebar
                 
                 # Chat controls with error handling
                 try:
