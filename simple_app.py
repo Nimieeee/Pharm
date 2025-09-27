@@ -607,47 +607,12 @@ def render_document_upload_inline():
                 except Exception:
                     continue  # Silent fail
             
-            # Update processed files list and show minimal success message
+            # Update processed files list silently
             if success_count > 0:
                 successful_files = [f.name for f in new_files[:success_count]]
                 st.session_state.last_processed_files.extend(successful_files)
-                st.success(f"✅ {success_count} document(s) processed")
     
-    # Show current document status and system health
-    try:
-        stats = st.session_state.rag_manager.get_document_stats()
-        if stats['total_chunks'] > 0:
-            st.info(f"📚 **{stats['total_chunks']} document chunks** ready for search")
-        
-        # System health check
-        if st.button("🔍 Check System Status", help="Check if all systems are working"):
-            with st.expander("System Status", expanded=True):
-                # Check RAG manager
-                if hasattr(st.session_state, 'rag_manager') and st.session_state.rag_manager:
-                    st.success("✅ RAG Manager: Initialized")
-                    
-                    # Check embedding model
-                    if st.session_state.rag_manager.embedding_model:
-                        st.success("✅ Embedding Model: Available")
-                    else:
-                        st.error("❌ Embedding Model: Not available")
-                        st.info("💡 Install sentence-transformers or set OPENAI_API_KEY")
-                    
-                    # Check database
-                    if st.session_state.rag_manager.db_manager.is_connected():
-                        st.success("✅ Database: Connected")
-                        
-                        # Test database schema
-                        if st.session_state.rag_manager.db_manager.check_schema_exists():
-                            st.success("✅ Database Schema: Ready")
-                        else:
-                            st.error("❌ Database Schema: Missing")
-                            st.info("💡 Run the SQL schema from simple_chatbot_schema.sql")
-                    else:
-                        st.error("❌ Database: Not connected")
-                        st.info("💡 Check your Supabase URL and API key")
-                else:
-                    st.error("❌ RAG Manager: Not initialized")
+    # Minimal system check (no UI clutter)
     
     except Exception as e:
         st.error(f"Error checking document status: {str(e)}")
@@ -1476,10 +1441,6 @@ def render_message(message: Dict[str, Any]):
         
         if is_error:
             status_indicators.append("❌ Error")
-        elif context_used and context_chunks > 0:
-            status_indicators.append(f"📚 {context_chunks} docs")
-        elif context_chunks == 0 and not is_error:
-            status_indicators.append("🧠 General knowledge")
         
         # Add model availability indicator
         if hasattr(st.session_state, 'model_manager'):
@@ -1564,25 +1525,13 @@ def format_message_content(content: str) -> str:
     return safe_content
 
 def render_processing_status_indicator():
-    """Render document processing status indicator"""
+    """Minimal processing status indicator"""
+    # Only show if actively processing
     if 'processing_status' in st.session_state and st.session_state.processing_status.get('active', False):
         status = st.session_state.processing_status
         progress = status.get('progress', 0)
-        current_file = status.get('current_file', '')
-        
-        st.markdown("**Processing Documents**")
         st.progress(progress)
-        if current_file:
-            st.caption(f"📄 {current_file}")
-    else:
-        # Show document availability status
-        stats = st.session_state.rag_manager.get_document_stats()
-        if stats['total_chunks'] > 0:
-            st.markdown("**📚 RAG Active**")
-            st.caption(f"{stats['total_chunks']} chunks ready")
-        else:
-            st.markdown("**📚 No Documents**")
-            st.caption("Upload docs for enhanced responses")
+    # No status display when idle
 
 # Removed test_responsive_design function - no longer needed
 
@@ -1616,40 +1565,17 @@ def render_message_input():
                 st.error("❌ No model information available")
         
         with col2:
-            # Document context status with error handling
-            try:
-                stats = st.session_state.rag_manager.get_document_stats()
-                chunk_count = stats.get('total_chunks', 0)
-                
-                if chunk_count > 0:
-                    st.markdown(f"""
-                    <div class="status-indicator status-online">
-                        <span class="status-dot"></span>
-                        <strong>Documents:</strong> {chunk_count} chunks ready
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="status-indicator status-offline">
-                        <span class="status-dot"></span>
-                        <strong>Documents:</strong> No context available
-                    </div>
-                    """, unsafe_allow_html=True)
-            except Exception as rag_error:
-                st.warning(f"⚠️ Document system error: {str(rag_error)}")
+            # Minimal status (no verbose messages)
+            pass
         
-        # Enhanced chat input with dynamic placeholder and validation
+        # Enhanced chat input with clean placeholder
         model_available = st.session_state.model_manager.is_model_available()
-        stats = st.session_state.rag_manager.get_document_stats()
-        chunk_count = stats.get('total_chunks', 0)
         
-        # Dynamic placeholder based on system status
+        # Simple placeholder without chunk counts
         if not model_available:
             placeholder_text = "Mistral API key required - check configuration"
-        elif chunk_count > 0:
-            placeholder_text = f"Ask me about pharmacology... (I can search {chunk_count} document chunks)"
         else:
-            placeholder_text = "Ask me about pharmacology... (using general knowledge)"
+            placeholder_text = "Ask me about pharmacology..."
         
         # Input validation and enhancement
         user_input = st.chat_input(
@@ -1943,15 +1869,12 @@ def process_user_message(user_input: str):
                         if context and context.strip():
                             # Count actual content chunks
                             context_chunks = len([chunk for chunk in context.split('\n\n') if chunk.strip()])
-                            if context_chunks > 0:
-                                st.success(f"📚 Found {context_chunks} relevant document chunks")
-                            else:
+                            if context_chunks == 0:
                                 context = ""
                         else:
                             context = ""
             except Exception as rag_error:
-                st.warning(f"⚠️ Document search error: {str(rag_error)}")
-                st.info("📚 Falling back to general knowledge")
+                # Silent fallback to general knowledge
                 context = ""
                 context_chunks = 0
             
@@ -1976,11 +1899,7 @@ def process_user_message(user_input: str):
                         }
                         st.session_state.messages.append(assistant_message)
                         
-                        # Show success indicators
-                        if context_chunks > 0:
-                            st.success(f"✅ Response generated using {context_chunks} document sources")
-                        else:
-                            st.success("✅ Response generated using general pharmacology knowledge")
+                        # Success - no verbose messages
                     else:
                         raise Exception(ai_response or "Empty response from model")
                         

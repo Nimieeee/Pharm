@@ -75,8 +75,9 @@ Please use this context to provide a comprehensive and detailed answer to the fo
 
 **Question:** {message}"""
             
-            # Prepare inputs for Mistral API
+            # Prepare inputs for Mistral API with system prompt
             inputs = [
+                {"role": "system", "content": active_system_prompt},
                 {"role": "user", "content": user_message}
             ]
             
