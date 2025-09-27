@@ -87,22 +87,14 @@ if prompt := st.chat_input("Type your message..."):
         has_table = '|' in full_response and '---' in full_response
         has_code = '```' in full_response
         
-        if has_table or has_code or len(full_response) > 500:
-            # Fast streaming for tables/code/long content - by chunks
-            chunk_size = 50
-            for i in range(0, len(full_response), chunk_size):
-                chunk = full_response[i:i + chunk_size]
-                yield chunk
-                time.sleep(0.01)  # Faster for structured content
-        else:
-            # Normal streaming for regular text - by words
-            words = full_response.split()
-            for i, word in enumerate(words):
-                if i == 0:
-                    yield word
-                else:
-                    yield " " + word
-                time.sleep(0.05)  # Moderate speed for readability
+        # Stream at 30 tokens per second (0.033s per token)
+        words = full_response.split()
+        for i, word in enumerate(words):
+            if i == 0:
+                yield word
+            else:
+                yield " " + word
+            time.sleep(0.033)  # 30 tokens per second
     
     # Display streaming response with pill cursor
     with st.chat_message("assistant"):

@@ -406,21 +406,25 @@ def apply_dark_mode_styling():
     
     /* Modern morphing loader */
     .loading-spinner {
-        display: flex;
+        display: flex !important;
         align-items: center;
         gap: 1rem;
         padding: 1rem;
         font-size: 1rem;
-        color: var(--primary-color);
+        color: #4fc3f7;
+        background: rgba(79, 195, 247, 0.1);
+        border-radius: 0.5rem;
+        margin: 0.5rem 0;
     }
     
     .loader {
         position: relative;
         width: 32px;
         height: 32px;
-        background: var(--primary-color);
+        background: #4fc3f7;
         border-radius: 50%;
         animation: ellipseAnimation 2s linear infinite;
+        margin: 0.5rem 0;
     }
     
     @keyframes ellipseAnimation {
@@ -1981,40 +1985,11 @@ def process_user_message(user_input: str):
             
             # Generate AI response with context
             try:
-                # Optimized streaming implementation
-                def stream_response():
-                    """Smart streaming - faster for tables and long content"""
-                    # Always use simulated streaming for reliability
-                    full_response = st.session_state.model_manager.generate_response(
-                        message=user_input,
-                        context=context if context else None,
-                        stream=False
-                    )
-                    
-                    # Check if response contains tables or structured content
-                    has_table = '|' in full_response and '---' in full_response
-                    has_code = '```' in full_response
-                    
-                    if has_table or has_code or len(full_response) > 500:
-                        # Fast streaming for tables/code/long content - by chunks
-                        chunk_size = 50
-                        for i in range(0, len(full_response), chunk_size):
-                            chunk = full_response[i:i + chunk_size]
-                            yield chunk
-                            time.sleep(0.01)  # Faster for structured content
-                    else:
-                        # Normal streaming for regular text - by words
-                        words = full_response.split()
-                        for i, word in enumerate(words):
-                            if i == 0:
-                                yield word
-                            else:
-                                yield " " + word
-                            time.sleep(0.05)  # Moderate speed for readability
+
                 
-                # Display streaming response with loading spinner
+                # Display response with proper loading sequence
                 with st.chat_message("assistant", avatar="PharmGPT.png"):
-                    # Show creative loading spinner
+                    # Show loading spinner during API processing
                     spinner_placeholder = st.empty()
                     spinner_placeholder.markdown("""
                     <div class="loading-spinner">
@@ -2023,18 +1998,35 @@ def process_user_message(user_input: str):
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Small delay to show spinner
-                    time.sleep(0.5)
+                    # Get the full response (this is when the spinner should show)
+                    full_response = st.session_state.model_manager.generate_response(
+                        message=user_input,
+                        context=context if context else None,
+                        stream=False
+                    )
                     
-                    # Clear spinner and start streaming
+                    # Clear spinner once we have the response
                     spinner_placeholder.empty()
-                    ai_response = st.write_stream(stream_response())
                     
-                    if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
+                    # Now stream the response to user
+                    def stream_display():
+                        """Stream at 30 tokens per second"""
+                        words = full_response.split()
+                        for i, word in enumerate(words):
+                            if i == 0:
+                                yield word
+                            else:
+                                yield " " + word
+                            time.sleep(0.033)  # 30 tokens per second
+                    
+                    # Start streaming the response
+                    ai_response = st.write_stream(stream_display())
+                    
+                    if full_response and not full_response.startswith("Error:") and not full_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
                         st.session_state.conversation_manager.add_message_to_current_conversation(
                             role="assistant",
-                            content=ai_response,
+                            content=full_response,
                             model="mistral",
                             context_used=bool(context),
                             context_chunks=context_chunks,
@@ -2043,7 +2035,7 @@ def process_user_message(user_input: str):
                         
                         # Success - no verbose messages
                     else:
-                        raise Exception(ai_response or "Empty response from model")
+                        raise Exception(full_response or "Empty response from model")
                         
             except Exception as model_error:
                 # Handle API errors
