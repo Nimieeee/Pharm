@@ -587,30 +587,37 @@ def render_document_upload_inline():
         new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
         
         if new_files:
-            # Process new files silently
+            # Process new files with debug info
             success_count = 0
             for uploaded_file in new_files:
                 try:
                     # Basic validation
                     if uploaded_file.size > 10 * 1024 * 1024 or uploaded_file.size == 0:
+                        st.write(f"Debug - Skipping {uploaded_file.name}: size={uploaded_file.size}")
                         continue
                     
-                    # Process file silently
+                    st.write(f"Debug - Processing {uploaded_file.name} (size: {uploaded_file.size} bytes)")
+                    
+                    # Process file with progress
                     success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
                         uploaded_file, 
-                        progress_callback=None  # No progress messages
+                        progress_callback=lambda msg: st.write(f"Debug - {msg}")
                     )
+                    
+                    st.write(f"Debug - File {uploaded_file.name}: success={success}, chunks={chunk_count}")
                     
                     if success and chunk_count > 0:
                         success_count += 1
                             
-                except Exception:
-                    continue  # Silent fail
+                except Exception as e:
+                    st.write(f"Debug - Error processing {uploaded_file.name}: {str(e)}")
+                    continue
             
-            # Update processed files list silently
+            # Update processed files list
             if success_count > 0:
                 successful_files = [f.name for f in new_files[:success_count]]
                 st.session_state.last_processed_files.extend(successful_files)
+                st.write(f"Debug - Successfully processed {success_count} files")
     
     # Minimal system check (no UI clutter)
     
@@ -1860,9 +1867,14 @@ def process_user_message(user_input: str):
             try:
                 # Check if documents are available
                 stats = st.session_state.rag_manager.get_document_stats()
+                st.write(f"Debug - Document stats: {stats}")  # Debug info
+                
                 if stats['total_chunks'] > 0:
                     with st.spinner("🔍 Searching document context..."):
                         context = st.session_state.rag_manager.search_relevant_context(user_input, max_chunks=5)
+                        st.write(f"Debug - Retrieved context length: {len(context) if context else 0}")  # Debug info
+                        st.write(f"Debug - Context preview: {context[:200] if context else 'No context'}...")  # Debug info
+                        
                         if context and context.strip():
                             # Count actual content chunks
                             context_chunks = len([chunk for chunk in context.split('\n\n') if chunk.strip()])
@@ -1870,10 +1882,17 @@ def process_user_message(user_input: str):
                                 context = ""
                         else:
                             context = ""
+                            context_chunks = 0
+                else:
+                    context = ""
+                    context_chunks = 0
+                    st.write("Debug - No documents available in database")  # Debug info
+                    
             except Exception as rag_error:
                 # Silent fallback to general knowledge
                 context = ""
                 context_chunks = 0
+                st.write(f"Debug - RAG error: {str(rag_error)}")  # Debug info
             
             # Generate AI response with context
             try:

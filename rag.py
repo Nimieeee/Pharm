@@ -254,18 +254,25 @@ class RAGManager:
             # Generate query embedding
             query_embedding = self._generate_embedding(query)
             if not query_embedding:
+                st.write("Debug - Failed to generate query embedding")
                 return ""
+            
+            st.write(f"Debug - Query embedding generated, length: {len(query_embedding)}")
             
             # Search for similar chunks with lower threshold
             similar_chunks = self.db_manager.search_similar_chunks(query_embedding, max_chunks, threshold=0.3)
+            
+            st.write(f"Debug - Found {len(similar_chunks)} similar chunks")
             
             if not similar_chunks:
                 return ""
             
             # Concatenate relevant content
             context_parts = []
-            for chunk in similar_chunks:
+            for i, chunk in enumerate(similar_chunks):
                 content = chunk.get("content", "")
+                similarity = chunk.get("similarity", 0)
+                st.write(f"Debug - Chunk {i+1}: similarity={similarity:.3f}, content_length={len(content)}")
                 if content:
                     context_parts.append(content)
             
