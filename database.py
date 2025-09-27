@@ -299,11 +299,20 @@ class SimpleChatbotDB:
             if not self.client:
                 return False
             
-            # Try to query the document_chunks table
-            result = self.client.table("document_chunks").select("id").limit(1).execute()
+            # Check all required tables
+            tables_to_check = ["conversations", "messages", "document_chunks"]
+            
+            for table in tables_to_check:
+                try:
+                    result = self.client.table(table).select("id").limit(1).execute()
+                except Exception as table_error:
+                    st.error(f"❌ Table '{table}' not found: {str(table_error)}")
+                    return False
+            
             return True
             
-        except Exception:
+        except Exception as e:
+            st.error(f"❌ Schema check failed: {str(e)}")
             return False
     
     def is_connected(self) -> bool:
@@ -316,6 +325,15 @@ class SimpleChatbotDB:
         """Create a new conversation and return its ID"""
         try:
             if not self.client:
+                st.error("❌ No database client available")
+                return None
+            
+            # Test if conversations table exists
+            try:
+                test_result = self.client.table("conversations").select("id").limit(1).execute()
+            except Exception as table_error:
+                st.error(f"❌ Conversations table not found: {str(table_error)}")
+                st.info("💡 Please run the database schema setup first")
                 return None
             
             result = self.client.table("conversations").insert({

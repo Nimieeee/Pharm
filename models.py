@@ -9,8 +9,9 @@ import streamlit as st
 
 # Import system prompt from prompts.py
 try:
-    from prompts import pharmacology_system_prompt
-except ImportError:
+    import prompts
+    pharmacology_system_prompt = prompts.pharmacology_system_prompt
+except (ImportError, AttributeError):
     # Fallback system prompt if prompts.py is not available
     pharmacology_system_prompt = """You are PharmGPT, an expert pharmacology assistant. Provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Always provide elaborate and detailed explanations unless specifically asked for brevity."""
 

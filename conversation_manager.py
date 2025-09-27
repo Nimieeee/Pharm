@@ -168,13 +168,19 @@ class ConversationManager:
     
     def ensure_conversation_exists(self):
         """Ensure there's always a current conversation"""
-        if not st.session_state.current_conversation_id:
-            # Load existing conversations
-            self.load_conversations()
-            
-            # If still no current conversation, create one
+        try:
             if not st.session_state.current_conversation_id:
-                self.create_new_conversation("Welcome Chat")
+                # Load existing conversations
+                self.load_conversations()
+                
+                # If still no current conversation, create one
+                if not st.session_state.current_conversation_id:
+                    self.create_new_conversation("Welcome Chat")
+        except Exception as e:
+            st.error(f"❌ Error ensuring conversation exists: {str(e)}")
+            # Fallback: set a temporary conversation ID to prevent crashes
+            st.session_state.current_conversation_id = "temp-conversation"
+            st.session_state.messages = []
     
     def add_message_to_current_conversation(self, role: str, content: str, **metadata):
         """Add a message to the current conversation"""
