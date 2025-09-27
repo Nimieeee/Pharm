@@ -29,11 +29,8 @@ try:
 except ImportError:
     OCR_AVAILABLE = False
 
-try:
-    from langextract import LangExtract
-    LANGEXTRACT_AVAILABLE = True
-except ImportError:
-    LANGEXTRACT_AVAILABLE = False
+# Custom Document Intelligence using Mistral AI
+DOCUMENT_INTELLIGENCE_AVAILABLE = True
 
 from database import SimpleChatbotDB
 
@@ -50,9 +47,9 @@ class RAGManager:
             separators=["\n\n", "\n", ". ", " ", ""]  # Better splitting on paragraphs and sentences
         )
         self.embedding_model = None
-        self.lang_extract = None
+        self.document_intelligence = None
         self._initialize_embeddings()
-        self._initialize_langextract()
+        self._initialize_document_intelligence()
     
     def _initialize_embeddings(self):
         """Initialize embedding model"""
