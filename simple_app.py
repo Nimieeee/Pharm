@@ -1946,10 +1946,21 @@ def process_user_message(user_input: str):
                 
                 if stats['total_chunks'] > 0:
                     with st.spinner("🔍 Searching document context..."):
+                        # Determine if user wants comprehensive information
+                        comprehensive_keywords = [
+                            "entire", "whole", "complete", "full", "summarize", "summary", 
+                            "overview", "explain the document", "what is this document about",
+                            "document content", "all information", "everything", "comprehensive"
+                        ]
+                        
+                        is_comprehensive = any(keyword in user_input.lower() for keyword in comprehensive_keywords)
+                        max_chunks = 15 if is_comprehensive else 8
+                        
                         context = st.session_state.rag_manager.search_relevant_context(
                             user_input, 
                             conversation_id=st.session_state.current_conversation_id,
-                            max_chunks=5
+                            max_chunks=max_chunks,
+                            include_document_overview=is_comprehensive
                         )
                         st.write(f"Debug - Retrieved context length: {len(context) if context else 0}")  # Debug info
                         st.write(f"Debug - Context preview: {context[:200] if context else 'No context'}...")  # Debug info

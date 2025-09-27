@@ -38,9 +38,10 @@ class RAGManager:
     def __init__(self):
         self.db_manager = SimpleChatbotDB()
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len
+            chunk_size=1500,  # Increased from 1000 for larger chunks
+            chunk_overlap=300,  # Increased overlap for better continuity
+            length_function=len,
+            separators=["\n\n", "\n", ". ", " ", ""]  # Better splitting on paragraphs and sentences
         )
         self.embedding_model = None
         self._initialize_embeddings()
@@ -359,7 +360,7 @@ class RAGManager:
                 st.info("💡 Check your OpenAI API key or try using sentence-transformers")
             return None
     
-    def search_relevant_context(self, query: str, conversation_id: str, max_chunks: int = 3) -> str:
+    def search_relevant_context(self, query: str, conversation_id: str, max_chunks: int = 3, include_document_overview: bool = False) -> str:
         """
         Search for relevant context based on query within a conversation
         
@@ -367,6 +368,7 @@ class RAGManager:
             query: User query
             conversation_id: ID of the conversation to search within
             max_chunks: Maximum number of chunks to retrieve
+            include_document_overview: Whether to include document overview/summary
             
         Returns:
             Concatenated relevant context
@@ -401,14 +403,65 @@ class RAGManager:
             if not similar_chunks:
                 return ""
             
+            # Check if user is asking for comprehensive document information
+            comprehensive_keywords = [
+                "entire document", "whole document", "complete document", "full document",
+                "summarize", "summary", "overview", "explain the document", "what is this document about",
+                "document content", "all information", "everything in", "comprehensive"
+            ]
+            
+            is_comprehensive_query = any(keyword in query.lower() for keyword in comprehensive_keywords)
+            
+            if is_comprehensive_query or include_document_overview:
+                # For comprehensive queries, get more chunks and add document metadata
+                st.write("Debug - Comprehensive query detected, retrieving more context...")
+                
+                # Get additional chunks for comprehensive coverage
+                additional_chunks = self.db_manager.get_random_chunks(conversation_id, max_chunks * 2)
+                
+                # Combine and deduplicate chunks
+                all_chunks = similar_chunks + additional_chunks
+                seen_content = set()
+                unique_chunks = []
+                
+                for chunk in all_chunks:
+                    content = chunk.get("content", "")
+                    if content and content not in seen_content:
+                        seen_content.add(content)
+                        unique_chunks.append(chunk)
+                
+                similar_chunks = unique_chunks[:max_chunks * 2]  # Use more chunks for comprehensive queries
+            
             # Concatenate relevant content
             context_parts = []
+            document_info = {}
+            
             for i, chunk in enumerate(similar_chunks):
                 content = chunk.get("content", "")
                 similarity = chunk.get("similarity", 0)
+                metadata = chunk.get("metadata", {})
+                
                 st.write(f"Debug - Chunk {i+1}: similarity={similarity:.3f}, content_length={len(content)}")
+                
                 if content:
                     context_parts.append(content)
+                    
+                    # Collect document metadata
+                    filename = metadata.get("filename", "Unknown")
+                    if filename not in document_info:
+                        document_info[filename] = {
+                            "chunks": 0,
+                            "file_type": metadata.get("file_type", "unknown")
+                        }
+                    document_info[filename]["chunks"] += 1
+            
+            # Add document overview if comprehensive query
+            if is_comprehensive_query and document_info:
+                overview_parts = ["=== DOCUMENT OVERVIEW ==="]
+                for filename, info in document_info.items():
+                    overview_parts.append(f"Document: {filename} ({info['file_type']}) - {info['chunks']} sections included")
+                overview_parts.append("=== DOCUMENT CONTENT ===")
+                context_parts = overview_parts + context_parts
             
             return "\n\n".join(context_parts)
             
