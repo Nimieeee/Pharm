@@ -16,13 +16,23 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
+# Debug info
+st.write(f"Debug - Current directory: {current_dir}")
+st.write(f"Debug - Files in directory: {os.listdir(current_dir)}")
+st.write(f"Debug - Python path: {sys.path[:3]}")  # Show first 3 entries
+
 try:
+    import models
     from models import ModelManager
 except ImportError as e:
     st.error(f"Cannot import ModelManager: {e}")
+    st.error(f"Current working directory: {os.getcwd()}")
+    st.error(f"Python path: {sys.path}")
+    st.error(f"Files in current directory: {os.listdir('.')}")
     st.stop()
 
 try:
+    import rag
     from rag import RAGManager
 except ImportError as e:
     st.error(f"Cannot import RAGManager: {e}")
