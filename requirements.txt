@@ -14,10 +14,22 @@ mistralai>=1.0.0
 sentence-transformers>=2.2.2
 
 # Document Processing
+pypdf>=4.0.0
 PyPDF2>=3.0.0
 pdfplumber>=0.9.0
 python-docx>=0.8.11
+python-pptx>=0.6.21
 beautifulsoup4>=4.12.0
+
+# Image Processing and OCR
+Pillow>=10.0.0
+pytesseract>=0.3.10
+opencv-python-headless>=4.8.0
+
+# Note: For OCR functionality, you also need to install Tesseract OCR on your system:
+# Ubuntu/Debian: sudo apt-get install tesseract-ocr
+# macOS: brew install tesseract
+# Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
 
 # Utilities and Core Dependencies
 requests>=2.31.0

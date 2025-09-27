@@ -582,8 +582,8 @@ def render_document_upload_inline():
     uploaded_files = st.file_uploader(
         "Upload documents to enhance chat responses",
         accept_multiple_files=True,
-        type=['pdf', 'txt', 'md', 'docx'],
-        help="Upload PDF, TXT, MD, or DOCX files. They will be processed automatically.",
+        type=['pdf', 'txt', 'md', 'docx', 'pptx', 'jpg', 'jpeg', 'png', 'bmp', 'tiff'],
+        help="Upload PDF, TXT, MD, DOCX, PPTX files or images (JPG, PNG, etc.). They will be processed automatically with OCR for images.",
         key="document_uploader_inline"
     )
     
@@ -601,9 +601,10 @@ def render_document_upload_inline():
             success_count = 0
             for uploaded_file in new_files:
                 try:
-                    # Basic validation
-                    if uploaded_file.size > 10 * 1024 * 1024 or uploaded_file.size == 0:
-                        st.write(f"Debug - Skipping {uploaded_file.name}: size={uploaded_file.size}")
+                    # Basic validation - allow larger files for images and presentations
+                    max_size = 50 * 1024 * 1024  # 50MB for images/presentations
+                    if uploaded_file.size > max_size or uploaded_file.size == 0:
+                        st.write(f"Debug - Skipping {uploaded_file.name}: size={uploaded_file.size} (max: {max_size})")
                         continue
                     
                     st.write(f"Debug - Processing {uploaded_file.name} (size: {uploaded_file.size} bytes)")

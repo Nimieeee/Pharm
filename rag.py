@@ -14,6 +14,21 @@ from sentence_transformers import SentenceTransformer
 import tempfile
 import numpy as np
 
+# Additional imports for enhanced document processing
+try:
+    from pptx import Presentation
+    PPTX_AVAILABLE = True
+except ImportError:
+    PPTX_AVAILABLE = False
+
+try:
+    from PIL import Image
+    import pytesseract
+    import cv2
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+
 from database import SimpleChatbotDB
 
 
@@ -116,7 +131,7 @@ class RAGManager:
             return False, 0
     
     def _load_document(self, file_path: str, filename: str) -> List[Document]:
-        """Load document based on file type with enhanced support and debugging"""
+        """Load document based on file type with enhanced support including PowerPoint and OCR"""
         try:
             file_extension = filename.lower().split('.')[-1]
             
@@ -135,52 +150,155 @@ class RAGManager:
                 return documents
                 
             elif file_extension == 'docx':
-                # Process DOCX silently
-                try:
-                    import docx
-                except ImportError:
-                    return []
+                return self._process_docx(file_path, filename)
                 
-                # Process the document
-                try:
-                    doc = docx.Document(file_path)
-                    
-                    # Extract text from all paragraphs
-                    text_content = []
-                    for paragraph in doc.paragraphs:
-                        if paragraph.text.strip():
-                            text_content.append(paragraph.text.strip())
-                    
-                    # Extract text from tables
-                    for table in doc.tables:
-                        for row in table.rows:
-                            for cell in row.cells:
-                                if cell.text.strip():
-                                    text_content.append(cell.text.strip())
-                    
-                    if not text_content:
-                        return []
-                    
-                    # Create a Document object
-                    full_text = '\n\n'.join(text_content)
-                    document = Document(
-                        page_content=full_text,
-                        metadata={"source": filename, "file_type": "docx"}
-                    )
-                    
-                    return [document]
-                    
-                except Exception as docx_error:
-                    st.error(f"❌ Error processing DOCX '{filename}': {str(docx_error)}")
-                    st.info("💡 Try converting the DOCX to PDF or TXT format")
-                    return []
+            elif file_extension == 'pptx':
+                return self._process_pptx(file_path, filename)
+                
+            elif file_extension in ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'gif']:
+                return self._process_image_ocr(file_path, filename)
                     
             else:
-                st.error(f"Unsupported file type: {file_extension}. Supported types: PDF, TXT, MD, DOCX")
+                st.error(f"Unsupported file type: {file_extension}. Supported types: PDF, TXT, MD, DOCX, PPTX, Images (JPG, PNG, etc.)")
                 return []
                 
         except Exception as e:
             st.error(f"Error loading document '{filename}': {str(e)}")
+            return []
+    
+    def _process_docx(self, file_path: str, filename: str) -> List[Document]:
+        """Process DOCX files"""
+        try:
+            import docx
+        except ImportError:
+            st.error("python-docx package not found. Please install it with: pip install python-docx")
+            return []
+        
+        try:
+            doc = docx.Document(file_path)
+            
+            # Extract text from all paragraphs
+            text_content = []
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    text_content.append(paragraph.text.strip())
+            
+            # Extract text from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        if cell.text.strip():
+                            text_content.append(cell.text.strip())
+            
+            if not text_content:
+                st.warning(f"DOCX '{filename}' contains no readable text")
+                return []
+            
+            # Create a Document object
+            full_text = '\n\n'.join(text_content)
+            document = Document(
+                page_content=full_text,
+                metadata={"source": filename, "file_type": "docx"}
+            )
+            
+            return [document]
+            
+        except Exception as docx_error:
+            st.error(f"❌ Error processing DOCX '{filename}': {str(docx_error)}")
+            return []
+    
+    def _process_pptx(self, file_path: str, filename: str) -> List[Document]:
+        """Process PowerPoint files"""
+        if not PPTX_AVAILABLE:
+            st.error("python-pptx package not found. Please install it with: pip install python-pptx")
+            return []
+        
+        try:
+            prs = Presentation(file_path)
+            
+            text_content = []
+            slide_number = 0
+            
+            for slide in prs.slides:
+                slide_number += 1
+                slide_text = []
+                
+                # Extract text from all shapes in the slide
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        slide_text.append(shape.text.strip())
+                
+                if slide_text:
+                    slide_content = f"Slide {slide_number}:\n" + '\n'.join(slide_text)
+                    text_content.append(slide_content)
+            
+            if not text_content:
+                st.warning(f"PowerPoint '{filename}' contains no readable text")
+                return []
+            
+            # Create a Document object
+            full_text = '\n\n'.join(text_content)
+            document = Document(
+                page_content=full_text,
+                metadata={"source": filename, "file_type": "pptx", "slides": slide_number}
+            )
+            
+            return [document]
+            
+        except Exception as pptx_error:
+            st.error(f"❌ Error processing PowerPoint '{filename}': {str(pptx_error)}")
+            return []
+    
+    def _process_image_ocr(self, file_path: str, filename: str) -> List[Document]:
+        """Process images using OCR"""
+        if not OCR_AVAILABLE:
+            st.error("OCR packages not found. Please install: pip install pytesseract pillow opencv-python-headless")
+            st.info("Note: You may also need to install Tesseract OCR on your system")
+            return []
+        
+        try:
+            # Load and preprocess image
+            image = cv2.imread(file_path)
+            if image is None:
+                st.error(f"Could not load image '{filename}'")
+                return []
+            
+            # Convert to grayscale for better OCR
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            
+            # Apply some preprocessing to improve OCR accuracy
+            # Denoise
+            denoised = cv2.medianBlur(gray, 3)
+            
+            # Convert to PIL Image for pytesseract
+            pil_image = Image.fromarray(denoised)
+            
+            # Perform OCR
+            extracted_text = pytesseract.image_to_string(pil_image, lang='eng')
+            
+            if not extracted_text.strip():
+                st.warning(f"No text found in image '{filename}' using OCR")
+                return []
+            
+            # Clean up the extracted text
+            cleaned_text = '\n'.join([line.strip() for line in extracted_text.split('\n') if line.strip()])
+            
+            if not cleaned_text:
+                st.warning(f"No readable text extracted from image '{filename}'")
+                return []
+            
+            # Create a Document object
+            document = Document(
+                page_content=cleaned_text,
+                metadata={"source": filename, "file_type": "image_ocr", "original_format": filename.split('.')[-1]}
+            )
+            
+            return [document]
+            
+        except Exception as ocr_error:
+            st.error(f"❌ Error processing image '{filename}' with OCR: {str(ocr_error)}")
+            if "tesseract" in str(ocr_error).lower():
+                st.info("💡 Make sure Tesseract OCR is installed on your system")
             return []
     
     def _process_and_store_chunk(self, chunk: Document, filename: str) -> bool:
