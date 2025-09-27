@@ -41,28 +41,30 @@ def setup_database_schema():
     # Show SQL to run
     st.markdown("### SQL to Run in Supabase")
     
-    st.markdown("**Step 1: Run this in Supabase SQL Editor:**")
+    st.markdown("**Step 1: Run this COMPLETE setup script in Supabase SQL Editor:**")
+    st.info("⚠️ This will clean up any existing function conflicts and set up everything properly")
     
-    with open('simple_chatbot_schema.sql', 'r') as f:
+    with open('cleanup_and_setup_schema.sql', 'r') as f:
         schema_sql = f.read()
     
     st.code(schema_sql, language='sql')
     
-    st.markdown("**Step 2: Then run this update:**")
+    st.markdown("**Step 2 (Optional): If you have existing document data, run this migration:**")
     
-    with open('conversation_schema_update.sql', 'r') as f:
-        update_sql = f.read()
+    with open('migrate_existing_data.sql', 'r') as f:
+        migration_sql = f.read()
     
-    st.code(update_sql, language='sql')
+    st.code(migration_sql, language='sql')
     
     st.markdown("""
     ### Instructions:
-    1. Copy the SQL from Step 1 above
-    2. Go to your Supabase Dashboard → SQL Editor
-    3. Paste and run the SQL
-    4. Copy the SQL from Step 2 above
-    5. Paste and run it in a new query
-    6. Refresh this page to test
+    1. **Copy the COMPLETE setup SQL** from Step 1 above
+    2. **Go to your Supabase Dashboard** → **SQL Editor**
+    3. **Paste and run the SQL** (this will clean up conflicts and set up everything)
+    4. **If you have existing document data**, copy and run the migration SQL from Step 2
+    5. **Refresh this page** to test the setup
+    
+    ⚠️ **Important:** The cleanup script will remove any existing function conflicts and set up the schema properly.
     """)
     
     if st.button("🔄 Test Schema After Setup"):
