@@ -763,7 +763,9 @@ def render_document_upload_inline():
 
 def render_document_upload():
     """Simplified sidebar - no document status shown"""
-    pass  # Document upload is now inline, no sidebar content needed
+    # Document upload is now inline, no sidebar content needed
+    # This function is kept for compatibility but does nothing
+    return None
     
     # Processing options
     if uploaded_files:
@@ -2307,12 +2309,8 @@ def main():
                     st.sidebar.error(f"Model toggle error: {str(model_error)}")
                     st.sidebar.info("💡 Try refreshing the page to restore model selection")
                 
-                # Document upload with error handling
-                try:
-                    render_document_upload()
-                except Exception as doc_error:
-                    st.sidebar.error(f"Document upload error: {str(doc_error)}")
-                    st.sidebar.info("💡 Document upload temporarily unavailable")
+                # Document upload is now inline above chat input
+                # No sidebar document upload needed
                 
                 # Chat controls with error handling
                 try:

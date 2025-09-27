@@ -146,6 +146,7 @@ class RAGManager:
                 
             elif file_extension == 'docx':
                 try:
+                    # Try using Docx2txtLoader first
                     loader = Docx2txtLoader(file_path)
                     documents = loader.load()
                     
@@ -166,8 +167,46 @@ class RAGManager:
                     st.error("DOCX support requires python-docx package. Install with: pip install python-docx")
                     return []
                 except Exception as docx_error:
-                    st.error(f"Error processing DOCX '{filename}': {str(docx_error)}")
-                    return []
+                    st.warning(f"Docx2txtLoader failed for '{filename}': {str(docx_error)}")
+                    
+                    # Try fallback method using python-docx directly
+                    try:
+                        import docx
+                        doc = docx.Document(file_path)
+                        
+                        # Extract text from all paragraphs
+                        text_content = []
+                        for paragraph in doc.paragraphs:
+                            if paragraph.text.strip():
+                                text_content.append(paragraph.text.strip())
+                        
+                        # Extract text from tables
+                        for table in doc.tables:
+                            for row in table.rows:
+                                for cell in row.cells:
+                                    if cell.text.strip():
+                                        text_content.append(cell.text.strip())
+                        
+                        if not text_content:
+                            st.warning(f"DOCX '{filename}' contains no readable text content")
+                            return []
+                        
+                        # Create a Document object
+                        full_text = '\n\n'.join(text_content)
+                        document = Document(
+                            page_content=full_text,
+                            metadata={"source": filename, "file_type": "docx"}
+                        )
+                        
+                        st.info(f"✅ DOCX '{filename}' processed with fallback method ({len(full_text)} characters)")
+                        return [document]
+                        
+                    except ImportError:
+                        st.error("python-docx package not found. Install with: pip install python-docx")
+                        return []
+                    except Exception as fallback_error:
+                        st.error(f"Both DOCX processing methods failed for '{filename}': {str(fallback_error)}")
+                        return []
                     
             else:
                 st.error(f"Unsupported file type: {file_extension}. Supported types: PDF, TXT, MD, DOCX")
