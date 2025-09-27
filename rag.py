@@ -88,6 +88,11 @@ class RAGManager:
             # Split documents into chunks
             chunks = self.text_splitter.split_documents(documents)
             
+            if not chunks:
+                st.error(f"No chunks created from '{uploaded_file.name}' - document may be empty or unreadable")
+                os.unlink(tmp_file_path)
+                return False, 0
+            
             if progress_callback:
                 progress_callback(f"Processing {len(chunks)} chunks...")
             
@@ -97,8 +102,14 @@ class RAGManager:
                 if progress_callback:
                     progress_callback(f"Processing chunk {i+1}/{len(chunks)}")
                 
+                # Check if chunk has content
+                if not chunk.page_content.strip():
+                    continue
+                
                 if self._process_and_store_chunk(chunk, uploaded_file.name):
                     success_count += 1
+                else:
+                    st.warning(f"Failed to store chunk {i+1} from '{uploaded_file.name}'")
             
             # Clean up temporary file
             os.unlink(tmp_file_path)
@@ -115,23 +126,49 @@ class RAGManager:
             return False, 0
     
     def _load_document(self, file_path: str, filename: str) -> List[Document]:
-        """Load document based on file type with enhanced support"""
+        """Load document based on file type with enhanced support and debugging"""
         try:
             file_extension = filename.lower().split('.')[-1]
             
             if file_extension == 'pdf':
                 loader = PyPDFLoader(file_path)
-                return loader.load()
+                documents = loader.load()
+                if not documents:
+                    st.warning(f"PDF '{filename}' loaded but contains no readable content")
+                return documents
+                
             elif file_extension in ['txt', 'md']:
                 loader = TextLoader(file_path, encoding='utf-8')
-                return loader.load()
+                documents = loader.load()
+                if not documents:
+                    st.warning(f"Text file '{filename}' loaded but contains no content")
+                return documents
+                
             elif file_extension == 'docx':
                 try:
                     loader = Docx2txtLoader(file_path)
-                    return loader.load()
+                    documents = loader.load()
+                    
+                    if not documents:
+                        st.warning(f"DOCX '{filename}' loaded but contains no readable text")
+                        return []
+                    
+                    # Check if documents have content
+                    total_content = sum(len(doc.page_content.strip()) for doc in documents)
+                    if total_content == 0:
+                        st.warning(f"DOCX '{filename}' loaded but all content is empty")
+                        return []
+                    
+                    st.info(f"✅ DOCX '{filename}' loaded successfully with {total_content} characters")
+                    return documents
+                    
                 except ImportError:
                     st.error("DOCX support requires python-docx package. Install with: pip install python-docx")
                     return []
+                except Exception as docx_error:
+                    st.error(f"Error processing DOCX '{filename}': {str(docx_error)}")
+                    return []
+                    
             else:
                 st.error(f"Unsupported file type: {file_extension}. Supported types: PDF, TXT, MD, DOCX")
                 return []
@@ -167,9 +204,14 @@ class RAGManager:
             return False
     
     def _generate_embedding(self, text: str) -> Optional[List[float]]:
-        """Generate embedding for text"""
+        """Generate embedding for text with detailed error handling"""
         try:
             if not self.embedding_model:
+                st.error("Embedding model not initialized. Check your configuration.")
+                return None
+            
+            if not text or not text.strip():
+                st.warning("Cannot generate embedding for empty text")
                 return None
             
             if hasattr(self.embedding_model, 'embed_query'):
@@ -179,10 +221,16 @@ class RAGManager:
                 # Sentence transformers
                 embedding = self.embedding_model.encode(text).tolist()
             
+            if not embedding or len(embedding) == 0:
+                st.error("Generated embedding is empty")
+                return None
+            
             return embedding
             
         except Exception as e:
             st.error(f"Error generating embedding: {str(e)}")
+            if "api" in str(e).lower():
+                st.info("💡 Check your OpenAI API key or try using sentence-transformers")
             return None
     
     def search_relevant_context(self, query: str, max_chunks: int = 3) -> str:
