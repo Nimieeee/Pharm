@@ -74,32 +74,29 @@ if prompt := st.chat_input("Type your message..."):
     with st.chat_message("user"):
         st.write(prompt)
     
-    # Generate response with visible streaming
+    # Generate response with pill cursor streaming
     def stream_response() -> Generator[str, None, None]:
-        """Reliable streaming generator"""
+        """Streaming generator with pill emoji cursor"""
         # Get full response first
         full_response = st.session_state.model_manager.generate_response(
             message=prompt,
             stream=False
         )
         
-        # Stream character by character for smooth effect
+        # Build response progressively with pill cursor
+        current_text = ""
         for i, char in enumerate(full_response):
-            yield char
-            if i % 3 == 0:  # Add delay every few characters
-                time.sleep(0.02)
+            current_text += char
+            # Show current text with pill cursor (except for last character)
+            if i < len(full_response) - 1:
+                yield current_text + "💊"
+            else:
+                yield current_text
+            time.sleep(0.02)
     
-    # Display streaming response with pulsing pill indicator
+    # Display streaming response with pill cursor
     with st.chat_message("assistant"):
-        # Show pulsing pill indicator immediately
-        placeholder = st.empty()
-        placeholder.markdown('<div class="streaming-indicator">💊</div>', unsafe_allow_html=True)
-        
-        # Start streaming and replace the indicator
         response = st.write_stream(stream_response())
-        
-        # Clear the placeholder once streaming starts
-        placeholder.empty()
     
     # Save response
     if response:

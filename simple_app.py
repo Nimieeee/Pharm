@@ -1493,7 +1493,7 @@ def render_chat_history():
             with st.chat_message("user", avatar="👤"):
                 st.markdown(content)
         elif role == "assistant":
-            with st.chat_message("assistant", avatar="💊"):
+            with st.chat_message("assistant", avatar="PharmGPT.png"):
                 st.markdown(content)
         elif role == "system":
             # System messages can be shown as info
@@ -1917,9 +1917,9 @@ def process_user_message(user_input: str):
             
             # Generate AI response with context
             try:
-                # Fixed streaming implementation
+                # Fixed streaming implementation with pill cursor
                 def stream_response():
-                    """Streaming generator with proper fallback"""
+                    """Streaming generator with pill emoji cursor"""
                     # Always use simulated streaming for reliability
                     full_response = st.session_state.model_manager.generate_response(
                         message=user_input,
@@ -1927,23 +1927,20 @@ def process_user_message(user_input: str):
                         stream=False
                     )
                     
-                    # Stream character by character for smooth effect
+                    # Build response progressively with pill cursor
+                    current_text = ""
                     for i, char in enumerate(full_response):
-                        yield char
-                        if i % 3 == 0:  # Add delay every few characters
-                            time.sleep(0.02)
+                        current_text += char
+                        # Show current text with pill cursor (except for last character)
+                        if i < len(full_response) - 1:
+                            yield current_text + "💊"
+                        else:
+                            yield current_text
+                        time.sleep(0.02)
                 
-                # Display streaming response with custom indicator
-                with st.chat_message("assistant", avatar="💊"):
-                    # Show pulsing pill indicator immediately
-                    placeholder = st.empty()
-                    placeholder.markdown('<div class="streaming-indicator">💊</div>', unsafe_allow_html=True)
-                    
-                    # Start streaming and replace the indicator
+                # Display streaming response with pill cursor
+                with st.chat_message("assistant", avatar="PharmGPT.png"):
                     ai_response = st.write_stream(stream_response())
-                    
-                    # Clear the placeholder once streaming starts
-                    placeholder.empty()
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
