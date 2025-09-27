@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.schema import Document
 from sentence_transformers import SentenceTransformer
 import tempfile
@@ -146,27 +146,47 @@ class RAGManager:
                 
             elif file_extension == 'docx':
                 # Use direct python-docx approach for better reliability
+                st.info(f"🔄 Processing DOCX file: {filename}")
+                
+                # First, let's check if python-docx is available
                 try:
                     import docx
-                    st.info(f"🔄 Processing DOCX file: {filename}")
-                    
+                    st.info("✅ python-docx imported successfully")
+                except ImportError as e:
+                    st.error(f"❌ python-docx import failed: {str(e)}")
+                    st.error("Please install python-docx: pip install python-docx")
+                    return []
+                
+                # Now process the document
+                try:
                     doc = docx.Document(file_path)
+                    st.info(f"✅ DOCX document loaded: {filename}")
                     
                     # Extract text from all paragraphs
                     text_content = []
+                    paragraph_count = 0
                     for paragraph in doc.paragraphs:
                         if paragraph.text.strip():
                             text_content.append(paragraph.text.strip())
+                            paragraph_count += 1
+                    
+                    st.info(f"📄 Found {paragraph_count} paragraphs with text")
                     
                     # Extract text from tables
+                    table_count = 0
                     for table in doc.tables:
                         for row in table.rows:
                             for cell in row.cells:
                                 if cell.text.strip():
                                     text_content.append(cell.text.strip())
+                                    table_count += 1
+                    
+                    if table_count > 0:
+                        st.info(f"📊 Found {table_count} table cells with text")
                     
                     if not text_content:
                         st.warning(f"DOCX '{filename}' contains no readable text content")
+                        st.info("The document may be empty or contain only images/formatting")
                         return []
                     
                     # Create a Document object
@@ -179,11 +199,9 @@ class RAGManager:
                     st.success(f"✅ DOCX '{filename}' processed successfully ({len(full_text)} characters)")
                     return [document]
                     
-                except ImportError:
-                    st.error("python-docx package not found. Install with: pip install python-docx")
-                    return []
                 except Exception as docx_error:
-                    st.error(f"Error processing DOCX '{filename}': {str(docx_error)}")
+                    st.error(f"❌ Error processing DOCX '{filename}': {str(docx_error)}")
+                    st.info("💡 Try converting the DOCX to PDF or TXT format")
                     return []
                     
             else:
