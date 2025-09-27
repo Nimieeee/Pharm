@@ -391,6 +391,24 @@ def apply_dark_mode_styling():
         animation: pulse 1s infinite;
     }
     
+    /* Pulsing pill indicator for streaming */
+    .streaming-indicator {
+        font-size: 1.5rem;
+        animation: pill-pulse 1.5s ease-in-out infinite;
+        display: inline-block;
+    }
+    
+    @keyframes pill-pulse {
+        0%, 100% { 
+            opacity: 0.4;
+            transform: scale(1);
+        }
+        50% { 
+            opacity: 1;
+            transform: scale(1.1);
+        }
+    }
+    
     /* Enhanced responsive design */
     @media (max-width: 1024px) {
         .chat-message {
@@ -1558,12 +1576,7 @@ def render_message_input():
                 status_icon = "🟢" if model_available else "🔴"
                 status_text = "Available" if model_available else "Unavailable"
                 
-                st.markdown(f"""
-                <div class="status-indicator status-{'online' if model_available else 'offline'}">
-                    <span class="status-dot"></span>
-                    <strong>PharmGPT:</strong> {status_text}
-                </div>
-                """, unsafe_allow_html=True)
+
                 
                 if not model_available:
                     st.error("⚠️ Mistral API key required. Check your configuration.")
@@ -1920,9 +1933,17 @@ def process_user_message(user_input: str):
                         if i % 3 == 0:  # Add delay every few characters
                             time.sleep(0.02)
                 
-                # Display streaming response
+                # Display streaming response with custom indicator
                 with st.chat_message("assistant", avatar="💊"):
+                    # Show pulsing pill indicator immediately
+                    placeholder = st.empty()
+                    placeholder.markdown('<div class="streaming-indicator">💊</div>', unsafe_allow_html=True)
+                    
+                    # Start streaming and replace the indicator
                     ai_response = st.write_stream(stream_response())
+                    
+                    # Clear the placeholder once streaming starts
+                    placeholder.empty()
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager

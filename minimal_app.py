@@ -21,7 +21,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Simple dark styling
+# Simple dark styling with pulsing pill indicator
 st.markdown("""
 <style>
 .stApp {
@@ -33,6 +33,21 @@ st.markdown("""
     border-radius: 10px;
     padding: 10px;
     margin: 5px 0;
+}
+.streaming-indicator {
+    font-size: 1.5rem;
+    animation: pill-pulse 1.5s ease-in-out infinite;
+    display: inline-block;
+}
+@keyframes pill-pulse {
+    0%, 100% { 
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1;
+        transform: scale(1.1);
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -74,9 +89,17 @@ if prompt := st.chat_input("Type your message..."):
             if i % 3 == 0:  # Add delay every few characters
                 time.sleep(0.02)
     
-    # Display streaming response
+    # Display streaming response with pulsing pill indicator
     with st.chat_message("assistant"):
+        # Show pulsing pill indicator immediately
+        placeholder = st.empty()
+        placeholder.markdown('<div class="streaming-indicator">💊</div>', unsafe_allow_html=True)
+        
+        # Start streaming and replace the indicator
         response = st.write_stream(stream_response())
+        
+        # Clear the placeholder once streaming starts
+        placeholder.empty()
     
     # Save response
     if response:
