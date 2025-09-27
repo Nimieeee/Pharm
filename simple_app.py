@@ -1498,17 +1498,8 @@ def render_message(message: Dict[str, Any]):
     content = message["content"]
     timestamp = message.get("timestamp", 0)
     
-    # Handle timestamp conversion safely
-    try:
-        if timestamp:
-            # Convert string timestamp to float if needed
-            if isinstance(timestamp, str):
-                timestamp = float(timestamp)
-            time_str = time.strftime("%H:%M", time.localtime(timestamp))
-        else:
-            time_str = ""
-    except (ValueError, TypeError, OSError):
-        time_str = ""
+    # Timestamps removed for cleaner interface
+    time_str = ""
     
     # Handle system messages (like model switches)
     if role == "system":
@@ -1974,7 +1965,7 @@ def process_user_message(user_input: str):
     
     # Generate AI response with RAG integration
     try:
-        with st.spinner("🤖 Generating response with Mistral AI..."):
+        # Generate AI response silently
             # Get RAG context if available
             context = ""
             context_chunks = 0
@@ -2015,11 +2006,48 @@ def process_user_message(user_input: str):
             
             # Generate AI response with context
             try:
-                with st.spinner("✨ Generating detailed response..."):
-                    ai_response = st.session_state.model_manager.generate_response(
+                # Generate AI response with streaming
+                    response_stream = st.session_state.model_manager.generate_response(
                         message=user_input,
-                        context=context if context else None
+                        context=context if context else None,
+                        stream=True
                     )
+                    
+                    # Create placeholder for streaming response
+                    response_placeholder = st.empty()
+                    ai_response = ""
+                    
+                    # Stream the response
+                    try:
+                        for chunk in response_stream:
+                            if chunk.choices and len(chunk.choices) > 0:
+                                delta = chunk.choices[0].delta
+                                if hasattr(delta, 'content') and delta.content:
+                                    ai_response += delta.content
+                                    # Display streaming response in a clean format
+                                    with response_placeholder.container():
+                                        st.markdown(f"""
+                                        <div class="chat-message assistant-message">
+                                            <div style="margin-bottom: 0.5rem;">
+                                                <strong>💊 PharmGPT</strong>
+                                            </div>
+                                            <div style="line-height: 1.6;">
+                                                {ai_response}
+                                            </div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                        
+                        # Clear the placeholder after streaming is complete
+                        response_placeholder.empty()
+                        
+                    except Exception as stream_error:
+                        # Fallback to non-streaming if streaming fails
+                        response_placeholder.empty()
+                        ai_response = st.session_state.model_manager.generate_response(
+                            message=user_input,
+                            context=context if context else None,
+                            stream=False
+                        )
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager

@@ -54,7 +54,7 @@ class MistralModel:
         except Exception as e:
             st.error(f"Error initializing Mistral client: {str(e)}")
     
-    def generate_response(self, message: str, context: Optional[str] = None, system_prompt: Optional[str] = None) -> str:
+    def generate_response(self, message: str, context: Optional[str] = None, system_prompt: Optional[str] = None, stream: bool = False):
         """Generate response using Mistral Small with RAG context"""
         if not self.is_available():
             return "Mistral model is not available. Please check API key configuration."
@@ -63,16 +63,44 @@ class MistralModel:
             # Use custom system prompt or default
             active_system_prompt = system_prompt or self.default_system_prompt
             
-            # Build user message with context if available
+            # Build user message with context and conversation history
             user_message = message
+            
+            # Get conversation history for context (last 30 messages)
+            conversation_history = ""
+            if hasattr(st.session_state, 'messages') and st.session_state.messages:
+                recent_messages = st.session_state.messages[-30:]  # Last 30 messages
+                history_parts = []
+                
+                for msg in recent_messages:
+                    role = msg.get('role', 'unknown')
+                    content = msg.get('content', '')
+                    if role == 'user':
+                        history_parts.append(f"User: {content}")
+                    elif role == 'assistant':
+                        history_parts.append(f"Assistant: {content}")
+                
+                if history_parts:
+                    conversation_history = "\n".join(history_parts[-20:])  # Keep it manageable
+            
             if context and context.strip():
-                user_message = f"""**Complete Document Content from Uploaded Files:**
+                user_message = f"""**Conversation History:**
+{conversation_history}
+
+**Complete Document Content from Uploaded Files:**
 
 {context}
 
-**Instructions:** You have access to the COMPLETE content of the user's uploaded documents above. Use this comprehensive information to provide detailed, accurate answers. Reference specific sections, quote relevant parts, and provide thorough explanations based on the document content. If the user asks about anything in the documents, you have all the information needed to give a complete response.
+**Instructions:** You have access to the conversation history and COMPLETE content of the user's uploaded documents above. Use this comprehensive information to provide detailed, accurate answers that are contextually aware of the ongoing conversation. Reference specific sections, quote relevant parts, and provide thorough explanations based on both the document content and conversation context.
 
-**User Question:** {message}"""
+**Current User Question:** {message}"""
+            elif conversation_history:
+                user_message = f"""**Conversation History:**
+{conversation_history}
+
+**Instructions:** Use the conversation history above to provide contextually aware responses that build on previous exchanges.
+
+**Current User Question:** {message}"""
             
             # Prepare inputs for Mistral API with system prompt
             inputs = [
@@ -91,14 +119,18 @@ class MistralModel:
             response = self.client.chat.complete(
                 model=self.model_name,
                 messages=inputs,
+                stream=stream,
                 **completion_args
             )
             
             # Extract response content
-            if response and response.choices and len(response.choices) > 0:
-                return response.choices[0].message.content
+            if stream:
+                return response  # Return the stream object
             else:
-                return "Mistral API error: No response received"
+                if response and response.choices and len(response.choices) > 0:
+                    return response.choices[0].message.content
+                else:
+                    return "Mistral API error: No response received"
                 
         except Exception as e:
             error_str = str(e)
@@ -137,7 +169,7 @@ class ModelManager:
             st.error(f"Error initializing MistralModel: {e}")
             raise
     
-    def generate_response(self, message: str, context: Optional[str] = None) -> str:
+    def generate_response(self, message: str, context: Optional[str] = None, stream: bool = False):
         """
         Generate AI response using Mistral Small with RAG context
         
@@ -151,7 +183,8 @@ class ModelManager:
         return self.model.generate_response(
             message=message,
             context=context,
-            system_prompt=self.model.default_system_prompt
+            system_prompt=self.model.default_system_prompt,
+            stream=stream
         )
     
     def is_model_available(self) -> bool:
