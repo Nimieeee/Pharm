@@ -176,11 +176,16 @@ class ConversationManager:
                 
                 # If still no current conversation, create one
                 if not st.session_state.current_conversation_id:
-                    self.create_new_conversation("Welcome Chat")
+                    conversation_id = self.create_new_conversation("Welcome Chat")
+                    if not conversation_id:
+                        # If creation failed, use fallback
+                        st.session_state.current_conversation_id = "fallback-conversation"
+                        st.session_state.messages = []
+                        st.warning("⚠️ Using temporary conversation - database may need setup")
         except Exception as e:
             st.error(f"❌ Error ensuring conversation exists: {str(e)}")
             # Fallback: set a temporary conversation ID to prevent crashes
-            st.session_state.current_conversation_id = "temp-conversation"
+            st.session_state.current_conversation_id = "fallback-conversation"
             st.session_state.messages = []
     
     def add_message_to_current_conversation(self, role: str, content: str, **metadata):
@@ -197,11 +202,17 @@ class ConversationManager:
         }
         st.session_state.messages.append(message)
         
-        # Save to database
-        self.db_manager.store_message(
-            conversation_id=st.session_state.current_conversation_id,
-            role=role,
-            content=content,
-            user_session_id=self.user_session_id,
-            metadata=metadata
-        )
+        # Save to database (only if not using fallback conversation)
+        if st.session_state.current_conversation_id != "fallback-conversation":
+            try:
+                self.db_manager.store_message(
+                    conversation_id=st.session_state.current_conversation_id,
+                    role=role,
+                    content=content,
+                    user_session_id=self.user_session_id,
+                    metadata=metadata
+                )
+            except Exception as e:
+                # Don't crash on database errors, just log them
+                st.warning(f"⚠️ Message not saved to database: {str(e)}")
+                pass

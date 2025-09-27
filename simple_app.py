@@ -120,6 +120,24 @@ def apply_dark_mode_styling():
         max-width: 85%;
     }
     
+    /* Fix streaming text size */
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] div,
+    [data-testid="stChatMessage"] span {
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+    }
+    
+    /* Streamlit chat message styling */
+    .stChatMessage {
+        font-size: 1rem !important;
+    }
+    
+    .stChatMessage p {
+        font-size: 1rem !important;
+        margin: 0 !important;
+    }
+    
     .user-message {
         background: linear-gradient(135deg, var(--user-msg-bg), color-mix(in srgb, var(--user-msg-bg) 90%, white));
         border-left-color: var(--primary-color);
@@ -421,10 +439,12 @@ def apply_dark_mode_styling():
         position: relative;
         width: 32px;
         height: 32px;
-        background: #4fc3f7;
+        background: #4fc3f7 !important;
         border-radius: 50%;
         animation: ellipseAnimation 2s linear infinite;
         margin: 0.5rem 0;
+        display: block !important;
+        flex-shrink: 0;
     }
     
     @keyframes ellipseAnimation {
@@ -588,18 +608,36 @@ def apply_dark_mode_styling():
         outline-offset: 2px !important;
     }
     
-    /* Ensure all text elements have proper contrast */
+    /* Ensure all text elements have proper contrast and size */
     .stMarkdown, .stText, p, span, div, label {
         color: var(--text-color) !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Override any large text in chat messages */
+    [data-testid="stChatMessageContent"] * {
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
     }
     
     /* High contrast for links */
     a {
         color: var(--primary-color) !important;
+        font-size: 1rem !important;
     }
     
     a:hover {
         color: var(--accent-color) !important;
+    }
+    
+    /* Force normal text size for all streaming content */
+    .element-container p,
+    .element-container div,
+    .element-container span,
+    .stMarkdown p,
+    .stMarkdown div {
+        font-size: 1rem !important;
+        font-weight: normal !important;
     }
     
     /* Custom scrollbar */
@@ -619,7 +657,38 @@ def apply_dark_mode_styling():
     ::-webkit-scrollbar-thumb:hover {
         background: var(--primary-color);
     }
+    
+    /* MathJax styling for dark theme */
+    .MathJax {
+        color: var(--text-color) !important;
+    }
+    
+    .MathJax_Display {
+        color: var(--text-color) !important;
+        background-color: transparent !important;
+    }
     </style>
+    
+    <!-- MathJax Configuration and Loading -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true,
+            processEnvironments: true
+        },
+        options: {
+            ignoreHtmlClass: 'tex2jax_ignore',
+            processHtmlClass: 'tex2jax_process'
+        },
+        svg: {
+            fontCache: 'global'
+        }
+    };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     """, unsafe_allow_html=True)
 
 # ----------------------------
@@ -2010,17 +2079,29 @@ def process_user_message(user_input: str):
                     
                     # Now stream the response to user
                     def stream_display():
-                        """Stream at 30 tokens per second"""
+                        """Stream at normal readable speed"""
                         words = full_response.split()
                         for i, word in enumerate(words):
                             if i == 0:
                                 yield word
                             else:
                                 yield " " + word
-                            time.sleep(0.033)  # 30 tokens per second
+                            time.sleep(0.1)  # Normal readable speed
                     
                     # Start streaming the response
                     ai_response = st.write_stream(stream_display())
+                    
+                    # Trigger MathJax rendering after streaming completes
+                    if ai_response:
+                        st.markdown("""
+                        <script>
+                        setTimeout(function() {
+                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                MathJax.typesetPromise();
+                            }
+                        }, 100);
+                        </script>
+                        """, unsafe_allow_html=True)
                     
                     if full_response and not full_response.startswith("Error:") and not full_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
