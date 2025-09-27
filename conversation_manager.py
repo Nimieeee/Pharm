@@ -32,21 +32,26 @@ class ConversationManager:
             st.session_state.last_processed_files = []
     
     def create_new_conversation(self, title: str = None) -> Optional[str]:
-        """Create a new conversation"""
+        """Create a new conversation with better error handling"""
         if not title:
             # Generate a default title with timestamp
             title = f"New Chat {time.strftime('%m/%d %H:%M')}"
         
-        conversation_id = self.db_manager.create_conversation(title, self.user_session_id)
-        
-        if conversation_id:
-            # Refresh conversations list
-            self.load_conversations()
-            # Switch to new conversation
-            self.switch_conversation(conversation_id)
-            return conversation_id
-        else:
-            st.error("❌ Failed to create new conversation")
+        try:
+            conversation_id = self.db_manager.create_conversation(title, self.user_session_id)
+            
+            if conversation_id:
+                # Refresh conversations list
+                self.load_conversations()
+                # Switch to new conversation
+                self.switch_conversation(conversation_id)
+                return conversation_id
+            else:
+                # Creation failed, but don't show error to user
+                return None
+        except Exception as e:
+            # Database error - return None to trigger fallback
+            print(f"Conversation creation failed: {str(e)}")
             return None
     
     def load_conversations(self):
@@ -189,11 +194,12 @@ class ConversationManager:
             st.session_state.messages = []
     
     def add_message_to_current_conversation(self, role: str, content: str, **metadata):
-        """Add a message to the current conversation"""
+        """Add a message to the current conversation with robust error handling"""
+        # Ensure we have a valid conversation
         if not st.session_state.current_conversation_id:
             self.ensure_conversation_exists()
         
-        # Add to session state
+        # Add to session state (always works)
         message = {
             'role': role,
             'content': content,
@@ -202,17 +208,43 @@ class ConversationManager:
         }
         st.session_state.messages.append(message)
         
-        # Save to database (only if not using fallback conversation)
-        if st.session_state.current_conversation_id != "fallback-conversation":
+        # Try to save to database only if we have a real conversation ID
+        if (st.session_state.current_conversation_id and 
+            st.session_state.current_conversation_id != "fallback-conversation"):
             try:
-                self.db_manager.store_message(
-                    conversation_id=st.session_state.current_conversation_id,
-                    role=role,
-                    content=content,
-                    user_session_id=self.user_session_id,
-                    metadata=metadata
-                )
+                # Verify conversation exists before saving message
+                if self.db_manager.client:
+                    # Check if conversation exists
+                    result = self.db_manager.client.table("conversations").select("id").eq("id", st.session_state.current_conversation_id).execute()
+                    
+                    if result.data and len(result.data) > 0:
+                        # Conversation exists, safe to save message
+                        self.db_manager.store_message(
+                            conversation_id=st.session_state.current_conversation_id,
+                            role=role,
+                            content=content,
+                            user_session_id=self.user_session_id,
+                            metadata=metadata
+                        )
+                    else:
+                        # Conversation doesn't exist, create a new one
+                        new_conversation_id = self.create_new_conversation("Chat Session")
+                        if new_conversation_id:
+                            st.session_state.current_conversation_id = new_conversation_id
+                            # Try saving message again with new conversation
+                            self.db_manager.store_message(
+                                conversation_id=new_conversation_id,
+                                role=role,
+                                content=content,
+                                user_session_id=self.user_session_id,
+                                metadata=metadata
+                            )
+                        else:
+                            # Fall back to session-only storage
+                            st.session_state.current_conversation_id = "fallback-conversation"
+                            
             except Exception as e:
-                # Don't crash on database errors, just log them
-                st.warning(f"⚠️ Message not saved to database: {str(e)}")
+                # Database error - continue with session-only storage
+                # Don't show error to user, just log it silently
+                print(f"Database error (continuing with session storage): {str(e)}")
                 pass

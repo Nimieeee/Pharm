@@ -731,6 +731,39 @@ def apply_dark_mode_styling():
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     """, unsafe_allow_html=True)
 
+# Check if we need to collapse sidebar
+if st.session_state.get('should_collapse_sidebar', False):
+    st.markdown("""
+    <script>
+    // Function to collapse sidebar
+    function collapseSidebar() {
+        // Try multiple selectors to find the sidebar collapse button
+        const selectors = [
+            '[data-testid="stSidebarNav"] button[kind="header"]',
+            '[data-testid="stSidebar"] button[aria-label="Close sidebar"]',
+            '.css-1d391kg button',
+            '[data-testid="stSidebarNavSeparator"] + button'
+        ];
+        
+        for (let selector of selectors) {
+            const button = parent.document.querySelector(selector);
+            if (button) {
+                button.click();
+                break;
+            }
+        }
+    }
+    
+    // Try to collapse immediately and with delays
+    collapseSidebar();
+    setTimeout(collapseSidebar, 100);
+    setTimeout(collapseSidebar, 300);
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Clear the flag
+    st.session_state.should_collapse_sidebar = False
+
 # ----------------------------
 # Session State Initialization
 # ----------------------------
@@ -847,8 +880,8 @@ def render_conversation_sidebar():
     # New conversation button
     if st.sidebar.button("➕ New Conversation", use_container_width=True):
         st.session_state.conversation_manager.create_new_conversation()
-        # Collapse sidebar after creating new conversation
-        st.session_state.sidebar_state = "collapsed"
+        # Set flag to collapse sidebar
+        st.session_state.should_collapse_sidebar = True
         st.rerun()
     
     st.sidebar.markdown("---")
