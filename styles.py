@@ -278,7 +278,7 @@ class StyleGenerator:
             padding-bottom: 2rem !important;
         }
         
-        /* Model Selector */
+        /* Model Toggle Switch */
         .model-selector {
             background: linear-gradient(135deg, var(--secondary-bg), color-mix(in srgb, var(--secondary-bg) 95%, white));
             border: 1px solid var(--border-color);
@@ -288,10 +288,148 @@ class StyleGenerator:
             box-shadow: 0 2px 8px var(--shadow-color);
         }
         
-        .model-selector h4 {
-            margin: 0 0 0.5rem 0;
+        .model-toggle-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .model-toggle-labels {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+        }
+        
+        .toggle-label {
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .toggle-label.active {
             color: var(--primary-color);
-            font-size: 1rem;
+            font-weight: 600;
+            transform: scale(1.05);
+        }
+        
+        .toggle-switch-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            cursor: pointer;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #6c757d, #495057);
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, #000));
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+            background: linear-gradient(135deg, #ffffff, #f0f8ff);
+        }
+        
+        .toggle-switch:hover .toggle-slider {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 8px rgba(var(--primary-color-rgb), 0.3);
+        }
+        
+        .model-description {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-align: center;
+            font-style: italic;
+            margin-top: 0.25rem;
+        }
+        
+        /* Sidebar Model Toggle */
+        .sidebar-model-toggle {
+            display: flex;
+            justify-content: center;
+            margin: 0.5rem 0;
+        }
+        
+        .sidebar-model-toggle .model-toggle-labels {
+            gap: 0.5rem;
+        }
+        
+        .sidebar-model-toggle .toggle-label {
+            font-size: 0.8rem;
+            min-width: 50px;
+        }
+        
+        .sidebar-model-toggle .toggle-switch {
+            width: 45px;
+            height: 24px;
+        }
+        
+        .sidebar-model-toggle .toggle-slider:before {
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+        }
+        
+        .sidebar-model-toggle .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(21px);
+        }
+        
+        /* Auth Model Toggle */
+        .auth-model-toggle {
+            margin: 1rem 0;
+        }
+        
+        .auth-model-toggle .model-toggle-labels {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin: 0.5rem 0;
+        }
+        
+        .auth-model-toggle .toggle-label {
+            font-size: 0.9rem;
+            min-width: 70px;
+            text-align: center;
         }
         
         /* Status Indicators */
@@ -340,31 +478,7 @@ class StyleGenerator:
             50% { opacity: 0.5; }
         }
         
-        /* Theme Toggle */
-        .theme-toggle {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1000;
-            background: var(--secondary-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 50%;
-            width: 3rem;
-            height: 3rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.2rem;
-            box-shadow: 0 2px 8px var(--shadow-color);
-        }
-        
-        .theme-toggle:hover {
-            background: var(--primary-color);
-            color: white;
-            transform: scale(1.1);
-        }
+        /* Theme toggle removed - permanent dark theme enforced */
         
         /* Cards and Containers */
         .info-card {
@@ -433,10 +547,7 @@ class StyleGenerator:
                 padding: 1rem;
             }
             
-            .theme-toggle {
-                width: 2.75rem;
-                height: 2.75rem;
-            }
+            /* Theme toggle removed - permanent dark theme */
         }
         
         /* Small screens (mobile landscape) */
@@ -470,6 +581,31 @@ class StyleGenerator:
                 padding: 0.75rem;
                 margin: 0.75rem 0;
             }
+            
+            .model-toggle-labels {
+                gap: 0.75rem;
+            }
+            
+            .toggle-label {
+                font-size: 0.8rem;
+                min-width: 60px;
+            }
+            
+            .toggle-switch {
+                width: 50px;
+                height: 26px;
+            }
+            
+            .toggle-slider:before {
+                height: 20px;
+                width: 20px;
+                left: 3px;
+                bottom: 3px;
+            }
+            
+            .toggle-switch input:checked + .toggle-slider:before {
+                transform: translateX(24px);
+            }
         }
         
         /* Extra small screens (mobile portrait) */
@@ -497,13 +633,7 @@ class StyleGenerator:
                 font-size: 0.75rem;
             }
             
-            .theme-toggle {
-                width: 2.5rem;
-                height: 2.5rem;
-                top: 0.5rem;
-                right: 0.5rem;
-                font-size: 1rem;
-            }
+            /* Theme toggle removed - permanent dark theme */
             
             .stButton > button {
                 padding: 0.625rem 1rem !important;
@@ -640,9 +770,7 @@ class StyleGenerator:
                 animation: none;
             }
             
-            .theme-toggle:hover {
-                transform: none;
-            }
+
         }
         
         /* Large text support */

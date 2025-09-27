@@ -37,7 +37,8 @@ class MessageStore:
     
     def save_message(self, user_id: str, role: str, content: str, 
                     model_used: Optional[str] = None, 
-                    metadata: Optional[Dict[str, Any]] = None) -> Optional[Message]:
+                    metadata: Optional[Dict[str, Any]] = None,
+                    conversation_id: Optional[str] = None) -> Optional[Message]:
         """
         Save a message for a specific user
         
@@ -47,6 +48,7 @@ class MessageStore:
             content: Message content
             model_used: AI model used for assistant messages
             metadata: Additional message metadata
+            conversation_id: Conversation ID to associate the message with
             
         Returns:
             Message object if successful, None otherwise
@@ -61,7 +63,8 @@ class MessageStore:
                 'role': role,
                 'content': content,
                 'model_used': model_used,
-                'metadata': metadata or {}
+                'metadata': metadata or {},
+                'conversation_id': conversation_id
             }
             
             result = self.client.table('messages').insert(message_data).execute()
@@ -261,3 +264,67 @@ class MessageStore:
         except Exception as e:
             logger.error(f"Error getting recent messages for user {user_id}: {e}")
             return []
+    
+    def get_conversation_messages(self, user_id: str, conversation_id: str, 
+                                limit: Optional[int] = None) -> List[Message]:
+        """
+        Get all messages for a specific conversation
+        
+        Args:
+            user_id: User's unique identifier
+            conversation_id: Conversation's unique identifier
+            limit: Maximum number of messages to retrieve (None for unlimited)
+            
+        Returns:
+            List of Message objects ordered by creation time (oldest first)
+        """
+        try:
+            query = self.client.table('messages').select('*').eq(
+                'user_id', user_id
+            ).eq('conversation_id', conversation_id).order('created_at', desc=False)
+            
+            if limit:
+                query = query.limit(limit)
+            
+            result = query.execute()
+            
+            messages = []
+            for data in result.data or []:
+                messages.append(Message(
+                    id=data['id'],
+                    user_id=data['user_id'],
+                    role=data['role'],
+                    content=data['content'],
+                    model_used=data.get('model_used'),
+                    created_at=datetime.fromisoformat(data['created_at'].replace('Z', '+00:00')),
+                    metadata=data.get('metadata', {})
+                ))
+            
+            return messages
+            
+        except Exception as e:
+            logger.error(f"Error getting messages for conversation {conversation_id}: {e}")
+            return []
+    
+    def delete_conversation_messages(self, user_id: str, conversation_id: str) -> bool:
+        """
+        Delete all messages for a specific conversation
+        
+        Args:
+            user_id: User's unique identifier
+            conversation_id: Conversation's unique identifier
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            result = self.client.table('messages').delete().eq(
+                'user_id', user_id
+            ).eq('conversation_id', conversation_id).execute()
+            
+            logger.info(f"Deleted messages for conversation {conversation_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error deleting messages for conversation {conversation_id}: {e}")
+            return False

@@ -297,29 +297,30 @@ class TestChatInterface(unittest.TestCase):
         self.assertIn("loading-dots", html_content)
         self.assertIn("Thinking", html_content)
     
-    @patch('streamlit.selectbox')
+    @patch('streamlit.checkbox')
     @patch('streamlit.markdown')
-    @patch('streamlit.caption')
-    @patch('streamlit.columns')
-    def test_render_model_selector(self, mock_columns, mock_caption, mock_markdown, mock_selectbox):
-        """Test model selector rendering"""
-        mock_columns.return_value = [Mock(), Mock()]
-        
-        available_models = [
-            {"id": "fast", "name": "Fast Model", "description": "Quick responses"},
-            {"id": "premium", "name": "Premium Model", "description": "High quality responses"}
-        ]
-        
-        mock_selectbox.return_value = "Fast Model"
-        
-        result = self.chat_interface.render_model_selector("fast", available_models)
-        
-        # Verify components were created
-        mock_selectbox.assert_called_once()
-        mock_caption.assert_called_once()
-        
-        # Should return the selected model ID
-        self.assertEqual(result, "fast")
+    @patch('streamlit.rerun')
+    def test_render_model_selector(self, mock_rerun, mock_markdown, mock_checkbox):
+        """Test model toggle switch rendering"""
+        # Mock session state
+        with patch('streamlit.session_state', {'model_toggle_switch': False}):
+            available_models = [
+                {"id": "gemma2-9b-it", "name": "Fast Model", "description": "Quick responses"},
+                {"id": "qwen/qwen3-32b", "name": "Premium Model", "description": "High quality responses"}
+            ]
+            
+            mock_checkbox.return_value = False  # Fast mode
+            
+            result = self.chat_interface.render_model_selector("gemma2-9b-it", available_models)
+            
+            # Verify toggle switch HTML was rendered
+            mock_markdown.assert_called()
+            html_calls = [call[0][0] for call in mock_markdown.call_args_list]
+            toggle_html_found = any("toggle-switch" in html for html in html_calls if isinstance(html, str))
+            self.assertTrue(toggle_html_found, "Toggle switch HTML should be rendered")
+            
+            # Should return the fast model ID
+            self.assertEqual(result, "gemma2-9b-it")
     
     @patch('streamlit.markdown')
     def test_render_status_indicator(self, mock_markdown):

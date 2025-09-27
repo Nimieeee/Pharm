@@ -9,6 +9,7 @@ from datetime import datetime
 import time
 import io
 import base64
+import logging
 from pathlib import Path
 
 from message_store import Message
@@ -16,6 +17,8 @@ from message_store_optimized import MessagePage, OptimizedMessageStore
 from theme_manager import ThemeManager
 from performance_optimizer import performance_optimizer, PaginationHelper, LoadingStateManager
 from chat_interface import ChatInterface, StreamingMessage
+
+logger = logging.getLogger(__name__)
 
 class OptimizedChatInterface(ChatInterface):
     """Enhanced chat interface with pagination, loading states, and performance optimizations"""

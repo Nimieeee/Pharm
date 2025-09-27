@@ -55,7 +55,7 @@ class ChatInterface:
     
     def render_chat_history(self, messages: List[Message]) -> None:
         """
-        Render the complete chat history with enhanced message display
+        Render the complete chat history with unlimited message display
         
         Args:
             messages: List of Message objects to display
@@ -64,11 +64,20 @@ class ChatInterface:
             self._render_welcome_message()
             return
         
+        # Show unlimited history header
+        self._render_unlimited_history_header(len(messages))
+        
+        # Create unlimited scrolling container for chat messages
+        st.markdown(
+            '<div class="unlimited-chat-container" id="unlimited-chat-container">',
+            unsafe_allow_html=True
+        )
+        
         # Create a container for chat messages
         chat_container = st.container()
         
         with chat_container:
-            # Render historical messages
+            # Render all historical messages without pagination
             for message in messages:
                 self._render_message_bubble(message)
             
@@ -79,6 +88,8 @@ class ChatInterface:
             # Render typing indicator if active
             elif st.session_state.show_typing_indicator:
                 self._render_typing_indicator()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Auto-scroll to bottom (JavaScript injection)
         self._inject_auto_scroll_script()
@@ -138,7 +149,7 @@ class ChatInterface:
     
     def render_conversation_controls(self, user_id: str, chat_manager) -> Dict[str, bool]:
         """
-        Render conversation management controls
+        Render conversation management controls with unlimited history support
         
         Args:
             user_id: Current user ID
@@ -149,12 +160,8 @@ class ChatInterface:
         """
         st.markdown("### 💬 Conversation Controls")
         
-        # Get conversation stats
-        if chat_manager:
-            stats = chat_manager.get_user_message_stats(user_id)
-            total_messages = stats.get('total_messages', 0)
-            
-            st.write(f"**Messages in conversation:** {total_messages}")
+        # Show unlimited history status
+        st.info("📜 **Unlimited History Mode** - Showing complete conversation without pagination")
         
         controls = {}
         
@@ -215,9 +222,9 @@ class ChatInterface:
         
         return ""
     
-    def render_model_selector(self, current_model: str, on_change_callback=None) -> str:
+    def render_model_toggle_switch(self, current_model: str, on_change_callback=None) -> str:
         """
-        Render model selection interface
+        Render model toggle switch interface (replaces dropdown)
         
         Args:
             current_model: Currently selected model
@@ -226,62 +233,97 @@ class ChatInterface:
         Returns:
             Selected model identifier
         """
-        st.markdown("### 🤖 AI Model Selection")
+        # Determine current state based on model
+        is_premium = current_model in ["qwen/qwen3-32b", "qwen3-32b", "premium"]
         
-        model_options = {
-            "🚀 Fast Mode (Gemma2-9B)": "fast",
-            "⭐ Premium Mode (Qwen3-32B)": "premium"
-        }
+        # Create toggle switch HTML
+        toggle_html = self._create_model_toggle_switch_html(is_premium)
+        st.markdown(toggle_html, unsafe_allow_html=True)
         
-        # Find current selection
-        current_display = next(
-            (k for k, v in model_options.items() if v == current_model),
-            list(model_options.keys())[0]
+        # Handle toggle state change
+        toggle_key = "chat_model_toggle_switch"
+        if toggle_key not in st.session_state:
+            st.session_state[toggle_key] = is_premium
+        
+        # Create invisible checkbox to capture state changes
+        new_state = st.checkbox(
+            "Toggle Model",
+            value=st.session_state[toggle_key],
+            key=f"{toggle_key}_checkbox",
+            label_visibility="collapsed"
         )
         
-        selected_display = st.radio(
-            "Choose AI Model:",
-            options=list(model_options.keys()),
-            index=list(model_options.keys()).index(current_display),
-            key="model_selector"
-        )
+        # Update session state and provide visual feedback
+        if new_state != st.session_state[toggle_key]:
+            st.session_state[toggle_key] = new_state
+            selected_model = "premium" if new_state else "fast"
+            
+            # Call callback if provided
+            if on_change_callback:
+                on_change_callback(selected_model)
+            
+            # Store the preference for session persistence
+            st.session_state["selected_model"] = selected_model
+            st.rerun()
         
-        selected_model = model_options[selected_display]
+        # Return appropriate model ID based on current state
+        selected_model = "premium" if st.session_state[toggle_key] else "fast"
         
-        # Show model descriptions
-        if selected_model == "fast":
-            st.caption("⚡ Faster responses, good for quick questions")
-        else:
-            st.caption("🎯 Higher quality responses, better for complex topics")
-        
-        # Call callback if model changed
-        if on_change_callback and selected_model != current_model:
-            on_change_callback(selected_model)
+        # Update session state for persistence
+        st.session_state["selected_model"] = selected_model
         
         return selected_model
     
-    def render_chat_statistics(self, stats: Dict[str, Any]) -> None:
+    def render_header_model_toggle(self, current_model: str, on_change_callback=None) -> str:
         """
-        Render chat statistics and information
+        Render compact model toggle switch for chat header
         
         Args:
-            stats: Dictionary containing chat statistics
+            current_model: Currently selected model
+            on_change_callback: Callback function when model changes
+            
+        Returns:
+            Selected model identifier
         """
-        st.markdown("### 📊 Chat Statistics")
+        # Determine current state based on model
+        is_premium = current_model in ["qwen/qwen3-32b", "qwen3-32b", "premium"]
         
-        col1, col2 = st.columns(2)
+        # Create compact toggle switch HTML for header
+        toggle_html = self._create_header_model_toggle_html(is_premium)
+        st.markdown(toggle_html, unsafe_allow_html=True)
         
-        with col1:
-            st.metric("Total Messages", stats.get('total_messages', 0))
+        # Handle toggle state change
+        toggle_key = "header_model_toggle_switch"
+        if toggle_key not in st.session_state:
+            st.session_state[toggle_key] = is_premium
         
-        with col2:
-            st.metric("Recent Messages", stats.get('recent_messages', 0))
+        # Create invisible checkbox to capture state changes
+        new_state = st.checkbox(
+            "Header Toggle Model",
+            value=st.session_state[toggle_key],
+            key=f"{toggle_key}_checkbox",
+            label_visibility="collapsed"
+        )
         
-        # Additional stats if available
-        if 'models_used' in stats:
-            st.markdown("**Models Used:**")
-            for model, count in stats['models_used'].items():
-                st.write(f"• {model}: {count} messages")
+        # Update session state and provide visual feedback
+        if new_state != st.session_state[toggle_key]:
+            st.session_state[toggle_key] = new_state
+            selected_model = "premium" if new_state else "fast"
+            
+            # Call callback if provided
+            if on_change_callback:
+                on_change_callback(selected_model)
+            
+            # Store the preference for session persistence
+            st.session_state["selected_model"] = selected_model
+            st.rerun()
+        
+        # Return appropriate model ID based on current state
+        selected_model = "premium" if st.session_state[toggle_key] else "fast"
+        
+        return selected_model
+    
+
     
     def export_conversation(self, messages: List[Message], format: str = "txt") -> bytes:
         """
@@ -449,7 +491,7 @@ class ChatInterface:
         scroll_script = """
         <script>
         function scrollToBottom() {
-            const chatContainer = document.getElementById('chat-container');
+            const chatContainer = document.getElementById('chat-container') || document.getElementById('unlimited-chat-container');
             if (chatContainer) {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }
@@ -460,6 +502,67 @@ class ChatInterface:
         </script>
         """
         st.markdown(scroll_script, unsafe_allow_html=True)
+    
+    def _create_model_toggle_switch_html(self, is_premium: bool) -> str:
+        """Create HTML for the model toggle switch with labels."""
+        checked = "checked" if is_premium else ""
+        
+        return f"""
+        <div class="model-toggle-container">
+            <div class="model-toggle-header">
+                <h4>🤖 AI Model Selection</h4>
+            </div>
+            <div class="model-toggle-labels">
+                <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
+                <div class="toggle-switch-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" {checked} onchange="
+                            const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\'] input');
+                            if (checkbox) checkbox.click();
+                        ">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <span class="toggle-label {'active' if is_premium else ''}">🎯 Premium</span>
+            </div>
+            <div class="model-description">
+                {'High-quality responses with 8,000 token limit for complex topics' if is_premium else 'Quick responses for general questions'}
+            </div>
+        </div>
+        """
+    
+    def _create_header_model_toggle_html(self, is_premium: bool) -> str:
+        """Create compact HTML for the header model toggle switch."""
+        checked = "checked" if is_premium else ""
+        
+        return f"""
+        <div class="header-model-toggle">
+            <div class="model-toggle-labels compact">
+                <span class="toggle-label {'active' if not is_premium else ''}">⚡</span>
+                <div class="toggle-switch-wrapper">
+                    <label class="toggle-switch compact">
+                        <input type="checkbox" {checked} onchange="
+                            const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\']:last-of-type input');
+                            if (checkbox) checkbox.click();
+                        ">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <span class="toggle-label {'active' if is_premium else ''}">🎯</span>
+            </div>
+            <div class="model-status-text">
+                {'Premium Mode' if is_premium else 'Fast Mode'}
+            </div>
+        </div>
+        """
+    
+    def _render_unlimited_history_header(self, message_count: int) -> None:
+        """Render header for unlimited conversation history"""
+        st.markdown("#### 📜 Complete Conversation History")
+        if message_count > 0:
+            st.caption(f"Displaying all {message_count} messages without pagination")
+        else:
+            st.caption("No messages yet - start a conversation!")
     
     def _export_as_text(self, messages: List[Message]) -> bytes:
         """Export messages as plain text"""
@@ -524,17 +627,194 @@ class ChatInterface:
 
 
 def inject_chat_css() -> None:
-    """Inject additional CSS for enhanced chat interface"""
+    """Inject additional CSS for enhanced chat interface with dark theme and unlimited history"""
     css = """
     <style>
-    /* Enhanced chat interface styles */
-    .chat-container {
-        max-height: 600px;
+    /* Enhanced chat interface styles with permanent dark theme */
+    .chat-container, .unlimited-chat-container {
+        max-height: 70vh;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 1rem;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border-color, #4b5563);
         border-radius: 0.5rem;
-        background-color: var(--background-color, #ffffff);
+        background-color: var(--background-color, #0e1117);
+        scroll-behavior: smooth;
+        /* Performance optimizations for unlimited scrolling */
+        contain: layout style paint;
+        will-change: scroll-position;
+        transform: translateZ(0);
+    }
+    
+    /* Custom scrollbar for dark theme */
+    .chat-container::-webkit-scrollbar,
+    .unlimited-chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .chat-container::-webkit-scrollbar-track,
+    .unlimited-chat-container::-webkit-scrollbar-track {
+        background: var(--secondary-bg, #262730);
+        border-radius: 4px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb,
+    .unlimited-chat-container::-webkit-scrollbar-thumb {
+        background: var(--border-color, #4b5563);
+        border-radius: 4px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb:hover,
+    .unlimited-chat-container::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-color, #4fc3f7);
+    }
+    
+    /* Model Toggle Switch Styles */
+    .model-toggle-container {
+        background: linear-gradient(135deg, var(--secondary-bg, #262730), color-mix(in srgb, var(--secondary-bg, #262730) 95%, white));
+        border: 1px solid var(--border-color, #4b5563);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 8px var(--shadow-color, rgba(0, 0, 0, 0.4));
+        text-align: center;
+    }
+    
+    .model-toggle-header h4 {
+        color: var(--text-color, #ffffff);
+        margin: 0 0 1rem 0;
+        font-weight: 600;
+    }
+    
+    .model-toggle-labels {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        font-weight: 500;
+        margin: 1rem 0;
+    }
+    
+    .model-toggle-labels.compact {
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+    
+    .toggle-label {
+        color: var(--text-color, #ffffff);
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        min-width: 80px;
+        text-align: center;
+        opacity: 0.7;
+    }
+    
+    .toggle-label.active {
+        color: var(--primary-color, #4fc3f7);
+        font-weight: 600;
+        transform: scale(1.05);
+        opacity: 1;
+    }
+    
+    .toggle-switch-wrapper {
+        display: flex;
+        align-items: center;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+        cursor: pointer;
+    }
+    
+    .toggle-switch.compact {
+        width: 45px;
+        height: 24px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border-radius: 30px;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 24px;
+        width: 24px;
+        left: 3px;
+        bottom: 3px;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    
+    .toggle-switch.compact .toggle-slider:before {
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, var(--primary-color, #4fc3f7), color-mix(in srgb, var(--primary-color, #4fc3f7) 80%, #000));
+    }
+    
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+        background: linear-gradient(135deg, #ffffff, #f0f8ff);
+    }
+    
+    .toggle-switch.compact input:checked + .toggle-slider:before {
+        transform: translateX(21px);
+    }
+    
+    .toggle-switch:hover .toggle-slider {
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 8px rgba(79, 195, 247, 0.3);
+    }
+    
+    .model-description {
+        color: var(--text-color, #ffffff);
+        font-size: 0.85rem;
+        text-align: center;
+        font-style: italic;
+        margin-top: 0.5rem;
+        opacity: 0.8;
+    }
+    
+    /* Header Model Toggle */
+    .header-model-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        background: var(--secondary-bg, #262730);
+        border: 1px solid var(--border-color, #4b5563);
+        border-radius: 0.5rem;
+    }
+    
+    .model-status-text {
+        font-size: 0.75rem;
+        color: var(--text-color, #ffffff);
+        font-weight: 500;
+        opacity: 0.9;
     }
     
     /* Streaming message animation */
@@ -558,7 +838,7 @@ def inject_chat_css() -> None:
         height: 8px;
         width: 8px;
         border-radius: 50%;
-        background-color: var(--text-color, #333);
+        background-color: var(--primary-color, #4fc3f7);
         display: inline-block;
         margin: 0 2px;
         opacity: 0.4;
@@ -580,27 +860,32 @@ def inject_chat_css() -> None:
         }
     }
     
-    /* File attachment styling */
+    /* File attachment styling with dark theme */
     .stFileUploader > div {
-        border: 2px dashed var(--border-color, #e0e0e0);
+        border: 2px dashed var(--border-color, #4b5563);
         border-radius: 0.5rem;
         padding: 1rem;
         text-align: center;
         transition: border-color 0.3s ease;
+        background-color: var(--secondary-bg, #262730);
     }
     
     .stFileUploader > div:hover {
-        border-color: var(--primary-color, #1f77b4);
+        border-color: var(--primary-color, #4fc3f7);
     }
     
-    /* Enhanced message bubbles */
+    /* Enhanced message bubbles with dark theme */
     .message-bubble {
         position: relative;
         margin: 1rem 0;
         padding: 1rem;
         border-radius: 1rem;
-        box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,0.1));
+        box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,0.4));
         animation: slideIn 0.3s ease-out;
+        /* Performance optimization for unlimited scrolling */
+        contain: layout style paint;
+        transform: translateZ(0);
+        backface-visibility: hidden;
     }
     
     @keyframes slideIn {
@@ -614,22 +899,90 @@ def inject_chat_css() -> None:
         }
     }
     
-    /* Welcome message special styling */
+    /* Welcome message special styling with dark theme */
     .message-bubble.welcome {
-        background: linear-gradient(135deg, var(--ai-msg-bg, #f5f5f5) 0%, var(--secondary-bg, #f8f9fa) 100%);
-        border: 1px solid var(--primary-color, #1f77b4);
+        background: linear-gradient(135deg, var(--ai-msg-bg, #374151) 0%, var(--secondary-bg, #262730) 100%);
+        border: 1px solid var(--primary-color, #4fc3f7);
     }
     
-    /* Responsive adjustments */
+    /* Conversation tabs integration */
+    .conversation-tab-content {
+        background-color: var(--background-color, #0e1117);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    /* Unlimited history status indicator */
+    .unlimited-history-status {
+        background: linear-gradient(135deg, var(--primary-color, #4fc3f7) 20%, transparent);
+        border: 1px solid var(--primary-color, #4fc3f7);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin: 1rem 0;
+        color: var(--text-color, #ffffff);
+        text-align: center;
+    }
+    
+    /* Responsive adjustments for dark theme */
     @media (max-width: 768px) {
-        .chat-container {
-            max-height: 400px;
+        .chat-container, .unlimited-chat-container {
+            max-height: 60vh;
             padding: 0.5rem;
         }
         
         .message-bubble {
             padding: 0.75rem;
             margin: 0.5rem 0;
+        }
+        
+        .model-toggle-container {
+            padding: 1rem;
+            margin: 0.75rem 0;
+        }
+        
+        .model-toggle-labels {
+            gap: 0.75rem;
+        }
+        
+        .toggle-label {
+            font-size: 0.8rem;
+            min-width: 60px;
+        }
+        
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+        }
+        
+        .toggle-slider:before {
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .chat-container, .unlimited-chat-container {
+            max-height: 50vh;
+            padding: 0.25rem;
+        }
+        
+        .model-toggle-container {
+            padding: 0.75rem;
+        }
+        
+        .header-model-toggle {
+            padding: 0.25rem;
+        }
+        
+        .model-status-text {
+            font-size: 0.7rem;
         }
     }
     </style>

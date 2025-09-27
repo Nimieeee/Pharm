@@ -1,14 +1,19 @@
 """
 Document Management UI Components
 Provides user interface for document upload, management, and viewing
+Enhanced with comprehensive error handling and user feedback.
 """
 
 import streamlit as st
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import io
+import logging
 
 from document_manager import DocumentManager, DocumentInfo, UploadResult
+from ui_error_handler import UIErrorHandler, UIErrorType, UIErrorContext, with_ui_error_handling
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentUploadInterface:
@@ -16,6 +21,7 @@ class DocumentUploadInterface:
     
     def __init__(self, document_manager: DocumentManager):
         self.document_manager = document_manager
+        self.ui_error_handler = UIErrorHandler()
     
     def render_upload_section(self, user_id: str) -> Optional[UploadResult]:
         """
@@ -89,21 +95,9 @@ class DocumentUploadInterface:
         
         # Upload button
         if st.button("🚀 Upload Files", type="primary", use_container_width=True):
-            with st.spinner("Processing and uploading documents..."):
-                upload_result = self.document_manager.upload_documents(
-                    uploaded_files=uploaded_files,
-                    user_id=user_id,
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap
-                )
-                
-                if upload_result.success:
-                    st.success(f"✅ Successfully uploaded {upload_result.documents_processed} document chunks!")
-                    st.balloons()
-                else:
-                    st.error(f"❌ Upload failed: {upload_result.error_message}")
-                
-                return upload_result
+            return self._handle_file_upload_with_error_handling(
+                uploaded_files, user_id, chunk_size, chunk_overlap
+            )
         
         return None
     
@@ -149,6 +143,75 @@ class DocumentUploadInterface:
         
         # Upload button
         if st.button("🌐 Extract and Upload", type="primary", use_container_width=True):
+            return self._handle_url_upload_with_error_handling(
+                url, user_id, chunk_size, chunk_overlap
+            )
+        
+        return None
+    
+    def _handle_file_upload_with_error_handling(self, uploaded_files, user_id: str, 
+                                               chunk_size: int, chunk_overlap: int) -> Optional[UploadResult]:
+        """Handle file upload with comprehensive error handling"""
+        try:
+            with st.spinner("Processing and uploading documents..."):
+                upload_result = self.document_manager.upload_documents(
+                    uploaded_files=uploaded_files,
+                    user_id=user_id,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap
+                )
+                
+                if upload_result.success:
+                    st.success(f"✅ Successfully uploaded {upload_result.documents_processed} document chunks!")
+                    st.balloons()
+                    
+                    # Show processing details
+                    if hasattr(upload_result, 'processing_details') and upload_result.processing_details:
+                        with st.expander("📊 Processing Details"):
+                            for detail in upload_result.processing_details:
+                                st.write(f"• {detail}")
+                else:
+                    # Handle upload failure with detailed error feedback
+                    context = UIErrorContext(
+                        user_id=user_id,
+                        action="file_upload",
+                        component="DocumentUploadInterface",
+                        additional_data={
+                            'file_count': len(uploaded_files),
+                            'chunk_size': chunk_size,
+                            'error_message': upload_result.error_message
+                        }
+                    )
+                    
+                    # Create a mock exception for error handling
+                    error = Exception(upload_result.error_message or "Upload failed")
+                    error_result = self.ui_error_handler.handle_document_processing_error(error, context)
+                    self.ui_error_handler.display_error_with_actions(error_result)
+                
+                return upload_result
+                
+        except Exception as e:
+            logger.error(f"Error during file upload for user {user_id}: {e}")
+            context = UIErrorContext(
+                user_id=user_id,
+                action="file_upload",
+                component="DocumentUploadInterface",
+                additional_data={'file_count': len(uploaded_files)}
+            )
+            error_result = self.ui_error_handler.handle_document_processing_error(e, context)
+            self.ui_error_handler.display_error_with_actions(error_result)
+            
+            # Return failed result
+            return UploadResult(
+                success=False,
+                documents_processed=0,
+                error_message=str(e)
+            )
+    
+    def _handle_url_upload_with_error_handling(self, url: str, user_id: str, 
+                                              chunk_size: int, chunk_overlap: int) -> Optional[UploadResult]:
+        """Handle URL upload with comprehensive error handling"""
+        try:
             with st.spinner("Extracting content from URL..."):
                 upload_result = self.document_manager.upload_from_url(
                     url=url,
@@ -160,12 +223,58 @@ class DocumentUploadInterface:
                 if upload_result.success:
                     st.success(f"✅ Successfully processed {upload_result.documents_processed} chunks from URL!")
                     st.balloons()
+                    
+                    # Show URL processing details
+                    with st.expander("🌐 URL Processing Details"):
+                        st.write(f"**Source:** {url}")
+                        st.write(f"**Chunks Created:** {upload_result.documents_processed}")
+                        if hasattr(upload_result, 'processing_details') and upload_result.processing_details:
+                            for detail in upload_result.processing_details:
+                                st.write(f"• {detail}")
                 else:
-                    st.error(f"❌ URL processing failed: {upload_result.error_message}")
+                    # Handle URL processing failure
+                    context = UIErrorContext(
+                        user_id=user_id,
+                        action="url_upload",
+                        component="DocumentUploadInterface",
+                        additional_data={
+                            'url': url,
+                            'chunk_size': chunk_size,
+                            'error_message': upload_result.error_message
+                        }
+                    )
+                    
+                    # Create specific error based on failure type
+                    error_message = upload_result.error_message or "URL processing failed"
+                    if "network" in error_message.lower() or "connection" in error_message.lower():
+                        error = ConnectionError(error_message)
+                    elif "invalid" in error_message.lower() or "not found" in error_message.lower():
+                        error = ValueError(error_message)
+                    else:
+                        error = Exception(error_message)
+                    
+                    error_result = self.ui_error_handler.handle_document_processing_error(error, context)
+                    self.ui_error_handler.display_error_with_actions(error_result)
                 
                 return upload_result
-        
-        return None
+                
+        except Exception as e:
+            logger.error(f"Error during URL upload for user {user_id}: {e}")
+            context = UIErrorContext(
+                user_id=user_id,
+                action="url_upload",
+                component="DocumentUploadInterface",
+                additional_data={'url': url}
+            )
+            error_result = self.ui_error_handler.handle_document_processing_error(e, context)
+            self.ui_error_handler.display_error_with_actions(error_result)
+            
+            # Return failed result
+            return UploadResult(
+                success=False,
+                documents_processed=0,
+                error_message=str(e)
+            )
 
 
 class DocumentManagementInterface:

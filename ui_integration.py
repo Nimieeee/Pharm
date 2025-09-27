@@ -36,14 +36,15 @@ class PharmacologyUI:
         st.markdown(StyleGenerator.generate_accessibility_styles(), unsafe_allow_html=True)
     
     def render_header(self):
-        """Render the application header with theme toggle."""
+        """Render the application header with permanent dark theme."""
         col1, col2, col3 = st.columns([2, 1, 1])
         
         with col1:
             st.title("💊 Pharmacology Chat")
         
         with col3:
-            self.theme_manager.render_theme_toggle()
+            # Theme toggle removed - permanent dark theme
+            st.markdown("🌙 **Dark Mode**")
     
     def render_chat_page(self, messages: List[Message], available_models: List[Dict[str, str]], 
                         current_model: str, connection_status: str = "online"):
@@ -89,11 +90,7 @@ class PharmacologyUI:
         """Render settings in sidebar."""
         settings = self.settings_interface.render_settings_panel()
         
-        # Handle theme changes
-        if settings.get("theme_changed"):
-            self._apply_styles()
-            st.rerun()
-        
+        # Theme changes removed - permanent dark theme
         return settings
     
     def create_message(self, role: str, content: str, model_used: str = None) -> Message:

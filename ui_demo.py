@@ -37,8 +37,8 @@ def main():
     auth_interface = AuthInterface(theme_manager)
     settings_interface = SettingsInterface(theme_manager)
     
-    # Theme toggle in header
-    theme_manager.render_theme_toggle()
+    # Theme toggle removed - permanent dark theme
+    st.markdown("🌙 **Dark Mode** (Permanent)")
     
     # Demo mode selector
     demo_mode = st.sidebar.selectbox(

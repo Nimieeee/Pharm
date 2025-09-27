@@ -201,7 +201,7 @@ class AuthInterface:
         )
     
     def render_user_profile(self) -> None:
-        """Render user profile section in sidebar"""
+        """Render simplified user profile section in sidebar without plan information"""
         user_session = self.session_manager.get_user_session()
         if not user_session:
             return
@@ -210,43 +210,59 @@ class AuthInterface:
             st.markdown("---")
             st.subheader("👤 User Profile")
             
-            # User info
+            # User info - only email, no plan/subscription information
             st.write(f"**Email:** {user_session.email}")
-            st.write(f"**Plan:** {user_session.preferences.get('subscription_tier', 'Free').title()}")
             
-            # Model preference
+            # Model preference with toggle switch
             current_model = self.session_manager.get_model_preference()
-            model_options = ["fast", "premium"]
-            model_labels = ["🚀 Fast (Gemma2-9B)", "⭐ Premium (Qwen3-32B)"]
+            is_premium = current_model == "premium"
             
-            selected_model = st.selectbox(
-                "AI Model",
-                options=model_options,
-                format_func=lambda x: model_labels[model_options.index(x)],
-                index=model_options.index(current_model),
-                help="Choose between fast responses or premium quality"
+            # Create toggle switch HTML for auth UI
+            toggle_html = f"""
+            <div class="auth-model-toggle">
+                <label style="font-weight: 500; margin-bottom: 0.5rem; display: block;">AI Model:</label>
+                <div class="model-toggle-labels">
+                    <span class="toggle-label {'active' if not is_premium else ''}">🚀 Fast</span>
+                    <div class="toggle-switch-wrapper">
+                        <label class="toggle-switch">
+                            <input type="checkbox" {'checked' if is_premium else ''} onchange="
+                                const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\']:last-of-type input');
+                                if (checkbox) checkbox.click();
+                            ">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <span class="toggle-label {'active' if is_premium else ''}">⭐ Premium</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #666; text-align: center; margin-top: 0.25rem;">
+                    {'High-quality responses for complex topics' if is_premium else 'Quick responses for general questions'}
+                </div>
+            </div>
+            """
+            st.markdown(toggle_html, unsafe_allow_html=True)
+            
+            # Handle toggle state change
+            auth_toggle_key = "auth_model_toggle"
+            if auth_toggle_key not in st.session_state:
+                st.session_state[auth_toggle_key] = is_premium
+            
+            new_state = st.checkbox(
+                "Auth Model Toggle",
+                value=st.session_state[auth_toggle_key],
+                key=f"{auth_toggle_key}_checkbox",
+                label_visibility="collapsed"
             )
             
-            if selected_model != current_model:
+            if new_state != st.session_state[auth_toggle_key]:
+                st.session_state[auth_toggle_key] = new_state
+                selected_model = "premium" if new_state else "fast"
                 self.session_manager.update_model_preference(selected_model)
+                st.success(f"✅ Switched to {'Premium' if new_state else 'Fast'} mode")
                 st.rerun()
             
-            # Theme toggle
-            current_theme = self.session_manager.get_theme()
-            theme_options = ["light", "dark"]
-            theme_labels = ["☀️ Light", "🌙 Dark"]
-            
-            selected_theme = st.selectbox(
-                "Theme",
-                options=theme_options,
-                format_func=lambda x: theme_labels[theme_options.index(x)],
-                index=theme_options.index(current_theme),
-                help="Choose your preferred theme"
-            )
-            
-            if selected_theme != current_theme:
-                self.session_manager.update_theme(selected_theme)
-                st.rerun()
+            # Theme display - permanent dark mode
+            st.markdown("**Theme:** 🌙 Dark Mode (Permanent)")
+            st.caption("Dark theme is permanently enabled for optimal viewing experience")
             
             # Sign out button
             st.markdown("---")

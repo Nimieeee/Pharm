@@ -86,7 +86,48 @@ def example_chat_flow():
         user_message = st.text_input("Your message:", key="user_input")
     
     with col2:
-        model_type = st.selectbox("Model:", ["fast", "premium"])
+        # Use toggle switch for model selection
+        current_model = st.session_state.get("demo_model", "fast")
+        is_premium = current_model == "premium"
+        
+        toggle_html = f"""
+        <div style="margin-bottom: 1rem;">
+            <label style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Model:</label>
+            <div class="model-toggle-labels">
+                <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
+                <div class="toggle-switch-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" {'checked' if is_premium else ''} onchange="
+                            const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\']:last-of-type input');
+                            if (checkbox) checkbox.click();
+                        ">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <span class="toggle-label {'active' if is_premium else ''}">🎯 Premium</span>
+            </div>
+        </div>
+        """
+        st.markdown(toggle_html, unsafe_allow_html=True)
+        
+        # Handle toggle
+        demo_toggle_key = "demo_model_toggle"
+        if demo_toggle_key not in st.session_state:
+            st.session_state[demo_toggle_key] = is_premium
+        
+        new_state = st.checkbox(
+            "Demo Model Toggle",
+            value=st.session_state[demo_toggle_key],
+            key=f"{demo_toggle_key}_checkbox",
+            label_visibility="collapsed"
+        )
+        
+        if new_state != st.session_state[demo_toggle_key]:
+            st.session_state[demo_toggle_key] = new_state
+            st.session_state["demo_model"] = "premium" if new_state else "fast"
+            st.rerun()
+        
+        model_type = st.session_state.get("demo_model", "fast")
     
     if st.button("Send Message") and user_message:
         # Send user message

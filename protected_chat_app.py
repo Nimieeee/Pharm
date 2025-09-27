@@ -201,9 +201,9 @@ class ProtectedChatApp:
             if self.document_interface:
                 self.document_interface.render_sidebar_summary(user_id)
             
-            # Theme toggle
+            # Theme toggle removed - permanent dark theme
             st.markdown("---")
-            self.theme_manager.render_theme_toggle()
+            st.markdown("🌙 **Dark Mode** (Permanent)")
     
     def _render_chat_area(self):
         """Render the main chat area"""

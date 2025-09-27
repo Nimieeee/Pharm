@@ -9,7 +9,7 @@ def render_model_selector(
     key: str = "model_selector"
 ) -> ModelTier:
     """
-    Render model selection UI with fast/premium mode toggle and persistence
+    Render model selection UI with toggle switch and persistence
     
     Args:
         model_manager: ModelManager instance
@@ -27,45 +27,48 @@ def render_model_selector(
     with col2:
         st.markdown("### 🤖 AI Model Selection")
         
-        # Show current model with visual indicator
-        render_current_model_indicator(current_tier)
+        # Create toggle switch HTML
+        is_premium = current_tier == ModelTier.PREMIUM
+        toggle_html = _create_toggle_switch_html(is_premium)
+        st.markdown(toggle_html, unsafe_allow_html=True)
         
-        # Model tier selection with enhanced styling
-        tier_options = {
-            "⚡ Fast Mode": ModelTier.FAST,
-            "🎯 Premium Mode": ModelTier.PREMIUM
-        }
+        # Handle toggle state change with invisible checkbox
+        toggle_key = f"{key}_toggle"
+        if toggle_key not in st.session_state:
+            st.session_state[toggle_key] = is_premium
         
-        selected_option = "⚡ Fast Mode" if current_tier == ModelTier.FAST else "🎯 Premium Mode"
-        
-        new_selection = st.radio(
-            "Choose your AI model:",
-            options=list(tier_options.keys()),
-            index=0 if current_tier == ModelTier.FAST else 1,
-            key=f"{key}_radio",
-            horizontal=True,
-            help="Your selection will be saved for future sessions"
+        # Create invisible checkbox to capture state changes
+        new_state = st.checkbox(
+            "Toggle Model",
+            value=st.session_state[toggle_key],
+            key=f"{toggle_key}_checkbox",
+            label_visibility="collapsed"
         )
         
-        new_tier = tier_options[new_selection]
-        
-        # Update session state if changed
-        if new_tier != current_tier:
+        # Update session state and provide visual feedback
+        if new_state != st.session_state[toggle_key]:
+            st.session_state[toggle_key] = new_state
+            new_tier = ModelTier.PREMIUM if new_state else ModelTier.FAST
+            
+            # Update model manager and session
             set_session_model_tier(new_tier)
             model_manager.set_current_model(new_tier)
             
             # Show success message
-            model_name = "Fast" if new_tier == ModelTier.FAST else "Premium"
+            model_name = "Premium" if new_state else "Fast"
             st.success(f"✅ Switched to {model_name} mode - preference saved!")
             
             if on_change:
                 on_change(new_tier)
+            
+            # Force rerun to update UI
+            st.rerun()
         
         # Display model information
-        config = model_manager.get_model_config(new_tier)
+        config = model_manager.get_model_config(current_tier)
         render_model_info(config)
     
-    return new_tier
+    return current_tier
 
 def render_current_model_indicator(current_tier: ModelTier) -> None:
     """
@@ -201,30 +204,52 @@ def render_model_settings_sidebar(model_manager: ModelManager) -> None:
         if 'user_session' in st.session_state and st.session_state.user_session:
             st.caption("💾 Preference saved to your account")
         
-        # Quick model switcher with enhanced buttons
+        # Quick model switcher with toggle switch
         st.markdown("### Quick Switch")
         
-        col1, col2 = st.columns(2)
+        # Create compact toggle switch for sidebar
+        is_premium = current_tier == ModelTier.PREMIUM
+        sidebar_toggle_html = f"""
+        <div class="sidebar-model-toggle">
+            <div class="model-toggle-labels">
+                <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
+                <div class="toggle-switch-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" {'checked' if is_premium else ''} onchange="
+                            const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\'][data-baseweb=\\'checkbox\\']:last-of-type input');
+                            if (checkbox) checkbox.click();
+                        ">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <span class="toggle-label {'active' if is_premium else ''}">🎯 Premium</span>
+            </div>
+        </div>
+        """
+        st.markdown(sidebar_toggle_html, unsafe_allow_html=True)
         
-        current_is_fast = current_tier == ModelTier.FAST
+        # Handle toggle state change
+        sidebar_toggle_key = "sidebar_model_toggle"
+        if sidebar_toggle_key not in st.session_state:
+            st.session_state[sidebar_toggle_key] = is_premium
         
-        with col1:
-            fast_button_type = "primary" if current_is_fast else "secondary"
-            if st.button("⚡ Fast", use_container_width=True, type=fast_button_type):
-                if not current_is_fast:
-                    set_session_model_tier(ModelTier.FAST)
-                    model_manager.set_current_model(ModelTier.FAST)
-                    st.success("Switched to Fast mode!")
-                    st.rerun()
+        new_state = st.checkbox(
+            "Sidebar Toggle Model",
+            value=st.session_state[sidebar_toggle_key],
+            key=f"{sidebar_toggle_key}_checkbox",
+            label_visibility="collapsed"
+        )
         
-        with col2:
-            premium_button_type = "primary" if not current_is_fast else "secondary"
-            if st.button("🎯 Premium", use_container_width=True, type=premium_button_type):
-                if current_is_fast:
-                    set_session_model_tier(ModelTier.PREMIUM)
-                    model_manager.set_current_model(ModelTier.PREMIUM)
-                    st.success("Switched to Premium mode!")
-                    st.rerun()
+        if new_state != st.session_state[sidebar_toggle_key]:
+            st.session_state[sidebar_toggle_key] = new_state
+            new_tier = ModelTier.PREMIUM if new_state else ModelTier.FAST
+            
+            set_session_model_tier(new_tier)
+            model_manager.set_current_model(new_tier)
+            
+            model_name = "Premium" if new_state else "Fast"
+            st.success(f"Switched to {model_name} mode!")
+            st.rerun()
         
         # Model comparison
         st.markdown("### Model Comparison")
@@ -293,3 +318,28 @@ def render_model_selection_modal() -> Optional[ModelTier]:
 def show_model_selection_modal():
     """Show the model selection modal"""
     st.session_state.show_model_modal = True
+
+def _create_toggle_switch_html(is_premium: bool) -> str:
+    """Create HTML for the toggle switch with labels."""
+    checked = "checked" if is_premium else ""
+    
+    return f"""
+    <div class="model-toggle-container">
+        <div class="model-toggle-labels">
+            <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
+            <div class="toggle-switch-wrapper">
+                <label class="toggle-switch">
+                    <input type="checkbox" {checked} onchange="
+                        const checkbox = document.querySelector('[data-testid=\\'stCheckbox\\'] input');
+                        if (checkbox) checkbox.click();
+                    ">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <span class="toggle-label {'active' if is_premium else ''}">🎯 Premium</span>
+        </div>
+        <div class="model-description">
+            {'High-quality responses for complex topics' if is_premium else 'Quick responses for general questions'}
+        </div>
+    </div>
+    """
