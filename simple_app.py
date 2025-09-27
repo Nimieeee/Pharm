@@ -1601,7 +1601,7 @@ def render_message(message: Dict[str, Any]):
         
         # Add model availability indicator
         if hasattr(st.session_state, 'model_manager'):
-            if not st.session_state.model_manager.is_model_available(model_used):
+            if not st.session_state.model_manager.is_model_available():
                 status_indicators.append("⚠️ Model unavailable")
         
         status_text = " • ".join(status_indicators)
