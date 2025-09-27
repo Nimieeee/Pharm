@@ -33,7 +33,6 @@ class SimpleChatbotDB:
             
             if supabase_url and supabase_key:
                 self.client = create_client(supabase_url, supabase_key)
-                st.success("✅ Connected to Supabase database")
             else:
                 st.error("❌ Supabase credentials not found. Please check environment variables or Streamlit secrets.")
                 
@@ -52,7 +51,6 @@ class SimpleChatbotDB:
             
             # Check if table exists and is accessible
             if hasattr(result, 'data'):
-                st.success("✅ Database connection test successful")
                 return True
             else:
                 st.error("❌ document_chunks table not accessible")
@@ -204,7 +202,6 @@ class SimpleChatbotDB:
             # Delete all rows from document_chunks table
             result = self.client.table("document_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
             
-            st.success("✅ All document chunks cleared successfully")
             return True
             
         except Exception as e:

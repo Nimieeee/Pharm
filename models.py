@@ -46,7 +46,6 @@ class MistralModel:
             
             if api_key:
                 self.client = Mistral(api_key=api_key)
-                st.info("🔑 Mistral client initialized")
             else:
                 st.error("❌ Mistral API key not found")
                 st.info("💡 Please set MISTRAL_API_KEY environment variable or add it to Streamlit secrets")

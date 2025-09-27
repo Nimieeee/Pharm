@@ -650,8 +650,7 @@ def render_document_upload_inline():
                         progress_callback=None  # No debug messages
                     )
                     
-                    if success and chunk_count > 0:
-                        st.success(f"✅ Processed {uploaded_file.name} ({chunk_count} sections)")
+                    # File processed successfully (silent)
                     
                     if success and chunk_count > 0:
                         success_count += 1

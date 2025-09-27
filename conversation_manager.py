@@ -44,7 +44,6 @@ class ConversationManager:
             self.load_conversations()
             # Switch to new conversation
             self.switch_conversation(conversation_id)
-            st.success(f"✅ Created new conversation: {title}")
             return conversation_id
         else:
             st.error("❌ Failed to create new conversation")
@@ -148,7 +147,6 @@ class ConversationManager:
                 # Just refresh the conversations list
                 self.load_conversations()
             
-            st.success("✅ Conversation deleted")
             return True
         else:
             st.error("❌ Failed to delete conversation")
