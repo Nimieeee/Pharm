@@ -431,37 +431,27 @@ def apply_dark_mode_styling():
         animation: pulse 1s infinite;
     }
     
-    /* Glassy orb loader container */
+    /* Minimal loader container */
     .loading-spinner {
         display: flex !important;
         align-items: center;
         justify-content: flex-start;
-        gap: 1rem;
-        padding: 1rem;
-        font-size: 1rem;
-        color: #4fc3f7;
-        background: rgba(79, 195, 247, 0.05);
-        border: 1px solid rgba(79, 195, 247, 0.2);
-        border-radius: 0.75rem;
-        margin: 1rem 0;
-        min-height: 80px;
-        width: 100%;
-        box-sizing: border-box;
+        padding: 0.5rem 0;
+        margin: 0.5rem 0;
     }
     
     .loader {
-        width: 60px;
-        height: 60px;
+        width: 40px;
+        height: 40px;
         background: linear-gradient(
             165deg,
-            rgba(79, 195, 247, 1) 0%,
-            rgba(79, 195, 247, 0.8) 40%,
-            rgba(79, 195, 247, 0.6) 98%,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(220, 220, 220, 1) 40%,
+            rgba(170, 170, 170, 1) 98%,
             rgba(10, 10, 10, 1) 100%
         );
         border-radius: 50%;
         position: relative;
-        margin: 0.5rem 0;
         display: block !important;
         flex-shrink: 0;
     }
@@ -472,17 +462,17 @@ def apply_dark_mode_styling():
         width: 100%;
         height: 100%;
         border-radius: 100%;
-        border-bottom: 0 solid rgba(79, 195, 247, 0.02);
+        border-bottom: 0 solid rgba(255, 255, 255, 0.02);
         box-shadow: 
-            0 -10px 20px 20px rgba(79, 195, 247, 0.25) inset,
-            0 -5px 15px 10px rgba(79, 195, 247, 0.3) inset, 
-            0 -2px 5px rgba(79, 195, 247, 0.5) inset,
-            0 -3px 2px rgba(79, 195, 247, 0.7) inset, 
-            0 2px 0px rgba(79, 195, 247, 1), 
-            0 2px 3px rgba(79, 195, 247, 1),
-            0 5px 5px rgba(79, 195, 247, 0.9), 
-            0 10px 15px rgba(79, 195, 247, 0.6), 
-            0 10px 20px 20px rgba(79, 195, 247, 0.25);
+            0 -10px 20px 20px rgba(255, 255, 255, 0.4) inset,
+            0 -5px 15px 10px rgba(255, 255, 255, 0.5) inset, 
+            0 -2px 5px rgba(255, 255, 255, 0.8) inset,
+            0 -3px 2px rgba(255, 255, 255, 0.9) inset, 
+            0 2px 0px rgba(255, 255, 255, 1), 
+            0 2px 3px rgba(255, 255, 255, 1),
+            0 5px 5px rgba(255, 255, 255, 0.9), 
+            0 10px 15px rgba(255, 255, 255, 0.6), 
+            0 10px 20px 20px rgba(255, 255, 255, 0.4);
         filter: blur(2px);
         animation: 2s rotate linear infinite;
     }
@@ -2098,9 +2088,8 @@ def process_user_message(user_input: str):
                     # Show loading spinner during API processing
                     spinner_placeholder = st.empty()
                     spinner_placeholder.markdown("""
-                    <div class="loading-spinner" style="display: flex !important; align-items: center; gap: 1rem; padding: 1rem; background: rgba(79, 195, 247, 0.1); border-radius: 0.75rem; margin: 1rem 0;">
-                        <div class="loader" style="width: 60px; height: 60px; background: linear-gradient(165deg, rgba(79, 195, 247, 1) 0%, rgba(79, 195, 247, 0.8) 40%, rgba(79, 195, 247, 0.6) 98%, rgba(10, 10, 10, 1) 100%); border-radius: 50%; position: relative; animation: rotate 2s linear infinite;"></div>
-                        <span class="thinking-text" style="color: #4fc3f7; font-weight: 500;">PharmGPT is thinking...</span>
+                    <div class="loading-spinner" style="display: flex !important; justify-content: flex-start; align-items: center; padding: 0.5rem; margin: 0.5rem 0;">
+                        <div class="loader" style="width: 40px; height: 40px; background: linear-gradient(165deg, rgba(255, 255, 255, 1) 0%, rgba(220, 220, 220, 1) 40%, rgba(170, 170, 170, 1) 98%, rgba(10, 10, 10, 1) 100%); border-radius: 50%; position: relative; animation: rotate 2s linear infinite;"></div>
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -2114,31 +2103,11 @@ def process_user_message(user_input: str):
                     # Clear spinner once we have the response
                     spinner_placeholder.empty()
                     
-                    # Now stream the response to user
-                    def stream_display():
-                        """Stream at normal readable speed"""
-                        words = full_response.split()
-                        for i, word in enumerate(words):
-                            if i == 0:
-                                yield word
-                            else:
-                                yield " " + word
-                            time.sleep(0.1)  # Normal readable speed
+                    # Clear spinner and display formatted response
+                    st.markdown(full_response)
                     
-                    # Start streaming the response
-                    ai_response = st.write_stream(stream_display())
-                    
-                    # Trigger MathJax rendering after streaming completes
-                    if ai_response:
-                        st.markdown("""
-                        <script>
-                        setTimeout(function() {
-                            if (window.MathJax && window.MathJax.typesetPromise) {
-                                MathJax.typesetPromise();
-                            }
-                        }, 100);
-                        </script>
-                        """, unsafe_allow_html=True)
+                    # Use the full response for further processing
+                    ai_response = full_response
                     
                     if full_response and not full_response.startswith("Error:") and not full_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
