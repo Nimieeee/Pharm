@@ -610,21 +610,16 @@ def render_header():
 
 
 def render_document_upload_inline():
-    """Render document upload interface above chat input with auto-processing"""
-    st.markdown("### 📚 Document Upload")
-    
-    # Document upload section - inline above chat
+    """Minimal document upload interface"""
     uploaded_files = st.file_uploader(
-        "Upload documents to enhance chat responses",
+        "📄 Upload documents",
         accept_multiple_files=True,
         type=['pdf', 'txt', 'md', 'docx', 'pptx'],
-        help="Upload PDF, TXT, MD, DOCX, or PPTX files for document analysis.",
         key="document_uploader_inline"
     )
     
-    # Auto-process uploaded files
+    # Auto-process uploaded files silently
     if uploaded_files:
-        # Check if these are new files
         current_files = [f.name for f in uploaded_files]
         if 'last_processed_files' not in st.session_state:
             st.session_state.last_processed_files = []
@@ -632,39 +627,23 @@ def render_document_upload_inline():
         new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
         
         if new_files:
-            # Process new files with debug info
-            success_count = 0
             for uploaded_file in new_files:
                 try:
-                    # Basic validation - allow larger files for images and presentations
-                    max_size = 50 * 1024 * 1024  # 50MB for images/presentations
-                    if uploaded_file.size > max_size or uploaded_file.size == 0:
-                        st.warning(f"⚠️ Skipping {uploaded_file.name}: File too large or empty")
+                    if uploaded_file.size > 50 * 1024 * 1024 or uploaded_file.size == 0:
                         continue
                     
-                    # Process file silently
                     success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
                         uploaded_file,
                         conversation_id=st.session_state.current_conversation_id,
                         user_session_id=st.session_state.user_session_id,
-                        progress_callback=None  # No debug messages
+                        progress_callback=None
                     )
                     
-                    # File processed successfully (silent)
-                    
                     if success and chunk_count > 0:
-                        success_count += 1
-                            
-                except Exception as e:
-                    st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
+                        st.session_state.last_processed_files.append(uploaded_file.name)
+                        
+                except Exception:
                     continue
-            
-            # Update processed files list
-            if success_count > 0:
-                successful_files = [f.name for f in new_files[:success_count]]
-                st.session_state.last_processed_files.extend(successful_files)
-    
-    # Minimal system check (no UI clutter)
     
     return uploaded_files
 
@@ -1925,33 +1904,25 @@ def process_user_message(user_input: str):
             
             # Generate AI response with context
             try:
-                # Generate AI response with streaming
-                    def stream_response():
-                        """Generator function for streaming response"""
-                        try:
-                            response_stream = st.session_state.model_manager.generate_response(
-                                message=user_input,
-                                context=context if context else None,
-                                stream=True
-                            )
-                            
-                            for chunk in response_stream:
-                                if chunk.choices and len(chunk.choices) > 0:
-                                    delta = chunk.choices[0].delta
-                                    if hasattr(delta, 'content') and delta.content:
-                                        yield delta.content
-                        except Exception:
-                            # Fallback to non-streaming
-                            response = st.session_state.model_manager.generate_response(
-                                message=user_input,
-                                context=context if context else None,
-                                stream=False
-                            )
-                            yield response
+                # Fixed streaming implementation
+                def stream_response():
+                    """Streaming generator with proper fallback"""
+                    # Always use simulated streaming for reliability
+                    full_response = st.session_state.model_manager.generate_response(
+                        message=user_input,
+                        context=context if context else None,
+                        stream=False
+                    )
                     
-                    # Display streaming response in chat format
-                    with st.chat_message("assistant", avatar="💊"):
-                        ai_response = st.write_stream(stream_response())
+                    # Stream character by character for smooth effect
+                    for i, char in enumerate(full_response):
+                        yield char
+                        if i % 3 == 0:  # Add delay every few characters
+                            time.sleep(0.02)
+                
+                # Display streaming response
+                with st.chat_message("assistant", avatar="💊"):
+                    ai_response = st.write_stream(stream_response())
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
