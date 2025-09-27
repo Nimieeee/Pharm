@@ -54,8 +54,12 @@ st.set_page_config(
     page_title="PharmGPT",
     page_icon="PharmGPT.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state=st.session_state.get("sidebar_state", "expanded")
 )
+
+# Force dark mode permanently
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
 
 # ----------------------------
 # Dark Mode Styling
@@ -79,6 +83,15 @@ def apply_dark_mode_styling():
         --error-color: #ef4444;
         --warning-color: #f59e0b;
         --info-color: #3b82f6;
+    }
+    
+    /* Force dark mode permanently */
+    [data-testid="stAppViewContainer"] {
+        background-color: var(--background-color) !important;
+    }
+    
+    [data-testid="stHeader"] {
+        background-color: var(--background-color) !important;
     }
     
     /* Main app background with enhanced contrast */
@@ -391,22 +404,49 @@ def apply_dark_mode_styling():
         animation: pulse 1s infinite;
     }
     
-    /* Pulsing pill indicator for streaming */
-    .streaming-indicator {
-        font-size: 1.5rem;
-        animation: pill-pulse 1.5s ease-in-out infinite;
-        display: inline-block;
+    /* Creative loading spinner */
+    .loading-spinner {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        font-size: 1rem;
+        color: var(--primary-color);
     }
     
-    @keyframes pill-pulse {
-        0%, 100% { 
-            opacity: 0.4;
-            transform: scale(1);
+    .pill-spinner {
+        display: flex;
+        gap: 0.3rem;
+    }
+    
+    .pill-dot {
+        font-size: 1.2rem;
+        animation: pill-bounce 1.4s ease-in-out infinite;
+    }
+    
+    .pill-dot:nth-child(1) { animation-delay: -0.32s; }
+    .pill-dot:nth-child(2) { animation-delay: -0.16s; }
+    .pill-dot:nth-child(3) { animation-delay: 0s; }
+    
+    @keyframes pill-bounce {
+        0%, 80%, 100% {
+            transform: scale(0.8) translateY(0);
+            opacity: 0.5;
         }
-        50% { 
+        40% {
+            transform: scale(1.2) translateY(-10px);
             opacity: 1;
-            transform: scale(1.1);
         }
+    }
+    
+    .thinking-text {
+        font-weight: 500;
+        animation: thinking-fade 2s ease-in-out infinite;
+    }
+    
+    @keyframes thinking-fade {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
     }
     
     /* Enhanced responsive design */
@@ -672,6 +712,8 @@ def render_conversation_sidebar():
     # New conversation button
     if st.sidebar.button("➕ New Conversation", use_container_width=True):
         st.session_state.conversation_manager.create_new_conversation()
+        # Collapse sidebar after creating new conversation
+        st.session_state.sidebar_state = "collapsed"
         st.rerun()
     
     st.sidebar.markdown("---")
@@ -1948,8 +1990,26 @@ def process_user_message(user_input: str):
                                 yield " " + word
                             time.sleep(0.05)  # Moderate speed for readability
                 
-                # Display streaming response with pill cursor
+                # Display streaming response with loading spinner
                 with st.chat_message("assistant", avatar="PharmGPT.png"):
+                    # Show creative loading spinner
+                    spinner_placeholder = st.empty()
+                    spinner_placeholder.markdown("""
+                    <div class="loading-spinner">
+                        <div class="pill-spinner">
+                            <span class="pill-dot">💊</span>
+                            <span class="pill-dot">💊</span>
+                            <span class="pill-dot">💊</span>
+                        </div>
+                        <span class="thinking-text">PharmGPT is thinking...</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Small delay to show spinner
+                    time.sleep(0.5)
+                    
+                    # Clear spinner and start streaming
+                    spinner_placeholder.empty()
                     ai_response = st.write_stream(stream_response())
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
