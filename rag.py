@@ -259,10 +259,18 @@ class RAGManager:
             
             st.write(f"Debug - Query embedding generated, length: {len(query_embedding)}")
             
-            # Search for similar chunks with lower threshold
-            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, max_chunks, threshold=0.3)
+            # Search for similar chunks with very low threshold to test
+            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, max_chunks, threshold=0.1)
             
             st.write(f"Debug - Found {len(similar_chunks)} similar chunks")
+            
+            # If no similar chunks found, try getting any chunks as fallback
+            if not similar_chunks:
+                st.write("Debug - No similar chunks found, trying fallback query...")
+                fallback_chunks = self.db_manager.get_random_chunks(max_chunks)
+                st.write(f"Debug - Fallback found {len(fallback_chunks)} chunks")
+                if fallback_chunks:
+                    similar_chunks = fallback_chunks
             
             if not similar_chunks:
                 return ""

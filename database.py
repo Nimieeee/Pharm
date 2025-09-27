@@ -109,7 +109,11 @@ class SimpleChatbotDB:
         """
         try:
             if not self.client:
+                st.write("Debug - No database client available")
                 return []
+            
+            st.write(f"Debug - Searching with threshold: {threshold}, limit: {limit}")
+            st.write(f"Debug - Query embedding length: {len(query_embedding)}")
             
             # Use the match_document_chunks function for vector similarity search
             result = self.client.rpc(
@@ -121,10 +125,14 @@ class SimpleChatbotDB:
                 }
             ).execute()
             
+            st.write(f"Debug - Database search result: {result}")
+            st.write(f"Debug - Result data length: {len(result.data) if result.data else 0}")
+            
             return result.data if result.data else []
             
         except Exception as e:
             st.error(f"❌ Error searching document chunks: {str(e)}")
+            st.write(f"Debug - Search error details: {e}")
             return []
     
     def get_chunk_count(self) -> int:
@@ -210,6 +218,30 @@ class SimpleChatbotDB:
             
         except Exception as e:
             st.error(f"❌ Error getting documents by filename: {str(e)}")
+            return []
+    
+    def get_random_chunks(self, limit: int = 3) -> List[Dict[str, Any]]:
+        """Get random chunks for fallback testing"""
+        try:
+            if not self.client:
+                return []
+            
+            result = self.client.table("document_chunks").select("id, content, metadata").limit(limit).execute()
+            
+            # Format to match similarity search results
+            chunks = []
+            for row in result.data:
+                chunks.append({
+                    "id": row.get("id"),
+                    "content": row.get("content"),
+                    "metadata": row.get("metadata"),
+                    "similarity": 0.5  # Dummy similarity score
+                })
+            
+            return chunks
+            
+        except Exception as e:
+            st.error(f"❌ Error getting random chunks: {str(e)}")
             return []
     
     def setup_database_schema(self) -> bool:
