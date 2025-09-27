@@ -595,7 +595,7 @@ def render_document_upload_inline():
         "Upload documents to enhance chat responses",
         accept_multiple_files=True,
         type=['pdf', 'txt', 'md', 'docx', 'pptx', 'jpg', 'jpeg', 'png', 'bmp', 'tiff'],
-        help="Upload PDF, TXT, MD, DOCX, PPTX files or images (JPG, PNG, etc.). They will be processed automatically with OCR for images.",
+        help="Upload PDF, TXT, MD, DOCX, PPTX files or images. Images will be processed with OCR if available, otherwise uploaded as placeholders.",
         key="document_uploader_inline"
     )
     
