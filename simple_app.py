@@ -614,9 +614,6 @@ def render_document_upload_inline():
     
     # Minimal system check (no UI clutter)
     
-    except Exception as e:
-        st.error(f"Error checking document status: {str(e)}")
-    
     return uploaded_files
 
 def render_document_upload():
