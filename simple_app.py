@@ -1780,11 +1780,7 @@ def render_message_input():
         
         # Additional input validation
         if user_input and model_available:
-            # Check input length
-            if len(user_input.strip()) < 3:
-                st.warning("⚠️ Please enter a more detailed question (at least 3 characters)")
-                return None
-            
+            # Only check for maximum length, allow any minimum length including "hi"
             if len(user_input) > 2000:
                 st.warning("⚠️ Question is too long. Please keep it under 2000 characters.")
                 return None
