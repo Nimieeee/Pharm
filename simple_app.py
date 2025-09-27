@@ -1488,109 +1488,25 @@ def render_chat_controls():
         st.rerun()
 
 def render_chat_history():
-    """Render chat message history"""
+    """Render chat message history using Streamlit's native chat interface"""
     for message in st.session_state.messages:
-        render_message(message)
+        role = message["role"]
+        content = message["content"]
+        
+        if role == "user":
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(content)
+        elif role == "assistant":
+            with st.chat_message("assistant", avatar="💊"):
+                st.markdown(content)
+        elif role == "system":
+            # System messages can be shown as info
+            if message.get("error", False):
+                st.error(content)
+            else:
+                st.info(content)
 
-def render_message(message: Dict[str, Any]):
-    """Render a single chat message with enhanced metadata and error handling"""
-    role = message["role"]
-    content = message["content"]
-    timestamp = message.get("timestamp", 0)
-    
-    # Timestamps removed for cleaner interface
-    time_str = ""
-    
-    # Handle system messages (like model switches)
-    if role == "system":
-        is_error = message.get("error", False)
-        message_class = "system-message"
-        if is_error:
-            message_class += " error-message"
-        
-        st.markdown(f"""
-        <div class="chat-message {message_class}">
-            <div style="text-align: center; font-style: italic;">
-                <small style="color: #d1d5db;">{time_str}</small><br>
-                <strong>🔔 System:</strong> {content}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        return
-    
-    if role == "user":
-        # Escape HTML in user content for security
-        safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        
-        st.markdown(f"""
-        <div class="chat-message user-message">
-            <div style="margin-bottom: 0.5rem;">
-                <strong>👤 You</strong> 
-                <small style="color: #9ca3af; float: right;">{time_str}</small>
-            </div>
-            <div style="clear: both;">{safe_content}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # Assistant messages with enhanced error handling and status indicators
-        model_used = message.get("model", "unknown")
-        context_used = message.get("context_used", False)
-        context_chunks = message.get("context_chunks", 0)
-        is_error = message.get("error", False)
-        
-        # Always show PharmGPT branding
-        model_icon = "💊"
-        model_display = "PharmGPT"
-        
-        # Build status indicators with enhanced information
-        status_indicators = []
-        
-        if is_error:
-            status_indicators.append("❌ Error")
-        
-        # Add model availability indicator
-        if hasattr(st.session_state, 'model_manager'):
-            if not st.session_state.model_manager.is_model_available():
-                status_indicators.append("⚠️ Model unavailable")
-        
-        status_text = " • ".join(status_indicators)
-        if status_text:
-            status_text = f" • {status_text}"
-        
-        # Determine message styling
-        message_class = "assistant-message"
-        if is_error:
-            message_class = "error-message"
-        
-        # Format content with basic markdown support
-        formatted_content = format_message_content(content)
-        
-        # Add error-specific styling and recovery options
-        error_recovery_html = ""
-        if is_error:
-            error_recovery_html = """
-            <div style="margin-top: 0.75rem; padding: 0.5rem; background-color: rgba(239, 68, 68, 0.1); border-radius: 0.5rem; border-left: 3px solid var(--error-color);">
-                <small style="color: var(--error-color); font-weight: 600;">💡 Try:</small>
-                <small style="color: var(--text-color); display: block; margin-top: 0.25rem;">
-                • Check your Mistral API key in Streamlit secrets<br>
-                • Refresh the page and try again<br>
-                • Simplify your question
-                </small>
-            </div>
-            """
-        
-        st.markdown(f"""
-        <div class="chat-message {message_class}">
-            <div style="margin-bottom: 0.5rem;">
-                <strong>{model_icon} {model_display}</strong>
-                <small style="color: #9ca3af; float: right;">{time_str}{status_text}</small>
-            </div>
-            <div style="clear: both; line-height: 1.6;">
-                {formatted_content}
-            </div>
-            {error_recovery_html}
-        </div>
-        """, unsafe_allow_html=True)
+# Old render_message function removed - now using native Streamlit chat interface
 
 def format_message_content(content: str) -> str:
     """Format message content with enhanced markdown support and safety"""
@@ -1928,6 +1844,10 @@ def process_user_message(user_input: str):
     if not user_input.strip():
         return
     
+    # Display user message immediately
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(user_input)
+    
     # Add user message using conversation manager
     st.session_state.conversation_manager.add_message_to_current_conversation(
         role="user",
@@ -2007,47 +1927,32 @@ def process_user_message(user_input: str):
             # Generate AI response with context
             try:
                 # Generate AI response with streaming
-                    response_stream = st.session_state.model_manager.generate_response(
-                        message=user_input,
-                        context=context if context else None,
-                        stream=True
-                    )
+                    def stream_response():
+                        """Generator function for streaming response"""
+                        try:
+                            response_stream = st.session_state.model_manager.generate_response(
+                                message=user_input,
+                                context=context if context else None,
+                                stream=True
+                            )
+                            
+                            for chunk in response_stream:
+                                if chunk.choices and len(chunk.choices) > 0:
+                                    delta = chunk.choices[0].delta
+                                    if hasattr(delta, 'content') and delta.content:
+                                        yield delta.content
+                        except Exception:
+                            # Fallback to non-streaming
+                            response = st.session_state.model_manager.generate_response(
+                                message=user_input,
+                                context=context if context else None,
+                                stream=False
+                            )
+                            yield response
                     
-                    # Create placeholder for streaming response
-                    response_placeholder = st.empty()
-                    ai_response = ""
-                    
-                    # Stream the response
-                    try:
-                        for chunk in response_stream:
-                            if chunk.choices and len(chunk.choices) > 0:
-                                delta = chunk.choices[0].delta
-                                if hasattr(delta, 'content') and delta.content:
-                                    ai_response += delta.content
-                                    # Display streaming response in a clean format
-                                    with response_placeholder.container():
-                                        st.markdown(f"""
-                                        <div class="chat-message assistant-message">
-                                            <div style="margin-bottom: 0.5rem;">
-                                                <strong>💊 PharmGPT</strong>
-                                            </div>
-                                            <div style="line-height: 1.6;">
-                                                {ai_response}
-                                            </div>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                        
-                        # Clear the placeholder after streaming is complete
-                        response_placeholder.empty()
-                        
-                    except Exception as stream_error:
-                        # Fallback to non-streaming if streaming fails
-                        response_placeholder.empty()
-                        ai_response = st.session_state.model_manager.generate_response(
-                            message=user_input,
-                            context=context if context else None,
-                            stream=False
-                        )
+                    # Display streaming response in chat format
+                    with st.chat_message("assistant", avatar="💊"):
+                        ai_response = st.write_stream(stream_response())
                     
                     if ai_response and not ai_response.startswith("Error:") and not ai_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
