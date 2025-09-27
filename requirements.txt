@@ -10,6 +10,7 @@ langchain-community>=0.0.20
 langchain-groq>=0.1.0
 
 # AI/ML Models and APIs
+mistralai>=1.0.0
 sentence-transformers>=2.2.2
 
 # Document Processing

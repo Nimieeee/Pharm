@@ -6,18 +6,21 @@ Handles Mistral Small model integration with RAG context and system prompts from
 import os
 from typing import Optional, Dict, Any, List
 import streamlit as st
-import requests
-import json
 from prompts import pharmacology_system_prompt
+
+try:
+    from mistralai import Mistral
+except ImportError:
+    st.error("❌ mistralai package not installed. Run: pip install mistralai")
+    st.stop()
 
 
 class MistralModel:
     """Mistral Small model implementation with enhanced RAG integration"""
     
     def __init__(self):
-        self.api_key = None
+        self.client = None
         self.model_name = "mistral-small-latest"
-        self.api_url = "https://api.mistral.ai/v1/chat/completions"
         self.default_system_prompt = pharmacology_system_prompt
         self._initialize()
     
@@ -34,13 +37,9 @@ class MistralModel:
                 except:
                     pass
             
-            # Note: The hardcoded key provided was invalid, user needs to set their own
-            # if not api_key:
-            #     api_key = "uBrKHYN5sBzrvdTYgel7zyNuPVbnhijvi"  # This key is invalid
-            
             if api_key:
-                self.api_key = api_key
-                st.info("🔑 Mistral API key found - testing connection...")
+                self.client = Mistral(api_key=api_key)
+                st.info("🔑 Mistral client initialized")
             else:
                 st.error("❌ Mistral API key not found")
                 st.info("💡 Please set MISTRAL_API_KEY environment variable or add it to Streamlit secrets")
@@ -57,85 +56,58 @@ class MistralModel:
             # Use custom system prompt or default
             active_system_prompt = system_prompt or self.default_system_prompt
             
-            # Build messages array
-            messages = [
-                {"role": "system", "content": active_system_prompt}
-            ]
-            
-            # Add context if available
+            # Build user message with context if available
+            user_message = message
             if context and context.strip():
-                context_message = f"""**Relevant Context from Uploaded Documents:**
+                user_message = f"""**Relevant Context from Uploaded Documents:**
 
 {context}
 
 **End of Context**
 
-Please use this context to provide a comprehensive and detailed answer to the following question. If the context contains relevant information, reference it specifically in your response."""
-                messages.append({"role": "user", "content": context_message})
+Please use this context to provide a comprehensive and detailed answer to the following question. If the context contains relevant information, reference it specifically in your response.
+
+**Question:** {message}"""
             
-            # Add user message
-            messages.append({"role": "user", "content": message})
+            # Prepare inputs for Mistral API
+            inputs = [
+                {"role": "user", "content": user_message}
+            ]
             
-            # Prepare API request
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "model": self.model_name,
-                "messages": messages,
-                "max_tokens": 10000,  # Increased for comprehensive responses
+            # Define completion arguments
+            completion_args = {
                 "temperature": 0.7,
-                "top_p": 1,
-                "stream": False
+                "max_tokens": 10000,
+                "top_p": 0.9
             }
             
-            # Make API request
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
+            # Make the API call using official Mistral SDK
+            response = self.client.chat.complete(
+                model=self.model_name,
+                messages=inputs,
+                **completion_args
+            )
             
-            if response.status_code == 200:
-                result = response.json()
-                if "choices" in result and len(result["choices"]) > 0:
-                    return result["choices"][0]["message"]["content"]
-                else:
-                    return f"Mistral API error: Invalid response format - {result}"
+            # Extract response content
+            if response and response.choices and len(response.choices) > 0:
+                return response.choices[0].message.content
             else:
-                # Handle specific error codes
-                if response.status_code == 401:
-                    return "Mistral API error: Invalid API key. Please check your MISTRAL_API_KEY configuration."
-                elif response.status_code == 429:
-                    return "Mistral API error: Rate limit exceeded. Please wait and try again."
-                elif response.status_code == 400:
-                    return "Mistral API error: Bad request. Please check your message format."
-                else:
-                    error_detail = f"HTTP {response.status_code}"
-                    try:
-                        error_data = response.json()
-                        if "detail" in error_data:
-                            error_detail = error_data["detail"]
-                        elif "error" in error_data:
-                            if isinstance(error_data["error"], dict):
-                                error_detail = error_data["error"].get("message", f"HTTP {response.status_code}")
-                            else:
-                                error_detail = str(error_data["error"])
-                        else:
-                            error_detail = f"HTTP {response.status_code}: {error_data}"
-                    except:
-                        error_detail = f"HTTP {response.status_code}: {response.text[:200]}"
-                    
-                    return f"Mistral API error: {error_detail}"
+                return "Mistral API error: No response received"
                 
-        except requests.exceptions.Timeout:
-            return "Request timed out. Please try again."
-        except requests.exceptions.ConnectionError:
-            return "Connection error. Please check your internet connection."
         except Exception as e:
-            return f"Error generating response: {str(e)}"
+            error_str = str(e).lower()
+            if "unauthorized" in error_str or "401" in error_str:
+                return "Mistral API error: Invalid API key. Please check your MISTRAL_API_KEY configuration."
+            elif "rate limit" in error_str or "429" in error_str:
+                return "Mistral API error: Rate limit exceeded. Please wait and try again."
+            elif "timeout" in error_str:
+                return "Request timed out. Please try again."
+            else:
+                return f"Mistral API error: {str(e)}"
     
     def is_available(self) -> bool:
         """Check if Mistral model is available"""
-        return self.api_key is not None
+        return self.client is not None
     
     def get_model_info(self) -> Dict[str, Any]:
         """Get Mistral model information"""
