@@ -29,11 +29,7 @@ try:
 except ImportError:
     OCR_AVAILABLE = False
 
-try:
-    import langextract as lx
-    LANGEXTRACT_AVAILABLE = True
-except ImportError:
-    LANGEXTRACT_AVAILABLE = False
+# LangExtract removed for performance
 
 from database import SimpleChatbotDB
 
@@ -52,7 +48,7 @@ class RAGManager:
             separators=["\n\n", "\n", ". ", " ", ""]  # Better splitting on paragraphs and sentences
         )
         self.embedding_model = None
-        self.langextract_available = LANGEXTRACT_AVAILABLE
+
         self._initialize_embeddings()
         
 
@@ -76,14 +72,7 @@ class RAGManager:
             except Exception as fallback_e:
                 st.error(f"Fallback embedding initialization failed: {str(fallback_e)}")
         
-        # Check LangExtract availability and show setup info
-        if LANGEXTRACT_AVAILABLE:
-            st.info("🧠 LangExtract available for enhanced document intelligence")
-            # Check if API key is available
-            if not os.getenv("LANGEXTRACT_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
-                st.warning("💡 For LangExtract features, set LANGEXTRACT_API_KEY or GOOGLE_API_KEY environment variable")
-        else:
-            st.info("💡 Install LangExtract for enhanced document understanding: pip install langextract")
+
     
     def _initialize_document_intelligence(self):
         """Compatibility method for cached sessions - no longer needed"""
@@ -126,15 +115,7 @@ class RAGManager:
             if progress_callback:
                 progress_callback("Splitting into chunks...")
             
-            # Enhanced document processing with LangExtract
-            if self.langextract_available and len(documents) > 0:
-                if progress_callback:
-                    progress_callback("Analyzing document structure with LangExtract...")
-                
-                # Extract structured information
-                enhanced_documents = self._enhance_documents_with_langextract(documents, uploaded_file.name)
-                if enhanced_documents:
-                    documents = enhanced_documents
+            # Fast document processing without LangExtract
             
             # Split documents into chunks
             chunks = self.text_splitter.split_documents(documents)
@@ -337,266 +318,7 @@ class RAGManager:
                 st.info("💡 Make sure Tesseract OCR is installed on your system")
             return []
     
-    def _enhance_documents_with_langextract(self, documents: List[Document], filename: str) -> List[Document]:
-        """Enhance documents using LangExtract for better structure and information extraction"""
-        try:
-            if not LANGEXTRACT_AVAILABLE or not documents:
-                return documents
-            
-            enhanced_docs = []
-            
-            for doc in documents:
-                # Extract structured information using LangExtract
-                extracted_info = self._extract_document_intelligence(doc.page_content, filename)
-                
-                if extracted_info:
-                    # Create enhanced document with structured metadata
-                    enhanced_content = self._format_enhanced_content(doc.page_content, extracted_info)
-                    
-                    enhanced_metadata = doc.metadata.copy()
-                    enhanced_metadata.update({
-                        "extracted_entities": extracted_info.get("entities", []),
-                        "key_topics": extracted_info.get("topics", []),
-                        "document_type": extracted_info.get("document_type", "unknown"),
-                        "structure_info": extracted_info.get("structure", {}),
-                        "enhanced_with_langextract": True
-                    })
-                    
-                    enhanced_doc = Document(
-                        page_content=enhanced_content,
-                        metadata=enhanced_metadata
-                    )
-                    enhanced_docs.append(enhanced_doc)
-                else:
-                    enhanced_docs.append(doc)
-            
-            return enhanced_docs if enhanced_docs else documents
-            
-        except Exception as e:
-            st.warning(f"LangExtract enhancement failed: {str(e)}")
-            return documents
-    
-    def _extract_document_intelligence(self, content: str, filename: str) -> Dict[str, Any]:
-        """Extract structured information from document content using LangExtract"""
-        try:
-            if not LANGEXTRACT_AVAILABLE:
-                return {}
-            
-            # Define extraction task based on document type
-            file_extension = filename.lower().split('.')[-1]
-            
-            if 'pharmacology' in filename.lower() or 'drug' in filename.lower() or 'pharm' in filename.lower():
-                # Pharmacology-specific extraction
-                prompt = """Extract pharmacological information including drug names, mechanisms of action, 
-                side effects, dosages, interactions, and therapeutic uses. Use exact text from the document."""
-                
-                examples = [
-                    lx.data.ExampleData(
-                        text="Tamoxifen is a selective estrogen receptor modulator (SERM) used in breast cancer treatment. Common side effects include hot flashes and nausea. The typical dose is 20mg daily.",
-                        extractions=[
-                            lx.data.Extraction(
-                                extraction_class="drug_name",
-                                extraction_text="Tamoxifen",
-                                attributes={"type": "medication"}
-                            ),
-                            lx.data.Extraction(
-                                extraction_class="mechanism",
-                                extraction_text="selective estrogen receptor modulator (SERM)",
-                                attributes={"category": "mechanism_of_action"}
-                            ),
-                            lx.data.Extraction(
-                                extraction_class="therapeutic_use",
-                                extraction_text="breast cancer treatment",
-                                attributes={"indication": "oncology"}
-                            ),
-                            lx.data.Extraction(
-                                extraction_class="side_effect",
-                                extraction_text="hot flashes and nausea",
-                                attributes={"severity": "common"}
-                            ),
-                            lx.data.Extraction(
-                                extraction_class="dosage",
-                                extraction_text="20mg daily",
-                                attributes={"frequency": "daily"}
-                            )
-                        ]
-                    )
-                ]
-            else:
-                # General document extraction
-                prompt = """Extract key topics, important facts, and main concepts from the document. 
-                Focus on the most important information and use exact text."""
-                
-                examples = [
-                    lx.data.ExampleData(
-                        text="This research paper discusses the cardiovascular effects of exercise. Regular physical activity reduces blood pressure and improves heart function.",
-                        extractions=[
-                            lx.data.Extraction(
-                                extraction_class="key_topic",
-                                extraction_text="cardiovascular effects of exercise",
-                                attributes={"category": "main_topic"}
-                            ),
-                            lx.data.Extraction(
-                                extraction_class="important_fact",
-                                extraction_text="Regular physical activity reduces blood pressure",
-                                attributes={"type": "finding"}
-                            ),
-                            lx.data.Extraction(
-                                extraction_class="important_fact",
-                                extraction_text="improves heart function",
-                                attributes={"type": "benefit"}
-                            )
-                        ]
-                    )
-                ]
-            
-            # Use Gemini model for extraction (you may need to set up API key)
-            try:
-                result = lx.extract(
-                    text_or_documents=content[:5000],  # Limit content size for API efficiency
-                    prompt_description=prompt,
-                    examples=examples,
-                    model_id="gemini-2.5-flash",  # Using recommended model
-                    max_workers=1,  # Single worker for small content
-                    fence_output=False
-                )
-                
-                # Process the extraction results
-                extracted_data = self._process_langextract_results(result)
-                return extracted_data
-                
-            except Exception as api_error:
-                st.warning(f"LangExtract API error: {str(api_error)}")
-                st.info("💡 Make sure you have set up your Google AI API key for LangExtract")
-                return {}
-            
-        except Exception as e:
-            st.warning(f"Document intelligence extraction failed: {str(e)}")
-            return {}
-    
-    def _format_enhanced_content(self, original_content: str, extracted_info: Dict[str, Any]) -> str:
-        """Format content with extracted intelligence for better RAG retrieval"""
-        try:
-            enhanced_parts = []
-            
-            # Add structured metadata at the beginning
-            if extracted_info.get("entities"):
-                enhanced_parts.append(f"KEY ENTITIES: {', '.join(extracted_info['entities'][:5])}")
-            
-            if extracted_info.get("topics"):
-                enhanced_parts.append(f"MAIN TOPICS: {', '.join(extracted_info['topics'][:5])}")
-            
-            # Add pharmacology-specific information if available
-            structure = extracted_info.get("structure", {})
-            if structure.get("mechanisms"):
-                enhanced_parts.append(f"MECHANISMS: {', '.join(structure['mechanisms'][:3])}")
-            
-            if structure.get("therapeutic_uses"):
-                enhanced_parts.append(f"THERAPEUTIC USES: {', '.join(structure['therapeutic_uses'][:3])}")
-            
-            # Combine enhanced metadata with original content
-            if enhanced_parts:
-                enhanced_content = "\n".join(enhanced_parts) + "\n\n" + original_content
-            else:
-                enhanced_content = original_content
-            
-            return enhanced_content
-            
-        except Exception as e:
-            return original_content
-    
-    def _process_langextract_results(self, result) -> Dict[str, Any]:
-        """Process LangExtract results into structured format"""
-        try:
-            entities = []
-            topics = []
-            mechanisms = []
-            side_effects = []
-            dosages = []
-            therapeutic_uses = []
-            important_facts = []
-            
-            # Extract information from LangExtract result
-            if hasattr(result, 'extractions') and result.extractions:
-                for extraction in result.extractions:
-                    extraction_class = extraction.extraction_class.lower()
-                    text = extraction.extraction_text
-                    
-                    if extraction_class == "drug_name":
-                        entities.append(text)
-                    elif extraction_class == "mechanism":
-                        mechanisms.append(text)
-                    elif extraction_class == "side_effect":
-                        side_effects.append(text)
-                    elif extraction_class == "dosage":
-                        dosages.append(text)
-                    elif extraction_class == "therapeutic_use":
-                        therapeutic_uses.append(text)
-                    elif extraction_class == "key_topic":
-                        topics.append(text)
-                    elif extraction_class == "important_fact":
-                        important_facts.append(text)
-            
-            return {
-                "entities": entities,
-                "topics": topics,
-                "document_type": "processed_document",
-                "structure": {
-                    "mechanisms": mechanisms,
-                    "side_effects": side_effects,
-                    "dosages": dosages,
-                    "interactions": [],  # Could be extracted separately
-                    "therapeutic_uses": therapeutic_uses,
-                    "important_facts": important_facts
-                }
-            }
-            
-        except Exception as e:
-            st.warning(f"Error processing LangExtract results: {str(e)}")
-            return {}
-    
-    def _add_intelligent_context_summary(self, chunks: List[Dict[str, Any]], query: str) -> str:
-        """Add intelligent context summary based on extracted metadata"""
-        try:
-            # Collect all extracted metadata
-            all_entities = set()
-            all_topics = set()
-            mechanisms = set()
-            therapeutic_uses = set()
-            
-            for chunk in chunks:
-                metadata = chunk.get("metadata", {})
-                if metadata.get("enhanced_with_langextract"):
-                    all_entities.update(metadata.get("extracted_entities", []))
-                    all_topics.update(metadata.get("key_topics", []))
-                    
-                    structure = metadata.get("structure_info", {})
-                    mechanisms.update(structure.get("mechanisms", []))
-                    therapeutic_uses.update(structure.get("therapeutic_uses", []))
-            
-            # Create intelligent summary
-            summary_parts = []
-            
-            if all_entities:
-                summary_parts.append(f"RELEVANT ENTITIES: {', '.join(list(all_entities)[:5])}")
-            
-            if all_topics:
-                summary_parts.append(f"RELATED TOPICS: {', '.join(list(all_topics)[:5])}")
-            
-            # Add pharmacology-specific summaries
-            if mechanisms and any(word in query.lower() for word in ['mechanism', 'action', 'how', 'works']):
-                summary_parts.append(f"MECHANISMS OF ACTION: {', '.join(list(mechanisms)[:3])}")
-            
-            if therapeutic_uses and any(word in query.lower() for word in ['use', 'treatment', 'therapy', 'indication']):
-                summary_parts.append(f"THERAPEUTIC USES: {', '.join(list(therapeutic_uses)[:3])}")
-            
-            if summary_parts:
-                return "=== INTELLIGENT DOCUMENT ANALYSIS ===\n" + "\n".join(summary_parts) + "\n=== DETAILED CONTENT ==="
-            
-            return ""
-            
-        except Exception as e:
-            return ""
+
     
     def _process_and_store_chunk(self, chunk: Document, filename: str, conversation_id: str) -> bool:
         """Process chunk and store in database"""
@@ -804,11 +526,7 @@ class RAGManager:
                 full_context = "\n\n".join(truncated_parts)
                 st.write(f"Debug - Final context length: {len(full_context)} chars with {len(truncated_parts)} parts")
             
-            # Add intelligent context enhancement if LangExtract was used
-            if self.langextract_available and similar_chunks:
-                enhanced_context = self._add_intelligent_context_summary(similar_chunks, query)
-                if enhanced_context:
-                    full_context = enhanced_context + "\n\n" + full_context
+            # Context is ready for use
             
             return full_context
             

@@ -545,7 +545,12 @@ def apply_dark_mode_styling():
 # Session State Initialization
 # ----------------------------
 def initialize_session_state():
-    """Initialize session state variables"""
+    """Initialize session state variables with user session isolation"""
+    # Generate unique user session ID for privacy
+    if 'user_session_id' not in st.session_state:
+        import uuid
+        st.session_state.user_session_id = str(uuid.uuid4())
+    
     if 'model_manager' not in st.session_state:
         st.session_state.model_manager = ModelManager()
     
@@ -558,7 +563,8 @@ def initialize_session_state():
     
     if 'conversation_manager' not in st.session_state:
         st.session_state.conversation_manager = ConversationManager(
-            st.session_state.rag_manager.db_manager
+            st.session_state.rag_manager.db_manager,
+            user_session_id=st.session_state.user_session_id
         )
     
     # Ensure there's always a current conversation

@@ -12,8 +12,9 @@ import time
 class ConversationManager:
     """Manages multiple conversations with separate knowledge bases"""
     
-    def __init__(self, db_manager: SimpleChatbotDB):
+    def __init__(self, db_manager: SimpleChatbotDB, user_session_id: str = None):
         self.db_manager = db_manager
+        self.user_session_id = user_session_id or "anonymous"
         self._initialize_session_state()
     
     def _initialize_session_state(self):

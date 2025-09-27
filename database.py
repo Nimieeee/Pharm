@@ -66,7 +66,7 @@ class SimpleChatbotDB:
                 st.error(f"❌ Database connection test failed: {str(e)}")
             return False
     
-    def store_document_chunk(self, content: str, embedding: List[float], metadata: Dict[str, Any], conversation_id: str) -> bool:
+    def store_document_chunk(self, content: str, embedding: List[float], metadata: Dict[str, Any], conversation_id: str, user_session_id: str = "anonymous") -> bool:
         """
         Store document chunk with embedding in database
         
@@ -87,7 +87,8 @@ class SimpleChatbotDB:
                 "content": content,
                 "embedding": embedding,
                 "metadata": metadata,
-                "conversation_id": conversation_id
+                "conversation_id": conversation_id,
+                "user_session_id": user_session_id
             }
             
             result = self.client.table("document_chunks").insert(data).execute()
@@ -97,7 +98,7 @@ class SimpleChatbotDB:
             st.error(f"Error storing document chunk: {str(e)}")
             return False
     
-    def search_similar_chunks(self, query_embedding: List[float], conversation_id: str, limit: int = None, threshold: float = 0.7) -> List[Dict[str, Any]]:
+    def search_similar_chunks(self, query_embedding: List[float], conversation_id: str, user_session_id: str, limit: int = None, threshold: float = 0.7) -> List[Dict[str, Any]]:
         """
         Search for similar document chunks using vector similarity within a conversation
         
@@ -124,6 +125,7 @@ class SimpleChatbotDB:
                 {
                     'query_embedding': query_embedding,
                     'conversation_uuid': conversation_id,
+                    'user_session_uuid': user_session_id,
                     'match_threshold': threshold,
                     'match_count': search_limit
                 }
@@ -327,7 +329,7 @@ class SimpleChatbotDB:
     
     # Conversation Management Methods
     
-    def create_conversation(self, title: str) -> Optional[str]:
+    def create_conversation(self, title: str, user_session_id: str = "anonymous") -> Optional[str]:
         """Create a new conversation and return its ID"""
         try:
             if not self.client:
@@ -343,7 +345,8 @@ class SimpleChatbotDB:
                 return None
             
             result = self.client.table("conversations").insert({
-                "title": title
+                "title": title,
+                "user_session_id": user_session_id
             }).execute()
             
             if result.data and len(result.data) > 0:
@@ -354,7 +357,7 @@ class SimpleChatbotDB:
             st.error(f"❌ Error creating conversation: {str(e)}")
             return None
     
-    def get_conversations(self) -> List[Dict[str, Any]]:
+    def get_conversations(self, user_session_id: str = "anonymous") -> List[Dict[str, Any]]:
         """Get all conversations ordered by last update"""
         try:
             if not self.client:
@@ -362,7 +365,7 @@ class SimpleChatbotDB:
             
             result = self.client.table("conversations").select(
                 "id, title, created_at, updated_at"
-            ).order("updated_at", desc=True).execute()
+            ).eq("user_session_id", user_session_id).order("updated_at", desc=True).execute()
             
             return result.data if result.data else []
             
