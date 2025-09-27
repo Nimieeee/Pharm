@@ -101,15 +101,15 @@ Please use this context to provide a comprehensive and detailed answer to the fo
                 return "Mistral API error: No response received"
                 
         except Exception as e:
-            error_str = str(e).lower()
-            if "unauthorized" in error_str or "401" in error_str:
+            error_str = str(e)
+            if "Status 401" in error_str or "Unauthorized" in error_str:
                 return "Mistral API error: Invalid API key. Please check your MISTRAL_API_KEY configuration."
-            elif "rate limit" in error_str or "429" in error_str:
+            elif "Status 429" in error_str or "rate limit" in error_str.lower():
                 return "Mistral API error: Rate limit exceeded. Please wait and try again."
-            elif "timeout" in error_str:
+            elif "timeout" in error_str.lower():
                 return "Request timed out. Please try again."
             else:
-                return f"Mistral API error: {str(e)}"
+                return f"Mistral API error: {error_str}"
     
     def is_available(self) -> bool:
         """Check if Mistral model is available"""

@@ -1505,8 +1505,8 @@ def render_message(message: Dict[str, Any]):
             <div style="margin-top: 0.75rem; padding: 0.5rem; background-color: rgba(239, 68, 68, 0.1); border-radius: 0.5rem; border-left: 3px solid var(--error-color);">
                 <small style="color: var(--error-color); font-weight: 600;">💡 Try:</small>
                 <small style="color: var(--text-color); display: block; margin-top: 0.25rem;">
+                • Check your Mistral API key in Streamlit secrets<br>
                 • Refresh the page and try again<br>
-                • Switch to a different model<br>
                 • Simplify your question
                 </small>
             </div>
@@ -1988,52 +1988,17 @@ def process_user_message(user_input: str):
                 # Handle API errors
                 error_str = str(model_error)
                 
-                if "api key" in error_str.lower() or "authentication" in error_str.lower():
-                    error_message = """
-                    🔑 **API Authentication Error**
-                    
-                    Your Mistral API key is invalid or missing.
-                    
-                    **To fix:**
-                    - Check your MISTRAL_API_KEY in environment variables
-                    - Verify the API key is correct and active
-                    - Try refreshing the page
-                    """
-                elif "rate limit" in error_str.lower() or "quota" in error_str.lower():
-                    error_message = """
-                    ⏱️ **Rate Limit Exceeded**
-                    
-                    You've reached your Mistral API rate limit.
-                    
-                    **What to do:**
-                    - Wait a few minutes before trying again
-                    - Check your API usage limits
-                    - Consider upgrading your plan
-                    """
-                elif "timeout" in error_str.lower():
-                    error_message = """
-                    ⏰ **Request Timeout**
-                    
-                    The request took too long to process.
-                    
-                    **Try:**
-                    - Asking a shorter question
-                    - Retrying your request
-                    - Checking your internet connection
-                    """
-                else:
-                    error_message = f"""
-                    ❌ **API Error**
-                    
-                    Mistral API error: {error_str}
-                    
-                    **Try:**
-                    - Refreshing the page
-                    - Checking your API configuration
-                    - Retrying your request
-                    """
+                # Show the actual error for debugging
+                st.error(f"**Mistral API Error:** {error_str}")
                 
-                st.error(error_message)
+                if "api key" in error_str.lower() or "authentication" in error_str.lower() or "unauthorized" in error_str.lower():
+                    st.info("🔑 **Solution:** Add valid MISTRAL_API_KEY to Streamlit secrets")
+                elif "rate limit" in error_str.lower() or "quota" in error_str.lower():
+                    st.info("⏱️ **Solution:** Wait a few minutes before trying again")
+                elif "timeout" in error_str.lower():
+                    st.info("⏰ **Solution:** Try a shorter question or retry")
+                else:
+                    st.info("🔧 **Solution:** Check API configuration and try again")
                 
                 # Add error response to chat history
                 error_response = "I apologize, but I'm currently experiencing technical difficulties. Please check the error message above and try again."
