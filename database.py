@@ -112,9 +112,6 @@ class SimpleChatbotDB:
                 st.write("Debug - No database client available")
                 return []
             
-            st.write(f"Debug - Searching with threshold: {threshold}, limit: {limit}")
-            st.write(f"Debug - Query embedding length: {len(query_embedding)}")
-            
             # Use the match_document_chunks function for vector similarity search
             result = self.client.rpc(
                 'match_document_chunks',
@@ -125,8 +122,7 @@ class SimpleChatbotDB:
                 }
             ).execute()
             
-            st.write(f"Debug - Database search result: {result}")
-            st.write(f"Debug - Result data length: {len(result.data) if result.data else 0}")
+            st.write(f"Debug - Vector search found: {len(result.data) if result.data else 0} chunks")
             
             return result.data if result.data else []
             
@@ -221,12 +217,15 @@ class SimpleChatbotDB:
             return []
     
     def get_random_chunks(self, limit: int = 3) -> List[Dict[str, Any]]:
-        """Get random chunks for fallback testing"""
+        """Get recent chunks for fallback (better than random for context)"""
         try:
             if not self.client:
                 return []
             
-            result = self.client.table("document_chunks").select("id, content, metadata").limit(limit).execute()
+            # Get most recent chunks (likely more relevant)
+            result = self.client.table("document_chunks").select(
+                "id, content, metadata"
+            ).order("created_at", desc=True).limit(limit).execute()
             
             # Format to match similarity search results
             chunks = []
@@ -235,13 +234,13 @@ class SimpleChatbotDB:
                     "id": row.get("id"),
                     "content": row.get("content"),
                     "metadata": row.get("metadata"),
-                    "similarity": 0.5  # Dummy similarity score
+                    "similarity": 0.7  # Higher dummy similarity score
                 })
             
             return chunks
             
         except Exception as e:
-            st.error(f"❌ Error getting random chunks: {str(e)}")
+            st.error(f"❌ Error getting recent chunks: {str(e)}")
             return []
     
     def setup_database_schema(self) -> bool:

@@ -272,6 +272,11 @@ class RAGManager:
                 if fallback_chunks:
                     similar_chunks = fallback_chunks
             
+            # For now, always use fallback until vector search is fixed
+            if len(similar_chunks) == 0:
+                st.write("Debug - Using fallback chunks for context...")
+                similar_chunks = self.db_manager.get_random_chunks(max_chunks)
+            
             if not similar_chunks:
                 return ""
             
