@@ -431,55 +431,77 @@ def apply_dark_mode_styling():
         animation: pulse 1s infinite;
     }
     
-    /* Minimal loader container */
+    /* Avatar-aligned loader container */
     .loading-spinner {
         display: flex !important;
         align-items: center;
         justify-content: flex-start;
-        padding: 0.5rem 0;
-        margin: 0.5rem 0;
+        padding: 0;
+        margin: 0;
+        width: 48px;
+        height: 48px;
     }
     
     .loader {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(
-            165deg,
-            rgba(255, 255, 255, 1) 0%,
-            rgba(220, 220, 220, 1) 40%,
-            rgba(170, 170, 170, 1) 98%,
-            rgba(10, 10, 10, 1) 100%
-        );
-        border-radius: 50%;
+        width: 48px;
+        height: 48px;
         position: relative;
         display: block !important;
         flex-shrink: 0;
     }
     
-    .loader:before {
+    .loader::before,
+    .loader::after {
+        content: '';
         position: absolute;
-        content: "";
-        width: 100%;
-        height: 100%;
-        border-radius: 100%;
-        border-bottom: 0 solid rgba(255, 255, 255, 0.02);
-        box-shadow: 
-            0 -10px 20px 20px rgba(255, 255, 255, 0.4) inset,
-            0 -5px 15px 10px rgba(255, 255, 255, 0.5) inset, 
-            0 -2px 5px rgba(255, 255, 255, 0.8) inset,
-            0 -3px 2px rgba(255, 255, 255, 0.9) inset, 
-            0 2px 0px rgba(255, 255, 255, 1), 
-            0 2px 3px rgba(255, 255, 255, 1),
-            0 5px 5px rgba(255, 255, 255, 0.9), 
-            0 10px 15px rgba(255, 255, 255, 0.6), 
-            0 10px 20px 20px rgba(255, 255, 255, 0.4);
-        filter: blur(2px);
-        animation: 2s rotate linear infinite;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 48em;
+        height: 48em;
+        background-image:
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0),
+            radial-gradient(circle 10px, #FFF 100%, transparent 0);
+        background-position: 0em -18em, 0em 18em, 18em 0em, -18em 0em,
+                            13em -13em, -13em -13em, 13em 13em, -13em 13em;
+        background-repeat: no-repeat;
+        font-size: 0.5px;
+        border-radius: 50%;
+        animation: blast 1s ease-in infinite;
     }
     
-    @keyframes rotate {
-        100% { 
-            transform: rotate(360deg);
+    .loader::after {
+        font-size: 1px;
+        background: #fff;
+        animation: bounce 1s ease-in infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { 
+            font-size: 0.75px;
+        }
+        50% { 
+            font-size: 1.5px;
+        }
+    }
+    
+    @keyframes blast {
+        0%, 40% {
+            font-size: 0.5px;
+        }
+        70% {
+            opacity: 1;
+            font-size: 4px;
+        }
+        100% {
+            font-size: 6px;
+            opacity: 0;
         }
     }
     
@@ -2088,8 +2110,8 @@ def process_user_message(user_input: str):
                     # Show loading spinner during API processing
                     spinner_placeholder = st.empty()
                     spinner_placeholder.markdown("""
-                    <div class="loading-spinner" style="display: flex !important; justify-content: flex-start; align-items: center; padding: 0.5rem; margin: 0.5rem 0;">
-                        <div class="loader" style="width: 40px; height: 40px; background: linear-gradient(165deg, rgba(255, 255, 255, 1) 0%, rgba(220, 220, 220, 1) 40%, rgba(170, 170, 170, 1) 98%, rgba(10, 10, 10, 1) 100%); border-radius: 50%; position: relative; animation: rotate 2s linear infinite;"></div>
+                    <div class="loading-spinner" style="display: flex !important; justify-content: flex-start; align-items: center; padding: 0; margin: 0;">
+                        <div class="loader"></div>
                     </div>
                     """, unsafe_allow_html=True)
                     
