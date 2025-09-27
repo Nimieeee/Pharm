@@ -1917,9 +1917,9 @@ def process_user_message(user_input: str):
             
             # Generate AI response with context
             try:
-                # Fixed streaming implementation with pill cursor
+                # Fixed streaming implementation
                 def stream_response():
-                    """Streaming generator with pill emoji cursor"""
+                    """Simple character-by-character streaming"""
                     # Always use simulated streaming for reliability
                     full_response = st.session_state.model_manager.generate_response(
                         message=user_input,
@@ -1927,16 +1927,10 @@ def process_user_message(user_input: str):
                         stream=False
                     )
                     
-                    # Build response progressively with pill cursor
-                    current_text = ""
-                    for i, char in enumerate(full_response):
-                        current_text += char
-                        # Show current text with pill cursor (except for last character)
-                        if i < len(full_response) - 1:
-                            yield current_text + "💊"
-                        else:
-                            yield current_text
-                        time.sleep(0.02)
+                    # Stream character by character
+                    for char in full_response:
+                        yield char
+                        time.sleep(0.03)  # Visible streaming delay
                 
                 # Display streaming response with pill cursor
                 with st.chat_message("assistant", avatar="PharmGPT.png"):
