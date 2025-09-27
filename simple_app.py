@@ -120,22 +120,31 @@ def apply_dark_mode_styling():
         max-width: 85%;
     }
     
-    /* Fix streaming text size */
+    /* Fix streaming text size - target all possible streaming elements */
     [data-testid="stChatMessage"] p,
     [data-testid="stChatMessage"] div,
-    [data-testid="stChatMessage"] span {
+    [data-testid="stChatMessage"] span,
+    [data-testid="stChatMessage"] * {
         font-size: 1rem !important;
         line-height: 1.5 !important;
     }
     
     /* Streamlit chat message styling */
-    .stChatMessage {
-        font-size: 1rem !important;
-    }
-    
-    .stChatMessage p {
+    .stChatMessage,
+    .stChatMessage *,
+    .stChatMessage p,
+    .stChatMessage div {
         font-size: 1rem !important;
         margin: 0 !important;
+    }
+    
+    /* Target streaming content specifically */
+    [data-testid="stChatMessageContent"],
+    [data-testid="stChatMessageContent"] *,
+    [data-testid="stChatMessageContent"] p,
+    [data-testid="stChatMessageContent"] div {
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
     }
     
     .user-message {
@@ -422,65 +431,64 @@ def apply_dark_mode_styling():
         animation: pulse 1s infinite;
     }
     
-    /* Modern morphing loader */
+    /* Glassy orb loader container */
     .loading-spinner {
         display: flex !important;
         align-items: center;
+        justify-content: flex-start;
         gap: 1rem;
         padding: 1rem;
         font-size: 1rem;
         color: #4fc3f7;
-        background: rgba(79, 195, 247, 0.1);
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
+        background: rgba(79, 195, 247, 0.05);
+        border: 1px solid rgba(79, 195, 247, 0.2);
+        border-radius: 0.75rem;
+        margin: 1rem 0;
+        min-height: 80px;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .loader {
-        position: relative;
-        width: 32px;
-        height: 32px;
-        background: #4fc3f7 !important;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(
+            165deg,
+            rgba(79, 195, 247, 1) 0%,
+            rgba(79, 195, 247, 0.8) 40%,
+            rgba(79, 195, 247, 0.6) 98%,
+            rgba(10, 10, 10, 1) 100%
+        );
         border-radius: 50%;
-        animation: ellipseAnimation 2s linear infinite;
+        position: relative;
         margin: 0.5rem 0;
         display: block !important;
         flex-shrink: 0;
     }
     
-    @keyframes ellipseAnimation {
-        0% {
-            border-radius: 50%;
-        }
-        12.5% {
-            border-radius: 0 50% 50% 50%;
-            transform: rotate(45deg);
-        }
-        25% {
-            border-radius: 0 0 50% 50%;
-            transform: rotate(90deg);
-        }
-        37.5% {
-            border-radius: 0 0 0 50%;
-            transform: rotate(135deg);
-        }
-        50% {
-            border-radius: 0;
-            transform: rotate(180deg);
-        }
-        62.5% {
-            border-radius: 50% 0 0 0;
-            transform: rotate(225deg);
-        }
-        75% {
-            border-radius: 50% 50% 0 0;
-            transform: rotate(270deg);
-        }
-        87.5% {
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(315deg);
-        }
-        100% {
-            border-radius: 50%;
+    .loader:before {
+        position: absolute;
+        content: "";
+        width: 100%;
+        height: 100%;
+        border-radius: 100%;
+        border-bottom: 0 solid rgba(79, 195, 247, 0.02);
+        box-shadow: 
+            0 -10px 20px 20px rgba(79, 195, 247, 0.25) inset,
+            0 -5px 15px 10px rgba(79, 195, 247, 0.3) inset, 
+            0 -2px 5px rgba(79, 195, 247, 0.5) inset,
+            0 -3px 2px rgba(79, 195, 247, 0.7) inset, 
+            0 2px 0px rgba(79, 195, 247, 1), 
+            0 2px 3px rgba(79, 195, 247, 1),
+            0 5px 5px rgba(79, 195, 247, 0.9), 
+            0 10px 15px rgba(79, 195, 247, 0.6), 
+            0 10px 20px 20px rgba(79, 195, 247, 0.25);
+        filter: blur(2px);
+        animation: 2s rotate linear infinite;
+    }
+    
+    @keyframes rotate {
+        100% { 
             transform: rotate(360deg);
         }
     }
@@ -635,9 +643,38 @@ def apply_dark_mode_styling():
     .element-container div,
     .element-container span,
     .stMarkdown p,
-    .stMarkdown div {
+    .stMarkdown div,
+    .stMarkdown *,
+    .block-container p,
+    .block-container div,
+    .main p,
+    .main div {
         font-size: 1rem !important;
         font-weight: normal !important;
+    }
+    
+    /* Aggressive targeting for streaming text in chat area only */
+    [data-testid="stChatMessage"] * {
+        font-size: 1rem !important;
+    }
+    
+    /* Override any large headings that might appear during streaming */
+    [data-testid="stChatMessage"] h1,
+    [data-testid="stChatMessage"] h2,
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4,
+    [data-testid="stChatMessage"] h5,
+    [data-testid="stChatMessage"] h6 {
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        margin: 0.5rem 0 !important;
+    }
+    
+    /* Target the main content area during streaming */
+    .main [data-testid="stChatMessage"] *,
+    .main .stChatMessage *,
+    .main .element-container * {
+        font-size: 1rem !important;
     }
     
     /* Custom scrollbar */
@@ -2061,9 +2098,9 @@ def process_user_message(user_input: str):
                     # Show loading spinner during API processing
                     spinner_placeholder = st.empty()
                     spinner_placeholder.markdown("""
-                    <div class="loading-spinner">
-                        <div class="loader"></div>
-                        <span class="thinking-text">PharmGPT is thinking...</span>
+                    <div class="loading-spinner" style="display: flex !important; align-items: center; gap: 1rem; padding: 1rem; background: rgba(79, 195, 247, 0.1); border-radius: 0.75rem; margin: 1rem 0;">
+                        <div class="loader" style="width: 60px; height: 60px; background: linear-gradient(165deg, rgba(79, 195, 247, 1) 0%, rgba(79, 195, 247, 0.8) 40%, rgba(79, 195, 247, 0.6) 98%, rgba(10, 10, 10, 1) 100%); border-radius: 50%; position: relative; animation: rotate 2s linear infinite;"></div>
+                        <span class="thinking-text" style="color: #4fc3f7; font-weight: 500;">PharmGPT is thinking...</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
