@@ -88,11 +88,6 @@ class RAGManager:
     def _initialize_document_intelligence(self):
         """Compatibility method for cached sessions - no longer needed"""
         pass
-            else:
-                st.info("💡 LangExtract not available - install with: pip install langextract")
-        except Exception as e:
-            st.warning(f"LangExtract initialization failed: {str(e)}")
-            self.lang_extract = None
     
     def process_uploaded_file(self, uploaded_file, conversation_id: str, progress_callback=None) -> tuple[bool, int]:
         """
