@@ -1,6 +1,6 @@
 """
 AI Model Management for Simple Chatbot
-Handles Mistral Small model integration with RAG context and custom system prompts
+Handles Mistral Small model integration with RAG context and system prompts from prompts.py
 """
 
 import os
@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any, List
 import streamlit as st
 import requests
 import json
+from prompts import pharmacology_system_prompt
 
 
 class MistralModel:
@@ -17,16 +18,7 @@ class MistralModel:
         self.api_key = None
         self.model_name = "mistral-small-latest"
         self.api_url = "https://api.mistral.ai/v1/chat/completions"
-        self.default_system_prompt = """You are PharmGPT, an expert pharmacology assistant. You provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications.
-
-Key guidelines:
-- Always provide elaborate and detailed explanations unless specifically asked for brevity
-- Use scientific terminology appropriately while ensuring clarity
-- Include relevant context from uploaded documents when available
-- Structure your responses with clear sections and bullet points when helpful
-- Cite specific information from the provided context when applicable
-- If you don't have enough information, clearly state the limitations
-- Always prioritize patient safety and evidence-based information"""
+        self.default_system_prompt = pharmacology_system_prompt
         self._initialize()
     
     def _initialize(self):
@@ -92,7 +84,7 @@ Please use this context to provide a comprehensive and detailed answer to the fo
             payload = {
                 "model": self.model_name,
                 "messages": messages,
-                "max_tokens": 2000,  # Increased for elaborate responses
+                "max_tokens": 10000,  # Increased for comprehensive responses
                 "temperature": 0.7,
                 "top_p": 1,
                 "stream": False
@@ -138,23 +130,10 @@ Please use this context to provide a comprehensive and detailed answer to the fo
 
 
 class ModelManager:
-    """Manages Mistral AI model interactions with enhanced RAG and customization"""
+    """Manages Mistral AI model interactions with RAG integration"""
     
     def __init__(self):
         self.model = MistralModel()
-        self.custom_system_prompt = None
-    
-    def set_custom_system_prompt(self, prompt: str):
-        """Set a custom system prompt"""
-        self.custom_system_prompt = prompt.strip() if prompt and prompt.strip() else None
-    
-    def get_custom_system_prompt(self) -> Optional[str]:
-        """Get the current custom system prompt"""
-        return self.custom_system_prompt
-    
-    def get_default_system_prompt(self) -> str:
-        """Get the default system prompt"""
-        return self.model.default_system_prompt
     
     def generate_response(self, message: str, context: Optional[str] = None) -> str:
         """
@@ -167,13 +146,10 @@ class ModelManager:
         Returns:
             AI generated response with context integration
         """
-        # Use custom system prompt if set
-        system_prompt = self.custom_system_prompt or self.model.default_system_prompt
-        
         return self.model.generate_response(
             message=message,
             context=context,
-            system_prompt=system_prompt
+            system_prompt=self.model.default_system_prompt
         )
     
     def is_model_available(self) -> bool:

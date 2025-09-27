@@ -520,8 +520,7 @@ def initialize_session_state():
     if 'db_manager' not in st.session_state:
         st.session_state.db_manager = SimpleChatbotDB()
     
-    if 'custom_system_prompt' not in st.session_state:
-        st.session_state.custom_system_prompt = ""
+
 
 # ----------------------------
 # UI Components
@@ -542,18 +541,15 @@ def render_header():
             st.markdown("🔴 **API Key Required**")
 
 def render_model_configuration():
-    """Render Mistral AI model configuration and system prompt settings"""
-    st.sidebar.markdown("### 🤖 Mistral AI Configuration")
+    """Render simplified Mistral AI model status"""
+    st.sidebar.markdown("### 🤖 PharmGPT Status")
     
     # Model status and info
-    model_info = st.session_state.model_manager.get_model_info()
     availability = st.session_state.model_manager.is_model_available()
     status_icon = "🟢" if availability else "🔴"
     
     st.sidebar.markdown(f"""
-    **Model:** {status_icon} {model_info['name']}
-    
-    *{model_info['description']}*
+    **Status:** {status_icon} {"Ready" if availability else "API Key Required"}
     """)
     
     # API Key status
@@ -570,75 +566,16 @@ def render_model_configuration():
             else:
                 st.sidebar.error(f"❌ {message}")
     else:
-        st.sidebar.success("✅ API key configured")
-    
-    # System Prompt Configuration
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📝 System Prompt")
-    
-    # Show current system prompt type
-    current_prompt = st.session_state.model_manager.get_custom_system_prompt()
-    if current_prompt:
-        st.sidebar.info("🎯 Custom prompt active")
-    else:
-        st.sidebar.info("🔧 Default prompt active")
-    
-    # System prompt editor
-    with st.sidebar.expander("✏️ Edit System Prompt", expanded=False):
-        # Show default prompt
-        default_prompt = st.session_state.model_manager.get_default_system_prompt()
-        st.markdown("**Default Prompt:**")
-        st.text_area(
-            "Default System Prompt",
-            value=default_prompt,
-            height=100,
-            disabled=True,
-            label_visibility="collapsed"
-        )
-        
-        # Custom prompt editor
-        st.markdown("**Custom Prompt:**")
-        custom_prompt = st.text_area(
-            "Enter your custom system prompt (leave empty to use default)",
-            value=current_prompt or "",
-            height=150,
-            placeholder="Enter custom instructions for the AI assistant...",
-            help="This will override the default system prompt. Leave empty to use the default pharmacology-focused prompt."
-        )
-        
-        # Update buttons
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("💾 Save", key="save_prompt"):
-                st.session_state.model_manager.set_custom_system_prompt(custom_prompt)
-                if custom_prompt.strip():
-                    st.success("✅ Custom prompt saved!")
-                else:
-                    st.success("✅ Reset to default!")
-                st.rerun()
-        
-        with col2:
-            if st.button("🔄 Reset", key="reset_prompt"):
-                st.session_state.model_manager.set_custom_system_prompt("")
-                st.success("✅ Reset to default!")
-                st.rerun()
-    
-    # Response Settings
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### ⚙️ Response Settings")
-    
-    st.sidebar.info("📋 **Current Settings:**")
-    st.sidebar.markdown("""
-    - **Style:** Elaborate & Detailed
-    - **Context:** RAG-Enhanced
-    - **Focus:** Pharmacology
-    - **Max Tokens:** 2000
-    """)
+        st.sidebar.success("✅ Ready for pharmacology queries")
     
     # RAG Status
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📚 Document Status")
+    
     stats = st.session_state.rag_manager.get_document_stats()
     if stats['total_chunks'] > 0:
-        st.sidebar.success(f"📚 RAG Active: {stats['total_chunks']} chunks")
+        st.sidebar.success(f"📚 {stats['total_chunks']} chunks available")
+        st.sidebar.info("Documents will enhance responses")
     else:
         st.sidebar.warning("📚 No documents uploaded")
         st.sidebar.info("💡 Upload documents for enhanced responses")
@@ -1581,13 +1518,9 @@ def render_message(message: Dict[str, Any]):
         context_chunks = message.get("context_chunks", 0)
         is_error = message.get("error", False)
         
-        # Determine model icon and display name
-        if model_used == "mistral" or "mistral" in model_used.lower():
-            model_icon = "🧠"
-            model_display = "Mistral Small"
-        else:
-            model_icon = "🤖"
-            model_display = model_used.title()
+        # Always show PharmGPT branding
+        model_icon = "💊"
+        model_display = "PharmGPT"
         
         # Build status indicators with enhanced information
         status_indicators = []
@@ -1724,7 +1657,7 @@ def render_message_input():
                 st.markdown(f"""
                 <div class="status-indicator status-{'online' if model_available else 'offline'}">
                     <span class="status-dot"></span>
-                    <strong>Model:</strong> {model_info['name']} ({status_text})
+                    <strong>PharmGPT:</strong> {status_text}
                 </div>
                 """, unsafe_allow_html=True)
                 
