@@ -21,17 +21,7 @@ python-docx>=0.8.11
 python-pptx>=0.6.21
 beautifulsoup4>=4.12.0
 
-# Image Processing and OCR
-Pillow>=10.0.0
-pytesseract>=0.3.10
-opencv-python-headless>=4.8.0
-
-# Document Intelligence removed (was causing slowdowns)
-
-# Note: For OCR functionality, you also need to install Tesseract OCR on your system:
-# Ubuntu/Debian: sudo apt-get install tesseract-ocr
-# macOS: brew install tesseract
-# Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+# Image Processing removed (OCR functionality disabled)
 
 # Utilities and Core Dependencies
 requests>=2.31.0

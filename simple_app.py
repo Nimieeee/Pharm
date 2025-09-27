@@ -594,8 +594,8 @@ def render_document_upload_inline():
     uploaded_files = st.file_uploader(
         "Upload documents to enhance chat responses",
         accept_multiple_files=True,
-        type=['pdf', 'txt', 'md', 'docx', 'pptx', 'jpg', 'jpeg', 'png', 'bmp', 'tiff'],
-        help="Upload PDF, TXT, MD, DOCX, PPTX files or images. Images will be processed with OCR if available, otherwise uploaded as placeholders.",
+        type=['pdf', 'txt', 'md', 'docx', 'pptx'],
+        help="Upload PDF, TXT, MD, DOCX, or PPTX files for document analysis.",
         key="document_uploader_inline"
     )
     
@@ -1476,7 +1476,18 @@ def render_message(message: Dict[str, Any]):
     role = message["role"]
     content = message["content"]
     timestamp = message.get("timestamp", 0)
-    time_str = time.strftime("%H:%M", time.localtime(timestamp)) if timestamp else ""
+    
+    # Handle timestamp conversion safely
+    try:
+        if timestamp:
+            # Convert string timestamp to float if needed
+            if isinstance(timestamp, str):
+                timestamp = float(timestamp)
+            time_str = time.strftime("%H:%M", time.localtime(timestamp))
+        else:
+            time_str = ""
+    except (ValueError, TypeError, OSError):
+        time_str = ""
     
     # Handle system messages (like model switches)
     if role == "system":

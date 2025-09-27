@@ -21,13 +21,7 @@ try:
 except ImportError:
     PPTX_AVAILABLE = False
 
-try:
-    from PIL import Image
-    import pytesseract
-    import cv2
-    OCR_AVAILABLE = True
-except ImportError:
-    OCR_AVAILABLE = False
+# OCR functionality removed
 
 # LangExtract removed for performance
 
@@ -66,24 +60,16 @@ class RAGManager:
                 
         except Exception as e:
             st.error(f"Error initializing embeddings: {str(e)}")
-            # Fallback to sentence transformers
+            # Fallback to sentence transformers with better error handling
             try:
-                self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+                # Try to initialize with explicit device mapping
+                self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
             except Exception as fallback_e:
                 st.error(f"Fallback embedding initialization failed: {str(fallback_e)}")
+                st.warning("⚠️ Embedding model initialization failed. Document processing may not work properly.")
+                self.embedding_model = None
         
-        # Check OCR availability and show setup info
-        if OCR_AVAILABLE:
-            try:
-                # Test if Tesseract is actually available
-                import pytesseract
-                pytesseract.get_tesseract_version()
-                st.info("📷 OCR available for image text extraction")
-            except Exception:
-                st.warning("📷 OCR packages installed but Tesseract not available")
-                st.info("💡 Install Tesseract OCR for image text extraction")
-        else:
-            st.info("📷 OCR not available - images will be uploaded as placeholders")
+
         
 
     
@@ -187,10 +173,12 @@ class RAGManager:
                 return self._process_pptx(file_path, filename)
                 
             elif file_extension in ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'gif']:
-                return self._process_image_ocr(file_path, filename)
+                st.error(f"Image files are not supported: {filename}")
+                st.info("💡 Please convert images to PDF or text format")
+                return []
                     
             else:
-                st.error(f"Unsupported file type: {file_extension}. Supported types: PDF, TXT, MD, DOCX, PPTX, Images (JPG, PNG, etc.)")
+                st.error(f"Unsupported file type: {file_extension}. Supported types: PDF, TXT, MD, DOCX, PPTX")
                 return []
                 
         except Exception as e:
@@ -280,94 +268,7 @@ class RAGManager:
             st.error(f"❌ Error processing PowerPoint '{filename}': {str(pptx_error)}")
             return []
     
-    def _process_image_ocr(self, file_path: str, filename: str) -> List[Document]:
-        """Process images using OCR with fallback for missing Tesseract"""
-        if not OCR_AVAILABLE:
-            st.warning(f"⚠️ OCR packages not available for image '{filename}'")
-            st.info("💡 Image processing requires: pytesseract, pillow, opencv-python-headless")
-            return self._create_image_placeholder_document(filename)
-        
-        try:
-            # Load and preprocess image
-            image = cv2.imread(file_path)
-            if image is None:
-                st.error(f"Could not load image '{filename}'")
-                return self._create_image_placeholder_document(filename)
-            
-            # Convert to grayscale for better OCR
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            
-            # Apply some preprocessing to improve OCR accuracy
-            # Denoise
-            denoised = cv2.medianBlur(gray, 3)
-            
-            # Convert to PIL Image for pytesseract
-            pil_image = Image.fromarray(denoised)
-            
-            # Perform OCR with error handling for missing Tesseract
-            try:
-                extracted_text = pytesseract.image_to_string(pil_image, lang='eng')
-            except Exception as tesseract_error:
-                if "tesseract" in str(tesseract_error).lower() or "not installed" in str(tesseract_error).lower():
-                    st.warning(f"⚠️ Tesseract OCR not available for image '{filename}'")
-                    st.info("💡 OCR requires Tesseract to be installed on the system")
-                    st.info("📝 Image uploaded but text extraction not available")
-                    return self._create_image_placeholder_document(filename)
-                else:
-                    raise tesseract_error
-            
-            if not extracted_text.strip():
-                st.warning(f"No text found in image '{filename}' using OCR")
-                return self._create_image_placeholder_document(filename, "No text detected in image")
-            
-            # Clean up the extracted text
-            cleaned_text = '\n'.join([line.strip() for line in extracted_text.split('\n') if line.strip()])
-            
-            if not cleaned_text:
-                st.warning(f"No readable text extracted from image '{filename}'")
-                return self._create_image_placeholder_document(filename, "No readable text found")
-            
-            # Create a Document object with extracted text
-            document = Document(
-                page_content=cleaned_text,
-                metadata={"source": filename, "file_type": "image_ocr", "original_format": filename.split('.')[-1]}
-            )
-            
-            st.success(f"✅ Successfully extracted text from image '{filename}'")
-            return [document]
-            
-        except Exception as ocr_error:
-            st.error(f"❌ Error processing image '{filename}' with OCR: {str(ocr_error)}")
-            return self._create_image_placeholder_document(filename, f"OCR processing failed: {str(ocr_error)}")
-    
-    def _create_image_placeholder_document(self, filename: str, note: str = "Image uploaded but OCR not available") -> List[Document]:
-        """Create a placeholder document for images when OCR is not available"""
-        placeholder_content = f"""IMAGE FILE: {filename}
 
-{note}
-
-This image was uploaded but text extraction is not available. The image file has been received but cannot be processed for text content without OCR capabilities.
-
-To enable image text extraction:
-1. Install Tesseract OCR on your system
-2. Ensure pytesseract, pillow, and opencv-python-headless packages are installed
-
-File information:
-- Filename: {filename}
-- Type: Image file
-- Status: Uploaded successfully, OCR not available"""
-        
-        document = Document(
-            page_content=placeholder_content,
-            metadata={
-                "source": filename, 
-                "file_type": "image_placeholder", 
-                "original_format": filename.split('.')[-1],
-                "ocr_available": False
-            }
-        )
-        
-        return [document]
     
 
     
