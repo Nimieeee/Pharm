@@ -120,13 +120,34 @@ def apply_dark_mode_styling():
         max-width: 85%;
     }
     
-    /* Fix streaming text size - target all possible streaming elements */
+    /* Fix streaming text size and spacing */
     [data-testid="stChatMessage"] p,
     [data-testid="stChatMessage"] div,
     [data-testid="stChatMessage"] span,
     [data-testid="stChatMessage"] * {
         font-size: 1rem !important;
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Better spacing for lists and headers */
+    [data-testid="stChatMessage"] ul,
+    [data-testid="stChatMessage"] ol {
+        margin: 1rem 0 !important;
+        padding-left: 1.5rem !important;
+    }
+    
+    [data-testid="stChatMessage"] li {
+        margin-bottom: 0.5rem !important;
+        line-height: 1.6 !important;
+    }
+    
+    [data-testid="stChatMessage"] h1,
+    [data-testid="stChatMessage"] h2,
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4 {
+        margin: 1.5rem 0 1rem 0 !important;
+        line-height: 1.4 !important;
     }
     
     /* Streamlit chat message styling */
@@ -442,66 +463,36 @@ def apply_dark_mode_styling():
         height: 48px;
     }
     
+    /* Simple visible loading dots */
     .loader {
         width: 48px;
         height: 48px;
         position: relative;
-        display: block !important;
-        flex-shrink: 0;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
     }
     
-    .loader::before,
-    .loader::after {
+    .loader::before {
         content: '';
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 48em;
-        height: 48em;
-        background-image:
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0),
-            radial-gradient(circle 10px, #FFF 100%, transparent 0);
-        background-position: 0em -18em, 0em 18em, 18em 0em, -18em 0em,
-                            13em -13em, -13em -13em, 13em 13em, -13em 13em;
-        background-repeat: no-repeat;
-        font-size: 0.5px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
-        animation: blast 1s ease-in infinite;
+        background: #ffffff;
+        animation: pulse 1.5s ease-in-out infinite;
+        box-shadow: 
+            16px 0 0 0 #ffffff,
+            32px 0 0 0 #ffffff;
     }
     
-    .loader::after {
-        font-size: 1px;
-        background: #fff;
-        animation: bounce 1s ease-in infinite;
-    }
-    
-    @keyframes bounce {
-        0%, 100% { 
-            font-size: 0.75px;
+    @keyframes pulse {
+        0%, 80%, 100% {
+            opacity: 0.3;
+            transform: scale(0.8);
         }
-        50% { 
-            font-size: 1.5px;
-        }
-    }
-    
-    @keyframes blast {
-        0%, 40% {
-            font-size: 0.5px;
-        }
-        70% {
+        40% {
             opacity: 1;
-            font-size: 4px;
-        }
-        100% {
-            font-size: 6px;
-            opacity: 0;
+            transform: scale(1.2);
         }
     }
     
@@ -2110,9 +2101,17 @@ def process_user_message(user_input: str):
                     # Show loading spinner during API processing
                     spinner_placeholder = st.empty()
                     spinner_placeholder.markdown("""
-                    <div class="loading-spinner" style="display: flex !important; justify-content: flex-start; align-items: center; padding: 0; margin: 0;">
-                        <div class="loader"></div>
+                    <div style="display: flex !important; align-items: center; justify-content: flex-start; width: 48px; height: 48px; margin: 0; padding: 0;">
+                        <div style="width: 48px; height: 48px; position: relative; display: flex !important; align-items: center; justify-content: center;">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: #ffffff; animation: pulse 1.5s ease-in-out infinite; box-shadow: 16px 0 0 0 #ffffff, 32px 0 0 0 #ffffff;"></div>
+                        </div>
                     </div>
+                    <style>
+                    @keyframes pulse {
+                        0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+                        40% { opacity: 1; transform: scale(1.2); }
+                    }
+                    </style>
                     """, unsafe_allow_html=True)
                     
                     # Get the full response (this is when the spinner should show)
@@ -2125,11 +2124,19 @@ def process_user_message(user_input: str):
                     # Clear spinner once we have the response
                     spinner_placeholder.empty()
                     
-                    # Clear spinner and display formatted response
-                    st.markdown(full_response)
+                    # Stream the response at 60 tokens per second
+                    def stream_display():
+                        """Stream at 60 tokens per second"""
+                        words = full_response.split()
+                        for i, word in enumerate(words):
+                            if i == 0:
+                                yield word
+                            else:
+                                yield " " + word
+                            time.sleep(0.017)  # 60 tokens per second (1/60 ≈ 0.017)
                     
-                    # Use the full response for further processing
-                    ai_response = full_response
+                    # Start streaming the response
+                    ai_response = st.write_stream(stream_display())
                     
                     if full_response and not full_response.startswith("Error:") and not full_response.startswith("Mistral API error:"):
                         # Success - add to message history using conversation manager
