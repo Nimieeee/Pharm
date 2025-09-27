@@ -544,6 +544,28 @@ def apply_dark_mode_styling():
 # ----------------------------
 # Session State Initialization
 # ----------------------------
+def clean_message_content(messages):
+    """Clean up any corrupted message content"""
+    import re
+    cleaned_messages = []
+    
+    for message in messages:
+        if isinstance(message, dict) and 'content' in message:
+            content = message['content']
+            # Remove any HTML div tags that might have been accidentally included
+            content = re.sub(r'<div[^>]*>.*?</div>', '', content, flags=re.DOTALL)
+            # Clean up any other HTML tags
+            content = re.sub(r'<[^>]+>', '', content)
+            
+            # Create cleaned message
+            cleaned_message = message.copy()
+            cleaned_message['content'] = content.strip()
+            cleaned_messages.append(cleaned_message)
+        else:
+            cleaned_messages.append(message)
+    
+    return cleaned_messages
+
 def initialize_session_state():
     """Initialize session state variables with user session isolation"""
     # Generate unique user session ID for privacy
@@ -566,6 +588,10 @@ def initialize_session_state():
             st.session_state.rag_manager.db_manager,
             user_session_id=st.session_state.user_session_id
         )
+    
+    # Clean up any corrupted messages in session state
+    if 'messages' in st.session_state:
+        st.session_state.messages = clean_message_content(st.session_state.messages)
     
     # Ensure there's always a current conversation
     st.session_state.conversation_manager.ensure_conversation_exists()
@@ -1582,6 +1608,12 @@ def render_message(message: Dict[str, Any]):
 
 def format_message_content(content: str) -> str:
     """Format message content with enhanced markdown support and safety"""
+    # Clean up any HTML that might have gotten into the content
+    import re
+    
+    # Remove any HTML div tags that might have been accidentally included
+    content = re.sub(r'<div[^>]*>.*?</div>', '', content, flags=re.DOTALL)
+    
     # Escape HTML for security
     safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     
@@ -2030,19 +2062,17 @@ def process_user_message(user_input: str):
                 else:
                     st.info("🔧 **Solution:** Check API configuration and try again")
                 
-                # Add error response to chat history
-                error_response = "I apologize, but I'm currently experiencing technical difficulties. Please check the error message above and try again."
+                # Add clean error response to chat history
+                error_response = "I apologize, but I'm currently experiencing technical difficulties. Please check your Mistral API key configuration and try again."
                 
-                assistant_message = {
-                    "role": "assistant",
-                    "content": error_response,
-                    "timestamp": time.time(),
-                    "model": "mistral",
-                    "error": True,
-                    "context_used": False,
-                    "context_chunks": 0
-                }
-                st.session_state.messages.append(assistant_message)
+                st.session_state.conversation_manager.add_message_to_current_conversation(
+                    role="assistant",
+                    content=error_response,
+                    model="mistral",
+                    error=True,
+                    context_used=False,
+                    context_chunks=0
+                )
     
     except Exception as unexpected_error:
         # Handle unexpected errors
@@ -2211,9 +2241,17 @@ def main():
                 - Refresh the page
                 """)
                 
-                if st.button("🗑️ Clear Chat History", key="clear_history_error"):
-                    st.session_state.messages = []
-                    st.rerun()
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🗑️ Clear Chat History", key="clear_history_error"):
+                        st.session_state.messages = []
+                        st.rerun()
+                
+                with col2:
+                    if st.button("🧹 Clean Messages", key="clean_messages_error"):
+                        if 'messages' in st.session_state:
+                            st.session_state.messages = clean_message_content(st.session_state.messages)
+                        st.rerun()
             
             # Document upload inline (above chat input)
             try:
