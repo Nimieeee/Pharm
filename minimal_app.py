@@ -74,19 +74,35 @@ if prompt := st.chat_input("Type your message..."):
     with st.chat_message("user"):
         st.write(prompt)
     
-    # Generate response with character streaming
+    # Generate response with smart streaming
     def stream_response() -> Generator[str, None, None]:
-        """Simple character-by-character streaming"""
+        """Smart streaming - faster for tables and long content"""
         # Get full response first
         full_response = st.session_state.model_manager.generate_response(
             message=prompt,
             stream=False
         )
         
-        # Stream character by character
-        for char in full_response:
-            yield char
-            time.sleep(0.03)  # Visible streaming delay
+        # Check if response contains tables or structured content
+        has_table = '|' in full_response and '---' in full_response
+        has_code = '```' in full_response
+        
+        if has_table or has_code or len(full_response) > 500:
+            # Fast streaming for tables/code/long content - by chunks
+            chunk_size = 50
+            for i in range(0, len(full_response), chunk_size):
+                chunk = full_response[i:i + chunk_size]
+                yield chunk
+                time.sleep(0.01)  # Faster for structured content
+        else:
+            # Normal streaming for regular text - by words
+            words = full_response.split()
+            for i, word in enumerate(words):
+                if i == 0:
+                    yield word
+                else:
+                    yield " " + word
+                time.sleep(0.05)  # Moderate speed for readability
     
     # Display streaming response with pill cursor
     with st.chat_message("assistant"):

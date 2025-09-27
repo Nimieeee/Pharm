@@ -52,7 +52,7 @@ except ImportError as e:
 # ----------------------------
 st.set_page_config(
     page_title="PharmGPT",
-    page_icon="💊",
+    page_icon="PharmGPT.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -622,7 +622,7 @@ def render_header():
     
     with col1:
         st.title("💬 PharmGPT")
-        st.markdown("*Advanced Pharmacology Assistant powered by Mistral AI*")
+        st.markdown("*Your Pharmacology Assistant*")
     
 
 
@@ -1917,9 +1917,9 @@ def process_user_message(user_input: str):
             
             # Generate AI response with context
             try:
-                # Fixed streaming implementation
+                # Optimized streaming implementation
                 def stream_response():
-                    """Simple character-by-character streaming"""
+                    """Smart streaming - faster for tables and long content"""
                     # Always use simulated streaming for reliability
                     full_response = st.session_state.model_manager.generate_response(
                         message=user_input,
@@ -1927,10 +1927,26 @@ def process_user_message(user_input: str):
                         stream=False
                     )
                     
-                    # Stream character by character
-                    for char in full_response:
-                        yield char
-                        time.sleep(0.03)  # Visible streaming delay
+                    # Check if response contains tables or structured content
+                    has_table = '|' in full_response and '---' in full_response
+                    has_code = '```' in full_response
+                    
+                    if has_table or has_code or len(full_response) > 500:
+                        # Fast streaming for tables/code/long content - by chunks
+                        chunk_size = 50
+                        for i in range(0, len(full_response), chunk_size):
+                            chunk = full_response[i:i + chunk_size]
+                            yield chunk
+                            time.sleep(0.01)  # Faster for structured content
+                    else:
+                        # Normal streaming for regular text - by words
+                        words = full_response.split()
+                        for i, word in enumerate(words):
+                            if i == 0:
+                                yield word
+                            else:
+                                yield " " + word
+                            time.sleep(0.05)  # Moderate speed for readability
                 
                 # Display streaming response with pill cursor
                 with st.chat_message("assistant", avatar="PharmGPT.png"):
