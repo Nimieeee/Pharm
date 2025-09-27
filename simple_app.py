@@ -555,7 +555,18 @@ def render_model_configuration():
     # API Key status
     if not availability:
         st.sidebar.error("⚠️ Mistral API key required")
-        st.sidebar.info("💡 Set MISTRAL_API_KEY in environment or secrets")
+        
+        with st.sidebar.expander("🔑 How to get API key", expanded=True):
+            st.markdown("""
+            **Steps:**
+            1. Visit [Mistral Console](https://console.mistral.ai/)
+            2. Create account & generate API key
+            3. Set `MISTRAL_API_KEY` environment variable
+            4. Refresh this page
+            
+            **Note:** The provided key was invalid.
+            You need your own Mistral API key.
+            """)
         
         # Test connection button
         if st.sidebar.button("🔍 Test Connection"):

@@ -34,15 +34,16 @@ class MistralModel:
                 except:
                     pass
             
-            # Check for the specific API key provided by user
-            if not api_key:
-                api_key = "uBrKHYN5sBzrvdTYgel7zyNuPVbnhijvi"
+            # Note: The hardcoded key provided was invalid, user needs to set their own
+            # if not api_key:
+            #     api_key = "uBrKHYN5sBzrvdTYgel7zyNuPVbnhijvi"  # This key is invalid
             
             if api_key:
                 self.api_key = api_key
-                st.success("✅ Mistral API key configured")
+                st.info("🔑 Mistral API key found - testing connection...")
             else:
                 st.error("❌ Mistral API key not found")
+                st.info("💡 Please set MISTRAL_API_KEY environment variable or add it to Streamlit secrets")
                 
         except Exception as e:
             st.error(f"Error initializing Mistral client: {str(e)}")
@@ -95,16 +96,35 @@ Please use this context to provide a comprehensive and detailed answer to the fo
             
             if response.status_code == 200:
                 result = response.json()
-                return result["choices"][0]["message"]["content"]
+                if "choices" in result and len(result["choices"]) > 0:
+                    return result["choices"][0]["message"]["content"]
+                else:
+                    return f"Mistral API error: Invalid response format - {result}"
             else:
-                error_detail = ""
-                try:
-                    error_data = response.json()
-                    error_detail = error_data.get("error", {}).get("message", "Unknown error")
-                except:
+                # Handle specific error codes
+                if response.status_code == 401:
+                    return "Mistral API error: Invalid API key. Please check your MISTRAL_API_KEY configuration."
+                elif response.status_code == 429:
+                    return "Mistral API error: Rate limit exceeded. Please wait and try again."
+                elif response.status_code == 400:
+                    return "Mistral API error: Bad request. Please check your message format."
+                else:
                     error_detail = f"HTTP {response.status_code}"
-                
-                return f"Mistral API error: {error_detail}"
+                    try:
+                        error_data = response.json()
+                        if "detail" in error_data:
+                            error_detail = error_data["detail"]
+                        elif "error" in error_data:
+                            if isinstance(error_data["error"], dict):
+                                error_detail = error_data["error"].get("message", f"HTTP {response.status_code}")
+                            else:
+                                error_detail = str(error_data["error"])
+                        else:
+                            error_detail = f"HTTP {response.status_code}: {error_data}"
+                    except:
+                        error_detail = f"HTTP {response.status_code}: {response.text[:200]}"
+                    
+                    return f"Mistral API error: {error_detail}"
                 
         except requests.exceptions.Timeout:
             return "Request timed out. Please try again."
@@ -166,8 +186,13 @@ class ModelManager:
             return False, "API key not configured"
         
         try:
-            test_response = self.generate_response("Hello, this is a connection test.")
-            if "error" in test_response.lower():
+            # Simple test with minimal payload
+            test_response = self.model.generate_response(
+                message="Hello", 
+                context=None, 
+                system_prompt="You are a helpful assistant."
+            )
+            if "error" in test_response.lower() or "mistral api error" in test_response.lower():
                 return False, test_response
             return True, "Connection successful"
         except Exception as e:
