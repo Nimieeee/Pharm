@@ -140,7 +140,7 @@ Please use this context to provide a comprehensive and detailed answer to the fo
     def get_model_info(self) -> Dict[str, Any]:
         """Get Mistral model information"""
         return {
-            "name": "Mistral Small",
+            "name": "mistral-small-latest",
             "model": self.model_name,
             "type": "mistral",
             "description": "Advanced AI model optimized for detailed pharmaceutical and scientific responses",
