@@ -549,7 +549,8 @@ def initialize_session_state():
     if 'model_manager' not in st.session_state:
         st.session_state.model_manager = ModelManager()
     
-    if 'rag_manager' not in st.session_state:
+    # Force refresh of RAGManager if version mismatch (cache issue fix)
+    if 'rag_manager' not in st.session_state or not hasattr(st.session_state.rag_manager, 'VERSION'):
         st.session_state.rag_manager = RAGManager()
     
     if 'db_manager' not in st.session_state:

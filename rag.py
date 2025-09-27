@@ -29,14 +29,19 @@ try:
 except ImportError:
     OCR_AVAILABLE = False
 
-# Custom Document Intelligence using Mistral AI
-DOCUMENT_INTELLIGENCE_AVAILABLE = True
+try:
+    import langextract as lx
+    LANGEXTRACT_AVAILABLE = True
+except ImportError:
+    LANGEXTRACT_AVAILABLE = False
 
 from database import SimpleChatbotDB
 
 
 class RAGManager:
     """Manages document processing and retrieval for RAG system"""
+    
+    VERSION = "2.0.0"  # Version to force cache refresh
     
     def __init__(self):
         self.db_manager = SimpleChatbotDB()
@@ -47,9 +52,10 @@ class RAGManager:
             separators=["\n\n", "\n", ". ", " ", ""]  # Better splitting on paragraphs and sentences
         )
         self.embedding_model = None
-        self.document_intelligence = None
+        self.langextract_available = LANGEXTRACT_AVAILABLE
         self._initialize_embeddings()
-        self._initialize_document_intelligence()
+        
+
     
     def _initialize_embeddings(self):
         """Initialize embedding model"""
@@ -69,13 +75,19 @@ class RAGManager:
                 self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
             except Exception as fallback_e:
                 st.error(f"Fallback embedding initialization failed: {str(fallback_e)}")
+        
+        # Check LangExtract availability and show setup info
+        if LANGEXTRACT_AVAILABLE:
+            st.info("🧠 LangExtract available for enhanced document intelligence")
+            # Check if API key is available
+            if not os.getenv("LANGEXTRACT_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
+                st.warning("💡 For LangExtract features, set LANGEXTRACT_API_KEY or GOOGLE_API_KEY environment variable")
+        else:
+            st.info("💡 Install LangExtract for enhanced document understanding: pip install langextract")
     
-    def _initialize_langextract(self):
-        """Initialize LangExtract for document intelligence"""
-        try:
-            if LANGEXTRACT_AVAILABLE:
-                self.lang_extract = LangExtract()
-                st.info("🧠 LangExtract initialized for enhanced document understanding")
+    def _initialize_document_intelligence(self):
+        """Compatibility method for cached sessions - no longer needed"""
+        pass
             else:
                 st.info("💡 LangExtract not available - install with: pip install langextract")
         except Exception as e:
@@ -120,7 +132,7 @@ class RAGManager:
                 progress_callback("Splitting into chunks...")
             
             # Enhanced document processing with LangExtract
-            if self.lang_extract and len(documents) > 0:
+            if self.langextract_available and len(documents) > 0:
                 if progress_callback:
                     progress_callback("Analyzing document structure with LangExtract...")
                 
@@ -333,7 +345,7 @@ class RAGManager:
     def _enhance_documents_with_langextract(self, documents: List[Document], filename: str) -> List[Document]:
         """Enhance documents using LangExtract for better structure and information extraction"""
         try:
-            if not self.lang_extract or not documents:
+            if not LANGEXTRACT_AVAILABLE or not documents:
                 return documents
             
             enhanced_docs = []
@@ -372,49 +384,96 @@ class RAGManager:
     def _extract_document_intelligence(self, content: str, filename: str) -> Dict[str, Any]:
         """Extract structured information from document content using LangExtract"""
         try:
-            if not self.lang_extract:
+            if not LANGEXTRACT_AVAILABLE:
                 return {}
             
-            # Define extraction schema based on document type
+            # Define extraction task based on document type
             file_extension = filename.lower().split('.')[-1]
             
-            if file_extension == 'pdf' or 'pharmacology' in filename.lower() or 'drug' in filename.lower():
+            if 'pharmacology' in filename.lower() or 'drug' in filename.lower() or 'pharm' in filename.lower():
                 # Pharmacology-specific extraction
-                schema = {
-                    "drug_names": "List of drug names mentioned",
-                    "mechanisms": "Mechanisms of action described",
-                    "side_effects": "Side effects or adverse reactions",
-                    "dosages": "Dosage information",
-                    "interactions": "Drug interactions mentioned",
-                    "therapeutic_uses": "Therapeutic uses or indications",
-                    "key_concepts": "Important pharmacological concepts"
-                }
+                prompt = """Extract pharmacological information including drug names, mechanisms of action, 
+                side effects, dosages, interactions, and therapeutic uses. Use exact text from the document."""
+                
+                examples = [
+                    lx.data.ExampleData(
+                        text="Tamoxifen is a selective estrogen receptor modulator (SERM) used in breast cancer treatment. Common side effects include hot flashes and nausea. The typical dose is 20mg daily.",
+                        extractions=[
+                            lx.data.Extraction(
+                                extraction_class="drug_name",
+                                extraction_text="Tamoxifen",
+                                attributes={"type": "medication"}
+                            ),
+                            lx.data.Extraction(
+                                extraction_class="mechanism",
+                                extraction_text="selective estrogen receptor modulator (SERM)",
+                                attributes={"category": "mechanism_of_action"}
+                            ),
+                            lx.data.Extraction(
+                                extraction_class="therapeutic_use",
+                                extraction_text="breast cancer treatment",
+                                attributes={"indication": "oncology"}
+                            ),
+                            lx.data.Extraction(
+                                extraction_class="side_effect",
+                                extraction_text="hot flashes and nausea",
+                                attributes={"severity": "common"}
+                            ),
+                            lx.data.Extraction(
+                                extraction_class="dosage",
+                                extraction_text="20mg daily",
+                                attributes={"frequency": "daily"}
+                            )
+                        ]
+                    )
+                ]
             else:
                 # General document extraction
-                schema = {
-                    "key_topics": "Main topics or subjects discussed",
-                    "important_facts": "Key facts or findings",
-                    "entities": "Important entities (people, places, organizations)",
-                    "concepts": "Main concepts or ideas",
-                    "document_type": "Type of document (research paper, manual, etc.)"
-                }
+                prompt = """Extract key topics, important facts, and main concepts from the document. 
+                Focus on the most important information and use exact text."""
+                
+                examples = [
+                    lx.data.ExampleData(
+                        text="This research paper discusses the cardiovascular effects of exercise. Regular physical activity reduces blood pressure and improves heart function.",
+                        extractions=[
+                            lx.data.Extraction(
+                                extraction_class="key_topic",
+                                extraction_text="cardiovascular effects of exercise",
+                                attributes={"category": "main_topic"}
+                            ),
+                            lx.data.Extraction(
+                                extraction_class="important_fact",
+                                extraction_text="Regular physical activity reduces blood pressure",
+                                attributes={"type": "finding"}
+                            ),
+                            lx.data.Extraction(
+                                extraction_class="important_fact",
+                                extraction_text="improves heart function",
+                                attributes={"type": "benefit"}
+                            )
+                        ]
+                    )
+                ]
             
-            # Extract information using LangExtract
-            extracted = self.lang_extract.extract(content, schema)
-            
-            return {
-                "entities": extracted.get("entities", []) or extracted.get("drug_names", []),
-                "topics": extracted.get("key_topics", []) or extracted.get("key_concepts", []),
-                "document_type": extracted.get("document_type", "document"),
-                "structure": {
-                    "mechanisms": extracted.get("mechanisms", []),
-                    "side_effects": extracted.get("side_effects", []),
-                    "dosages": extracted.get("dosages", []),
-                    "interactions": extracted.get("interactions", []),
-                    "therapeutic_uses": extracted.get("therapeutic_uses", []),
-                    "important_facts": extracted.get("important_facts", [])
-                }
-            }
+            # Use Gemini model for extraction (you may need to set up API key)
+            try:
+                result = lx.extract(
+                    text_or_documents=content[:5000],  # Limit content size for API efficiency
+                    prompt_description=prompt,
+                    examples=examples,
+                    model_id="gemini-2.5-flash",  # Using recommended model
+                    max_workers=1,  # Single worker for small content
+                    fence_output=False
+                )
+                
+                # Process the extraction results
+                extracted_data = self._process_langextract_results(result)
+                return extracted_data
+                
+            except Exception as api_error:
+                st.warning(f"LangExtract API error: {str(api_error)}")
+                st.info("💡 Make sure you have set up your Google AI API key for LangExtract")
+                return {}
             
         except Exception as e:
             st.warning(f"Document intelligence extraction failed: {str(e)}")
@@ -450,6 +509,56 @@ class RAGManager:
             
         except Exception as e:
             return original_content
+    
+    def _process_langextract_results(self, result) -> Dict[str, Any]:
+        """Process LangExtract results into structured format"""
+        try:
+            entities = []
+            topics = []
+            mechanisms = []
+            side_effects = []
+            dosages = []
+            therapeutic_uses = []
+            important_facts = []
+            
+            # Extract information from LangExtract result
+            if hasattr(result, 'extractions') and result.extractions:
+                for extraction in result.extractions:
+                    extraction_class = extraction.extraction_class.lower()
+                    text = extraction.extraction_text
+                    
+                    if extraction_class == "drug_name":
+                        entities.append(text)
+                    elif extraction_class == "mechanism":
+                        mechanisms.append(text)
+                    elif extraction_class == "side_effect":
+                        side_effects.append(text)
+                    elif extraction_class == "dosage":
+                        dosages.append(text)
+                    elif extraction_class == "therapeutic_use":
+                        therapeutic_uses.append(text)
+                    elif extraction_class == "key_topic":
+                        topics.append(text)
+                    elif extraction_class == "important_fact":
+                        important_facts.append(text)
+            
+            return {
+                "entities": entities,
+                "topics": topics,
+                "document_type": "processed_document",
+                "structure": {
+                    "mechanisms": mechanisms,
+                    "side_effects": side_effects,
+                    "dosages": dosages,
+                    "interactions": [],  # Could be extracted separately
+                    "therapeutic_uses": therapeutic_uses,
+                    "important_facts": important_facts
+                }
+            }
+            
+        except Exception as e:
+            st.warning(f"Error processing LangExtract results: {str(e)}")
+            return {}
     
     def _add_intelligent_context_summary(self, chunks: List[Dict[str, Any]], query: str) -> str:
         """Add intelligent context summary based on extracted metadata"""
@@ -551,15 +660,16 @@ class RAGManager:
                 st.info("💡 Check your OpenAI API key or try using sentence-transformers")
             return None
     
-    def search_relevant_context(self, query: str, conversation_id: str, max_chunks: int = 3, include_document_overview: bool = False) -> str:
+    def search_relevant_context(self, query: str, conversation_id: str, max_chunks: int = None, include_document_overview: bool = False, unlimited_context: bool = False) -> str:
         """
         Search for relevant context based on query within a conversation
         
         Args:
             query: User query
             conversation_id: ID of the conversation to search within
-            max_chunks: Maximum number of chunks to retrieve
+            max_chunks: Maximum number of chunks to retrieve (None for unlimited)
             include_document_overview: Whether to include document overview/summary
+            unlimited_context: Whether to retrieve all available chunks
             
         Returns:
             Concatenated relevant context
@@ -573,8 +683,9 @@ class RAGManager:
             
             st.write(f"Debug - Query embedding generated, length: {len(query_embedding)}")
             
-            # Search for similar chunks with very low threshold to test
-            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, conversation_id, max_chunks, threshold=0.1)
+            # Search for similar chunks - use unlimited if requested
+            search_limit = 1000 if unlimited_context or max_chunks is None else (max_chunks or 10)
+            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, conversation_id, search_limit, threshold=0.1)
             
             st.write(f"Debug - Found {len(similar_chunks)} similar chunks")
             
@@ -589,7 +700,12 @@ class RAGManager:
             # For now, always use fallback until vector search is fixed
             if len(similar_chunks) == 0:
                 st.write("Debug - Using fallback chunks for context...")
-                similar_chunks = self.db_manager.get_random_chunks(conversation_id, max_chunks)
+                if unlimited_context:
+                    st.write("Debug - Getting ALL chunks for unlimited context...")
+                    similar_chunks = self.db_manager.get_all_conversation_chunks(conversation_id)
+                else:
+                    fallback_limit = max_chunks or 10
+                    similar_chunks = self.db_manager.get_random_chunks(conversation_id, fallback_limit)
             
             if not similar_chunks:
                 return ""
@@ -608,7 +724,8 @@ class RAGManager:
                 st.write("Debug - Comprehensive query detected, retrieving more context...")
                 
                 # Get additional chunks for comprehensive coverage
-                additional_chunks = self.db_manager.get_random_chunks(conversation_id, max_chunks * 2)
+                additional_limit = 1000 if unlimited_context else (max_chunks * 3 if max_chunks else 50)
+                additional_chunks = self.db_manager.get_random_chunks(conversation_id, additional_limit)
                 
                 # Combine and deduplicate chunks
                 all_chunks = similar_chunks + additional_chunks
@@ -621,7 +738,11 @@ class RAGManager:
                         seen_content.add(content)
                         unique_chunks.append(chunk)
                 
-                similar_chunks = unique_chunks[:max_chunks * 2]  # Use more chunks for comprehensive queries
+                # Use all unique chunks if unlimited, otherwise limit
+                if unlimited_context or max_chunks is None:
+                    similar_chunks = unique_chunks  # No limit
+                else:
+                    similar_chunks = unique_chunks[:max_chunks * 2]
             
             # Concatenate relevant content
             context_parts = []
@@ -654,15 +775,47 @@ class RAGManager:
                 overview_parts.append("=== DOCUMENT CONTENT ===")
                 context_parts = overview_parts + context_parts
             
-            # Add intelligent context enhancement if LangExtract was used
-            final_context = "\n\n".join(context_parts)
+            # Smart context management - check total length and truncate if needed
+            full_context = "\n\n".join(context_parts)
             
-            if self.lang_extract and similar_chunks:
+            # Mistral models can handle up to ~32k tokens, but let's be conservative
+            max_context_chars = 100000  # ~25k tokens approximately
+            
+            if len(full_context) > max_context_chars:
+                st.write(f"Debug - Context too large ({len(full_context)} chars), truncating to {max_context_chars} chars")
+                
+                # Prioritize chunks by similarity score
+                sorted_chunks = sorted(similar_chunks, key=lambda x: x.get("similarity", 0), reverse=True)
+                
+                truncated_parts = []
+                current_length = 0
+                
+                # Add overview first if it exists
+                if is_comprehensive_query and document_info:
+                    for part in overview_parts:
+                        if current_length + len(part) < max_context_chars:
+                            truncated_parts.append(part)
+                            current_length += len(part) + 2  # +2 for \n\n
+                
+                # Add chunks in order of similarity
+                for chunk in sorted_chunks:
+                    content = chunk.get("content", "")
+                    if content and current_length + len(content) < max_context_chars:
+                        truncated_parts.append(content)
+                        current_length += len(content) + 2
+                    else:
+                        break
+                
+                full_context = "\n\n".join(truncated_parts)
+                st.write(f"Debug - Final context length: {len(full_context)} chars with {len(truncated_parts)} parts")
+            
+            # Add intelligent context enhancement if LangExtract was used
+            if self.langextract_available and similar_chunks:
                 enhanced_context = self._add_intelligent_context_summary(similar_chunks, query)
                 if enhanced_context:
-                    final_context = enhanced_context + "\n\n" + final_context
+                    full_context = enhanced_context + "\n\n" + full_context
             
-            return final_context
+            return full_context
             
         except Exception as e:
             st.error(f"Error searching context: {str(e)}")
