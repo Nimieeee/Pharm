@@ -762,23 +762,8 @@ def render_document_upload_inline():
     return uploaded_files
 
 def render_document_upload():
-    """Legacy sidebar document upload - now simplified"""
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📚 Document Status")
-    
-    # Show document statistics only
-    stats = st.session_state.rag_manager.get_document_stats()
-    if stats['total_chunks'] > 0:
-        st.sidebar.success(f"📄 {stats['total_chunks']} chunks from {stats['unique_documents']} documents")
-        
-        # Clear documents option
-        if st.sidebar.button("🗑️ Clear All Documents", help="Remove all stored document chunks"):
-            if clear_all_documents():
-                st.sidebar.success("All documents cleared!")
-                st.rerun()
-    else:
-        st.sidebar.info("No documents uploaded yet")
-        st.sidebar.markdown("*Upload documents above the chat input*")
+    """Simplified sidebar - no document status shown"""
+    pass  # Document upload is now inline, no sidebar content needed
     
     # Processing options
     if uploaded_files:
@@ -1528,41 +1513,15 @@ def clear_all_documents() -> bool:
         return False
 
 def render_chat_controls():
-    """Render chat control buttons and statistics in sidebar"""
+    """Render simplified chat controls in sidebar"""
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 💬 Chat Controls")
     
-    # Chat statistics
-    total_messages = len(st.session_state.messages)
-    user_messages = len([m for m in st.session_state.messages if m["role"] == "user"])
-    assistant_messages = len([m for m in st.session_state.messages if m["role"] == "assistant"])
-    context_used_count = len([m for m in st.session_state.messages if m.get("context_used", False)])
-    
-    if total_messages > 0:
-        st.sidebar.markdown(f"""
-        **Chat Statistics:**
-        - 💬 Total messages: {total_messages}
-        - 👤 User messages: {user_messages}
-        - 🤖 AI responses: {assistant_messages}
-        - 📚 Responses with context: {context_used_count}
-        """)
-    
-    if st.sidebar.button("🗑️ Clear Chat", help="Clear all messages"):
+    # Only show clear chat button
+    if st.sidebar.button("🗑️ Clear Chat", help="Clear all messages", use_container_width=True):
         st.session_state.messages = []
         st.sidebar.success("Chat cleared!")
         st.rerun()
-    
-    # Export conversation
-    if total_messages > 0:
-        if st.sidebar.button("📥 Export Chat", help="Export conversation history"):
-            export_conversation()
-    
-    # Database connection test
-    if st.sidebar.button("🔍 Test Database", help="Test database connection"):
-        if st.session_state.db_manager.test_connection():
-            st.sidebar.success("Database connection OK!")
-        else:
-            st.sidebar.error("Database connection failed!")
 
 def render_chat_history():
     """Render chat message history"""
@@ -1737,87 +1696,7 @@ def render_processing_status_indicator():
             st.markdown("**📚 No Documents**")
             st.caption("Upload docs for enhanced responses")
 
-def test_responsive_design():
-    """Test responsive design elements and provide feedback"""
-    if st.session_state.get('show_responsive_test', False):
-        with st.expander("📱 Responsive Design Test", expanded=True):
-            st.markdown("""
-            ### 📱 **Responsive Design Validation**
-            
-            This application is designed to work across different screen sizes:
-            """)
-            
-            # Test different viewport scenarios
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.markdown("""
-                **📱 Mobile (≤480px)**
-                - Single column layout
-                - Larger touch targets
-                - Simplified navigation
-                - Optimized text size
-                """)
-                
-                if st.button("Test Mobile View", key="test_mobile"):
-                    st.info("💡 Resize your browser window to ≤480px width to test mobile layout")
-            
-            with col2:
-                st.markdown("""
-                **📟 Tablet (≤768px)**
-                - Responsive columns
-                - Touch-friendly interface
-                - Sidebar adaptation
-                - Readable text scaling
-                """)
-                
-                if st.button("Test Tablet View", key="test_tablet"):
-                    st.info("💡 Resize your browser window to 481-768px width to test tablet layout")
-            
-            with col3:
-                st.markdown("""
-                **🖥️ Desktop (>768px)**
-                - Full sidebar visibility
-                - Multi-column layouts
-                - Enhanced interactions
-                - Maximum content density
-                """)
-                
-                if st.button("Test Desktop View", key="test_desktop"):
-                    st.info("💡 Use browser window >768px width for optimal desktop experience")
-            
-            # Accessibility features test
-            st.markdown("### ♿ **Accessibility Features**")
-            
-            accessibility_features = [
-                "🎯 **Focus Indicators:** All interactive elements have visible focus states",
-                "🌗 **High Contrast:** Dark theme with sufficient color contrast ratios",
-                "📱 **Touch Targets:** Minimum 44px touch target size on mobile",
-                "⌨️ **Keyboard Navigation:** Full keyboard accessibility support",
-                "🔍 **Screen Reader:** Semantic HTML and ARIA labels where needed",
-                "🚫 **Reduced Motion:** Respects user's motion preferences"
-            ]
-            
-            for feature in accessibility_features:
-                st.markdown(f"✅ {feature}")
-            
-            # Performance indicators
-            st.markdown("### ⚡ **Performance Optimizations**")
-            
-            performance_features = [
-                "🎨 **CSS Variables:** Efficient theme management",
-                "📦 **Minimal Dependencies:** Lightweight implementation",
-                "🔄 **Lazy Loading:** Progressive content loading",
-                "💾 **Session Caching:** Efficient state management",
-                "🖼️ **Optimized Animations:** Hardware-accelerated transitions"
-            ]
-            
-            for feature in performance_features:
-                st.markdown(f"✅ {feature}")
-            
-            if st.button("✅ Close Responsive Test", key="close_responsive_test"):
-                st.session_state.show_responsive_test = False
-                st.rerun()
+# Removed test_responsive_design function - no longer needed
 
 def render_message_input():
     """Render enhanced message input interface with comprehensive status and error handling"""
@@ -1932,85 +1811,10 @@ def render_message_input():
         return None
 
 def render_enhanced_ui_controls():
-    """Render enhanced UI controls and testing options"""
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 🎛️ **UI Controls**")
-        
-        # Theme and display options
-        with st.expander("🎨 Display Options", expanded=False):
-            st.markdown("**Theme:** 🌙 Dark Mode (Permanent)")
-            
-            # Font size adjustment
-            font_size = st.selectbox(
-                "Font Size",
-                options=["Small", "Medium", "Large"],
-                index=1,
-                key="font_size_setting"
-            )
-            
-            # Animation preferences
-            reduce_animations = st.checkbox(
-                "Reduce Animations",
-                value=False,
-                help="Disable animations for better performance or accessibility",
-                key="reduce_animations"
-            )
-            
-            if reduce_animations:
-                st.markdown("""
-                <style>
-                * {
-                    animation-duration: 0.01ms !important;
-                    transition-duration: 0.01ms !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
-        
-        # Responsive design testing
-        if st.button("📱 Test Responsive Design", key="show_responsive_test_btn"):
-            st.session_state.show_responsive_test = True
-            st.rerun()
-        
-        # Performance monitoring
-        with st.expander("⚡ Performance", expanded=False):
-            # Show basic performance metrics
-            if 'messages' in st.session_state:
-                message_count = len(st.session_state.messages)
-                st.metric("Messages in History", message_count)
-            
-            if hasattr(st.session_state, 'rag_manager'):
-                try:
-                    stats = st.session_state.rag_manager.get_document_stats()
-                    st.metric("Document Chunks", stats.get('total_chunks', 0))
-                except:
-                    st.metric("Document Chunks", "Error")
-            
-            # Memory usage indicator (approximate)
-            import sys
-            if hasattr(sys, 'getsizeof'):
-                session_size = sys.getsizeof(str(st.session_state)) / 1024  # KB
-                st.metric("Session Size", f"{session_size:.1f} KB")
-        
-        # Error reporting
-        with st.expander("🐛 Error Reporting", expanded=False):
-            st.markdown("""
-            **Report Issues:**
-            - UI display problems
-            - Responsive design issues
-            - Performance concerns
-            - Accessibility problems
-            """)
-            
-            if st.button("📋 Copy Debug Info", key="copy_debug_info"):
-                debug_info = {
-                    'model_available': st.session_state.model_manager.is_model_available(st.session_state.model_type) if hasattr(st.session_state, 'model_manager') else False,
-                    'current_model': st.session_state.get('model_type', 'unknown'),
-                    'message_count': len(st.session_state.get('messages', [])),
-                    'document_chunks': st.session_state.rag_manager.get_document_stats().get('total_chunks', 0) if hasattr(st.session_state, 'rag_manager') else 0
-                }
-                st.code(str(debug_info), language='json')
-                st.info("💡 Copy this debug information when reporting issues")
+    """Render minimal UI controls"""
+    # Removed all test buttons, performance monitoring, and error reporting
+    # Keep only essential functionality
+    pass
 
 # ----------------------------
 # Conversation Management
@@ -2527,9 +2331,7 @@ def main():
         
         # Main chat area with enhanced layout and error handling
         try:
-            # Responsive design test (if requested)
-            if st.session_state.get('show_responsive_test', False):
-                test_responsive_design()
+            # Removed responsive design test
             
             # Enhanced main area layout
             col1, col2 = st.columns([3, 1])
