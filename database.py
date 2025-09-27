@@ -225,7 +225,7 @@ class SimpleChatbotDB:
             st.error(f"❌ Error getting documents by filename: {str(e)}")
             return []
     
-    def get_random_chunks(self, conversation_id: str, limit: int = None) -> List[Dict[str, Any]]:
+    def get_random_chunks(self, conversation_id: str, user_session_id: str, limit: int = None) -> List[Dict[str, Any]]:
         """Get recent chunks for fallback (better than random for context) within a conversation"""
         try:
             if not self.client:
@@ -234,10 +234,10 @@ class SimpleChatbotDB:
             # Set a high limit if unlimited is requested
             search_limit = limit if limit is not None else 1000
             
-            # Get most recent chunks (likely more relevant) for this conversation
+            # Get most recent chunks (likely more relevant) for this conversation and user session
             result = self.client.table("document_chunks").select(
                 "id, content, metadata"
-            ).eq("conversation_id", conversation_id).order("created_at", desc=True).limit(search_limit).execute()
+            ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at", desc=True).limit(search_limit).execute()
             
             # Format to match similarity search results
             chunks = []
@@ -404,7 +404,7 @@ class SimpleChatbotDB:
             st.error(f"❌ Error deleting conversation: {str(e)}")
             return False
     
-    def get_conversation_messages(self, conversation_id: str) -> List[Dict[str, Any]]:
+    def get_conversation_messages(self, conversation_id: str, user_session_id: str) -> List[Dict[str, Any]]:
         """Get all messages for a conversation"""
         try:
             if not self.client:
@@ -412,7 +412,7 @@ class SimpleChatbotDB:
             
             result = self.client.table("messages").select(
                 "id, role, content, metadata, created_at"
-            ).eq("conversation_id", conversation_id).order("created_at").execute()
+            ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at").execute()
             
             return result.data if result.data else []
             
@@ -420,7 +420,7 @@ class SimpleChatbotDB:
             st.error(f"❌ Error getting conversation messages: {str(e)}")
             return []
     
-    def store_message(self, conversation_id: str, role: str, content: str, metadata: Dict[str, Any] = None) -> bool:
+    def store_message(self, conversation_id: str, role: str, content: str, user_session_id: str, metadata: Dict[str, Any] = None) -> bool:
         """Store a message in the conversation"""
         try:
             if not self.client:
@@ -430,6 +430,7 @@ class SimpleChatbotDB:
                 "conversation_id": conversation_id,
                 "role": role,
                 "content": content,
+                "user_session_id": user_session_id,
                 "metadata": metadata or {}
             }
             
@@ -445,14 +446,15 @@ class SimpleChatbotDB:
             st.error(f"❌ Error storing message: {str(e)}")
             return False
     
-    def get_conversation_stats(self, conversation_id: str) -> Dict[str, Any]:
+    def get_conversation_stats(self, conversation_id: str, user_session_id: str = "anonymous") -> Dict[str, Any]:
         """Get statistics for a conversation"""
         try:
             if not self.client:
                 return {"message_count": 0, "document_count": 0, "last_activity": None}
             
             result = self.client.rpc('get_conversation_stats', {
-                'conversation_uuid': conversation_id
+                'conversation_uuid': conversation_id,
+                'user_session_uuid': user_session_id
             }).execute()
             
             if result.data and len(result.data) > 0:
@@ -464,7 +466,7 @@ class SimpleChatbotDB:
             st.error(f"❌ Error getting conversation stats: {str(e)}")
             return {"message_count": 0, "document_count": 0, "last_activity": None}
     
-    def get_all_conversation_chunks(self, conversation_id: str) -> List[Dict[str, Any]]:
+    def get_all_conversation_chunks(self, conversation_id: str, user_session_id: str) -> List[Dict[str, Any]]:
         """Get ALL document chunks for a conversation (unlimited)"""
         try:
             if not self.client:
@@ -472,7 +474,7 @@ class SimpleChatbotDB:
             
             result = self.client.table("document_chunks").select(
                 "id, content, metadata, created_at"
-            ).eq("conversation_id", conversation_id).order("created_at").execute()
+            ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at").execute()
             
             # Format to match similarity search results
             chunks = []

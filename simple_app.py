@@ -54,8 +54,8 @@ except ImportError as e:
 # Page Configuration
 # ----------------------------
 st.set_page_config(
-    page_title="💬 Simple Chatbot",
-    page_icon="💬",
+    page_title="PharmGPT",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -583,12 +583,6 @@ def render_header():
         st.title("💬 PharmGPT")
         st.markdown("*Advanced Pharmacology Assistant powered by Mistral AI*")
     
-    with col2:
-        # Connection status indicator
-        if st.session_state.model_manager.is_model_available():
-            st.markdown("🟢 **Mistral Ready**")
-        else:
-            st.markdown("🔴 **API Key Required**")
 
 
 
@@ -631,6 +625,7 @@ def render_document_upload_inline():
                     success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
                         uploaded_file,
                         conversation_id=st.session_state.current_conversation_id,
+                        user_session_id=st.session_state.user_session_id,
                         progress_callback=lambda msg: st.write(f"Debug - {msg}")
                     )
                     
@@ -1967,6 +1962,7 @@ def process_user_message(user_input: str):
                         context = st.session_state.rag_manager.search_relevant_context(
                             user_input, 
                             conversation_id=st.session_state.current_conversation_id,
+                            user_session_id=st.session_state.user_session_id,
                             max_chunks=max_chunks,
                             include_document_overview=is_comprehensive,
                             unlimited_context=True

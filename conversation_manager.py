@@ -37,7 +37,7 @@ class ConversationManager:
             # Generate a default title with timestamp
             title = f"New Chat {time.strftime('%m/%d %H:%M')}"
         
-        conversation_id = self.db_manager.create_conversation(title)
+        conversation_id = self.db_manager.create_conversation(title, self.user_session_id)
         
         if conversation_id:
             # Refresh conversations list
@@ -51,8 +51,8 @@ class ConversationManager:
             return None
     
     def load_conversations(self):
-        """Load all conversations from database"""
-        conversations = self.db_manager.get_conversations()
+        """Load all conversations from database for this user session"""
+        conversations = self.db_manager.get_conversations(self.user_session_id)
         st.session_state.conversations = conversations
         
         # If no current conversation and conversations exist, select the first one
@@ -84,7 +84,8 @@ class ConversationManager:
         
         # Get existing messages from database to avoid duplicates
         existing_messages = self.db_manager.get_conversation_messages(
-            st.session_state.current_conversation_id
+            st.session_state.current_conversation_id,
+            self.user_session_id
         )
         existing_count = len(existing_messages)
         
@@ -95,6 +96,7 @@ class ConversationManager:
                 conversation_id=st.session_state.current_conversation_id,
                 role=message['role'],
                 content=message['content'],
+                user_session_id=self.user_session_id,
                 metadata={
                     'timestamp': message.get('timestamp', time.time()),
                     'model': message.get('model', 'unknown'),
@@ -106,7 +108,7 @@ class ConversationManager:
     
     def _load_conversation_messages(self, conversation_id: str):
         """Load messages for a conversation from database"""
-        db_messages = self.db_manager.get_conversation_messages(conversation_id)
+        db_messages = self.db_manager.get_conversation_messages(conversation_id, self.user_session_id)
         
         # Convert database messages to session format
         session_messages = []
@@ -165,7 +167,7 @@ class ConversationManager:
     
     def get_conversation_stats(self, conversation_id: str) -> Dict[str, Any]:
         """Get statistics for a conversation"""
-        return self.db_manager.get_conversation_stats(conversation_id)
+        return self.db_manager.get_conversation_stats(conversation_id, self.user_session_id)
     
     def ensure_conversation_exists(self):
         """Ensure there's always a current conversation"""
@@ -202,5 +204,6 @@ class ConversationManager:
             conversation_id=st.session_state.current_conversation_id,
             role=role,
             content=content,
+            user_session_id=self.user_session_id,
             metadata=metadata
         )

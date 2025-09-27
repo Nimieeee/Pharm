@@ -78,13 +78,14 @@ class RAGManager:
         """Compatibility method for cached sessions - no longer needed"""
         pass
     
-    def process_uploaded_file(self, uploaded_file, conversation_id: str, progress_callback=None) -> tuple[bool, int]:
+    def process_uploaded_file(self, uploaded_file, conversation_id: str, user_session_id: str, progress_callback=None) -> tuple[bool, int]:
         """
         Process uploaded file and store chunks in database with enhanced feedback
         
         Args:
             uploaded_file: Streamlit uploaded file object
             conversation_id: ID of the conversation to associate chunks with
+            user_session_id: ID of the user session for privacy isolation
             progress_callback: Optional callback function for progress updates
             
         Returns:
@@ -135,7 +136,7 @@ class RAGManager:
                 if not chunk.page_content.strip():
                     continue
                 
-                if self._process_and_store_chunk(chunk, uploaded_file.name, conversation_id):
+                if self._process_and_store_chunk(chunk, uploaded_file.name, conversation_id, user_session_id):
                     success_count += 1
             
             # Clean up temporary file
@@ -320,7 +321,7 @@ class RAGManager:
     
 
     
-    def _process_and_store_chunk(self, chunk: Document, filename: str, conversation_id: str) -> bool:
+    def _process_and_store_chunk(self, chunk: Document, filename: str, conversation_id: str, user_session_id: str) -> bool:
         """Process chunk and store in database"""
         try:
             # Generate embedding
@@ -340,7 +341,8 @@ class RAGManager:
                 content=chunk.page_content,
                 embedding=embedding,
                 metadata=metadata,
-                conversation_id=conversation_id
+                conversation_id=conversation_id,
+                user_session_id=user_session_id
             )
             
         except Exception as e:
@@ -377,13 +379,14 @@ class RAGManager:
                 st.info("💡 Check your OpenAI API key or try using sentence-transformers")
             return None
     
-    def search_relevant_context(self, query: str, conversation_id: str, max_chunks: int = None, include_document_overview: bool = False, unlimited_context: bool = False) -> str:
+    def search_relevant_context(self, query: str, conversation_id: str, user_session_id: str, max_chunks: int = None, include_document_overview: bool = False, unlimited_context: bool = False) -> str:
         """
-        Search for relevant context based on query within a conversation
+        Search for relevant context based on query within a conversation and user session
         
         Args:
             query: User query
             conversation_id: ID of the conversation to search within
+            user_session_id: ID of the user session for privacy isolation
             max_chunks: Maximum number of chunks to retrieve (None for unlimited)
             include_document_overview: Whether to include document overview/summary
             unlimited_context: Whether to retrieve all available chunks
@@ -402,7 +405,7 @@ class RAGManager:
             
             # Search for similar chunks - use unlimited if requested
             search_limit = 1000 if unlimited_context or max_chunks is None else (max_chunks or 10)
-            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, conversation_id, search_limit, threshold=0.1)
+            similar_chunks = self.db_manager.search_similar_chunks(query_embedding, conversation_id, user_session_id, search_limit, threshold=0.1)
             
             st.write(f"Debug - Found {len(similar_chunks)} similar chunks")
             
@@ -419,10 +422,10 @@ class RAGManager:
                 st.write("Debug - Using fallback chunks for context...")
                 if unlimited_context:
                     st.write("Debug - Getting ALL chunks for unlimited context...")
-                    similar_chunks = self.db_manager.get_all_conversation_chunks(conversation_id)
+                    similar_chunks = self.db_manager.get_all_conversation_chunks(conversation_id, user_session_id)
                 else:
                     fallback_limit = max_chunks or 10
-                    similar_chunks = self.db_manager.get_random_chunks(conversation_id, fallback_limit)
+                    similar_chunks = self.db_manager.get_random_chunks(conversation_id, user_session_id, fallback_limit)
             
             if not similar_chunks:
                 return ""
@@ -442,7 +445,7 @@ class RAGManager:
                 
                 # Get additional chunks for comprehensive coverage
                 additional_limit = 1000 if unlimited_context else (max_chunks * 3 if max_chunks else 50)
-                additional_chunks = self.db_manager.get_random_chunks(conversation_id, additional_limit)
+                additional_chunks = self.db_manager.get_random_chunks(conversation_id, user_session_id, additional_limit)
                 
                 # Combine and deduplicate chunks
                 all_chunks = similar_chunks + additional_chunks
