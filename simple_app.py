@@ -155,12 +155,83 @@ def apply_dark_mode_styling():
         box-shadow: 0 2px 8px var(--shadow-color);
     }
     
-    /* Enhanced file uploader styling */
-    .stFileUploader > div {
+    /* Toggle Switch Styling */
+    .toggle-switch-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    padding: 0.75rem;
+        background: var(--secondary-bg);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        margin: 0.5rem 0;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        disp
+        width: 60px;
+        height: 30px;
+        cursor: pointer;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+     0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        backgroundgradient(135deg, #6c757d, #495057);
+        border-radius: 30px;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+    ight: 24px;
+    width: 24px;
+        left: 3px;
+        bottom: 3px;
+        background: linear-gradient(1, #ffffff, #f8f9fa);
+        border-radius: 50
+    /* Etransition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+  nhanced file uploader styling */
+    .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, #000)  .stFileUploader > div {
         background-color: var(--secondary-bg) !important;
         border: 2px dashed var(--border-color) !important;
-        border-radius: 1rem !important;
-        padding: 2rem !important;
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+        background: linear-gradient(135deg, #ffffff, #f0f8ff);
+    }
+    
+    .toggle     ch:hover booggle-slider {
+     rder-radiadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 8px rgba(79, 195, 247, 0.3);
+    }
+    
+    .toggle-labus: 1rem !important;
+        paddiweight: 500;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+   ng: 2rem !important;e {
+        color: var(--primary-color);
+        font-weight: 600;
+        transform: scale(1.05);
+    }
         transition: all 0.3s ease !important;
     }
     
@@ -460,8 +531,8 @@ def render_header():
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        st.title("💬 Simple Chatbot")
-        st.markdown("*Chat with AI using fast or premium models*")
+        st.title("💬 PharmGPT")
+        st.markdown("*Chat with Pharmacology Assistant*")
     
     with col2:
         # Connection status indicator
@@ -471,51 +542,63 @@ def render_header():
             st.markdown("🔴 **Disconnected**")
 
 def render_model_toggle():
-    """Render model selection toggle in sidebar with conversation awareness"""
+    """Render model selection toggle switch in sidebar"""
     st.sidebar.markdown("### 🤖 AI Model Selection")
     
-    # Model toggle switch
-    model_options = ["fast", "premium"]
-    model_labels = {
-        "fast": "⚡ Fast Model (Groq Gemma2)",
-        "premium": "💎 Premium Model (Groq GPT-OSS)"
-    }
-    
-    # Show warning if switching models mid-conversation
+    # Current model state
+    is_premium = st.session_state.model_type == "premium"
     has_messages = len(st.session_state.messages) > 0
     
-    selected_model = st.sidebar.radio(
-        "Choose your model:",
-        options=model_options,
-        format_func=lambda x: model_labels[x],
-        index=model_options.index(st.session_state.model_type),
-        key="model_selector",
-        help="Switch between fast and premium AI models"
+    # Create toggle switch HTML
+    toggle_html = f"""
+    <div class="toggle-switch-container">
+        <span class="toggle-label {'active' if not is_premium else ''}">⚡ Fast</span>
+        <label class="toggle-switch">
+            <input type="checkbox" {'checked' if is_premium else ''} 
+                   onchange="document.getElementById('model_toggle_hidden').click();">
+            <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label {'active' if is_premium else ''}">💎 Premium</span>
+    </div>
+    """
+    
+    st.sidebar.markdown(toggle_html, unsafe_allow_html=True)
+    
+    # Hidden checkbox to capture state changes
+    new_is_premium = st.sidebar.checkbox(
+        "Toggle Model",
+        value=is_premium,
+        key="model_toggle_hidden",
+        label_visibility="collapsed"
     )
     
-    # Update model if changed
-    if selected_model != st.session_state.model_type:
+    # Handle model switch
+    if new_is_premium != is_premium:
+        new_model = "premium" if new_is_premium else "fast"
+        
         # Show confirmation if there are existing messages
         if has_messages and 'model_switch_confirmed' not in st.session_state:
             st.sidebar.warning("⚠️ Switching models mid-conversation")
-            if st.sidebar.button("✅ Confirm Switch", key="confirm_model_switch"):
-                st.session_state.model_switch_confirmed = True
-                st.rerun()
-            if st.sidebar.button("❌ Cancel", key="cancel_model_switch"):
-                # Reset the radio button by forcing a rerun
-                st.rerun()
+            col1, col2 = st.sidebar.columns(2)
+            with col1:
+                if st.button("✅ Confirm", key="confirm_model_switch"):
+                    st.session_state.model_switch_confirmed = True
+                    st.rerun()
+            with col2:
+                if st.button("❌ Cancel", key="cancel_model_switch"):
+                    st.rerun()
             return
         
         # Perform the model switch
         old_model = st.session_state.model_type
-        st.session_state.model_type = selected_model
-        st.session_state.model_manager.set_model(selected_model)
+        st.session_state.model_type = new_model
+        st.session_state.model_manager.set_model(new_model)
         
         # Add model switch notification to chat history if there are messages
         if has_messages:
             switch_message = {
                 "role": "system",
-                "content": f"🔄 Model switched from {old_model} to {selected_model}",
+                "content": f"🔄 Model switched from {old_model} to {new_model}",
                 "timestamp": time.time(),
                 "model_switch": True
             }
@@ -525,7 +608,8 @@ def render_model_toggle():
         if 'model_switch_confirmed' in st.session_state:
             del st.session_state.model_switch_confirmed
         
-        st.sidebar.success(f"Switched to {model_labels[selected_model]}")
+        model_name = "Premium Model" if new_is_premium else "Fast Model"
+        st.sidebar.success(f"✅ Switched to {model_name}")
         st.rerun()
     
     # Display current model info and availability
@@ -552,19 +636,149 @@ def render_model_toggle():
             else:
                 st.sidebar.error("No models are currently available. Please check your API configuration.")
 
-def render_document_upload():
-    """Render enhanced document upload interface in sidebar"""
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📚 Document Processing")
+def render_document_upload_inline():
+    """Render document upload interface above chat input with auto-processing"""
+    st.markdown("### 📚 Document Upload")
     
-    # Document upload section
-    uploaded_files = st.sidebar.file_uploader(
-        "Upload documents for RAG",
+    # Document upload section - inline above chat
+    uploaded_files = st.file_uploader(
+        "Upload documents to enhance chat responses",
         accept_multiple_files=True,
         type=['pdf', 'txt', 'md', 'docx'],
-        help="Upload PDF, TXT, MD, or DOCX files to enhance chat responses",
-        key="document_uploader"
+        help="Upload PDF, TXT, MD, or DOCX files. They will be processed automatically.",
+        key="document_uploader_inline"
     )
+    
+    # Auto-process uploaded files
+    if uploaded_files:
+        # Check if these are new files
+        current_files = [f.name for f in uploaded_files]
+        if 'last_processed_files' not in st.session_state:
+            st.session_state.last_processed_files = []
+        
+        new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
+        
+        if new_files:
+            st.info(f"🔄 Auto-processing {len(new_files)} new document(s)...")
+            
+            # Process new files automatically with detailed error handling
+            success_count = 0
+            for uploaded_file in new_files:
+                try:
+                    # Validate file first
+                    if uploaded_file.size > 10 * 1024 * 1024:  # 10MB limit
+                        st.error(f"❌ {uploaded_file.name}: File too large (max 10MB)")
+                        continue
+                    
+                    if uploaded_file.size == 0:
+                        st.error(f"❌ {uploaded_file.name}: File is empty")
+                        continue
+                    
+                    with st.spinner(f"Processing {uploaded_file.name}..."):
+                        # Check if RAG manager is properly initialized
+                        if not hasattr(st.session_state, 'rag_manager') or not st.session_state.rag_manager:
+                            st.error("❌ RAG system not initialized. Please refresh the page.")
+                            break
+                        
+                        # Check if embedding model is available
+                        if not st.session_state.rag_manager.embedding_model:
+                            st.error("❌ Embedding model not available. Please check your configuration.")
+                            break
+                        
+                        # Check database connection
+                        if not st.session_state.rag_manager.db_manager.is_connected():
+                            st.error("❌ Database not connected. Please check your Supabase configuration.")
+                            break
+                        
+                        success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
+                            uploaded_file, 
+                            progress_callback=lambda msg: st.info(f"🔄 {msg}")
+                        )
+                        
+                        if success and chunk_count > 0:
+                            success_count += 1
+                            st.success(f"✅ {uploaded_file.name}: {chunk_count} chunks processed")
+                        else:
+                            st.error(f"❌ {uploaded_file.name}: Processing failed - no chunks created")
+                            
+                except Exception as e:
+                    error_msg = str(e)
+                    if "embedding" in error_msg.lower():
+                        st.error(f"❌ {uploaded_file.name}: Embedding generation failed. Check your API keys.")
+                    elif "database" in error_msg.lower():
+                        st.error(f"❌ {uploaded_file.name}: Database error. Check your Supabase connection.")
+                    elif "document" in error_msg.lower():
+                        st.error(f"❌ {uploaded_file.name}: Document format error. Try a different file.")
+                    else:
+                        st.error(f"❌ {uploaded_file.name}: {error_msg}")
+            
+            # Update processed files list only for successful files
+            if success_count > 0:
+                successful_files = [f.name for f in new_files[:success_count]]
+                st.session_state.last_processed_files.extend(successful_files)
+                st.success(f"🎉 Successfully processed {success_count} document(s)!")
+            else:
+                st.warning("⚠️ No documents were processed successfully. Please check your configuration.")
+    
+    # Show current document status and system health
+    try:
+        stats = st.session_state.rag_manager.get_document_stats()
+        if stats['total_chunks'] > 0:
+            st.info(f"📚 **{stats['total_chunks']} document chunks** ready for search")
+        
+        # System health check
+        if st.button("🔍 Check System Status", help="Check if all systems are working"):
+            with st.expander("System Status", expanded=True):
+                # Check RAG manager
+                if hasattr(st.session_state, 'rag_manager') and st.session_state.rag_manager:
+                    st.success("✅ RAG Manager: Initialized")
+                    
+                    # Check embedding model
+                    if st.session_state.rag_manager.embedding_model:
+                        st.success("✅ Embedding Model: Available")
+                    else:
+                        st.error("❌ Embedding Model: Not available")
+                        st.info("💡 Install sentence-transformers or set OPENAI_API_KEY")
+                    
+                    # Check database
+                    if st.session_state.rag_manager.db_manager.is_connected():
+                        st.success("✅ Database: Connected")
+                        
+                        # Test database schema
+                        if st.session_state.rag_manager.db_manager.check_schema_exists():
+                            st.success("✅ Database Schema: Ready")
+                        else:
+                            st.error("❌ Database Schema: Missing")
+                            st.info("💡 Run the SQL schema from simple_chatbot_schema.sql")
+                    else:
+                        st.error("❌ Database: Not connected")
+                        st.info("💡 Check your Supabase URL and API key")
+                else:
+                    st.error("❌ RAG Manager: Not initialized")
+    
+    except Exception as e:
+        st.error(f"Error checking document status: {str(e)}")
+    
+    return uploaded_files
+
+def render_document_upload():
+    """Legacy sidebar document upload - now simplified"""
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📚 Document Status")
+    
+    # Show document statistics only
+    stats = st.session_state.rag_manager.get_document_stats()
+    if stats['total_chunks'] > 0:
+        st.sidebar.success(f"📄 {stats['total_chunks']} chunks from {stats['unique_documents']} documents")
+        
+        # Clear documents option
+        if st.sidebar.button("🗑️ Clear All Documents", help="Remove all stored document chunks"):
+            if clear_all_documents():
+                st.sidebar.success("All documents cleared!")
+                st.rerun()
+    else:
+        st.sidebar.info("No documents uploaded yet")
+        st.sidebar.markdown("*Upload documents above the chat input*")
     
     # Processing options
     if uploaded_files:
@@ -2348,6 +2562,12 @@ def main():
                 if st.button("🗑️ Clear Chat History", key="clear_history_error"):
                     st.session_state.messages = []
                     st.rerun()
+            
+            # Document upload inline (above chat input)
+            try:
+                render_document_upload_inline()
+            except Exception as doc_error:
+                st.error(f"Document upload error: {str(doc_error)}")
             
             # Message input with comprehensive error handling
             try:
