@@ -146,8 +146,12 @@ def render_conversation_sidebar():
 def render_chat_history():
     """Render chat message history using Streamlit's native chat interface"""
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
+        if message["role"] == "assistant":
+            with st.chat_message("assistant", avatar="PharmGPT.png"):
+                st.write(message["content"])
+        else:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
 
 def process_user_message(user_input: str):
     """Process user message and generate AI response with RAG integration"""
@@ -235,7 +239,7 @@ def main():
             with st.chat_message("user"):
                 st.write(prompt)
             
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar="PharmGPT.png"):
                 with st.spinner("Thinking..."):
                     process_user_message(prompt)
                     # Display the latest response
