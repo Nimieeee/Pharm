@@ -19,11 +19,9 @@ gatherUsageStats = false
 
 [theme]
 # Default theme settings (users can override)
-primaryColor = "#1f77b4"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f2f6"
-textColor = "#262730"
-font = "sans serif"
+[theme]
+base="dark"
+
 
 [runner]
 # Runner configuration for better performance
