@@ -81,13 +81,26 @@ class SimpleChatbotDB:
             if not self.client:
                 return False
             
-            data = {
-                "content": content,
-                "embedding": embedding,
-                "metadata": metadata,
-                "conversation_id": conversation_id,
-                "user_session_id": user_session_id
-            }
+            # Check if user_session_id column exists
+            schema_updated = self._check_user_session_schema()
+            
+            if schema_updated:
+                # Use full data with user_session_id
+                data = {
+                    "content": content,
+                    "embedding": embedding,
+                    "metadata": metadata,
+                    "conversation_id": conversation_id,
+                    "user_session_id": user_session_id
+                }
+            else:
+                # Use data without user_session_id for old schema
+                data = {
+                    "content": content,
+                    "embedding": embedding,
+                    "metadata": metadata,
+                    "conversation_id": conversation_id
+                }
             
             result = self.client.table("document_chunks").insert(data).execute()
             return len(result.data) > 0
@@ -113,28 +126,59 @@ class SimpleChatbotDB:
             if not self.client:
                 return []
             
-            # Use the match_document_chunks function for vector similarity search
-            # Set a high limit if unlimited is requested
+            # Check if user_session_id schema is updated
+            schema_updated = self._check_user_session_schema()
             search_limit = limit if limit is not None else 1000
             
-            result = self.client.rpc(
-                'match_document_chunks',
-                {
-                    'query_embedding': query_embedding,
-                    'conversation_uuid': conversation_id,
-                    'user_session_uuid': user_session_id,
-                    'match_threshold': threshold,
-                    'match_count': search_limit
-                }
-            ).execute()
-            
-            # Vector search completed
+            if schema_updated:
+                # Use the updated match_document_chunks function with user session isolation
+                result = self.client.rpc(
+                    'match_document_chunks',
+                    {
+                        'query_embedding': query_embedding,
+                        'conversation_uuid': conversation_id,
+                        'user_session_uuid': user_session_id,
+                        'match_threshold': threshold,
+                        'match_count': search_limit
+                    }
+                ).execute()
+            else:
+                # Fallback: use basic vector search without user session isolation
+                # This will search all documents but we'll filter by conversation_id afterward
+                try:
+                    # Try the old function signature first
+                    result = self.client.rpc(
+                        'match_document_chunks',
+                        {
+                            'query_embedding': query_embedding,
+                            'match_threshold': threshold,
+                            'match_count': search_limit
+                        }
+                    ).execute()
+                    
+                    # Filter results by conversation_id manually
+                    if result.data:
+                        filtered_results = []
+                        for chunk in result.data:
+                            # Get the full chunk data to check conversation_id
+                            chunk_result = self.client.table("document_chunks").select(
+                                "id, content, metadata, conversation_id"
+                            ).eq("id", chunk.get("id")).execute()
+                            
+                            if (chunk_result.data and 
+                                chunk_result.data[0].get("conversation_id") == conversation_id):
+                                filtered_results.append(chunk)
+                        
+                        return filtered_results
+                    
+                except Exception:
+                    # If old function doesn't exist, return empty results
+                    return []
             
             return result.data if result.data else []
             
         except Exception as e:
             st.error(f"❌ Error searching document chunks: {str(e)}")
-            # Search error occurred
             return []
     
     def get_chunk_count(self) -> int:
@@ -230,10 +274,19 @@ class SimpleChatbotDB:
             # Set a high limit if unlimited is requested
             search_limit = limit if limit is not None else 1000
             
-            # Get most recent chunks (likely more relevant) for this conversation and user session
-            result = self.client.table("document_chunks").select(
-                "id, content, metadata"
-            ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at", desc=True).limit(search_limit).execute()
+            # Check if user_session_id column exists
+            schema_updated = self._check_user_session_schema()
+            
+            if schema_updated:
+                # Get most recent chunks for this conversation and user session
+                result = self.client.table("document_chunks").select(
+                    "id, content, metadata"
+                ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at", desc=True).limit(search_limit).execute()
+            else:
+                # Fallback: only filter by conversation_id
+                result = self.client.table("document_chunks").select(
+                    "id, content, metadata"
+                ).eq("conversation_id", conversation_id).order("created_at", desc=True).limit(search_limit).execute()
             
             # Format to match similarity search results
             chunks = []
@@ -468,31 +521,67 @@ class SimpleChatbotDB:
             if not self.client:
                 return []
             
-            result = self.client.table("document_chunks").select(
-                "id, content, metadata, created_at, conversation_id, user_session_id"
-            ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at").execute()
+            # Check if user_session_id column exists (schema updated)
+            schema_updated = self._check_user_session_schema()
+            
+            if schema_updated:
+                # Use full isolation with user_session_id
+                result = self.client.table("document_chunks").select(
+                    "id, content, metadata, created_at, conversation_id, user_session_id"
+                ).eq("conversation_id", conversation_id).eq("user_session_id", user_session_id).order("created_at").execute()
+            else:
+                # Fallback: only filter by conversation_id (old schema)
+                result = self.client.table("document_chunks").select(
+                    "id, content, metadata, created_at, conversation_id"
+                ).eq("conversation_id", conversation_id).order("created_at").execute()
             
             # Format to match similarity search results with conversation isolation verification
             chunks = []
             for row in result.data:
-                # Double-check conversation isolation
-                if (row.get("conversation_id") == conversation_id and 
-                    row.get("user_session_id") == user_session_id):
-                    chunks.append({
-                        "id": row.get("id"),
-                        "content": row.get("content"),
-                        "metadata": row.get("metadata"),
-                        "similarity": 0.5,  # Neutral similarity score
-                        "created_at": row.get("created_at"),
-                        "conversation_id": row.get("conversation_id"),
-                        "user_session_id": row.get("user_session_id")
-                    })
+                # For updated schema, double-check both conversation_id and user_session_id
+                if schema_updated:
+                    if (row.get("conversation_id") == conversation_id and 
+                        row.get("user_session_id") == user_session_id):
+                        chunks.append({
+                            "id": row.get("id"),
+                            "content": row.get("content"),
+                            "metadata": row.get("metadata"),
+                            "similarity": 0.5,  # Neutral similarity score
+                            "created_at": row.get("created_at"),
+                            "conversation_id": row.get("conversation_id"),
+                            "user_session_id": row.get("user_session_id")
+                        })
+                else:
+                    # For old schema, only check conversation_id
+                    if row.get("conversation_id") == conversation_id:
+                        chunks.append({
+                            "id": row.get("id"),
+                            "content": row.get("content"),
+                            "metadata": row.get("metadata"),
+                            "similarity": 0.5,  # Neutral similarity score
+                            "created_at": row.get("created_at"),
+                            "conversation_id": row.get("conversation_id"),
+                            "user_session_id": user_session_id  # Set it for consistency
+                        })
             
             return chunks
             
         except Exception as e:
             st.error(f"❌ Error getting all conversation chunks: {str(e)}")
             return []
+    
+    def _check_user_session_schema(self) -> bool:
+        """Check if user_session_id column exists in document_chunks table"""
+        try:
+            if not self.client:
+                return False
+            
+            # Try to select user_session_id column
+            result = self.client.table("document_chunks").select("user_session_id").limit(1).execute()
+            return True  # If this works, the column exists
+            
+        except Exception:
+            return False  # Column doesn't exist
 
 
 # Convenience function to get database instance

@@ -48,26 +48,103 @@ class RAGManager:
 
     
     def _initialize_embeddings(self):
-        """Initialize embedding model"""
+        """Initialize embedding model - prioritize SentenceTransformers"""
         try:
-            # Try to use OpenAI embeddings if available
-            openai_api_key = os.getenv("OPENAI_API_KEY")
-            if openai_api_key:
-                self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
-            else:
-                # Fallback to sentence transformers
-                self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            # Primary: Use SentenceTransformers with PyTorch fix
+            self._initialize_sentence_transformers()
+            
+            # Only try OpenAI if SentenceTransformers failed and API key is available
+            if not self.embedding_model:
+                openai_api_key = os.getenv("OPENAI_API_KEY")
+                if openai_api_key:
+                    try:
+                        self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
+                        st.info("✅ Using OpenAI embeddings as fallback")
+                    except Exception as openai_e:
+                        st.warning(f"OpenAI embeddings also failed: {str(openai_e)}")
                 
         except Exception as e:
             st.error(f"Error initializing embeddings: {str(e)}")
-            # Fallback to sentence transformers with better error handling
+            self.embedding_model = None
+    
+    def _initialize_sentence_transformers(self):
+        """Initialize sentence transformers with PyTorch tensor fix"""
+        import torch
+        
+        # Fix for PyTorch meta tensor issue
+        strategies = [
+            # Strategy 1: Force CPU and disable meta device
+            lambda: self._create_sentence_transformer_safe('all-MiniLM-L6-v2', device='cpu'),
+            
+            # Strategy 2: With explicit torch settings
+            lambda: self._create_sentence_transformer_with_torch_fix('all-MiniLM-L6-v2'),
+            
+            # Strategy 3: Alternative model path
+            lambda: self._create_sentence_transformer_safe('sentence-transformers/all-MiniLM-L6-v2', device='cpu'),
+            
+            # Strategy 4: Different model entirely
+            lambda: self._create_sentence_transformer_safe('all-MiniLM-L12-v2', device='cpu'),
+        ]
+        
+        for i, strategy in enumerate(strategies, 1):
             try:
-                # Try to initialize with explicit device mapping
-                self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-            except Exception as fallback_e:
-                st.error(f"Fallback embedding initialization failed: {str(fallback_e)}")
-                st.warning("⚠️ Embedding model initialization failed. Document processing may not work properly.")
-                self.embedding_model = None
+                self.embedding_model = strategy()
+                st.success(f"✅ SentenceTransformer initialized successfully (method {i})")
+                return
+            except Exception as e:
+                error_msg = str(e)
+                if i < len(strategies):
+                    # Only show brief error for intermediate failures
+                    pass
+                else:
+                    st.error(f"SentenceTransformer initialization failed: {error_msg}")
+        
+        # If all strategies fail, set to None
+        self.embedding_model = None
+        st.warning("⚠️ SentenceTransformer initialization failed. Try updating: pip install --upgrade sentence-transformers torch")
+    
+    def _create_sentence_transformer_safe(self, model_name: str, device: str = 'cpu'):
+        """Create SentenceTransformer with safe tensor handling"""
+        import torch
+        
+        # Set torch to avoid meta tensors
+        torch.set_default_device(device)
+        
+        # Create model with explicit device
+        model = SentenceTransformer(model_name, device=device)
+        
+        # Ensure all parameters are on the correct device
+        model = model.to(device)
+        
+        return model
+    
+    def _create_sentence_transformer_with_torch_fix(self, model_name: str):
+        """Create SentenceTransformer with PyTorch tensor fix"""
+        import torch
+        
+        # Temporarily disable meta device usage
+        original_device = torch.get_default_device() if hasattr(torch, 'get_default_device') else None
+        
+        try:
+            # Force CPU as default device
+            if hasattr(torch, 'set_default_device'):
+                torch.set_default_device('cpu')
+            
+            # Create model
+            model = SentenceTransformer(model_name, device='cpu')
+            
+            # Explicitly move all parameters to CPU using to_empty() if available
+            for param in model.parameters():
+                if param.is_meta:
+                    # Use to_empty() for meta tensors
+                    param.data = torch.empty_like(param, device='cpu')
+            
+            return model
+            
+        finally:
+            # Restore original device setting
+            if original_device and hasattr(torch, 'set_default_device'):
+                torch.set_default_device(original_device)
         
 
         
@@ -275,9 +352,10 @@ class RAGManager:
     def _process_and_store_chunk(self, chunk: Document, filename: str, conversation_id: str, user_session_id: str) -> bool:
         """Process chunk and store in database"""
         try:
-            # Generate embedding
+            # Generate embedding (required for proper vector search)
             embedding = self._generate_embedding(chunk.page_content)
             if not embedding:
+                # Skip this chunk if we can't generate embeddings
                 return False
             
             # Prepare metadata
@@ -297,18 +375,20 @@ class RAGManager:
             )
             
         except Exception as e:
-            st.error(f"Error processing chunk: {str(e)}")
+            # Only show error once per session to avoid spam
+            if not hasattr(st.session_state, 'chunk_processing_error_shown'):
+                st.error(f"Error processing chunk: {str(e)}")
+                st.session_state.chunk_processing_error_shown = True
             return False
     
     def _generate_embedding(self, text: str) -> Optional[List[float]]:
         """Generate embedding for text with detailed error handling"""
         try:
             if not self.embedding_model:
-                st.error("Embedding model not initialized. Check your configuration.")
+                # Don't show error repeatedly - just return None silently
                 return None
             
             if not text or not text.strip():
-                st.warning("Cannot generate embedding for empty text")
                 return None
             
             if hasattr(self.embedding_model, 'embed_query'):
@@ -319,15 +399,17 @@ class RAGManager:
                 embedding = self.embedding_model.encode(text).tolist()
             
             if not embedding or len(embedding) == 0:
-                st.error("Generated embedding is empty")
                 return None
             
             return embedding
             
         except Exception as e:
-            st.error(f"Error generating embedding: {str(e)}")
-            if "api" in str(e).lower():
-                st.info("💡 Check your OpenAI API key or try using sentence-transformers")
+            # Only show error once per session to avoid spam
+            if not hasattr(st.session_state, 'embedding_error_shown'):
+                st.error(f"Error generating embedding: {str(e)}")
+                if "api" in str(e).lower():
+                    st.info("💡 Check your OpenAI API key or try using sentence-transformers")
+                st.session_state.embedding_error_shown = True
             return None
     
     def search_relevant_context(self, query: str, conversation_id: str, user_session_id: str, max_chunks: int = None, include_document_overview: bool = False, unlimited_context: bool = False) -> str:
@@ -349,7 +431,9 @@ class RAGManager:
             # Generate query embedding
             query_embedding = self._generate_embedding(query)
             if not query_embedding:
-                return ""
+                # If no embeddings available, return all available context
+                st.warning("⚠️ Vector search not available, returning all document context")
+                return self.get_all_document_context(conversation_id, user_session_id)
             
             # Search for similar chunks - use unlimited if requested
             search_limit = 1000 if unlimited_context or max_chunks is None else (max_chunks or 10)
@@ -482,6 +566,8 @@ class RAGManager:
         except Exception as e:
             st.error(f"Error searching context: {str(e)}")
             return ""
+    
+
     
     def get_all_document_context(self, conversation_id: str, user_session_id: str) -> str:
         """
@@ -674,3 +760,12 @@ class RAGManager:
             'total_files': 0,
             'processed_files': 0
         })
+    
+    def get_embedding_status(self) -> Dict[str, Any]:
+        """Get embedding model status for diagnostics"""
+        return {
+            'model_available': self.embedding_model is not None,
+            'model_type': type(self.embedding_model).__name__ if self.embedding_model else 'None',
+            'is_sentence_transformer': 'SentenceTransformer' in type(self.embedding_model).__name__ if self.embedding_model else False,
+            'search_method': 'Vector similarity search' if self.embedding_model else 'No embeddings available'
+        }

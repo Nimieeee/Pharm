@@ -103,6 +103,11 @@ def initialize_session_state():
     
     # Force refresh of RAGManager if version mismatch (cache issue fix)
     if 'rag_manager' not in st.session_state or not hasattr(st.session_state.rag_manager, 'VERSION'):
+        # Clear any previous embedding errors to allow retry
+        if hasattr(st.session_state, 'embedding_error_shown'):
+            del st.session_state.embedding_error_shown
+        if hasattr(st.session_state, 'chunk_processing_error_shown'):
+            del st.session_state.chunk_processing_error_shown
         st.session_state.rag_manager = RAGManager()
     
     if 'db_manager' not in st.session_state:
@@ -210,13 +215,18 @@ def check_conversation_isolation():
             schema_updated = False
         
         if not schema_updated:
-            st.error("❌ **Conversation Isolation Issue Found**")
+            st.error("❌ **CRITICAL: Conversation Isolation Not Working**")
             st.markdown("""
-            **Problem:** Documents from one conversation are appearing in other conversations.
+            **🚨 PROBLEM:** Documents uploaded in one conversation are appearing in ALL conversations.
             
-            **Cause:** The database schema is missing user session isolation columns.
+            **📋 CAUSE:** Your database schema is missing the `user_session_id` columns needed for proper isolation.
             
-            **Solution:** Run the user session schema update in your Supabase database.
+            **⚠️ IMPACT:** 
+            - Documents leak between conversations
+            - Privacy and context mixing issues
+            - Incorrect AI responses with wrong context
+            
+            **✅ SOLUTION:** Run the schema update below in your Supabase database.
             """)
             
             # Show the SQL to run
@@ -264,6 +274,16 @@ def check_conversation_isolation():
                     st.markdown("### 📊 Document Distribution by Conversation:")
                     for conv_id, count in conversations.items():
                         st.write(f"- Conversation `{conv_id[:8]}...`: {count} documents")
+                    
+                    # Show embedding status
+                    embedding_status = st.session_state.rag_manager.get_embedding_status()
+                    st.markdown("### 🔧 Embedding Model Status:")
+                    if embedding_status['model_available']:
+                        model_type = "SentenceTransformer" if embedding_status['is_sentence_transformer'] else embedding_status['model_type']
+                        st.success(f"✅ {model_type} - {embedding_status['search_method']}")
+                    else:
+                        st.error(f"❌ {embedding_status['search_method']}")
+                        st.info("💡 Fix with: pip install --upgrade sentence-transformers torch")
                         
                 else:
                     st.info("📄 No documents found in database")
@@ -420,6 +440,14 @@ def main():
         
         # Main content
         render_header()
+        
+        # Check for schema isolation issue and show warning banner
+        try:
+            schema_updated = st.session_state.db_manager._check_user_session_schema()
+            if not schema_updated:
+                st.error("🚨 **CONVERSATION ISOLATION NOT WORKING** - Documents will appear in all conversations until you update your database schema. Click 'Check Conversation Isolation' below for fix instructions.")
+        except Exception:
+            pass  # Don't break the app if check fails
         
         # Document upload
         uploaded_files = st.file_uploader(
