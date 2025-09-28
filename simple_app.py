@@ -322,7 +322,7 @@ def main():
             with st.chat_message("user"):
                 st.write(prompt)
             
-            # Generate and display streaming assistant response
+            # Generate and display assistant response
             with st.chat_message("assistant", avatar="PharmGPT.png"):
                 try:
                     # Get RAG context if available
@@ -341,48 +341,72 @@ def main():
                     if context_chunks:
                         context = "\n\n".join([chunk.get('content', '') for chunk in context_chunks])
                     
-                    # Generate streaming response
-                    stream = st.session_state.model_manager.generate_response(
-                        message=prompt,
-                        context=context,
-                        stream=True
-                    )
-                    
-                    # Handle streaming response
-                    if hasattr(stream, '__iter__'):
-                        # Use st.write_stream for real-time streaming
+                    # Try streaming first, fallback to non-streaming
+                    response = None
+                    try:
+                        # Generate streaming response
+                        stream = st.session_state.model_manager.generate_response(
+                            message=prompt,
+                            context=context,
+                            stream=True
+                        )
+                        
+                        # Simple streaming generator
                         def stream_generator():
                             full_response = ""
-                            for chunk in stream:
-                                if hasattr(chunk, 'choices') and chunk.choices:
-                                    delta = chunk.choices[0].delta
-                                    if hasattr(delta, 'content') and delta.content:
-                                        full_response += delta.content
-                                        yield delta.content
+                            try:
+                                for chunk in stream:
+                                    if hasattr(chunk, 'choices') and chunk.choices and len(chunk.choices) > 0:
+                                        delta = chunk.choices[0].delta
+                                        if hasattr(delta, 'content') and delta.content:
+                                            content = delta.content
+                                            full_response += content
+                                            yield content
+                                    elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'content'):
+                                        # Alternative structure
+                                        content = chunk.delta.content
+                                        if content:
+                                            full_response += content
+                                            yield content
+                            except Exception as stream_error:
+                                # If streaming fails, yield error message
+                                error_msg = f"Streaming error: {str(stream_error)}"
+                                yield error_msg
+                                full_response = error_msg
+                            
                             return full_response
                         
                         # Display streaming response
                         response = st.write_stream(stream_generator())
                         
-                        # Add complete response to conversation
-                        if response:
-                            st.session_state.conversation_manager.add_message_to_current_conversation(
-                                role="assistant",
-                                content=response,
-                                timestamp=time.time(),
-                                context_used=len(context_chunks) > 0,
-                                context_chunks=len(context_chunks)
-                            )
-                    else:
-                        # Fallback to non-streaming
-                        response = str(stream)
+                    except Exception as streaming_error:
+                        # Fallback to non-streaming if streaming fails
+                        st.info("Streaming failed, using standard response...")
+                        response = st.session_state.model_manager.generate_response(
+                            message=prompt,
+                            context=context,
+                            stream=False
+                        )
                         st.write(response)
+                    
+                    # Add response to conversation if we got one
+                    if response and response.strip():
                         st.session_state.conversation_manager.add_message_to_current_conversation(
                             role="assistant",
                             content=response,
                             timestamp=time.time(),
                             context_used=len(context_chunks) > 0,
                             context_chunks=len(context_chunks)
+                        )
+                    else:
+                        # If no response, show error
+                        error_response = "I apologize, but I couldn't generate a response. Please try again."
+                        st.write(error_response)
+                        st.session_state.conversation_manager.add_message_to_current_conversation(
+                            role="assistant",
+                            content=error_response,
+                            timestamp=time.time(),
+                            error=True
                         )
                         
                 except Exception as e:
