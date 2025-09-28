@@ -27,7 +27,7 @@ class MistralModel:
     
     def __init__(self):
         self.client = None
-        self.model_name = "mistral-small-latest"
+        self.model_name = "mistral-medium-latest"
         self.default_system_prompt = pharmacology_system_prompt
         self._initialize()
     
