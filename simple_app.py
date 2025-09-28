@@ -295,6 +295,21 @@ def main():
         # Sidebar components
         render_conversation_sidebar()
         
+        # Model status check in sidebar
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 🤖 Model Status")
+        try:
+            if hasattr(st.session_state, 'model_manager') and st.session_state.model_manager:
+                if st.session_state.model_manager.is_model_available():
+                    st.sidebar.success("✅ AI Model Ready")
+                else:
+                    st.sidebar.error("❌ AI Model Not Available")
+                    st.sidebar.info("Check MISTRAL_API_KEY")
+            else:
+                st.sidebar.error("❌ Model Manager Not Initialized")
+        except Exception as e:
+            st.sidebar.error(f"❌ Model Status Error: {str(e)}")
+        
         # Main content
         render_header()
         
@@ -341,53 +356,44 @@ def main():
                     if context_chunks:
                         context = "\n\n".join([chunk.get('content', '') for chunk in context_chunks])
                     
-                    # Try streaming first, fallback to non-streaming
+                    # Check if model manager is available
+                    if not hasattr(st.session_state, 'model_manager') or not st.session_state.model_manager:
+                        st.error("❌ Model manager not initialized")
+                        return
+                    
+                    # Check if model is available
+                    if not st.session_state.model_manager.is_model_available():
+                        st.error("❌ AI model not available. Please check your API key configuration.")
+                        st.info("💡 Make sure MISTRAL_API_KEY is set in your environment or Streamlit secrets")
+                        return
+                    
+                    # Try non-streaming first for reliability
                     response = None
-                    try:
-                        # Generate streaming response
-                        stream = st.session_state.model_manager.generate_response(
-                            message=prompt,
-                            context=context,
-                            stream=True
-                        )
-                        
-                        # Simple streaming generator
-                        def stream_generator():
-                            full_response = ""
-                            try:
-                                for chunk in stream:
-                                    if hasattr(chunk, 'choices') and chunk.choices and len(chunk.choices) > 0:
-                                        delta = chunk.choices[0].delta
-                                        if hasattr(delta, 'content') and delta.content:
-                                            content = delta.content
-                                            full_response += content
-                                            yield content
-                                    elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'content'):
-                                        # Alternative structure
-                                        content = chunk.delta.content
-                                        if content:
-                                            full_response += content
-                                            yield content
-                            except Exception as stream_error:
-                                # If streaming fails, yield error message
-                                error_msg = f"Streaming error: {str(stream_error)}"
-                                yield error_msg
-                                full_response = error_msg
+                    with st.spinner("Generating response..."):
+                        try:
+                            response = st.session_state.model_manager.generate_response(
+                                message=prompt,
+                                context=context,
+                                stream=False
+                            )
                             
-                            return full_response
-                        
-                        # Display streaming response
-                        response = st.write_stream(stream_generator())
-                        
-                    except Exception as streaming_error:
-                        # Fallback to non-streaming if streaming fails
-                        st.info("Streaming failed, using standard response...")
-                        response = st.session_state.model_manager.generate_response(
-                            message=prompt,
-                            context=context,
-                            stream=False
-                        )
-                        st.write(response)
+                            # Check if response is valid
+                            if not response or not response.strip():
+                                st.error("❌ Empty response from AI model")
+                                return
+                            
+                            # Check for API error messages
+                            if "API error" in response or "error:" in response.lower():
+                                st.error(f"❌ {response}")
+                                return
+                            
+                            # Display the response
+                            st.write(response)
+                            
+                        except Exception as generation_error:
+                            st.error(f"❌ Error generating response: {str(generation_error)}")
+                            response = f"I apologize, but I encountered an error: {str(generation_error)}"
+                            st.write(response)
                     
                     # Add response to conversation if we got one
                     if response and response.strip():
