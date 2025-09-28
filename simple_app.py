@@ -203,10 +203,10 @@ def render_chat_history():
             with st.chat_message(message["role"]):
                 st.write(message["content"])
 
-def process_user_message(user_input: str):
-    """Process user message and generate AI response with RAG integration"""
+def process_user_message_streaming(user_input: str):
+    """Process user message and generate streaming AI response with RAG integration"""
     if not user_input.strip():
-        return
+        return ""
     
     # Add user message to chat
     st.session_state.conversation_manager.add_message_to_current_conversation(
@@ -215,7 +215,7 @@ def process_user_message(user_input: str):
         timestamp=time.time()
     )
     
-    # Generate AI response
+    # Generate AI response with streaming
     try:
         # Get RAG context if available
         context_chunks = []
@@ -233,21 +233,45 @@ def process_user_message(user_input: str):
         if context_chunks:
             context = "\n\n".join([chunk.get('content', '') for chunk in context_chunks])
         
-        # Generate response
-        response = st.session_state.model_manager.generate_response(
+        # Generate streaming response
+        stream = st.session_state.model_manager.generate_response(
             message=user_input,
             context=context,
-            stream=False
+            stream=True
         )
         
-        # Add AI response to chat
-        st.session_state.conversation_manager.add_message_to_current_conversation(
-            role="assistant",
-            content=response,
-            timestamp=time.time(),
-            context_used=len(context_chunks) > 0,
-            context_chunks=len(context_chunks)
-        )
+        # Handle streaming response
+        if hasattr(stream, '__iter__'):
+            # Stream is iterable (Mistral streaming response)
+            full_response = ""
+            for chunk in stream:
+                if hasattr(chunk, 'choices') and chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if hasattr(delta, 'content') and delta.content:
+                        full_response += delta.content
+                        yield delta.content
+            
+            # Add complete response to chat after streaming
+            if full_response:
+                st.session_state.conversation_manager.add_message_to_current_conversation(
+                    role="assistant",
+                    content=full_response,
+                    timestamp=time.time(),
+                    context_used=len(context_chunks) > 0,
+                    context_chunks=len(context_chunks)
+                )
+            return full_response
+        else:
+            # Fallback to non-streaming if stream object is not iterable
+            response = str(stream)
+            st.session_state.conversation_manager.add_message_to_current_conversation(
+                role="assistant",
+                content=response,
+                timestamp=time.time(),
+                context_used=len(context_chunks) > 0,
+                context_chunks=len(context_chunks)
+            )
+            return response
         
     except Exception as e:
         error_response = f"I apologize, but I encountered an error: {str(e)}"
@@ -257,6 +281,7 @@ def process_user_message(user_input: str):
             timestamp=time.time(),
             error=True
         )
+        return error_response
 
 # ----------------------------
 # Main Application
@@ -286,17 +311,89 @@ def main():
         
         # Chat input
         if prompt := st.chat_input("Ask me anything about pharmacology..."):
+            # Add user message to chat
+            st.session_state.conversation_manager.add_message_to_current_conversation(
+                role="user",
+                content=prompt,
+                timestamp=time.time()
+            )
+            
+            # Display user message
             with st.chat_message("user"):
                 st.write(prompt)
             
+            # Generate and display streaming assistant response
             with st.chat_message("assistant", avatar="PharmGPT.png"):
-                with st.spinner("Thinking..."):
-                    process_user_message(prompt)
-                    # Display the latest response
-                    if st.session_state.messages:
-                        latest_message = st.session_state.messages[-1]
-                        if latest_message["role"] == "assistant":
-                            st.write(latest_message["content"])
+                try:
+                    # Get RAG context if available
+                    context_chunks = []
+                    try:
+                        context_chunks = st.session_state.rag_manager.search_documents(
+                            prompt,
+                            conversation_id=st.session_state.current_conversation_id,
+                            user_session_id=st.session_state.user_session_id
+                        )
+                    except Exception:
+                        pass  # Continue without RAG if it fails
+                    
+                    # Convert context chunks to context string
+                    context = None
+                    if context_chunks:
+                        context = "\n\n".join([chunk.get('content', '') for chunk in context_chunks])
+                    
+                    # Generate streaming response
+                    stream = st.session_state.model_manager.generate_response(
+                        message=prompt,
+                        context=context,
+                        stream=True
+                    )
+                    
+                    # Handle streaming response
+                    if hasattr(stream, '__iter__'):
+                        # Use st.write_stream for real-time streaming
+                        def stream_generator():
+                            full_response = ""
+                            for chunk in stream:
+                                if hasattr(chunk, 'choices') and chunk.choices:
+                                    delta = chunk.choices[0].delta
+                                    if hasattr(delta, 'content') and delta.content:
+                                        full_response += delta.content
+                                        yield delta.content
+                            return full_response
+                        
+                        # Display streaming response
+                        response = st.write_stream(stream_generator())
+                        
+                        # Add complete response to conversation
+                        if response:
+                            st.session_state.conversation_manager.add_message_to_current_conversation(
+                                role="assistant",
+                                content=response,
+                                timestamp=time.time(),
+                                context_used=len(context_chunks) > 0,
+                                context_chunks=len(context_chunks)
+                            )
+                    else:
+                        # Fallback to non-streaming
+                        response = str(stream)
+                        st.write(response)
+                        st.session_state.conversation_manager.add_message_to_current_conversation(
+                            role="assistant",
+                            content=response,
+                            timestamp=time.time(),
+                            context_used=len(context_chunks) > 0,
+                            context_chunks=len(context_chunks)
+                        )
+                        
+                except Exception as e:
+                    error_response = f"I apologize, but I encountered an error: {str(e)}"
+                    st.write(error_response)
+                    st.session_state.conversation_manager.add_message_to_current_conversation(
+                        role="assistant",
+                        content=error_response,
+                        timestamp=time.time(),
+                        error=True
+                    )
             
             st.rerun()
             
