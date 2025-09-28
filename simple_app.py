@@ -142,6 +142,56 @@ def render_conversation_sidebar():
         st.rerun()
     
     st.sidebar.markdown("---")
+    
+    # Load and display conversations
+    try:
+        st.session_state.conversation_manager.load_conversations()
+        conversations = st.session_state.conversations
+        
+        if not conversations:
+            st.sidebar.info("No conversations yet. Create your first one!")
+            return
+        
+        # Current conversation indicator
+        current_id = st.session_state.current_conversation_id
+        current_title = st.session_state.conversation_manager.get_current_conversation_title()
+        
+        st.sidebar.markdown(f"**Current:** {current_title}")
+        st.sidebar.markdown("---")
+        
+        # List all conversations
+        for conv in conversations:
+            is_current = conv['id'] == current_id
+            
+            # Create columns for conversation item
+            col1, col2 = st.sidebar.columns([3, 1])
+            
+            with col1:
+                # Conversation button
+                button_label = f"{'🔵' if is_current else '⚪'} {conv['title']}"
+                if st.button(button_label, key=f"conv_{conv['id']}", use_container_width=True):
+                    if not is_current:
+                        st.session_state.conversation_manager.switch_conversation(conv['id'])
+                        st.rerun()
+            
+            with col2:
+                # Delete button (only for non-current conversations or if multiple exist)
+                if len(conversations) > 1:
+                    if st.button("🗑️", key=f"del_{conv['id']}", help="Delete conversation"):
+                        if st.session_state.conversation_manager.delete_conversation(conv['id']):
+                            st.rerun()
+            
+            # Show conversation stats for current conversation
+            if is_current:
+                try:
+                    stats = st.session_state.conversation_manager.get_conversation_stats(conv['id'])
+                    st.sidebar.caption(f"📝 {stats.get('message_count', 0)} messages • 📄 {stats.get('document_count', 0)} docs")
+                except Exception:
+                    pass  # Skip stats if there's an error
+                    
+    except Exception as e:
+        st.sidebar.error(f"Error loading conversations: {str(e)}")
+        st.sidebar.info("Using temporary conversation mode")
 
 def render_chat_history():
     """Render chat message history using Streamlit's native chat interface"""
