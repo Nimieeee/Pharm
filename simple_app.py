@@ -329,17 +329,11 @@ def main():
                                 continue
                             
                             # Process the file
-                            st.write(f"Debug - Processing {uploaded_file.name}...")
-                            st.write(f"Debug - Conversation ID: {st.session_state.current_conversation_id}")
-                            st.write(f"Debug - User Session ID: {st.session_state.user_session_id}")
-                            
                             success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
                                 uploaded_file,
                                 conversation_id=st.session_state.current_conversation_id,
                                 user_session_id=st.session_state.user_session_id
                             )
-                            
-                            st.write(f"Debug - Processing result: success={success}, chunks={chunk_count}")
                             
                             if success and chunk_count > 0:
                                 st.success(f"✅ Processed {uploaded_file.name} → {chunk_count} chunks")
@@ -376,19 +370,12 @@ def main():
                     # Get RAG context if available
                     context = None
                     try:
-                        st.write("Debug - Searching for document context...")
                         # Get ALL document content for unlimited context
                         context = st.session_state.rag_manager.get_all_document_context(
                             conversation_id=st.session_state.current_conversation_id,
                             user_session_id=st.session_state.user_session_id
                         )
-                        st.write(f"Debug - Context length: {len(context) if context else 0} characters")
-                        if context and context.strip():
-                            st.write(f"Debug - Context preview: {context[:200]}...")
-                        else:
-                            st.write("Debug - No context found")
                     except Exception as e:
-                        st.write(f"Debug - RAG search error: {str(e)}")
                         context = None
                     
                     # Check if model manager is available
@@ -412,10 +399,7 @@ def main():
                                 stream=False
                             )
                             
-                            # Debug: Show what we got
-                            st.write(f"Debug - Response type: {type(response)}")
-                            st.write(f"Debug - Response length: {len(str(response)) if response else 0}")
-                            st.write(f"Debug - Response preview: {str(response)[:100] if response else 'None'}")
+                            # Response generated successfully
                             
                             # Validate response
                             if not response:
