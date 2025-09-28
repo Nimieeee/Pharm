@@ -300,7 +300,7 @@ def main():
         
         # Document upload
         uploaded_files = st.file_uploader(
-            "📄 Upload documents for context",
+            "📄 Upload documents",
             accept_multiple_files=True,
             type=['pdf', 'txt', 'md', 'docx'],
             help="Upload documents to enhance AI responses with relevant context"
@@ -316,7 +316,24 @@ def main():
             new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
             
             if new_files:
-                with st.spinner(f"Processing {len(new_files)} document(s)..."):
+                # Custom loading indicator for document processing
+                progress_placeholder = st.empty()
+                progress_placeholder.markdown(f"""
+                <div style="text-align: center; padding: 20px;">
+                    <div style="display: inline-block; animation: spin 1s linear infinite;">
+                        📄
+                    </div>
+                    <p style="margin-top: 10px; color: #666;">Processing {len(new_files)} document(s)...</p>
+                </div>
+                <style>
+                @keyframes spin {{
+                    0% {{ transform: rotate(0deg); }}
+                    100% {{ transform: rotate(360deg); }}
+                }}
+                </style>
+                """, unsafe_allow_html=True)
+                
+                try:
                     for uploaded_file in new_files:
                         try:
                             # Basic file validation
@@ -343,6 +360,10 @@ def main():
                                 
                         except Exception as e:
                             st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
+            
+                finally:
+                    # Clear the progress indicator
+                    progress_placeholder.empty()
             
             # Show document stats
             if st.session_state.last_processed_files:
@@ -391,39 +412,58 @@ def main():
                     
                     # Generate response (non-streaming for reliability)
                     response = None
-                    with st.spinner("Generating response..."):
-                        try:
-                            response = st.session_state.model_manager.generate_response(
-                                message=prompt,
-                                context=context,
-                                stream=False
-                            )
-                            
-                            # Response generated successfully
-                            
-                            # Validate response
-                            if not response:
-                                st.error("❌ No response from AI model (None)")
-                                return
-                            
-                            if not str(response).strip():
-                                st.error("❌ Empty response from AI model (empty string)")
-                                return
-                            
-                            # Check for API error messages
-                            response_str = str(response)
-                            if "API error" in response_str or "error:" in response_str.lower():
-                                st.error(f"❌ API Error: {response_str}")
-                                return
-                            
-                            # Display the response
-                            st.write(response_str)
-                            response = response_str
-                            
-                        except Exception as generation_error:
-                            st.error(f"❌ Error generating response: {str(generation_error)}")
-                            response = f"I apologize, but I encountered an error: {str(generation_error)}"
-                            st.write(response)
+                    
+                    # Custom loading indicator for AI response
+                    thinking_placeholder = st.empty()
+                    thinking_placeholder.markdown("""
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="display: inline-block; animation: pulse 1.5s ease-in-out infinite;">
+                            🧠
+                        </div>
+                        <p style="margin-top: 10px; color: #666;">PharmGPT is thinking...</p>
+                    </div>
+                    <style>
+                    @keyframes pulse {{
+                        0%, 100% {{ opacity: 0.4; transform: scale(1); }}
+                        50% {{ opacity: 1; transform: scale(1.1); }}
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
+                    
+                    try:
+                        response = st.session_state.model_manager.generate_response(
+                            message=prompt,
+                            context=context,
+                            stream=False
+                        )
+                        
+                        # Validate response
+                        if not response:
+                            st.error("❌ No response from AI model (None)")
+                            return
+                        
+                        if not str(response).strip():
+                            st.error("❌ Empty response from AI model (empty string)")
+                            return
+                        
+                        # Check for API error messages
+                        response_str = str(response)
+                        if "API error" in response_str or "error:" in response_str.lower():
+                            st.error(f"❌ API Error: {response_str}")
+                            return
+                        
+                        # Display the response
+                        st.write(response_str)
+                        response = response_str
+                        
+                    except Exception as generation_error:
+                        st.error(f"❌ Error generating response: {str(generation_error)}")
+                        response = f"I apologize, but I encountered an error: {str(generation_error)}"
+                        st.write(response)
+                    
+                    finally:
+                        # Clear the thinking indicator
+                        thinking_placeholder.empty()
                     
                     # Add response to conversation if we got one
                     if response and response.strip():
