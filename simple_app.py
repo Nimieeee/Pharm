@@ -394,72 +394,44 @@ def main():
                         st.info("💡 Make sure MISTRAL_API_KEY is set in your environment or Streamlit secrets")
                         return
                     
-                    # Try streaming first, fallback to non-streaming
+                    # Generate response (non-streaming for reliability)
                     response = None
-                    try:
-                        # Generate streaming response
-                        stream = st.session_state.model_manager.generate_response(
-                            message=prompt,
-                            context=context,
-                            stream=True
-                        )
-                        
-                        # Create streaming generator
-                        def stream_generator():
-                            full_response = ""
-                            try:
-                                for chunk in stream:
-                                    if hasattr(chunk, 'choices') and chunk.choices and len(chunk.choices) > 0:
-                                        delta = chunk.choices[0].delta
-                                        if hasattr(delta, 'content') and delta.content:
-                                            content = delta.content
-                                            full_response += content
-                                            yield content
-                                    elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'content'):
-                                        # Alternative structure
-                                        content = chunk.delta.content
-                                        if content:
-                                            full_response += content
-                                            yield content
-                            except Exception as stream_error:
-                                # If streaming fails, try non-streaming
-                                fallback_response = st.session_state.model_manager.generate_response(
-                                    message=prompt,
-                                    context=context,
-                                    stream=False
-                                )
-                                yield fallback_response
-                                full_response = fallback_response
+                    with st.spinner("Generating response..."):
+                        try:
+                            response = st.session_state.model_manager.generate_response(
+                                message=prompt,
+                                context=context,
+                                stream=False
+                            )
                             
-                            return full_response
-                        
-                        # Display streaming response
-                        response = st.write_stream(stream_generator())
-                        
-                    except Exception as streaming_error:
-                        # Fallback to non-streaming if streaming completely fails
-                        with st.spinner("Generating response..."):
-                            try:
-                                response = st.session_state.model_manager.generate_response(
-                                    message=prompt,
-                                    context=context,
-                                    stream=False
-                                )
-                                st.write(response)
-                            except Exception as generation_error:
-                                st.error(f"❌ Error generating response: {str(generation_error)}")
-                                response = f"I apologize, but I encountered an error: {str(generation_error)}"
-                                st.write(response)
-                    
-                    # Validate response
-                    if not response or not response.strip():
-                        st.error("❌ Empty response from AI model")
-                        return
-                    
-                    # Check for API error messages
-                    if "API error" in response or "error:" in response.lower():
-                        st.error(f"❌ {response}")
-                        return
+                            # Debug: Show what we got
+                            st.write(f"Debug - Response type: {type(response)}")
+                            st.write(f"Debug - Response length: {len(str(response)) if response else 0}")
+                            st.write(f"Debug - Response preview: {str(response)[:100] if response else 'None'}")
+                            
+                            # Validate response
+                            if not response:
+                                st.error("❌ No response from AI model (None)")
+                                return
+                            
+                            if not str(response).strip():
+                                st.error("❌ Empty response from AI model (empty string)")
+                                return
+                            
+                            # Check for API error messages
+                            response_str = str(response)
+                            if "API error" in response_str or "error:" in response_str.lower():
+                                st.error(f"❌ API Error: {response_str}")
+                                return
+                            
+                            # Display the response
+                            st.write(response_str)
+                            response = response_str
+                            
+                        except Exception as generation_error:
+                            st.error(f"❌ Error generating response: {str(generation_error)}")
+                            response = f"I apologize, but I encountered an error: {str(generation_error)}"
+                            st.write(response)
                     
                     # Add response to conversation if we got one
                     if response and response.strip():
