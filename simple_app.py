@@ -316,19 +316,65 @@ def main():
             new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
             
             if new_files:
-                # Custom loading indicator for document processing
+                # Advanced loading indicator for document processing
                 progress_placeholder = st.empty()
                 progress_placeholder.markdown(f"""
                 <div style="text-align: center; padding: 20px;">
-                    <div style="display: inline-block; animation: spin 1s linear infinite;">
-                        📄
-                    </div>
-                    <p style="margin-top: 10px; color: #666;">Processing {len(new_files)} document(s)...</p>
+                    <div class="loader"></div>
+                    <p style="margin-top: 20px; color: #666; font-weight: 500;">Processing {len(new_files)} document(s)...</p>
                 </div>
                 <style>
-                @keyframes spin {{
-                    0% {{ transform: rotate(0deg); }}
-                    100% {{ transform: rotate(360deg); }}
+                .loader {{
+                    width: 48px;
+                    height: 48px;
+                    position: relative;
+                    margin: 0 auto;
+                }}
+                .loader::before, .loader::after {{
+                    content: '';
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 48em;
+                    height: 48em;
+                    background-image:
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
+                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0);
+                    background-position: 0em -18em, 0em 18em, 18em 0em, -18em 0em,
+                                        13em -13em, -13em -13em, 13em 13em, -13em 13em;
+                    background-repeat: no-repeat;
+                    font-size: 0.5px;
+                    border-radius: 50%;
+                    animation: blast 1s ease-in infinite;
+                }}
+                .loader::after {{
+                    font-size: 1px;
+                    background: #8B5CF6;
+                    animation: bounce 1s ease-in infinite;
+                }}
+                @keyframes bounce {{
+                    0%, 100% {{ font-size: 0.75px }}
+                    50% {{ font-size: 1.5px }}
+                }}
+                @keyframes blast {{
+                    0%, 40% {{
+                        font-size: 0.5px;
+                    }}
+                    70% {{
+                        opacity: 1;
+                        font-size: 4px;
+                    }}
+                    100% {{
+                        font-size: 6px;
+                        opacity: 0;
+                    }}
                 }}
                 </style>
                 """, unsafe_allow_html=True)
@@ -413,19 +459,65 @@ def main():
                     # Generate response (non-streaming for reliability)
                     response = None
                     
-                    # Custom loading indicator for AI response
+                    # Advanced loading indicator for AI response
                     thinking_placeholder = st.empty()
                     thinking_placeholder.markdown("""
                     <div style="text-align: center; padding: 20px;">
-                        <div style="display: inline-block; animation: pulse 1.5s ease-in-out infinite;">
-                            🧠
-                        </div>
-                        <p style="margin-top: 10px; color: #666;">PharmGPT is thinking...</p>
+                        <div class="ai-loader"></div>
+                        <p style="margin-top: 20px; color: #666; font-weight: 500;">PharmGPT is thinking...</p>
                     </div>
                     <style>
-                    @keyframes pulse {{
-                        0%, 100% {{ opacity: 0.4; transform: scale(1); }}
-                        50% {{ opacity: 1; transform: scale(1.1); }}
+                    .ai-loader {{
+                        width: 48px;
+                        height: 48px;
+                        position: relative;
+                        margin: 0 auto;
+                    }}
+                    .ai-loader::before, .ai-loader::after {{
+                        content: '';
+                        position: absolute;
+                        left: 50%;
+                        top: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 48em;
+                        height: 48em;
+                        background-image:
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
+                            radial-gradient(circle 10px, #A855F7 100%, transparent 0);
+                        background-position: 0em -18em, 0em 18em, 18em 0em, -18em 0em,
+                                            13em -13em, -13em -13em, 13em 13em, -13em 13em;
+                        background-repeat: no-repeat;
+                        font-size: 0.5px;
+                        border-radius: 50%;
+                        animation: ai-blast 1.2s ease-in infinite;
+                    }}
+                    .ai-loader::after {{
+                        font-size: 1px;
+                        background: #A855F7;
+                        animation: ai-bounce 1.2s ease-in infinite;
+                    }}
+                    @keyframes ai-bounce {{
+                        0%, 100% {{ font-size: 0.75px }}
+                        50% {{ font-size: 1.5px }}
+                    }}
+                    @keyframes ai-blast {{
+                        0%, 40% {{
+                            font-size: 0.5px;
+                        }}
+                        70% {{
+                            opacity: 1;
+                            font-size: 4px;
+                        }}
+                        100% {{
+                            font-size: 6px;
+                            opacity: 0;
+                        }}
                     }}
                     </style>
                     """, unsafe_allow_html=True)
