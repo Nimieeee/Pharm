@@ -445,7 +445,6 @@ def main():
                     """, unsafe_allow_html=True)
                     
                     # Add a small delay to ensure spinner is visible
-                    import time
                     time.sleep(0.5)
                     
                     try:
