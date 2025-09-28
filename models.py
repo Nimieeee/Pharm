@@ -1,6 +1,6 @@
 """
 AI Model Management for Simple Chatbot
-Handles Mistral Small model integration with RAG context and system prompts from prompts.py
+Handles Mistral Medium model integration with RAG context and system prompts from prompts.py
 """
 
 import os
@@ -23,7 +23,7 @@ except ImportError:
 
 
 class MistralModel:
-    """Mistral Small model implementation with enhanced RAG integration"""
+    """Mistral Medium model implementation with enhanced RAG integration"""
     
     def __init__(self):
         self.client = None
@@ -54,7 +54,7 @@ class MistralModel:
             st.error(f"Error initializing Mistral client: {str(e)}")
     
     def generate_response(self, message: str, context: Optional[str] = None, system_prompt: Optional[str] = None, stream: bool = False):
-        """Generate response using Mistral Small with RAG context"""
+        """Generate response using Mistral Medium with RAG context"""
         if not self.is_available():
             return "Mistral model is not available. Please check API key configuration."
         
@@ -149,7 +149,7 @@ class MistralModel:
     def get_model_info(self) -> Dict[str, Any]:
         """Get Mistral model information"""
         return {
-            "name": "mistral-small-latest",
+            "name": "mistral-medium-latest",
             "model": self.model_name,
             "type": "mistral",
             "description": "Advanced AI model optimized for detailed pharmaceutical and scientific responses",
@@ -170,7 +170,7 @@ class ModelManager:
     
     def generate_response(self, message: str, context: Optional[str] = None, stream: bool = False):
         """
-        Generate AI response using Mistral Small with RAG context
+        Generate AI response using Mistral Medium with RAG context
         
         Args:
             message: User message
