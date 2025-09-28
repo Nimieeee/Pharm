@@ -306,6 +306,48 @@ def main():
             help="Upload documents to enhance AI responses with relevant context"
         )
         
+        # Process uploaded documents
+        if uploaded_files:
+            # Check if these are new files
+            current_files = [f.name for f in uploaded_files]
+            if 'last_processed_files' not in st.session_state:
+                st.session_state.last_processed_files = []
+            
+            new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
+            
+            if new_files:
+                with st.spinner(f"Processing {len(new_files)} document(s)..."):
+                    for uploaded_file in new_files:
+                        try:
+                            # Basic file validation
+                            if uploaded_file.size > 50 * 1024 * 1024:  # 50MB limit
+                                st.warning(f"⚠️ File {uploaded_file.name} is too large (>50MB)")
+                                continue
+                            
+                            if uploaded_file.size == 0:
+                                st.warning(f"⚠️ File {uploaded_file.name} is empty")
+                                continue
+                            
+                            # Process the file
+                            success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
+                                uploaded_file,
+                                conversation_id=st.session_state.current_conversation_id,
+                                user_session_id=st.session_state.user_session_id
+                            )
+                            
+                            if success and chunk_count > 0:
+                                st.success(f"✅ Processed {uploaded_file.name} → {chunk_count} chunks")
+                                st.session_state.last_processed_files.append(uploaded_file.name)
+                            else:
+                                st.error(f"❌ Failed to process {uploaded_file.name}")
+                                
+                        except Exception as e:
+                            st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
+            
+            # Show document stats
+            if st.session_state.last_processed_files:
+                st.info(f"📄 {len(st.session_state.last_processed_files)} document(s) ready for context")
+        
         # Chat interface
         render_chat_history()
         
@@ -352,33 +394,72 @@ def main():
                         st.info("💡 Make sure MISTRAL_API_KEY is set in your environment or Streamlit secrets")
                         return
                     
-                    # Try non-streaming first for reliability
+                    # Try streaming first, fallback to non-streaming
                     response = None
-                    with st.spinner("Generating response..."):
-                        try:
-                            response = st.session_state.model_manager.generate_response(
-                                message=prompt,
-                                context=context,
-                                stream=False
-                            )
+                    try:
+                        # Generate streaming response
+                        stream = st.session_state.model_manager.generate_response(
+                            message=prompt,
+                            context=context,
+                            stream=True
+                        )
+                        
+                        # Create streaming generator
+                        def stream_generator():
+                            full_response = ""
+                            try:
+                                for chunk in stream:
+                                    if hasattr(chunk, 'choices') and chunk.choices and len(chunk.choices) > 0:
+                                        delta = chunk.choices[0].delta
+                                        if hasattr(delta, 'content') and delta.content:
+                                            content = delta.content
+                                            full_response += content
+                                            yield content
+                                    elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'content'):
+                                        # Alternative structure
+                                        content = chunk.delta.content
+                                        if content:
+                                            full_response += content
+                                            yield content
+                            except Exception as stream_error:
+                                # If streaming fails, try non-streaming
+                                fallback_response = st.session_state.model_manager.generate_response(
+                                    message=prompt,
+                                    context=context,
+                                    stream=False
+                                )
+                                yield fallback_response
+                                full_response = fallback_response
                             
-                            # Check if response is valid
-                            if not response or not response.strip():
-                                st.error("❌ Empty response from AI model")
-                                return
-                            
-                            # Check for API error messages
-                            if "API error" in response or "error:" in response.lower():
-                                st.error(f"❌ {response}")
-                                return
-                            
-                            # Display the response
-                            st.write(response)
-                            
-                        except Exception as generation_error:
-                            st.error(f"❌ Error generating response: {str(generation_error)}")
-                            response = f"I apologize, but I encountered an error: {str(generation_error)}"
-                            st.write(response)
+                            return full_response
+                        
+                        # Display streaming response
+                        response = st.write_stream(stream_generator())
+                        
+                    except Exception as streaming_error:
+                        # Fallback to non-streaming if streaming completely fails
+                        with st.spinner("Generating response..."):
+                            try:
+                                response = st.session_state.model_manager.generate_response(
+                                    message=prompt,
+                                    context=context,
+                                    stream=False
+                                )
+                                st.write(response)
+                            except Exception as generation_error:
+                                st.error(f"❌ Error generating response: {str(generation_error)}")
+                                response = f"I apologize, but I encountered an error: {str(generation_error)}"
+                                st.write(response)
+                    
+                    # Validate response
+                    if not response or not response.strip():
+                        st.error("❌ Empty response from AI model")
+                        return
+                    
+                    # Check for API error messages
+                    if "API error" in response or "error:" in response.lower():
+                        st.error(f"❌ {response}")
+                        return
                     
                     # Add response to conversation if we got one
                     if response and response.strip():
