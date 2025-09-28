@@ -174,10 +174,15 @@ def process_user_message(user_input: str):
         except Exception:
             pass  # Continue without RAG if it fails
         
+        # Convert context chunks to context string
+        context = None
+        if context_chunks:
+            context = "\n\n".join([chunk.get('content', '') for chunk in context_chunks])
+        
         # Generate response
         response = st.session_state.model_manager.generate_response(
             message=user_input,
-            context_chunks=context_chunks,
+            context=context,
             stream=False
         )
         
