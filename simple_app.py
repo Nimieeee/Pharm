@@ -316,65 +316,26 @@ def main():
             new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
             
             if new_files:
-                # Advanced loading indicator for document processing
+                # Simple but visible loading indicator for document processing
                 progress_placeholder = st.empty()
                 progress_placeholder.markdown(f"""
                 <div style="text-align: center; padding: 20px;">
-                    <div class="loader"></div>
+                    <div class="simple-loader"></div>
                     <p style="margin-top: 20px; color: #666; font-weight: 500;">Processing {len(new_files)} document(s)...</p>
                 </div>
                 <style>
-                .loader {{
-                    width: 48px;
-                    height: 48px;
-                    position: relative;
+                .simple-loader {{
+                    width: 40px;
+                    height: 40px;
                     margin: 0 auto;
-                }}
-                .loader::before, .loader::after {{
-                    content: '';
-                    position: absolute;
-                    left: 50%;
-                    top: 50%;
-                    transform: translate(-50%, -50%);
-                    width: 48em;
-                    height: 48em;
-                    background-image:
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0),
-                        radial-gradient(circle 10px, #8B5CF6 100%, transparent 0);
-                    background-position: 0em -18em, 0em 18em, 18em 0em, -18em 0em,
-                                        13em -13em, -13em -13em, 13em 13em, -13em 13em;
-                    background-repeat: no-repeat;
-                    font-size: 0.5px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #8B5CF6;
                     border-radius: 50%;
-                    animation: blast 1s ease-in infinite;
+                    animation: spin 1s linear infinite;
                 }}
-                .loader::after {{
-                    font-size: 1px;
-                    background: #8B5CF6;
-                    animation: bounce 1s ease-in infinite;
-                }}
-                @keyframes bounce {{
-                    0%, 100% {{ font-size: 0.75px }}
-                    50% {{ font-size: 1.5px }}
-                }}
-                @keyframes blast {{
-                    0%, 40% {{
-                        font-size: 0.5px;
-                    }}
-                    70% {{
-                        opacity: 1;
-                        font-size: 4px;
-                    }}
-                    100% {{
-                        font-size: 6px;
-                        opacity: 0;
-                    }}
+                @keyframes spin {{
+                    0% {{ transform: rotate(0deg); }}
+                    100% {{ transform: rotate(360deg); }}
                 }}
                 </style>
                 """, unsafe_allow_html=True)
@@ -459,65 +420,26 @@ def main():
                     # Generate response (non-streaming for reliability)
                     response = None
                     
-                    # Advanced loading indicator for AI response
+                    # Simple but visible loading indicator for AI response
                     thinking_placeholder = st.empty()
                     thinking_placeholder.markdown("""
                     <div style="text-align: center; padding: 20px;">
-                        <div class="ai-loader"></div>
+                        <div class="ai-simple-loader"></div>
                         <p style="margin-top: 20px; color: #666; font-weight: 500;">PharmGPT is thinking...</p>
                     </div>
                     <style>
-                    .ai-loader {{
-                        width: 48px;
-                        height: 48px;
-                        position: relative;
+                    .ai-simple-loader {{
+                        width: 40px;
+                        height: 40px;
                         margin: 0 auto;
-                    }}
-                    .ai-loader::before, .ai-loader::after {{
-                        content: '';
-                        position: absolute;
-                        left: 50%;
-                        top: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 48em;
-                        height: 48em;
-                        background-image:
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0),
-                            radial-gradient(circle 10px, #A855F7 100%, transparent 0);
-                        background-position: 0em -18em, 0em 18em, 18em 0em, -18em 0em,
-                                            13em -13em, -13em -13em, 13em 13em, -13em 13em;
-                        background-repeat: no-repeat;
-                        font-size: 0.5px;
+                        border: 4px solid #f3f3f3;
+                        border-top: 4px solid #A855F7;
                         border-radius: 50%;
-                        animation: ai-blast 1.2s ease-in infinite;
+                        animation: ai-spin 1s linear infinite;
                     }}
-                    .ai-loader::after {{
-                        font-size: 1px;
-                        background: #A855F7;
-                        animation: ai-bounce 1.2s ease-in infinite;
-                    }}
-                    @keyframes ai-bounce {{
-                        0%, 100% {{ font-size: 0.75px }}
-                        50% {{ font-size: 1.5px }}
-                    }}
-                    @keyframes ai-blast {{
-                        0%, 40% {{
-                            font-size: 0.5px;
-                        }}
-                        70% {{
-                            opacity: 1;
-                            font-size: 4px;
-                        }}
-                        100% {{
-                            font-size: 6px;
-                            opacity: 0;
-                        }}
+                    @keyframes ai-spin {{
+                        0% {{ transform: rotate(0deg); }}
+                        100% {{ transform: rotate(360deg); }}
                     }}
                     </style>
                     """, unsafe_allow_html=True)
