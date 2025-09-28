@@ -377,11 +377,10 @@ def main():
                     context = None
                     try:
                         st.write("Debug - Searching for document context...")
-                        context = st.session_state.rag_manager.search_relevant_context(
-                            prompt,
+                        # Get ALL document content for unlimited context
+                        context = st.session_state.rag_manager.get_all_document_context(
                             conversation_id=st.session_state.current_conversation_id,
-                            user_session_id=st.session_state.user_session_id,
-                            max_chunks=5
+                            user_session_id=st.session_state.user_session_id
                         )
                         st.write(f"Debug - Context length: {len(context) if context else 0} characters")
                         if context and context.strip():
