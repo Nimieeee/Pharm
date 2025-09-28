@@ -21,7 +21,7 @@ gatherUsageStats = false
 # Kiro-inspired purplish theme
 base = "dark"
 primaryColor = "#8B5CF6"          # Purple primary (violet-500)
-backgroundColor = "#0F0F23"        # Deep dark blue-purple background
+backgroundColor = "#120a18ff"        # Deep dark blue-purple background
 secondaryBackgroundColor = "#1E1B3A"  # Slightly lighter purple-dark
 textColor = "#E5E7EB"             # Light gray text
 
