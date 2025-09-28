@@ -420,7 +420,7 @@ def main():
                     # Generate response (non-streaming for reliability)
                     response = None
                     
-                    # Simple but visible loading indicator for AI response
+                    # Show loading indicator for AI response
                     thinking_placeholder = st.empty()
                     thinking_placeholder.markdown("""
                     <div style="text-align: center; padding: 20px;">
@@ -428,7 +428,7 @@ def main():
                         <p style="margin-top: 20px; color: #666; font-weight: 500;">PharmGPT is thinking...</p>
                     </div>
                     <style>
-                    .ai-simple-loader {{
+                    .ai-simple-loader {
                         width: 40px;
                         height: 40px;
                         margin: 0 auto;
@@ -436,13 +436,17 @@ def main():
                         border-top: 4px solid #A855F7;
                         border-radius: 50%;
                         animation: ai-spin 1s linear infinite;
-                    }}
-                    @keyframes ai-spin {{
-                        0% {{ transform: rotate(0deg); }}
-                        100% {{ transform: rotate(360deg); }}
-                    }}
+                    }
+                    @keyframes ai-spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
                     </style>
                     """, unsafe_allow_html=True)
+                    
+                    # Add a small delay to ensure spinner is visible
+                    import time
+                    time.sleep(0.5)
                     
                     try:
                         response = st.session_state.model_manager.generate_response(
@@ -476,6 +480,8 @@ def main():
                         st.write(response)
                     
                     finally:
+                        # Ensure spinner is visible for at least 1 second total
+                        time.sleep(0.5)
                         # Clear the thinking indicator
                         thinking_placeholder.empty()
                     
