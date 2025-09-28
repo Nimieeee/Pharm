@@ -447,8 +447,8 @@ def main():
                             role="assistant",
                             content=response,
                             timestamp=time.time(),
-                            context_used=len(context_chunks) > 0,
-                            context_chunks=len(context_chunks)
+                            context_used=bool(context and context.strip()),
+                            context_chunks=len(context.split('\n\n')) if context else 0
                         )
                     else:
                         # If no response, show error
