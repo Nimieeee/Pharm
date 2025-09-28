@@ -295,21 +295,6 @@ def main():
         # Sidebar components
         render_conversation_sidebar()
         
-        # Model status check in sidebar
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### 🤖 Model Status")
-        try:
-            if hasattr(st.session_state, 'model_manager') and st.session_state.model_manager:
-                if st.session_state.model_manager.is_model_available():
-                    st.sidebar.success("✅ AI Model Ready")
-                else:
-                    st.sidebar.error("❌ AI Model Not Available")
-                    st.sidebar.info("Check MISTRAL_API_KEY")
-            else:
-                st.sidebar.error("❌ Model Manager Not Initialized")
-        except Exception as e:
-            st.sidebar.error(f"❌ Model Status Error: {str(e)}")
-        
         # Main content
         render_header()
         
