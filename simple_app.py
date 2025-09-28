@@ -213,8 +213,7 @@ def render_theme_toggle():
     """, unsafe_allow_html=True)
     
     # Create invisible button to handle the theme change
-    if st.sidebar.button("🔄", key="theme_toggle_hidden", help=f"Switch to {next_theme} mode", 
-                        label_visibility="collapsed"):
+    if st.sidebar.button("🔄", key="theme_toggle_hidden", help=f"Switch to {next_theme} mode"):
         st.session_state.theme_override = next_theme
         st.rerun()
     
