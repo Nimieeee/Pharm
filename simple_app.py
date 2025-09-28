@@ -57,47 +57,401 @@ st.set_page_config(
     initial_sidebar_state=st.session_state.get("sidebar_state", "expanded")
 )
 
-# Force dark mode permanently
-if "theme" not in st.session_state:
-    st.session_state.theme = "dark"
+# Initialize theme state - respects system settings by default
+if "theme_override" not in st.session_state:
+    st.session_state.theme_override = "system"  # "system", "light", or "dark"
 
 # ----------------------------
-# Dark Mode Styling
+# Theme System with Light/Dark Support
 # ----------------------------
-def apply_dark_mode_styling():
-    """Apply comprehensive dark mode styling across the application with enhanced error handling"""
-    st.markdown("""
+
+def render_theme_toggle():
+    """Render animated theme toggle button in sidebar"""
+    st.sidebar.markdown("### 🎨 Theme")
+    
+    # Get current theme for button state
+    current_theme = st.session_state.theme_override
+    
+    # Determine button state and next theme
+    if current_theme == "system":
+        button_state = "auto"
+        next_theme = "light"
+        tooltip = "System (Auto)"
+    elif current_theme == "light":
+        button_state = "light"
+        next_theme = "dark"
+        tooltip = "Light Mode"
+    else:  # dark
+        button_state = "dark"
+        next_theme = "system"
+        tooltip = "Dark Mode"
+    
+    # Animated theme toggle button with CSS
+    st.sidebar.markdown(f"""
     <style>
-    /* CSS Custom Properties for consistent theming */
-    :root {
-        --primary-color: #4fc3f7;
-        --background-color: #0e1117;
-        --secondary-bg: #262730;
-        --text-color: #ffffff;
-        --accent-color: #ff6b6b;
-        --user-msg-bg: #1e3a8a;
+    .theme-toggle {{
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px auto;
+        background-color: var(--secondary-bg);
+        border: 2px solid var(--border-color);
+    }}
+    
+    .theme-toggle:hover {{
+        background-color: var(--tertiary-bg);
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px var(--shadow-color);
+    }}
+    
+    .sun-and-moon {{
+        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        color: var(--primary-color);
+    }}
+    
+    /* Dark mode state */
+    .theme-toggle[data-theme="dark"] .sun {{
+        transform: scale(1.75);
+    }}
+    
+    .theme-toggle[data-theme="dark"] .sun-beams {{
+        opacity: 0;
+        transform: rotateZ(-25deg);
+    }}
+    
+    .theme-toggle[data-theme="dark"] .moon > circle {{
+        transform: translateX(-7px);
+    }}
+    
+    /* Light mode state */
+    .theme-toggle[data-theme="light"] .sun {{
+        transform: scale(1);
+    }}
+    
+    .theme-toggle[data-theme="light"] .sun-beams {{
+        opacity: 1;
+        transform: rotateZ(0deg);
+    }}
+    
+    .theme-toggle[data-theme="light"] .moon > circle {{
+        transform: translateX(0px);
+    }}
+    
+    /* Auto/System mode state */
+    .theme-toggle[data-theme="auto"] .sun {{
+        transform: scale(1.25);
+    }}
+    
+    .theme-toggle[data-theme="auto"] .sun-beams {{
+        opacity: 0.5;
+        transform: rotateZ(-12deg);
+    }}
+    
+    .theme-toggle[data-theme="auto"] .moon > circle {{
+        transform: translateX(-3px);
+    }}
+    
+    .theme-toggle[data-theme="auto"] {{
+        border-color: var(--accent-color);
+        background-color: var(--primary-color);
+        opacity: 0.8;
+    }}
+    
+    .sun-beams {{
+        stroke-width: 2px;
+        stroke-linecap: round;
+    }}
+    
+    .theme-label {{
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }}
+    </style>
+    
+    <div style="text-align: center;">
+        <button class="theme-toggle" data-theme="{button_state}" title="{tooltip}" onclick="toggleTheme()">
+            <svg class="sun-and-moon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
+                <mask class="moon" id="moon-mask">
+                    <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                    <circle cx="24" cy="10" r="6" fill="black" />
+                </mask>
+                <circle class="sun" cx="12" cy="12" r="6" mask="url(#moon-mask)" fill="currentColor" />
+                <g class="sun-beams" stroke="currentColor">
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </g>
+            </svg>
+        </button>
+        <div class="theme-label">{tooltip}</div>
+    </div>
+    
+    <script>
+    function toggleTheme() {{
+        // This will be handled by Streamlit's rerun mechanism
+        window.parent.postMessage({{
+            type: 'streamlit:setComponentValue',
+            value: '{next_theme}'
+        }}, '*');
+    }}
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Create invisible button to handle the theme change
+    if st.sidebar.button("🔄", key="theme_toggle_hidden", help=f"Switch to {next_theme} mode", 
+                        label_visibility="collapsed"):
+        st.session_state.theme_override = next_theme
+        st.rerun()
+    
+    st.sidebar.markdown("---")
+def apply_kiro_theme_styling():
+    """Apply Kiro-inspired theme styling with light/dark mode support"""
+    
+    # Determine current theme
+    current_theme = st.session_state.theme_override
+    if current_theme == "system":
+        # Let Streamlit handle system detection, but provide fallback
+        is_dark = True  # Default fallback
+    else:
+        is_dark = current_theme == "dark"
+    
+    # Theme-specific CSS variables
+    if is_dark:
+        theme_vars = """
+        --primary-color: #8B5CF6;
+        --background-color: #0F0F23;
+        --secondary-bg: #1E1B3A;
+        --tertiary-bg: #2D2A4A;
+        --text-color: #E5E7EB;
+        --text-secondary: #9CA3AF;
+        --accent-color: #A855F7;
+        --user-msg-bg: #4C1D95;
         --ai-msg-bg: #374151;
-        --border-color: #4b5563;
+        --border-color: #4B5563;
         --shadow-color: rgba(0, 0, 0, 0.4);
-        --success-color: #10b981;
-        --error-color: #ef4444;
-        --warning-color: #f59e0b;
-        --info-color: #3b82f6;
-    }
+        --success-color: #10B981;
+        --error-color: #EF4444;
+        --warning-color: #F59E0B;
+        --info-color: #8B5CF6;
+        """
+    else:
+        theme_vars = """
+        --primary-color: #7C3AED;
+        --background-color: #FEFEFE;
+        --secondary-bg: #F8FAFC;
+        --tertiary-bg: #F1F5F9;
+        --text-color: #1F2937;
+        --text-secondary: #6B7280;
+        --accent-color: #8B5CF6;
+        --user-msg-bg: #EDE9FE;
+        --ai-msg-bg: #F3F4F6;
+        --border-color: #D1D5DB;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+        --success-color: #059669;
+        --error-color: #DC2626;
+        --warning-color: #D97706;
+        --info-color: #7C3AED;
+        """
     
-    /* Force dark mode permanently */
-    [data-testid="stAppViewContainer"] {
+    st.markdown(f"""
+    <style>
+    /* CSS Custom Properties for Kiro-inspired theming */
+    :root {{
+        {theme_vars}
+    }}
+    
+    /* System theme detection support */
+    @media (prefers-color-scheme: dark) {{
+        .system-theme:root {{
+            --primary-color: #8B5CF6;
+            --background-color: #0F0F23;
+            --secondary-bg: #1E1B3A;
+            --tertiary-bg: #2D2A4A;
+            --text-color: #E5E7EB;
+            --text-secondary: #9CA3AF;
+            --accent-color: #A855F7;
+            --user-msg-bg: #4C1D95;
+            --ai-msg-bg: #374151;
+            --border-color: #4B5563;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --success-color: #10B981;
+            --error-color: #EF4444;
+            --warning-color: #F59E0B;
+            --info-color: #8B5CF6;
+        }}
+    }}
+    
+    @media (prefers-color-scheme: light) {{
+        .system-theme:root {{
+            --primary-color: #7C3AED;
+            --background-color: #FEFEFE;
+            --secondary-bg: #F8FAFC;
+            --tertiary-bg: #F1F5F9;
+            --text-color: #1F2937;
+            --text-secondary: #6B7280;
+            --accent-color: #8B5CF6;
+            --user-msg-bg: #EDE9FE;
+            --ai-msg-bg: #F3F4F6;
+            --border-color: #D1D5DB;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --success-color: #059669;
+            --error-color: #DC2626;
+            --warning-color: #D97706;
+            --info-color: #7C3AED;
+        }}
+    }}
+    
+    /* Apply system theme class when needed */
+    {"html { }" if current_theme == "system" else ""}
+    
+    /* Main app styling */
+    [data-testid="stAppViewContainer"] {{
         background-color: var(--background-color) !important;
-    }
+    }}
     
-    [data-testid="stHeader"] {
+    [data-testid="stHeader"] {{
         background-color: var(--background-color) !important;
-    }
+    }}
     
-    /* Main app background with enhanced contrast */
-    .stApp {
+    .stApp {{
         background-color: var(--background-color) !important;
         color: var(--text-color) !important;
+    }}
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {{
+        background-color: var(--secondary-bg) !important;
+    }}
+    
+    [data-testid="stSidebar"] .stSelectbox > div > div {{
+        background-color: var(--tertiary-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }}
+    
+    /* Chat messages */
+    [data-testid="stChatMessage"] {{
+        background-color: var(--secondary-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        margin: 8px 0 !important;
+    }}
+    
+    [data-testid="stChatMessage"][data-testid*="user"] {{
+        background-color: var(--user-msg-bg) !important;
+    }}
+    
+    [data-testid="stChatMessage"][data-testid*="assistant"] {{
+        background-color: var(--ai-msg-bg) !important;
+    }}
+    
+    /* Buttons */
+    .stButton > button {{
+        background-color: var(--primary-color) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+    }}
+    
+    .stButton > button:hover {{
+        background-color: var(--accent-color) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px var(--shadow-color) !important;
+    }}
+    
+    /* Input fields */
+    .stTextInput > div > div > input {{
+        background-color: var(--tertiary-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }}
+    
+    /* Success/Error/Warning messages */
+    .stSuccess {{
+        background-color: var(--success-color) !important;
+        color: white !important;
+    }}
+    
+    .stError {{
+        background-color: var(--error-color) !important;
+        color: white !important;
+    }}
+    
+    .stWarning {{
+        background-color: var(--warning-color) !important;
+        color: white !important;
+    }}
+    
+    .stInfo {{
+        background-color: var(--info-color) !important;
+        color: white !important;
+    }}
+    
+    /* File uploader */
+    [data-testid="stFileUploader"] {{
+        background-color: var(--secondary-bg) !important;
+        border: 2px dashed var(--border-color) !important;
+        border-radius: 12px !important;
+    }}
+    
+    /* Progress bars */
+    .stProgress > div > div {{
+        background-color: var(--primary-color) !important;
+    }}
+    
+    /* Expanders */
+    [data-testid="stExpander"] {{
+        background-color: var(--secondary-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+    }}
+    
+    /* Metrics */
+    [data-testid="metric-container"] {{
+        background-color: var(--secondary-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+    }}
+    
+    /* Custom animations */
+    @keyframes fadeIn {{
+        from {{ opacity: 0; transform: translateY(10px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    
+    .fade-in {{
+        animation: fadeIn 0.3s ease-out !important;
+    }}
+    
+    /* Responsive design */
+    @media (max-width: 768px) {{
+        .stApp {{
+            padding: 1rem !important;
+        }}
+        
+        [data-testid="stSidebar"] {{
+            width: 100% !important;
+        }}
+    }}
+    </style>
+    """, unsafe_allow_html=True)
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     }
     
@@ -2264,9 +2618,9 @@ def main():
                 st.rerun()
             return
         
-        # Apply enhanced dark mode styling with error handling
+        # Apply Kiro theme styling with error handling
         try:
-            apply_dark_mode_styling()
+            apply_kiro_theme_styling()
         except Exception as style_error:
             st.warning(f"⚠️ Styling error: {str(style_error)}")
             # Continue without custom styling
@@ -2324,6 +2678,9 @@ def main():
         
         # Sidebar components with comprehensive error handling
         try:
+            # Render theme toggle first
+            render_theme_toggle()
+            
             # Render conversation management sidebar
             render_conversation_sidebar()
             
