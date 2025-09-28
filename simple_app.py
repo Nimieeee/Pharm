@@ -193,6 +193,129 @@ def render_conversation_sidebar():
         st.sidebar.error(f"Error loading conversations: {str(e)}")
         st.sidebar.info("Using temporary conversation mode")
 
+def check_conversation_isolation():
+    """Check if conversation isolation is working properly"""
+    try:
+        db = st.session_state.db_manager
+        
+        if not db.client:
+            st.error("❌ No database connection available")
+            return
+        
+        # Check if user_session_id column exists
+        try:
+            result = db.client.table("document_chunks").select("user_session_id").limit(1).execute()
+            schema_updated = True
+        except Exception:
+            schema_updated = False
+        
+        if not schema_updated:
+            st.error("❌ **Conversation Isolation Issue Found**")
+            st.markdown("""
+            **Problem:** Documents from one conversation are appearing in other conversations.
+            
+            **Cause:** The database schema is missing user session isolation columns.
+            
+            **Solution:** Run the user session schema update in your Supabase database.
+            """)
+            
+            # Show the SQL to run
+            try:
+                with open('user_session_schema_update.sql', 'r') as f:
+                    sql_content = f.read()
+                    
+                st.markdown("### 🔧 Fix Instructions:")
+                st.markdown("""
+                1. Go to your **Supabase Dashboard**
+                2. Navigate to **SQL Editor**
+                3. Create a new query and paste the SQL below
+                4. Click **Run** to execute
+                5. Restart your Streamlit app
+                """)
+                
+                st.code(sql_content, language='sql')
+                
+            except FileNotFoundError:
+                st.error("❌ user_session_schema_update.sql file not found")
+        else:
+            # Check for documents with improper isolation
+            try:
+                result = db.client.table("document_chunks").select("conversation_id, user_session_id, metadata").execute()
+                
+                if result.data:
+                    # Check for documents with default/missing user_session_id
+                    anonymous_docs = [doc for doc in result.data if doc.get('user_session_id') in [None, 'anonymous']]
+                    total_docs = len(result.data)
+                    
+                    if anonymous_docs:
+                        st.warning(f"⚠️ Found {len(anonymous_docs)} out of {total_docs} documents with default user session")
+                        st.info("💡 These documents might appear in multiple conversations. Consider re-uploading them in specific conversations.")
+                    else:
+                        st.success("✅ All documents have proper conversation isolation!")
+                        
+                    # Show conversation distribution
+                    conversations = {}
+                    for doc in result.data:
+                        conv_id = doc.get('conversation_id', 'unknown')
+                        if conv_id not in conversations:
+                            conversations[conv_id] = 0
+                        conversations[conv_id] += 1
+                    
+                    st.markdown("### 📊 Document Distribution by Conversation:")
+                    for conv_id, count in conversations.items():
+                        st.write(f"- Conversation `{conv_id[:8]}...`: {count} documents")
+                        
+                else:
+                    st.info("📄 No documents found in database")
+                    
+            except Exception as e:
+                st.error(f"❌ Error checking document isolation: {str(e)}")
+                
+    except Exception as e:
+        st.error(f"❌ Error during isolation check: {str(e)}")
+
+def clear_conversation_documents():
+    """Clear all documents from the current conversation"""
+    try:
+        db = st.session_state.db_manager
+        
+        if not db.client:
+            st.error("❌ No database connection available")
+            return
+        
+        # Get current conversation info
+        conv_id = st.session_state.current_conversation_id
+        user_id = st.session_state.user_session_id
+        
+        if not conv_id:
+            st.error("❌ No active conversation")
+            return
+        
+        # Delete all document chunks for this conversation
+        try:
+            result = db.client.table("document_chunks").delete().eq("conversation_id", conv_id).eq("user_session_id", user_id).execute()
+            
+            deleted_count = len(result.data) if result.data else 0
+            
+            if deleted_count > 0:
+                st.success(f"✅ Cleared {deleted_count} document chunks from this conversation")
+                
+                # Clear the processed files lists
+                st.session_state.last_processed_files = []
+                if 'conversation_processed_files' in st.session_state:
+                    st.session_state.conversation_processed_files[conv_id] = []
+                
+                # Force a rerun to update the UI
+                st.rerun()
+            else:
+                st.info("📄 No documents found in this conversation")
+                
+        except Exception as e:
+            st.error(f"❌ Error clearing documents: {str(e)}")
+            
+    except Exception as e:
+        st.error(f"❌ Error during document clearing: {str(e)}")
+
 def render_chat_history():
     """Render chat message history using Streamlit's native chat interface"""
     for message in st.session_state.messages:
@@ -308,12 +431,21 @@ def main():
         
         # Process uploaded documents
         if uploaded_files:
-            # Check if these are new files
+            # Check if these are new files for this conversation
             current_files = [f.name for f in uploaded_files]
             if 'last_processed_files' not in st.session_state:
                 st.session_state.last_processed_files = []
             
-            new_files = [f for f in uploaded_files if f.name not in st.session_state.last_processed_files]
+            # Get conversation-specific processed files
+            conv_id = st.session_state.current_conversation_id
+            if 'conversation_processed_files' not in st.session_state:
+                st.session_state.conversation_processed_files = {}
+            
+            conv_processed_files = st.session_state.conversation_processed_files.get(conv_id, [])
+            
+            # Check against both session and conversation-specific files
+            all_processed = set(st.session_state.last_processed_files + conv_processed_files)
+            new_files = [f for f in uploaded_files if f.name not in all_processed]
             
             if new_files:
                 # Simple but visible loading indicator for document processing
@@ -360,8 +492,18 @@ def main():
                             )
                             
                             if success and chunk_count > 0:
-                                st.success(f"✅ Processed {uploaded_file.name} → {chunk_count} chunks")
-                                st.session_state.last_processed_files.append(uploaded_file.name)
+                                # Only show success message and add to processed files if actually successful
+                                st.success(f"✅ Processed {uploaded_file.name} → {chunk_count} chunks for this conversation")
+                                # Add to conversation-specific processed files
+                                if 'conversation_processed_files' not in st.session_state:
+                                    st.session_state.conversation_processed_files = {}
+                                conv_id = st.session_state.current_conversation_id
+                                if conv_id not in st.session_state.conversation_processed_files:
+                                    st.session_state.conversation_processed_files[conv_id] = []
+                                st.session_state.conversation_processed_files[conv_id].append(uploaded_file.name)
+                                # Also update the legacy list for backward compatibility
+                                if uploaded_file.name not in st.session_state.last_processed_files:
+                                    st.session_state.last_processed_files.append(uploaded_file.name)
                             else:
                                 st.error(f"❌ Failed to process {uploaded_file.name}")
                                 
@@ -372,9 +514,27 @@ def main():
                     # Clear the progress indicator
                     progress_placeholder.empty()
             
-            # Show document stats
-            if st.session_state.last_processed_files:
-                st.info(f"📄 {len(st.session_state.last_processed_files)} document(s) ready for context")
+            # Show document stats only for current conversation
+            try:
+                stats = st.session_state.rag_manager.get_conversation_document_stats(
+                    st.session_state.current_conversation_id,
+                    st.session_state.user_session_id
+                )
+                if stats.get('unique_documents', 0) > 0:
+                    st.info(f"📄 {stats['unique_documents']} document(s) ready for context in this conversation")
+            except Exception:
+                # Fallback to session state if database check fails
+                if st.session_state.last_processed_files:
+                    st.info(f"📄 {len(st.session_state.last_processed_files)} document(s) ready for context")
+            
+            # Conversation management buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔍 Check Conversation Isolation", help="Check if documents are properly isolated between conversations"):
+                    check_conversation_isolation()
+            with col2:
+                if st.button("🗑️ Clear Documents from This Conversation", help="Remove all documents from current conversation"):
+                    clear_conversation_documents()
         
         # Chat interface
         render_chat_history()

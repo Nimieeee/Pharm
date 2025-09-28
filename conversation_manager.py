@@ -45,6 +45,8 @@ class ConversationManager:
                 self.load_conversations()
                 # Switch to new conversation
                 self.switch_conversation(conversation_id)
+                # Clear processed files for new conversation
+                st.session_state.last_processed_files = []
                 return conversation_id
             else:
                 # Creation failed, but don't show error to user
@@ -77,6 +79,11 @@ class ConversationManager:
             
             # Reset processed files for new conversation
             st.session_state.last_processed_files = []
+            
+            # Load conversation-specific processed files
+            if 'conversation_processed_files' in st.session_state:
+                conv_files = st.session_state.conversation_processed_files.get(conversation_id, [])
+                st.session_state.last_processed_files = conv_files.copy()
             
             # Update conversation timestamp
             self.db_manager.update_conversation_timestamp(conversation_id)

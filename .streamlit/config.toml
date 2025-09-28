@@ -7,7 +7,7 @@ showWarningOnDirectExecution = false
 # Server configuration for Streamlit Cloud
 headless = true
 enableXsrfProtection = true
-maxUploadSize = 200
+maxUploadSize = 20
 maxMessageSize = 200
 
 # Port configuration (Streamlit Cloud handles this automatically)
@@ -18,12 +18,8 @@ port = 8501
 gatherUsageStats = false
 
 [theme]
-# Kiro-inspired purplish theme
+# Normal dark theme
 base = "dark"
-primaryColor = "#8B5CF6"          # Purple primary (violet-500)
-backgroundColor = "#120a18ff"        # Deep dark blue-purple background
-secondaryBackgroundColor = "#120a18ff"  # Slightly lighter purple-dark
-textColor = "#E5E7EB"             # Light gray text
 
 
 [runner]
