@@ -31,7 +31,7 @@ except ImportError as e:
 # ----------------------------
 st.set_page_config(
     page_title="PharmGPT",
-    page_icon="logo.png",
+    page_icon="PharmGPT.png",
     layout="wide",
     initial_sidebar_state=st.session_state.get("sidebar_state", "expanded")
 )
@@ -73,12 +73,7 @@ def initialize_session_state():
 
 
 def render_chat_header():
-    """Render the main application header with logo"""
-    # Logo and title section
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.image("logo.png", width=200)
-    
+    """Render the main application header"""
     st.title("🧬 PharmGPT")
     st.markdown("*Your Advanced AI Pharmacology Assistant*")
 
@@ -147,7 +142,7 @@ def render_chat_history():
     """Render chat message history using Streamlit's native chat interface"""
     for message in st.session_state.messages:
         if message["role"] == "assistant":
-            with st.chat_message("assistant", avatar="logo.png"):
+            with st.chat_message("assistant", avatar="PharmGPT.png"):
                 st.write(message["content"])
         else:
             with st.chat_message(message["role"]):
@@ -206,7 +201,7 @@ def main():
                 st.write(prompt)
             
             # Generate and display assistant response
-            with st.chat_message("assistant", avatar="logo.png"):
+            with st.chat_message("assistant", avatar="PharmGPT.png"):
                 with st.spinner("PharmGPT is thinking..."):
                     try:
                         # Get RAG context if available
