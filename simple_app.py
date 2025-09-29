@@ -74,11 +74,51 @@ def initialize_session_state():
 
 def render_chat_header():
     """Render the main application header"""
-    st.title("🧬 PharmGPT")
-    st.markdown("*Your Advanced AI Pharmacology Assistant*")
+    # Title with mode indicator
+    current_mode = st.session_state.model_manager.get_current_mode()
+    mode_emoji = "⚡" if current_mode == "fast" else "🔍"
+    mode_text = "Fast Mode" if current_mode == "fast" else "Detailed Mode"
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.title("🧬 PharmGPT")
+        st.markdown("*Your Advanced AI Pharmacology Assistant*")
+    with col2:
+        st.markdown(f"### {mode_emoji} {mode_text}")
+        st.caption(f"Using {st.session_state.model_manager.model.model_name}")
 
 def render_conversation_sidebar():
     """Render conversation management in sidebar"""
+    # Model Mode Selection
+    st.sidebar.markdown("## ⚡ Model Mode")
+    
+    current_mode = st.session_state.model_manager.get_current_mode()
+    available_modes = st.session_state.model_manager.get_available_modes()
+    
+    # Create mode options for selectbox
+    mode_options = {
+        "fast": "⚡ Fast Mode (Quick responses)",
+        "detailed": "🔍 Detailed Mode (Comprehensive analysis)"
+    }
+    
+    selected_mode = st.sidebar.selectbox(
+        "Choose response mode:",
+        options=["fast", "detailed"],
+        index=0 if current_mode == "fast" else 1,
+        format_func=lambda x: mode_options[x],
+        key="mode_selector"
+    )
+    
+    # Update mode if changed
+    if selected_mode != current_mode:
+        st.session_state.model_manager.set_mode(selected_mode)
+        st.sidebar.success(f"Switched to {mode_options[selected_mode]}")
+    
+    # Show current model info
+    model_info = st.session_state.model_manager.get_model_info()
+    st.sidebar.caption(f"Current model: {model_info.get('model_name', 'Unknown')}")
+    
+    st.sidebar.markdown("---")
     st.sidebar.markdown("## 💬 Conversations")
     
     # New conversation button

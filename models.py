@@ -7,13 +7,15 @@ import os
 from typing import Optional, Dict, Any, List
 import streamlit as st
 
-# Import system prompt from prompts.py
+# Import system prompts from prompts.py
 try:
     import prompts
-    pharmacology_system_prompt = prompts.pharmacology_system_prompt
+    fast_system_prompt = prompts.pharmacology_fast_prompt
+    detailed_system_prompt = prompts.pharmacology_system_prompt
 except (ImportError, AttributeError):
-    # Fallback system prompt if prompts.py is not available
-    pharmacology_system_prompt = """You are PharmGPT, an expert pharmacology assistant. Provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Always provide elaborate and detailed explanations unless specifically asked for brevity."""
+    # Fallback system prompts if prompts.py is not available
+    fast_system_prompt = """You are PharmGPT, an expert pharmacology assistant. Provide clear, accurate, and concise responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Keep responses focused and to the point."""
+    detailed_system_prompt = """You are PharmGPT, an expert pharmacology assistant. Provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Always provide elaborate and detailed explanations unless specifically asked for brevity."""
 
 try:
     from mistralai import Mistral
@@ -23,12 +25,16 @@ except ImportError:
 
 
 class MistralModel:
-    """Mistral Medium model implementation with enhanced RAG integration"""
+    """Mistral model implementation with enhanced RAG integration"""
     
-    def __init__(self):
+    def __init__(self, model_name: str = "mistral-medium-latest"):
         self.client = None
-        self.model_name = "mistral-medium-latest"
-        self.default_system_prompt = pharmacology_system_prompt
+        self.model_name = model_name
+        # Set appropriate system prompt based on model
+        if "small" in model_name:
+            self.default_system_prompt = fast_system_prompt
+        else:
+            self.default_system_prompt = detailed_system_prompt
         self._initialize()
     
     def _initialize(self):
@@ -163,14 +169,39 @@ class ModelManager:
     
     def __init__(self):
         try:
-            self.model = MistralModel()
+            # Initialize with default detailed mode
+            self.current_mode = "detailed"
+            self.models = {
+                "fast": MistralModel("mistral-small-latest"),
+                "detailed": MistralModel("mistral-medium-latest")
+            }
+            self.model = self.models[self.current_mode]
         except Exception as e:
             st.error(f"Error initializing MistralModel: {e}")
             raise
     
+    def set_mode(self, mode: str):
+        """Set the model mode (fast or detailed)"""
+        if mode in self.models:
+            self.current_mode = mode
+            self.model = self.models[mode]
+        else:
+            raise ValueError(f"Invalid mode: {mode}. Available modes: {list(self.models.keys())}")
+    
+    def get_current_mode(self) -> str:
+        """Get the current model mode"""
+        return self.current_mode
+    
+    def get_available_modes(self) -> Dict[str, str]:
+        """Get available modes and their descriptions"""
+        return {
+            "fast": "Fast Mode (mistral-small-latest) - Quick responses",
+            "detailed": "Detailed Mode (mistral-medium-latest) - Comprehensive analysis"
+        }
+    
     def generate_response(self, message: str, context: Optional[str] = None, stream: bool = False):
         """
-        Generate AI response using Mistral Medium with RAG context
+        Generate AI response using current model mode with RAG context
         
         Args:
             message: User message
