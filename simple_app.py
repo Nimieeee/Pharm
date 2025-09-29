@@ -93,9 +93,6 @@ def render_navigation():
                 st.session_state.current_view = 'homepage'
                 st.rerun()
     
-    with col2:
-        st.markdown("<div style='text-align: center; padding: 0.5rem;'><h3>🧬 PharmGPT</h3></div>", 
-                   unsafe_allow_html=True)
     
     # Only show Chat button when in homepage view
     with col3:
