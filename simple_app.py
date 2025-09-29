@@ -1,13 +1,11 @@
 """
 Simple Chatbot Application
-A clean Streamlit chatbot with dark mode, model switching, and RAG functionality
+A clean Streamlit chatbot with navigation, homepage, and chat functionality
 """
 
 import streamlit as st
 from typing import Dict, Any, List, Optional
 import time
-
-# Import our core modules with error handling
 import sys
 import os
 
@@ -16,35 +14,16 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-# System info (hidden in production)
-
+# Import our core modules
 try:
     import models
     from models import ModelManager
-except ImportError as e:
-    st.error(f"Cannot import ModelManager: {e}")
-    st.error(f"Current working directory: {os.getcwd()}")
-    st.error(f"Python path: {sys.path}")
-    st.error(f"Files in current directory: {os.listdir('.')}")
-    st.stop()
-
-try:
     import rag
     from rag import RAGManager
-except ImportError as e:
-    st.error(f"Cannot import RAGManager: {e}")
-    st.stop()
-
-try:
     from conversation_manager import ConversationManager
-except ImportError as e:
-    st.error(f"Cannot import ConversationManager: {e}")
-    st.stop()
-
-try:
     from database import SimpleChatbotDB
 except ImportError as e:
-    st.error(f"Cannot import SimpleChatbotDB: {e}")
+    st.error(f"Cannot import required modules: {e}")
     st.stop()
 
 # ----------------------------
@@ -58,41 +37,14 @@ st.set_page_config(
 )
 
 # ----------------------------
-# Application Components
-# ----------------------------
-
-# Theme toggle function removed - using default Streamlit theme settings
-
-# Kiro theme styling removed - using default Streamlit themes
-
-# ----------------------------
 # Session State Initialization  
 # ----------------------------
-
-def clean_message_content(messages):
-    """Clean up any corrupted message content"""
-    import re
-    cleaned_messages = []
-    
-    for message in messages:
-        if isinstance(message, dict) and 'content' in message:
-            content = message['content']
-            # Remove any HTML div tags that might have been accidentally included
-            content = re.sub(r'<div[^>]*>.*?</div>', '', content, flags=re.DOTALL)
-            # Clean up any other HTML tags
-            content = re.sub(r'<[^>]+>', '', content)
-            
-            # Create cleaned message
-            cleaned_message = message.copy()
-            cleaned_message['content'] = content.strip()
-            cleaned_messages.append(cleaned_message)
-        else:
-            cleaned_messages.append(message)
-    
-    return cleaned_messages
-
 def initialize_session_state():
     """Initialize session state variables with user session isolation"""
+    # Initialize current view (homepage or chat)
+    if 'current_view' not in st.session_state:
+        st.session_state.current_view = 'homepage'
+    
     # Generate unique user session ID for privacy
     if 'user_session_id' not in st.session_state:
         import uuid
@@ -101,13 +53,7 @@ def initialize_session_state():
     if 'model_manager' not in st.session_state:
         st.session_state.model_manager = ModelManager()
     
-    # Force refresh of RAGManager if version mismatch (cache issue fix)
-    if 'rag_manager' not in st.session_state or not hasattr(st.session_state.rag_manager, 'VERSION'):
-        # Clear any previous embedding errors to allow retry
-        if hasattr(st.session_state, 'embedding_error_shown'):
-            del st.session_state.embedding_error_shown
-        if hasattr(st.session_state, 'chunk_processing_error_shown'):
-            del st.session_state.chunk_processing_error_shown
+    if 'rag_manager' not in st.session_state:
         st.session_state.rag_manager = RAGManager()
     
     if 'db_manager' not in st.session_state:
@@ -119,18 +65,45 @@ def initialize_session_state():
             user_session_id=st.session_state.user_session_id
         )
     
-    # Clean up any corrupted messages in session state
-    if 'messages' in st.session_state:
-        st.session_state.messages = clean_message_content(st.session_state.messages)
-    
     # Ensure there's always a current conversation
     st.session_state.conversation_manager.ensure_conversation_exists()
 
 # ----------------------------
 # UI Components
 # ----------------------------
+def render_navigation():
+    """Render navigation bar"""
+    st.markdown("""
+    <style>
+    .nav-container {
+        background: white;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 2rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("🏠 Home", use_container_width=True, 
+                    type="primary" if st.session_state.current_view == 'homepage' else "secondary"):
+            st.session_state.current_view = 'homepage'
+            st.rerun()
+    
+    with col2:
+        st.markdown("<div style='text-align: center; padding: 0.5rem;'><h3>🧬 PharmGPT</h3></div>", 
+                   unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("💬 Chat", use_container_width=True,
+                    type="primary" if st.session_state.current_view == 'chat' else "secondary"):
+            st.session_state.current_view = 'chat'
+            st.rerun()
+
 def render_homepage():
-    """Render an aesthetic homepage when no messages exist"""
+    """Render an aesthetic homepage"""
     # Custom CSS for the homepage
     st.markdown("""
     <style>
@@ -191,29 +164,6 @@ def render_homepage():
     .feature-description {
         color: #666;
         line-height: 1.6;
-    }
-    
-    .stats-container {
-        background: #f8f9fa;
-        padding: 2rem;
-        border-radius: 15px;
-        margin: 2rem 0;
-    }
-    
-    .stat-item {
-        text-align: center;
-        padding: 1rem;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #667eea;
-    }
-    
-    .stat-label {
-        color: #666;
-        font-weight: 500;
     }
     
     .cta-section {
@@ -316,8 +266,8 @@ def render_homepage():
     <div class="quick-start-grid">
         <div class="quick-start-item">
             <span class="quick-start-number">1</span>
-            <strong>Ask Questions</strong><br>
-            Type your pharmacology questions in the chat below
+            <strong>Navigate to Chat</strong><br>
+            Click the "Chat" button in the navigation above
         </div>
         <div class="quick-start-item">
             <span class="quick-start-number">2</span>
@@ -326,13 +276,13 @@ def render_homepage():
         </div>
         <div class="quick-start-item">
             <span class="quick-start-number">3</span>
-            <strong>Get Insights</strong><br>
-            Receive AI-powered analysis with document context
+            <strong>Ask Questions</strong><br>
+            Type your pharmacology questions in the chat
         </div>
         <div class="quick-start-item">
             <span class="quick-start-number">4</span>
-            <strong>Manage Conversations</strong><br>
-            Create multiple conversations for different topics
+            <strong>Get Insights</strong><br>
+            Receive AI-powered analysis with document context
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -355,23 +305,22 @@ def render_homepage():
     st.markdown("""
     <div class="cta-section">
         <h3 style="margin-top: 0;">Ready to explore pharmacology with AI?</h3>
-        <p style="font-size: 1.1rem; margin-bottom: 0;">
-            Start by typing a question in the chat input below, or upload a document to begin your analysis.
+        <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
+            Click the "Chat" button above to start your conversation with PharmGPT.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-def render_header():
-    """Render the application header"""
-    # Only show minimal header when there are messages
-    if st.session_state.messages:
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.title("💬 PharmGPT")
-            st.markdown("*Your Pharmacology Assistant*")
+def render_chat_header():
+    """Render the chat page header"""
+    st.title("💬 PharmGPT Chat")
+    st.markdown("*Ask me anything about pharmacology...*")
 
 def render_conversation_sidebar():
-    """Render conversation management in sidebar"""
+    """Render conversation management in sidebar - only show in chat view"""
+    if st.session_state.current_view != 'chat':
+        return
+        
     st.sidebar.markdown("## 💬 Conversations")
     
     # New conversation button
@@ -431,7 +380,6 @@ def render_conversation_sidebar():
         st.sidebar.error(f"Error loading conversations: {str(e)}")
         st.sidebar.info("Using temporary conversation mode")
 
-
 def render_chat_history():
     """Render chat message history using Streamlit's native chat interface"""
     for message in st.session_state.messages:
@@ -442,344 +390,111 @@ def render_chat_history():
             with st.chat_message(message["role"]):
                 st.write(message["content"])
 
-def process_user_message_streaming(user_input: str):
-    """Process user message and generate streaming AI response with RAG integration"""
-    if not user_input.strip():
-        return ""
-    
-    # Add user message to chat
-    st.session_state.conversation_manager.add_message_to_current_conversation(
-        role="user",
-        content=user_input,
-        timestamp=time.time()
-    )
-    
-    # Generate AI response with streaming
-    try:
-        # Get RAG context if available
-        context_chunks = []
-        try:
-            context_chunks = st.session_state.rag_manager.search_documents(
-                user_input,
-                conversation_id=st.session_state.current_conversation_id,
-                user_session_id=st.session_state.user_session_id
-            )
-        except Exception:
-            pass  # Continue without RAG if it fails
-        
-        # Convert context chunks to context string
-        context = None
-        if context_chunks:
-            context = "\n\n".join([chunk.get('content', '') for chunk in context_chunks])
-        
-        # Generate streaming response
-        stream = st.session_state.model_manager.generate_response(
-            message=user_input,
-            context=context,
-            stream=True
-        )
-        
-        # Handle streaming response
-        if hasattr(stream, '__iter__'):
-            # Stream is iterable (Mistral streaming response)
-            full_response = ""
-            for chunk in stream:
-                if hasattr(chunk, 'choices') and chunk.choices:
-                    delta = chunk.choices[0].delta
-                    if hasattr(delta, 'content') and delta.content:
-                        full_response += delta.content
-                        yield delta.content
-            
-            # Add complete response to chat after streaming
-            if full_response:
-                st.session_state.conversation_manager.add_message_to_current_conversation(
-                    role="assistant",
-                    content=full_response,
-                    timestamp=time.time(),
-                    context_used=len(context_chunks) > 0,
-                    context_chunks=len(context_chunks)
-                )
-            return full_response
-        else:
-            # Fallback to non-streaming if stream object is not iterable
-            response = str(stream)
-            st.session_state.conversation_manager.add_message_to_current_conversation(
-                role="assistant",
-                content=response,
-                timestamp=time.time(),
-                context_used=len(context_chunks) > 0,
-                context_chunks=len(context_chunks)
-            )
-            return response
-        
-    except Exception as e:
-        error_response = f"I apologize, but I encountered an error: {str(e)}"
-        st.session_state.conversation_manager.add_message_to_current_conversation(
-            role="assistant",
-            content=error_response,
-            timestamp=time.time(),
-            error=True
-        )
-        return error_response
-
 # ----------------------------
 # Main Application
 # ----------------------------
 def main():
-    """Main application function with comprehensive error handling and enhanced UI"""
+    """Main application function with navigation"""
     try:
         # Initialize session state
         initialize_session_state()
         
-        # Sidebar components
+        # Navigation
+        render_navigation()
+        
+        # Sidebar components (only for chat view)
         render_conversation_sidebar()
         
-        # Main content - show homepage if no messages, otherwise show chat
-        if not st.session_state.messages:
+        # Main content based on current view
+        if st.session_state.current_view == 'homepage':
             render_homepage()
-        else:
-            render_header()
             
-            # Check for schema isolation issue and show warning banner
-            try:
-                schema_updated = st.session_state.db_manager._check_user_session_schema()
-                if not schema_updated:
-                    st.error("🚨 **CONVERSATION ISOLATION NOT WORKING** - Documents will appear in all conversations until you update your database schema. Click 'Check Conversation Isolation' below for fix instructions.")
-            except Exception:
-                pass  # Don't break the app if check fails
+        elif st.session_state.current_view == 'chat':
+            render_chat_header()
             
             # Chat interface
             render_chat_history()
-        
-        # Document upload (above chat input)
-        uploaded_files = st.file_uploader(
-            "📄 Upload documents",
-            accept_multiple_files=True,
-            type=['pdf', 'txt', 'md', 'docx'],
-            help="Upload documents to enhance AI responses with relevant context"
-        )
-        
-        # Process uploaded documents
-        if uploaded_files:
-            # Check if these are new files for this conversation
-            current_files = [f.name for f in uploaded_files]
-            if 'last_processed_files' not in st.session_state:
-                st.session_state.last_processed_files = []
             
-            # Get conversation-specific processed files
-            conv_id = st.session_state.current_conversation_id
-            if 'conversation_processed_files' not in st.session_state:
-                st.session_state.conversation_processed_files = {}
+            # Document upload
+            uploaded_files = st.file_uploader(
+                "📄 Upload documents",
+                accept_multiple_files=True,
+                type=['pdf', 'txt', 'md', 'docx'],
+                help="Upload documents to enhance AI responses with relevant context"
+            )
             
-            conv_processed_files = st.session_state.conversation_processed_files.get(conv_id, [])
-            
-            # Check against both session and conversation-specific files
-            all_processed = set(st.session_state.last_processed_files + conv_processed_files)
-            new_files = [f for f in uploaded_files if f.name not in all_processed]
-            
-            if new_files:
-                # Simple but visible loading indicator for document processing
-                progress_placeholder = st.empty()
-                progress_placeholder.markdown(f"""
-                <div style="text-align: center; padding: 20px;">
-                    <div class="simple-loader"></div>
-                    <p style="margin-top: 20px; color: #666; font-weight: 500;">Processing {len(new_files)} document(s)...</p>
-                </div>
-                <style>
-                .simple-loader {{
-                    width: 40px;
-                    height: 40px;
-                    margin: 0 auto;
-                    border: 4px solid #f3f3f3;
-                    border-top: 4px solid #8B5CF6;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }}
-                @keyframes spin {{
-                    0% {{ transform: rotate(0deg); }}
-                    100% {{ transform: rotate(360deg); }}
-                }}
-                </style>
-                """, unsafe_allow_html=True)
-                
-                try:
-                    for uploaded_file in new_files:
+            # Process uploaded documents
+            if uploaded_files:
+                with st.spinner("Processing documents..."):
+                    for uploaded_file in uploaded_files:
                         try:
-                            # Basic file validation
-                            if uploaded_file.size > 50 * 1024 * 1024:  # 50MB limit
-                                st.warning(f"⚠️ File {uploaded_file.name} is too large (>50MB)")
-                                continue
-                            
-                            if uploaded_file.size == 0:
-                                st.warning(f"⚠️ File {uploaded_file.name} is empty")
-                                continue
-                            
-                            # Process the file
                             success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
                                 uploaded_file,
                                 conversation_id=st.session_state.current_conversation_id,
                                 user_session_id=st.session_state.user_session_id
                             )
-                            
-                            if success and chunk_count > 0:
-                                # Add to conversation-specific processed files (no success message)
-                                if 'conversation_processed_files' not in st.session_state:
-                                    st.session_state.conversation_processed_files = {}
-                                conv_id = st.session_state.current_conversation_id
-                                if conv_id not in st.session_state.conversation_processed_files:
-                                    st.session_state.conversation_processed_files[conv_id] = []
-                                st.session_state.conversation_processed_files[conv_id].append(uploaded_file.name)
-                                # Also update the legacy list for backward compatibility
-                                if uploaded_file.name not in st.session_state.last_processed_files:
-                                    st.session_state.last_processed_files.append(uploaded_file.name)
-                            else:
-                                st.error(f"❌ Failed to process {uploaded_file.name}")
-                                
+                            if success:
+                                st.success(f"✅ Processed {uploaded_file.name}")
                         except Exception as e:
                             st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
             
-                finally:
-                    # Clear the progress indicator
-                    progress_placeholder.empty()
-        
-        # Document processing happens silently in background
-        
-        # Chat input
-        if prompt := st.chat_input("Ask me anything about pharmacology..."):
-            # Add user message to chat
-            st.session_state.conversation_manager.add_message_to_current_conversation(
-                role="user",
-                content=prompt,
-                timestamp=time.time()
-            )
-            
-            # Display user message
-            with st.chat_message("user"):
-                st.write(prompt)
-            
-            # Generate and display assistant response
-            with st.chat_message("assistant", avatar="PharmGPT.png"):
-                try:
-                    # Get RAG context if available
-                    context = None
-                    try:
-                        # Get ALL document content for unlimited context
-                        context = st.session_state.rag_manager.get_all_document_context(
-                            conversation_id=st.session_state.current_conversation_id,
-                            user_session_id=st.session_state.user_session_id
-                        )
-                    except Exception as e:
-                        context = None
-                    
-                    # Check if model manager is available
-                    if not hasattr(st.session_state, 'model_manager') or not st.session_state.model_manager:
-                        st.error("❌ Model manager not initialized")
-                        return
-                    
-                    # Check if model is available
-                    if not st.session_state.model_manager.is_model_available():
-                        st.error("❌ AI model not available. Please check your API key configuration.")
-                        st.info("💡 Make sure MISTRAL_API_KEY is set in your environment or Streamlit secrets")
-                        return
-                    
-                    # Generate response (non-streaming for reliability)
-                    response = None
-                    
-                    # Show loading indicator for AI response
-                    thinking_placeholder = st.empty()
-                    thinking_placeholder.markdown("""
-                    <div style="text-align: center; padding: 20px;">
-                        <div class="ai-simple-loader"></div>
-                        <p style="margin-top: 20px; color: #666; font-weight: 500;">PharmGPT is thinking...</p>
-                    </div>
-                    <style>
-                    .ai-simple-loader {
-                        width: 40px;
-                        height: 40px;
-                        margin: 0 auto;
-                        border: 4px solid #f3f3f3;
-                        border-top: 4px solid #A855F7;
-                        border-radius: 50%;
-                        animation: ai-spin 1s linear infinite;
-                    }
-                    @keyframes ai-spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    # Add a small delay to ensure spinner is visible
-                    time.sleep(0.5)
-                    
-                    try:
-                        response = st.session_state.model_manager.generate_response(
-                            message=prompt,
-                            context=context,
-                            stream=False
-                        )
-                        
-                        # Validate response
-                        if not response:
-                            st.error("❌ No response from AI model (None)")
-                            return
-                        
-                        if not str(response).strip():
-                            st.error("❌ Empty response from AI model (empty string)")
-                            return
-                        
-                        # Check for API error messages
-                        response_str = str(response)
-                        if "API error" in response_str or "error:" in response_str.lower():
-                            st.error(f"❌ API Error: {response_str}")
-                            return
-                        
-                        # Display the response
-                        st.write(response_str)
-                        response = response_str
-                        
-                    except Exception as generation_error:
-                        st.error(f"❌ Error generating response: {str(generation_error)}")
-                        response = f"I apologize, but I encountered an error: {str(generation_error)}"
-                        st.write(response)
-                    
-                    finally:
-                        # Ensure spinner is visible for at least 1 second total
-                        time.sleep(0.5)
-                        # Clear the thinking indicator
-                        thinking_placeholder.empty()
-                    
-                    # Add response to conversation if we got one
-                    if response and response.strip():
-                        st.session_state.conversation_manager.add_message_to_current_conversation(
-                            role="assistant",
-                            content=response,
-                            timestamp=time.time(),
-                            context_used=bool(context and context.strip()),
-                            context_chunks=len(context.split('\n\n')) if context else 0
-                        )
-                    else:
-                        # If no response, show error
-                        error_response = "I apologize, but I couldn't generate a response. Please try again."
-                        st.write(error_response)
-                        st.session_state.conversation_manager.add_message_to_current_conversation(
-                            role="assistant",
-                            content=error_response,
-                            timestamp=time.time(),
-                            error=True
-                        )
-                        
-                except Exception as e:
-                    error_response = f"I apologize, but I encountered an error: {str(e)}"
-                    st.write(error_response)
-                    st.session_state.conversation_manager.add_message_to_current_conversation(
-                        role="assistant",
-                        content=error_response,
-                        timestamp=time.time(),
-                        error=True
-                    )
-            
-            st.rerun()
+            # Chat input
+            if prompt := st.chat_input("Ask me anything about pharmacology..."):
+                # Add user message to chat
+                st.session_state.conversation_manager.add_message_to_current_conversation(
+                    role="user",
+                    content=prompt,
+                    timestamp=time.time()
+                )
+                
+                # Display user message
+                with st.chat_message("user"):
+                    st.write(prompt)
+                
+                # Generate and display assistant response
+                with st.chat_message("assistant", avatar="PharmGPT.png"):
+                    with st.spinner("PharmGPT is thinking..."):
+                        try:
+                            # Get RAG context if available
+                            context = None
+                            try:
+                                context = st.session_state.rag_manager.get_all_document_context(
+                                    conversation_id=st.session_state.current_conversation_id,
+                                    user_session_id=st.session_state.user_session_id
+                                )
+                            except Exception:
+                                context = None
+                            
+                            # Generate response
+                            response = st.session_state.model_manager.generate_response(
+                                message=prompt,
+                                context=context,
+                                stream=False
+                            )
+                            
+                            # Display the response
+                            st.write(response)
+                            
+                            # Add response to conversation
+                            st.session_state.conversation_manager.add_message_to_current_conversation(
+                                role="assistant",
+                                content=response,
+                                timestamp=time.time(),
+                                context_used=bool(context and context.strip()),
+                                context_chunks=len(context.split('\n\n')) if context else 0
+                            )
+                            
+                        except Exception as e:
+                            error_response = f"I apologize, but I encountered an error: {str(e)}"
+                            st.write(error_response)
+                            st.session_state.conversation_manager.add_message_to_current_conversation(
+                                role="assistant",
+                                content=error_response,
+                                timestamp=time.time(),
+                                error=True
+                            )
+                
+                st.rerun()
             
     except Exception as e:
         st.error(f"Application error: {str(e)}")
