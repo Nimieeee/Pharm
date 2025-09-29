@@ -72,7 +72,7 @@ def initialize_session_state():
 # UI Components
 # ----------------------------
 def render_navigation():
-    """Render navigation bar"""
+    """Render navigation bar with just the PharmGPT title"""
     st.markdown("""
     <style>
     .nav-container {
@@ -84,31 +84,62 @@ def render_navigation():
     </style>
     """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    # Only show Home button when in chat view
-    with col1:
-        if st.session_state.current_view == 'chat':
-            if st.button("🏠 Home", use_container_width=True, type="secondary"):
-                st.session_state.current_view = 'homepage'
-                st.rerun()
-    
-    
-    # Only show Chat button when in homepage view
-    with col3:
-        if st.session_state.current_view == 'homepage':
-            if st.button("💬 Chat", use_container_width=True, type="primary"):
-                st.session_state.current_view = 'chat'
-                st.rerun()
+    # Just show the PharmGPT title centered
+    st.markdown("<div style='text-align: center; padding: 0.5rem;'><h3>🧬 PharmGPT</h3></div>", 
+               unsafe_allow_html=True)
 
 def render_homepage():
     """Render an aesthetic homepage"""
-    # Custom CSS for the homepage
+    # Custom CSS for the homepage - theme aware
     st.markdown("""
     <style>
+    /* Theme-aware CSS variables */
+    :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --text-primary: #333333;
+        --text-secondary: #666666;
+        --border-color: #e0e0e0;
+        --shadow-light: rgba(0,0,0,0.08);
+        --shadow-medium: rgba(0,0,0,0.15);
+        --card-bg: #ffffff;
+    }
+    
+    /* Dark theme overrides */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg-primary: #0e1117;
+            --bg-secondary: #262730;
+            --text-primary: #fafafa;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --shadow-light: rgba(255,255,255,0.05);
+            --shadow-medium: rgba(255,255,255,0.1);
+            --card-bg: #1e1e1e;
+        }
+    }
+    
+    /* Streamlit dark theme detection */
+    [data-theme="dark"] {
+        --bg-primary: #0e1117;
+        --bg-secondary: #262730;
+        --text-primary: #fafafa;
+        --text-secondary: #a0a0a0;
+        --border-color: #404040;
+        --shadow-light: rgba(255,255,255,0.05);
+        --shadow-medium: rgba(255,255,255,0.1);
+        --card-bg: #1e1e1e;
+    }
+    
     .homepage-container {
         text-align: center;
         padding: 2rem 0;
+    }
+    
+    .logo-container {
+        text-align: center;
+        margin: 2rem 0;
+        padding: 1rem;
     }
     
     .hero-section {
@@ -117,7 +148,7 @@ def render_homepage():
         border-radius: 20px;
         margin: 2rem 0;
         color: white;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px var(--shadow-light);
     }
     
     .hero-title {
@@ -125,27 +156,29 @@ def render_homepage():
         font-weight: 700;
         margin-bottom: 1rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        color: white;
     }
     
     .hero-subtitle {
         font-size: 1.3rem;
         margin-bottom: 2rem;
         opacity: 0.9;
+        color: white;
     }
     
     .feature-card {
-        background: white;
+        background: var(--card-bg);
         padding: 2rem;
         border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        box-shadow: 0 5px 15px var(--shadow-light);
         margin: 1rem;
-        border: 1px solid #f0f0f0;
-        transition: transform 0.3s ease;
+        border: 1px solid var(--border-color);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     
     .feature-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 10px 25px var(--shadow-medium);
     }
     
     .feature-icon {
@@ -157,11 +190,11 @@ def render_homepage():
         font-size: 1.4rem;
         font-weight: 600;
         margin-bottom: 1rem;
-        color: #333;
+        color: var(--text-primary);
     }
     
     .feature-description {
-        color: #666;
+        color: var(--text-secondary);
         line-height: 1.6;
     }
     
@@ -181,11 +214,16 @@ def render_homepage():
     }
     
     .quick-start-item {
-        background: white;
+        background: var(--card-bg);
         padding: 1.5rem;
         border-radius: 10px;
         border-left: 4px solid #667eea;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 3px 10px var(--shadow-light);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .quick-start-item:hover {
+        box-shadow: 0 5px 15px var(--shadow-medium);
     }
     
     .quick-start-number {
@@ -200,14 +238,61 @@ def render_homepage():
         font-weight: bold;
         margin-right: 1rem;
     }
+    
+    /* Ensure text in quick start items is theme-aware */
+    .quick-start-item strong {
+        color: var(--text-primary);
+    }
+    
+    .quick-start-item {
+        color: var(--text-secondary);
+    }
+    
+    /* Make sure example questions are readable */
+    .stMarkdown p strong {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Section headers */
+    .stMarkdown h2 {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Main content area */
+    .main .block-container {
+        background-color: var(--bg-primary);
+    }
+    
+    /* Ensure all text is readable */
+    .stMarkdown p {
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Button styling for theme compatibility */
+    .stButton > button {
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Logo container background */
+    .logo-container {
+        background-color: transparent;
+    }
     </style>
     """, unsafe_allow_html=True)
     
-    # Hero Section
+    # Logo Section
+    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("PharmGPT.png", width=250)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     st.markdown("""
     <div class="homepage-container">
         <div class="hero-section">
-            <div class="hero-title">🧬 PharmGPT</div>
+            <div class="hero-title">PharmGPT</div>
             <div class="hero-subtitle">Your Advanced AI Pharmacology Assistant</div>
             <p style="font-size: 1.1rem; opacity: 0.8; max-width: 600px; margin: 0 auto;">
                 Harness the power of AI to explore pharmacology, drug interactions, mechanisms of action, 
@@ -305,21 +390,33 @@ def render_homepage():
     <div class="cta-section">
         <h3 style="margin-top: 0;">Ready to explore pharmacology with AI?</h3>
         <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-            Click the "Chat" button above to start your conversation with PharmGPT.
+            Click the button below to start your conversation with PharmGPT.
         </p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Chat Button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🚀 Start Chatting with PharmGPT", use_container_width=True, type="primary"):
+            st.session_state.current_view = 'chat'
+            st.rerun()
 
 def render_chat_header():
     """Render the chat page header"""
-    st.title("💬 PharmGPT Chat")
-    st.markdown("*Ask me anything about pharmacology...*")
+    st.title("💬 PharmGPT")
 
 def render_conversation_sidebar():
     """Render conversation management in sidebar - only show in chat view"""
     if st.session_state.current_view != 'chat':
         return
+    
+    # Home button at the top of sidebar
+    if st.sidebar.button("🏠 Back to Home", use_container_width=True, type="secondary"):
+        st.session_state.current_view = 'homepage'
+        st.rerun()
         
+    st.sidebar.markdown("---")
     st.sidebar.markdown("## 💬 Conversations")
     
     # New conversation button
