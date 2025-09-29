@@ -86,17 +86,23 @@ def render_navigation():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     
+    # Only show Home button when in chat view
     with col1:
-        if st.button("🏠 Home", use_container_width=True, 
-                    type="primary" if st.session_state.current_view == 'homepage' else "secondary"):
-            st.session_state.current_view = 'homepage'
-            st.rerun()
+        if st.session_state.current_view == 'chat':
+            if st.button("🏠 Home", use_container_width=True, type="secondary"):
+                st.session_state.current_view = 'homepage'
+                st.rerun()
     
+    with col2:
+        st.markdown("<div style='text-align: center; padding: 0.5rem;'><h3>🧬 PharmGPT</h3></div>", 
+                   unsafe_allow_html=True)
+    
+    # Only show Chat button when in homepage view
     with col3:
-        if st.button("💬 Chat", use_container_width=True,
-                    type="primary" if st.session_state.current_view == 'chat' else "secondary"):
-            st.session_state.current_view = 'chat'
-            st.rerun()
+        if st.session_state.current_view == 'homepage':
+            if st.button("💬 Chat", use_container_width=True, type="primary"):
+                st.session_state.current_view = 'chat'
+                st.rerun()
 
 def render_homepage():
     """Render an aesthetic homepage"""
