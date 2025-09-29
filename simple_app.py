@@ -85,7 +85,6 @@ def render_chat_header():
         st.markdown("*Your Advanced AI Pharmacology Assistant*")
     with col2:
         st.markdown(f"### {mode_emoji} {mode_text}")
-        st.caption(f"Using {st.session_state.model_manager.model.model_name}")
 
 def render_conversation_sidebar():
     """Render conversation management in sidebar"""
@@ -113,10 +112,6 @@ def render_conversation_sidebar():
     if selected_mode != current_mode:
         st.session_state.model_manager.set_mode(selected_mode)
         st.sidebar.success(f"Switched to {mode_options[selected_mode]}")
-    
-    # Show current model info
-    model_info = st.session_state.model_manager.get_model_info()
-    st.sidebar.caption(f"Current model: {model_info.get('model_name', 'Unknown')}")
     
     st.sidebar.markdown("---")
     st.sidebar.markdown("## 💬 Conversations")
