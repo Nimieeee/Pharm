@@ -4,7 +4,6 @@ A sophisticated Streamlit-based chatbot application designed for pharmaceutical 
 
 ## ✨ Features
 
-- **🧠 Dual AI Models**: Mistral Small for detailed responses + Groq models for fast interactions
 - **⚕️ Pharmacology Expertise**: Specialized system prompts for pharmaceutical and medical queries
 - **📚 RAG System**: Upload and query PDF, DOCX, TXT, and MD documents with vector search
 - **💬 Multi-Conversation**: Manage multiple chat sessions with separate knowledge bases
@@ -19,8 +18,8 @@ A sophisticated Streamlit-based chatbot application designed for pharmaceutical 
 
 - Python 3.8+
 - Supabase account (for database)
-- Mistral AI API key (for primary AI model)
-- Optional: Groq API key (for fast model)
+- Any LLM API key (for primary AI model)
+
 
 ### Installation
 
@@ -99,15 +98,11 @@ Key features:
 
 ## 🤖 AI Models & Capabilities
 
-### Primary Model: Mistral Small
+### Primary Model: Mistral Medium
 - **Purpose**: Detailed pharmacology responses
 - **Specialization**: Drug interactions, mechanisms, clinical applications
 - **System Prompt**: Specialized for pharmaceutical expertise
 
-### Fast Model: Groq (Optional)
-- **Models**: Gemma2-9B-IT, GPT-OSS-20B
-- **Purpose**: Quick responses and general queries
-- **Speed**: Optimized for real-time interactions
 
 ### RAG System
 - **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
