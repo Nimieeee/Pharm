@@ -31,7 +31,7 @@ except ImportError as e:
 # ----------------------------
 st.set_page_config(
     page_title="PharmGPT",
-    page_icon="PharmGPT.png",
+    page_icon="logo.png",
     layout="wide",
     initial_sidebar_state=st.session_state.get("sidebar_state", "expanded")
 )
@@ -41,9 +41,6 @@ st.set_page_config(
 # ----------------------------
 def initialize_session_state():
     """Initialize session state variables with user session isolation"""
-    # Initialize current view (homepage or chat)
-    if 'current_view' not in st.session_state:
-        st.session_state.current_view = 'homepage'
     
     # Generate unique user session ID for privacy
     if 'user_session_id' not in st.session_state:
@@ -71,352 +68,22 @@ def initialize_session_state():
 # ----------------------------
 # UI Components
 # ----------------------------
-def render_navigation():
-    """Render navigation bar with just the PharmGPT title"""
-    st.markdown("""
-    <style>
-    .nav-container {
-        background: white;
-        padding: 1rem 0;
-        border-bottom: 1px solid #e0e0e0;
-        margin-bottom: 2rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Just show the PharmGPT title centered
-    st.markdown("<div style='text-align: center; padding: 0.5rem;'><h3>🧬 PharmGPT</h3></div>", 
-               unsafe_allow_html=True)
 
-def render_homepage():
-    """Render an aesthetic homepage"""
-    # Custom CSS for the homepage - theme aware
-    st.markdown("""
-    <style>
-    /* Theme-aware CSS variables */
-    :root {
-        --bg-primary: #ffffff;
-        --bg-secondary: #f8f9fa;
-        --text-primary: #333333;
-        --text-secondary: #666666;
-        --border-color: #e0e0e0;
-        --shadow-light: rgba(0,0,0,0.08);
-        --shadow-medium: rgba(0,0,0,0.15);
-        --card-bg: #ffffff;
-    }
-    
-    /* Dark theme overrides */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --bg-primary: #0e1117;
-            --bg-secondary: #262730;
-            --text-primary: #fafafa;
-            --text-secondary: #a0a0a0;
-            --border-color: #404040;
-            --shadow-light: rgba(255,255,255,0.05);
-            --shadow-medium: rgba(255,255,255,0.1);
-            --card-bg: #1e1e1e;
-        }
-    }
-    
-    /* Streamlit dark theme detection */
-    [data-theme="dark"] {
-        --bg-primary: #0e1117;
-        --bg-secondary: #262730;
-        --text-primary: #fafafa;
-        --text-secondary: #a0a0a0;
-        --border-color: #404040;
-        --shadow-light: rgba(255,255,255,0.05);
-        --shadow-medium: rgba(255,255,255,0.1);
-        --card-bg: #1e1e1e;
-    }
-    
-    .homepage-container {
-        text-align: center;
-        padding: 2rem 0;
-    }
-    
-    .logo-container {
-        text-align: center;
-        margin: 2rem 0;
-        padding: 1rem;
-    }
-    
-    .hero-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 3rem 2rem;
-        border-radius: 20px;
-        margin: 2rem 0;
-        color: white;
-        box-shadow: 0 10px 30px var(--shadow-light);
-    }
-    
-    .hero-title {
-        font-size: 3.5rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        color: white;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.3rem;
-        margin-bottom: 2rem;
-        opacity: 0.9;
-        color: white;
-    }
-    
-    .feature-card {
-        background: var(--card-bg);
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px var(--shadow-light);
-        margin: 1rem;
-        border: 1px solid var(--border-color);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px var(--shadow-medium);
-    }
-    
-    .feature-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-    }
-    
-    .feature-title {
-        font-size: 1.4rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        color: var(--text-primary);
-    }
-    
-    .feature-description {
-        color: var(--text-secondary);
-        line-height: 1.6;
-    }
-    
-    .cta-section {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        padding: 2rem;
-        border-radius: 15px;
-        margin: 2rem 0;
-        color: white;
-    }
-    
-    .quick-start-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-        margin: 2rem 0;
-    }
-    
-    .quick-start-item {
-        background: var(--card-bg);
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 3px 10px var(--shadow-light);
-        transition: box-shadow 0.3s ease;
-    }
-    
-    .quick-start-item:hover {
-        box-shadow: 0 5px 15px var(--shadow-medium);
-    }
-    
-    .quick-start-number {
-        background: #667eea;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        margin-right: 1rem;
-    }
-    
-    /* Ensure text in quick start items is theme-aware */
-    .quick-start-item strong {
-        color: var(--text-primary);
-    }
-    
-    .quick-start-item {
-        color: var(--text-secondary);
-    }
-    
-    /* Make sure example questions are readable */
-    .stMarkdown p strong {
-        color: var(--text-primary) !important;
-    }
-    
-    /* Section headers */
-    .stMarkdown h2 {
-        color: var(--text-primary) !important;
-    }
-    
-    /* Main content area */
-    .main .block-container {
-        background-color: var(--bg-primary);
-    }
-    
-    /* Ensure all text is readable */
-    .stMarkdown p {
-        color: var(--text-secondary) !important;
-    }
-    
-    /* Button styling for theme compatibility */
-    .stButton > button {
-        background-color: var(--card-bg);
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-    }
-    
-    /* Logo container background */
-    .logo-container {
-        background-color: transparent;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Logo Section
-    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.image("PharmGPT.png", width=250)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="homepage-container">
-        <div class="hero-section">
-            <div class="hero-title">PharmGPT</div>
-            <div class="hero-subtitle">Your Advanced AI Pharmacology Assistant</div>
-            <p style="font-size: 1.1rem; opacity: 0.8; max-width: 600px; margin: 0 auto;">
-                Harness the power of AI to explore pharmacology, drug interactions, mechanisms of action, 
-                and clinical applications with intelligent document analysis and expert-level insights.
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Features Section
-    st.markdown("## ✨ Key Features")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <div class="feature-title">AI-Powered Analysis</div>
-            <div class="feature-description">
-                Advanced language models trained on pharmacological data provide accurate, 
-                contextual responses to complex drug-related queries.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">📚</div>
-            <div class="feature-title">Document Intelligence</div>
-            <div class="feature-description">
-                Upload research papers, drug monographs, and clinical guidelines. 
-                PharmGPT extracts and synthesizes relevant information instantly.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">💬</div>
-            <div class="feature-title">Conversational Interface</div>
-            <div class="feature-description">
-                Natural language conversations with context awareness. 
-                Ask follow-up questions and build on previous discussions.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Quick Start Guide
-    st.markdown("## 🚀 Quick Start Guide")
-    
-    st.markdown("""
-    <div class="quick-start-grid">
-        <div class="quick-start-item">
-            <span class="quick-start-number">1</span>
-            <strong>Navigate to Chat</strong><br>
-            Click the "Chat" button in the navigation above
-        </div>
-        <div class="quick-start-item">
-            <span class="quick-start-number">2</span>
-            <strong>Upload Documents</strong><br>
-            Add PDFs, research papers, or drug information files
-        </div>
-        <div class="quick-start-item">
-            <span class="quick-start-number">3</span>
-            <strong>Ask Questions</strong><br>
-            Type your pharmacology questions in the chat
-        </div>
-        <div class="quick-start-item">
-            <span class="quick-start-number">4</span>
-            <strong>Get Insights</strong><br>
-            Receive AI-powered analysis with document context
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Example Questions
-    st.markdown("## 💡 Example Questions to Get Started")
-    
-    example_questions = [
-        "What is the mechanism of action of ACE inhibitors?",
-        "Explain the pharmacokinetics of warfarin and its drug interactions",
-        "Compare the efficacy of different beta-blockers in heart failure",
-        "What are the contraindications for NSAIDs in elderly patients?",
-        "Describe the MOA of novel diabetes medications like GLP-1 agonists"
-    ]
-    
-    for i, question in enumerate(example_questions, 1):
-        st.markdown(f"**{i}.** {question}")
-    
-    # Call to Action
-    st.markdown("""
-    <div class="cta-section">
-        <h3 style="margin-top: 0;">Ready to explore pharmacology with AI?</h3>
-        <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-            Click the button below to start your conversation with PharmGPT.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Chat Button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🚀 Start Chatting with PharmGPT", use_container_width=True, type="primary"):
-            st.session_state.current_view = 'chat'
-            st.rerun()
+
+
 
 def render_chat_header():
-    """Render the chat page header"""
-    st.title("💬 PharmGPT")
+    """Render the main application header with logo"""
+    # Logo and title section
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("logo.png", width=200)
+    
+    st.title("🧬 PharmGPT")
+    st.markdown("*Your Advanced AI Pharmacology Assistant*")
 
 def render_conversation_sidebar():
-    """Render conversation management in sidebar - only show in chat view"""
-    if st.session_state.current_view != 'chat':
-        return
-    
-    # Home button at the top of sidebar
-    if st.sidebar.button("🏠 Back to Home", use_container_width=True, type="secondary"):
-        st.session_state.current_view = 'homepage'
-        st.rerun()
-        
-    st.sidebar.markdown("---")
+    """Render conversation management in sidebar"""
     st.sidebar.markdown("## 💬 Conversations")
     
     # New conversation button
@@ -480,7 +147,7 @@ def render_chat_history():
     """Render chat message history using Streamlit's native chat interface"""
     for message in st.session_state.messages:
         if message["role"] == "assistant":
-            with st.chat_message("assistant", avatar="PharmGPT.png"):
+            with st.chat_message("assistant", avatar="logo.png"):
                 st.write(message["content"])
         else:
             with st.chat_message(message["role"]):
@@ -490,107 +157,97 @@ def render_chat_history():
 # Main Application
 # ----------------------------
 def main():
-    """Main application function with navigation"""
+    """Main application function - direct to chat"""
     try:
         # Initialize session state
         initialize_session_state()
         
-        # Navigation
-        render_navigation()
-        
-        # Sidebar components (only for chat view)
+        # Sidebar components
         render_conversation_sidebar()
         
-        # Main content based on current view
-        if st.session_state.current_view == 'homepage':
-            render_homepage()
-            
-        elif st.session_state.current_view == 'chat':
-            render_chat_header()
-            
-            # Chat interface
-            render_chat_history()
-            
-            # Document upload
-            uploaded_files = st.file_uploader(
-                "📄 Upload documents",
-                accept_multiple_files=True,
-                type=['pdf', 'txt', 'md', 'docx'],
-                help="Upload documents to enhance AI responses with relevant context"
+        # Chat interface
+        render_chat_header()
+        render_chat_history()
+        
+        # Document upload
+        uploaded_files = st.file_uploader(
+            "📄 Upload documents",
+            accept_multiple_files=True,
+            type=['pdf', 'txt', 'md', 'docx'],
+            help="Upload documents to enhance AI responses with relevant context"
+        )
+        
+        # Process uploaded documents
+        if uploaded_files:
+            with st.spinner("Processing documents..."):
+                for uploaded_file in uploaded_files:
+                    try:
+                        success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
+                            uploaded_file,
+                            conversation_id=st.session_state.current_conversation_id,
+                            user_session_id=st.session_state.user_session_id
+                        )
+                        if success:
+                            st.success(f"✅ Processed {uploaded_file.name}")
+                    except Exception as e:
+                        st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
+        
+        # Chat input
+        if prompt := st.chat_input("Ask me anything about pharmacology..."):
+            # Add user message to chat
+            st.session_state.conversation_manager.add_message_to_current_conversation(
+                role="user",
+                content=prompt,
+                timestamp=time.time()
             )
             
-            # Process uploaded documents
-            if uploaded_files:
-                with st.spinner("Processing documents..."):
-                    for uploaded_file in uploaded_files:
+            # Display user message
+            with st.chat_message("user"):
+                st.write(prompt)
+            
+            # Generate and display assistant response
+            with st.chat_message("assistant", avatar="logo.png"):
+                with st.spinner("PharmGPT is thinking..."):
+                    try:
+                        # Get RAG context if available
+                        context = None
                         try:
-                            success, chunk_count = st.session_state.rag_manager.process_uploaded_file(
-                                uploaded_file,
+                            context = st.session_state.rag_manager.get_all_document_context(
                                 conversation_id=st.session_state.current_conversation_id,
                                 user_session_id=st.session_state.user_session_id
                             )
-                            if success:
-                                st.success(f"✅ Processed {uploaded_file.name}")
-                        except Exception as e:
-                            st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
-            
-            # Chat input
-            if prompt := st.chat_input("Ask me anything about pharmacology..."):
-                # Add user message to chat
-                st.session_state.conversation_manager.add_message_to_current_conversation(
-                    role="user",
-                    content=prompt,
-                    timestamp=time.time()
-                )
-                
-                # Display user message
-                with st.chat_message("user"):
-                    st.write(prompt)
-                
-                # Generate and display assistant response
-                with st.chat_message("assistant", avatar="PharmGPT.png"):
-                    with st.spinner("PharmGPT is thinking..."):
-                        try:
-                            # Get RAG context if available
+                        except Exception:
                             context = None
-                            try:
-                                context = st.session_state.rag_manager.get_all_document_context(
-                                    conversation_id=st.session_state.current_conversation_id,
-                                    user_session_id=st.session_state.user_session_id
-                                )
-                            except Exception:
-                                context = None
-                            
-                            # Generate response
-                            response = st.session_state.model_manager.generate_response(
-                                message=prompt,
-                                context=context,
-                                stream=False
-                            )
-                            
-                            # Display the response
-                            st.write(response)
-                            
-                            # Add response to conversation
-                            st.session_state.conversation_manager.add_message_to_current_conversation(
-                                role="assistant",
-                                content=response,
-                                timestamp=time.time(),
-                                context_used=bool(context and context.strip()),
-                                context_chunks=len(context.split('\n\n')) if context else 0
-                            )
-                            
-                        except Exception as e:
-                            error_response = f"I apologize, but I encountered an error: {str(e)}"
-                            st.write(error_response)
-                            st.session_state.conversation_manager.add_message_to_current_conversation(
-                                role="assistant",
-                                content=error_response,
-                                timestamp=time.time(),
-                                error=True
-                            )
-                
-                st.rerun()
+                        
+                        # Generate response
+                        response = st.session_state.model_manager.generate_response(
+                            message=prompt,
+                            context=context,
+                        )
+                        
+                        # Display the response
+                        st.write(response)
+                        
+                        # Add response to conversation
+                        st.session_state.conversation_manager.add_message_to_current_conversation(
+                            role="assistant",
+                            content=response,
+                            timestamp=time.time(),
+                            context_used=bool(context and context.strip()),
+                            context_chunks=len(context.split('\n\n')) if context else 0
+                        )
+                        
+                    except Exception as e:
+                        error_response = f"I apologize, but I encountered an error: {str(e)}"
+                        st.write(error_response)
+                        st.session_state.conversation_manager.add_message_to_current_conversation(
+                            role="assistant",
+                            content=error_response,
+                            timestamp=time.time(),
+                            error=True
+                        )
+            
+            st.rerun()
             
     except Exception as e:
         st.error(f"Application error: {str(e)}")
