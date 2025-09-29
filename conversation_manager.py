@@ -34,8 +34,8 @@ class ConversationManager:
     def create_new_conversation(self, title: str = None) -> Optional[str]:
         """Create a new conversation with better error handling"""
         if not title:
-            # Generate a default title with timestamp
-            title = f"New Chat {time.strftime('%m/%d %H:%M')}"
+            # Use a generic placeholder title that will be updated with first message
+            title = "New Chat"
         
         try:
             conversation_id = self.db_manager.create_conversation(title, self.user_session_id)
@@ -179,6 +179,41 @@ class ConversationManager:
         """Get statistics for a conversation"""
         return self.db_manager.get_conversation_stats(conversation_id, self.user_session_id)
     
+    def update_conversation_title(self, conversation_id: str, new_title: str) -> bool:
+        """Update the title of a conversation"""
+        try:
+            if self.db_manager.client:
+                result = self.db_manager.client.table("conversations").update({
+                    "title": new_title
+                }).eq("id", conversation_id).execute()
+                
+                if result.data:
+                    # Refresh conversations list to show new title
+                    self.load_conversations()
+                    return True
+            return False
+        except Exception as e:
+            print(f"Error updating conversation title: {str(e)}")
+            return False
+    
+    def generate_title_from_message(self, message: str) -> str:
+        """Generate a conversation title from the first user message"""
+        # Clean and truncate the message for use as title
+        title = message.strip()
+        
+        # Remove common question words and clean up
+        title = title.replace("?", "").replace("!", "").replace(".", "")
+        
+        # Truncate to reasonable length
+        if len(title) > 50:
+            title = title[:47] + "..."
+        
+        # Capitalize first letter
+        if title:
+            title = title[0].upper() + title[1:]
+        
+        return title if title else "New Chat"
+    
     def ensure_conversation_exists(self):
         """Ensure there's always a current conversation"""
         try:
@@ -214,6 +249,17 @@ class ConversationManager:
             **metadata
         }
         st.session_state.messages.append(message)
+        
+        # Auto-rename conversation based on first user message
+        if (role == "user" and 
+            st.session_state.current_conversation_id and 
+            st.session_state.current_conversation_id != "fallback-conversation"):
+            
+            # Check if this is the first user message in the conversation
+            user_messages = [msg for msg in st.session_state.messages if msg['role'] == 'user']
+            if len(user_messages) == 1:  # This is the first user message
+                new_title = self.generate_title_from_message(content)
+                self.update_conversation_title(st.session_state.current_conversation_id, new_title)
         
         # Try to save to database only if we have a real conversation ID
         if (st.session_state.current_conversation_id and 

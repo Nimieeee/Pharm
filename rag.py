@@ -59,7 +59,7 @@ class RAGManager:
                 if openai_api_key:
                     try:
                         self.embedding_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
-                        st.info("✅ Using OpenAI embeddings as fallback")
+                        # Successfully initialized OpenAI embeddings
                     except Exception as openai_e:
                         st.warning(f"OpenAI embeddings also failed: {str(openai_e)}")
                 
@@ -89,7 +89,7 @@ class RAGManager:
         for i, strategy in enumerate(strategies, 1):
             try:
                 self.embedding_model = strategy()
-                st.success(f"✅ SentenceTransformer initialized successfully (method {i})")
+                # Successfully initialized - no need to show message
                 return
             except Exception as e:
                 error_msg = str(e)
