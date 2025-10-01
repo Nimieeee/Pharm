@@ -27,7 +27,7 @@ except ImportError:
 class MistralModel:
     """Mistral model implementation with enhanced RAG integration"""
     
-    def __init__(self, model_name: str = "mistral-medium-latest"):
+    def __init__(self, model_name: str = "mistral-large-latest"):
         self.client = None
         self.model_name = model_name
         # Set appropriate system prompt based on model
@@ -155,7 +155,7 @@ class MistralModel:
     def get_model_info(self) -> Dict[str, Any]:
         """Get Mistral model information"""
         return {
-            "name": "mistral-medium-latest",
+            "name": "mistral-large-latest",
             "model": self.model_name,
             "type": "mistral",
             "description": "Advanced AI model optimized for detailed pharmaceutical and scientific responses",
@@ -173,7 +173,7 @@ class ModelManager:
             self.current_mode = "detailed"
             self.models = {
                 "fast": MistralModel("mistral-small-latest"),
-                "detailed": MistralModel("mistral-medium-latest")
+                "detailed": MistralModel("mistral-large-latest")
             }
             self.model = self.models[self.current_mode]
         except Exception as e:
@@ -196,7 +196,7 @@ class ModelManager:
         """Get available modes and their descriptions"""
         return {
             "fast": "Fast Mode (mistral-small-latest) - Quick responses",
-            "detailed": "Detailed Mode (mistral-medium-latest) - Comprehensive analysis"
+            "detailed": "Detailed Mode (mistral-large-latest) - Comprehensive analysis"
         }
     
     def generate_response(self, message: str, context: Optional[str] = None, stream: bool = False):
