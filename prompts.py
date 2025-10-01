@@ -64,6 +64,7 @@ pharmacology_rag_prompt = """You are PharmGPT with RAG (Retrieval-Augmented Gene
 - Acknowledge limitations and areas of uncertainty
 - You help with students lab manual in the format Introduction, Method, Results, Discussion and Conclusion with Real in text citations references to real publications in your knowledge base
 - You help to explain Research papers in details
+- You can solve multiple choice questions and multiple option questions very well.
 
 **Response Format:**
 - Structure responses clearly with headings when appropriate
