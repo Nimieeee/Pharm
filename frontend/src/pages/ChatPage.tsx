@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
   const [darkMode, setDarkMode] = useState(true)
   const [mode, setMode] = useState<'fast' | 'detailed'>('detailed')
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string, id: string}>>([])
 
   useEffect(() => { loadConversations() }, [])
   useEffect(() => { if (conversationId) loadConversation(conversationId) }, [conversationId])
@@ -137,16 +138,23 @@ export default function ChatPage() {
     const file = event.target.files?.[0]
     if (!file || !conversationId) return
     setIsUploading(true)
+    const fileId = 'file-' + Date.now()
+    setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
     try {
       await chatAPI.uploadDocument(conversationId, file)
       toast.success(`Document uploaded`)
       await loadConversation(conversationId)
     } catch (error) {
       toast.error('Failed to upload document')
+      setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  const removeUploadedFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
   }
 
   const formatMessage = (content: string) => {
@@ -264,6 +272,28 @@ export default function ChatPage() {
         {conversationId && (
           <div className={cn("border-t p-3 lg:p-4", darkMode ? "border-gray-800" : "border-gray-200")}>
             <div className="max-w-4xl mx-auto">
+              {uploadedFiles.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {uploadedFiles.map(file => (
+                    <div key={file.id} className={cn("flex items-center gap-2 px-3 py-2 rounded-full text-sm", darkMode ? "bg-gray-800 border border-gray-700" : "bg-gray-100 border border-gray-300")}>
+                      <div className="w-8 h-8 rounded bg-red-500 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{file.name}</div>
+                        <div className={cn("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>PDF</div>
+                      </div>
+                      <button onClick={() => removeUploadedFile(file.id)} className={cn("p-1 rounded-full hover:bg-gray-700 shrink-0")}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className={cn("flex items-end gap-2 rounded-3xl border p-2", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300")}>
                 <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept=".pdf,.docx,.txt" className="hidden" />
                 <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={cn("p-2 rounded-lg shrink-0", darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100")} title="Upload document">
@@ -274,11 +304,10 @@ export default function ChatPage() {
                   {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                 </button>
               </div>
-              {currentConversation && currentConversation.document_count > 0 && (
-                <p className={cn("text-xs mt-2 px-2", darkMode ? "text-gray-500" : "text-gray-600")}>
-                  📎 {currentConversation.document_count} document(s) • Mode: {mode === 'fast' ? 'Fast' : 'Detailed'}
-                </p>
-              )}
+              <p className={cn("text-xs mt-2 px-2", darkMode ? "text-gray-500" : "text-gray-600")}>
+                Mode: {mode === 'fast' ? 'Fast ⚡' : 'Detailed 🧠'}
+                {currentConversation && currentConversation.document_count > 0 && ` • ${currentConversation.document_count} document(s) uploaded`}
+              </p>
             </div>
           </div>
         )}
