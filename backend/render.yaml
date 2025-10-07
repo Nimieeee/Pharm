@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: pharmgpt-backend
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DEBUG
+        value: false
+      - key: SUPABASE_URL
+        fromDatabase:
+          name: pharmgpt-db
+          property: connectionString
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@pharmgpt.com
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        value: https://pharmgpt.netlify.app,http://localhost:3000,http://localhost:5173

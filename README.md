@@ -1,64 +1,59 @@
 # PharmGPT - AI-Powered Pharmacology Assistant
 
-A sophisticated Streamlit-based chatbot application designed for pharmaceutical and medical queries, featuring RAG (Retrieval-Augmented Generation) capabilities, multi-conversation support, and specialized pharmacology expertise.
+A modern web application designed for pharmaceutical and medical queries, featuring RAG (Retrieval-Augmented Generation) capabilities, user authentication, multi-conversation support, and specialized pharmacology expertise.
+
+## 🚀 Modern Web Application
+
+Complete web application with:
+- **React Frontend** (deployed on Netlify)
+- **FastAPI Backend** (deployed on Render) 
+- **User Authentication** with JWT tokens
+- **Admin Panel** for system management
+- **Support System** for user assistance
+- **Secure Deployment** configuration
 
 ## ✨ Features
 
 - **⚕️ Pharmacology Expertise**: Specialized system prompts for pharmaceutical and medical queries
-- **📚 RAG System**: Upload and query PDF, DOCX, TXT, and MD documents with vector search
+- **📚 RAG System**: LangChain + Supabase pgvector for optimized document processing and search
 - **💬 Multi-Conversation**: Manage multiple chat sessions with separate knowledge bases
 - **🌙 Modern UI**: Dark mode interface with responsive design and accessibility features
 - **🗄️ Persistent Storage**: Supabase backend for conversations, messages, and document chunks
-- **🔍 Vector Search**: Semantic document search using sentence transformers
+- **🔍 Vector Search**: HNSW-indexed semantic search with HuggingFace embeddings
 - **📱 Responsive Design**: Works seamlessly across mobile, tablet, and desktop
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Web Application (Recommended)
 
-- Python 3.8+
-- Supabase account (for database)
-- Any LLM API key (for primary AI model)
+The new web application provides a modern, secure, and scalable solution:
 
-
-### Installation
-
-1. **Clone the repository**
+1. **Frontend (React + Netlify)**
    ```bash
-   git clone https://github.com/Nimieeee/phhh.git
-   cd phhh
+   cd frontend
+   npm install
+   npm run dev
    ```
 
-2. **Install dependencies**
+2. **Backend (FastAPI + Render)**
    ```bash
+   cd backend
    pip install -r requirements.txt
+   python main.py
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
+3. **Database Setup**
+   - Create a Supabase project
+   - Run migrations from `backend/migrations/`
+   - Configure environment variables
 
-4. **Configure Streamlit secrets**
-   ```bash
-   cp .streamlit/secrets.toml.example .streamlit/secrets.toml
-   # Edit with your credentials
-   ```
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
 
-5. **Set up the database**
-   - Go to your Supabase Dashboard
-   - Navigate to SQL Editor
-   - Run the complete schema from `simple_chatbot_schema.sql`
+### Demo Credentials
 
-6. **Run the application**
-   ```bash
-   # Full-featured app with multi-conversation support
-   streamlit run simple_app.py
-   
-   # Or minimal streaming interface
-   streamlit run minimal_app.py
-   ```
+For testing the deployed application:
+- **Admin**: admin@pharmgpt.com / admin123
+- **User**: Register a new account to test user features
 
 ## 📋 Configuration
 
@@ -105,10 +100,12 @@ Key features:
 
 
 ### RAG System
-- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
+- **Framework**: LangChain with Supabase pgvector integration
+- **Embeddings**: HuggingFace all-MiniLM-L6-v2 (384 dimensions)
+- **Indexing**: HNSW + IVFFlat for optimized similarity search
 - **Chunking**: Recursive text splitting with overlap
-- **Search**: Vector similarity with configurable thresholds
-- **Formats**: PDF, DOCX, TXT, MD support
+- **Search**: Vector similarity with user isolation and metadata filtering
+- **Formats**: PDF, DOCX, TXT, MD, PPTX support
 
 ## 📱 Application Variants
 
@@ -133,18 +130,28 @@ Key features:
 ## 🔧 Project Structure
 
 ```
-├── simple_app.py              # Main application with full features
-├── minimal_app.py             # Minimal streaming interface
-├── models.py                  # AI model management (Mistral/Groq)
-├── rag.py                     # RAG system with document processing
-├── database.py                # Supabase database operations
-├── conversation_manager.py    # Multi-conversation support
-├── prompts.py                 # Specialized system prompts
-├── setup_database.py          # Database setup utilities
-├── simple_chatbot_schema.sql  # Complete database schema
-├── requirements.txt           # Python dependencies
-└── .streamlit/
-    └── secrets.toml.example   # Configuration template
+├── frontend/                   # React frontend application
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   ├── pages/            # Page components
+│   │   ├── contexts/         # React contexts (Auth, etc.)
+│   │   └── lib/              # Utilities and API client
+│   ├── package.json
+│   └── netlify.toml          # Netlify deployment config
+├── backend/                   # FastAPI backend application
+│   ├── app/
+│   │   ├── api/v1/endpoints/ # API endpoints
+│   │   ├── core/             # Core configuration
+│   │   ├── models/           # Pydantic models
+│   │   └── services/         # Business logic services
+│   ├── migrations/           # Database migrations
+│   ├── main.py              # FastAPI application entry point
+│   ├── requirements.txt     # Python dependencies
+│   └── render.yaml          # Render deployment config
+├── .kiro/specs/             # Development specifications
+├── DEPLOYMENT.md            # Deployment guide
+├── PharmGPT.png            # Application logo
+└── README.md               # This file
 ```
 
 ## 🚀 Deployment Options
@@ -237,12 +244,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap
 
-- [ ] User authentication and profiles
-- [ ] Advanced document management
-- [ ] API endpoint for external integration
+### Completed ✅
+- [x] User authentication and profiles
+- [x] Modern web application architecture
+- [x] API endpoints for external integration
+- [x] Admin panel for system management
+- [x] Support system for user assistance
+- [x] Secure deployment configuration
+
+### In Progress 🚧
+- [ ] Complete chat interface implementation
+- [ ] Advanced document management features
+- [ ] Real-time notifications
+- [ ] Enhanced admin analytics
+
+### Planned 📋
 - [ ] Multi-language support
 - [ ] Voice input/output capabilities
-- [ ] Advanced analytics and insights
+- [ ] Mobile application
+- [ ] Advanced AI model integration
+- [ ] Enterprise features
 
 ---
 

@@ -128,9 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Streamlit secrets
-.streamlit/secrets.toml
-
 # IDE files
 .vscode/
 .idea/
@@ -143,4 +140,19 @@ Thumbs.db
 
 # Local configuration
 config.local.py
-local_settings.py.kiro/
+local_settings.py
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# Backend
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# Kiro IDE
+.kiro/
