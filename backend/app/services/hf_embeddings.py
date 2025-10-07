@@ -1,10 +1,12 @@
 """
-HuggingFace Embeddings Service
-Handles embedding generation using sentence-transformers with caching
+Mistral Embeddings Service
+Handles embedding generation using Mistral API via direct HTTP calls with caching
 """
 
 import asyncio
 import hashlib
+import httpx
+import json
 import logging
 import time
 from typing import List, Optional, Dict, Any
@@ -14,14 +16,6 @@ from cachetools import TTLCache
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-# Import sentence-transformers
-try:
-    from sentence_transformers import SentenceTransformer
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    logger.warning("⚠️  sentence-transformers not available")
 
 
 class EmbeddingCacheEntry:
@@ -33,33 +27,28 @@ class EmbeddingCacheEntry:
         self.expires_at = self.created_at + timedelta(seconds=settings.EMBEDDING_CACHE_TTL)
 
 
-class HuggingFaceEmbeddingsService:
-    """Service for generating embeddings using HuggingFace sentence-transformers"""
+class MistralEmbeddingsService:
+    """Service for generating embeddings using Mistral API via direct HTTP calls"""
     
     def __init__(self):
-        self.model = None
-        self.model_name = getattr(settings, 'HUGGINGFACE_MODEL', 'all-MiniLM-L6-v2')
-        self.embedding_dimensions = 384  # all-MiniLM-L6-v2 dimensions
+        self.mistral_api_key = settings.MISTRAL_API_KEY
+        self.mistral_base_url = "https://api.mistral.ai/v1"
+        self.model_name = "mistral-embed"
+        self.embedding_dimensions = 1024  # mistral-embed dimensions
         self.cache = None
         self.cache_stats = {
             "hits": 0,
             "misses": 0,
             "errors": 0,
-            "model_calls": 0,
+            "api_calls": 0,
             "total_requests": 0
         }
         
-        # Initialize model if available
-        if SENTENCE_TRANSFORMERS_AVAILABLE:
-            try:
-                logger.info(f"Loading HuggingFace model: {self.model_name}")
-                self.model = SentenceTransformer(self.model_name)
-                logger.info(f"✅ HuggingFace embeddings model loaded: {self.model_name}")
-            except Exception as e:
-                logger.error(f"❌ Failed to load HuggingFace model: {e}")
-                self.model = None
+        # Check API key
+        if self.mistral_api_key:
+            logger.info(f"✅ Mistral embeddings API initialized: {self.model_name}")
         else:
-            logger.warning("⚠️  sentence-transformers not installed")
+            logger.warning("⚠️  Mistral API key not configured")
         
         # Initialize cache if enabled
         if settings.ENABLE_EMBEDDING_CACHE:
@@ -107,32 +96,51 @@ class HuggingFaceEmbeddingsService:
             logger.error(f"❌ Cache storage error: {e}")
             self.cache_stats["errors"] += 1
     
-    async def _generate_embedding_with_model(self, text: str) -> Optional[List[float]]:
-        """Generate embedding using the loaded model"""
-        if not self.model:
+    async def _generate_embedding_with_api(self, text: str) -> Optional[List[float]]:
+        """Generate embedding using Mistral API via direct HTTP calls"""
+        if not self.mistral_api_key:
             return None
         
         try:
-            self.cache_stats["model_calls"] += 1
+            self.cache_stats["api_calls"] += 1
             start_time = time.time()
             
-            # Run model in thread pool to avoid blocking
-            embedding = await asyncio.to_thread(
-                self.model.encode,
-                text,
-                convert_to_numpy=True,
-                show_progress_bar=False
-            )
+            # Prepare request payload
+            payload = {
+                "model": self.model_name,
+                "input": [text]
+            }
             
-            duration = time.time() - start_time
-            logger.debug(f"HuggingFace embedding generated in {duration:.2f}s")
-            
-            # Convert to list
-            embedding_list = embedding.tolist()
-            return embedding_list
+            # Make HTTP request to Mistral API
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.mistral_base_url}/embeddings",
+                    headers={
+                        "Authorization": f"Bearer {self.mistral_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    duration = time.time() - start_time
+                    logger.debug(f"Mistral embedding generated in {duration:.2f}s")
+                    
+                    # Extract embedding from response
+                    if result.get("data") and len(result["data"]) > 0:
+                        embedding = result["data"][0]["embedding"]
+                        return embedding
+                    else:
+                        logger.error("❌ No embedding data in Mistral API response")
+                        return None
+                else:
+                    logger.error(f"❌ Mistral API error: {response.status_code} - {response.text}")
+                    return None
             
         except Exception as e:
-            logger.error(f"❌ HuggingFace model error: {e}")
+            logger.error(f"❌ Mistral API error: {e}")
             return None
     
     def _generate_fallback_embedding(self, text: str) -> List[float]:
@@ -175,12 +183,12 @@ class HuggingFaceEmbeddingsService:
             logger.debug("✅ Embedding retrieved from cache")
             return cached_embedding
         
-        # Try HuggingFace model
-        if self.model:
-            embedding = await self._generate_embedding_with_model(clean_text)
+        # Try Mistral API
+        if self.mistral_api_key:
+            embedding = await self._generate_embedding_with_api(clean_text)
             if embedding:
                 self._store_in_cache(cache_key, embedding)
-                logger.debug("✅ Embedding generated via HuggingFace model")
+                logger.debug("✅ Embedding generated via Mistral API")
                 return embedding
         
         # Fallback to hash-based embedding
@@ -246,7 +254,7 @@ class HuggingFaceEmbeddingsService:
             stats["cache_size"] = 0
             stats["cache_max_size"] = 0
         
-        stats["model_available"] = self.model is not None
+        stats["api_available"] = self.mistral_api_key is not None
         stats["model_name"] = self.model_name
         stats["dimensions"] = self.embedding_dimensions
         
@@ -262,7 +270,7 @@ class HuggingFaceEmbeddingsService:
         """Perform health check on the embedding service"""
         health = {
             "status": "healthy",
-            "model_available": self.model is not None,
+            "api_available": self.mistral_api_key is not None,
             "cache_enabled": self.cache is not None,
             "model_name": self.model_name,
             "dimensions": self.embedding_dimensions,
@@ -289,4 +297,7 @@ class HuggingFaceEmbeddingsService:
 
 
 # Global embeddings service instance
-embeddings_service = HuggingFaceEmbeddingsService()
+embeddings_service = MistralEmbeddingsService()
+
+# Backward compatibility alias
+HuggingFaceEmbeddingsService = MistralEmbeddingsService
