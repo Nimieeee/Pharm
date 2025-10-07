@@ -23,7 +23,7 @@ export default function ChatPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
   const [darkMode, setDarkMode] = useState(true)
-  const [mode, setMode] = useState<'fast' | 'detailed'>('detailed')
+  const [mode, setMode] = useState<'fast' | 'detailed'>('fast')
   const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string, id: string}>>([])
 
   useEffect(() => { loadConversations() }, [])
@@ -171,9 +171,11 @@ export default function ChatPage() {
     const renderTable = (rows: string[]) => {
       if (rows.length === 0) return null
       
-      // Parse table rows
+      // Parse table rows and clean up markdown formatting
       const parsedRows = rows.map(row => 
-        row.split('|').map(cell => cell.trim()).filter(cell => cell)
+        row.split('|')
+          .map(cell => cell.trim().replace(/\*\*/g, '').replace(/\*/g, ''))
+          .filter(cell => cell)
       )
       
       if (parsedRows.length < 2) return null

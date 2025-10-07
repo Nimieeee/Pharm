@@ -1,13 +1,25 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, MessageSquare, FileText, Zap } from 'lucide-react'
+import { ArrowRight, MessageSquare, FileText, Zap, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { cn } from '@/lib/utils'
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth()
+  const [darkMode, setDarkMode] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className={cn("min-h-screen", darkMode ? "dark bg-[#212121] text-white" : "bg-gradient-to-br from-blue-50 via-white to-purple-50")}>
+      {/* Dark mode toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <button 
+          onClick={() => setDarkMode(!darkMode)} 
+          className={cn("p-3 rounded-full shadow-lg", darkMode ? "bg-gray-800 hover:bg-gray-700" : "bg-white hover:bg-gray-100")}
+        >
+          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+      </div>
+
       {/* Hero Section */}
       <section className="pt-20 pb-32 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -15,11 +27,11 @@ export default function HomePage() {
             <img src="/PharmGPT.png" alt="PharmGPT" className="w-20 h-20 mx-auto mb-6" />
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
+          <h1 className={cn("text-5xl md:text-7xl font-bold mb-6", darkMode ? "text-white" : "text-gray-900")}>
             PharmGPT
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-2xl mx-auto">
+          <p className={cn("text-xl md:text-2xl mb-12 max-w-2xl mx-auto", darkMode ? "text-gray-300" : "text-gray-600")}>
             Your AI-powered pharmacology assistant. Get expert insights on drug interactions, 
             mechanisms of action, and clinical applications.
           </p>
@@ -44,7 +56,9 @@ export default function HomePage() {
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-full hover:border-gray-400 transition-colors"
+                  className={cn("inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full border-2 transition-colors", 
+                    darkMode ? "text-white bg-gray-800 border-gray-700 hover:border-gray-600" : "text-gray-700 bg-white border-gray-300 hover:border-gray-400"
+                  )}
                 >
                   Sign In
                 </Link>
@@ -54,8 +68,8 @@ export default function HomePage() {
 
           {/* Demo credentials */}
           {!isAuthenticated && (
-            <div className="inline-block p-4 bg-blue-50 rounded-2xl border border-blue-200">
-              <p className="text-sm text-blue-900">
+            <div className={cn("inline-block p-4 rounded-2xl border", darkMode ? "bg-blue-900/30 border-blue-800" : "bg-blue-50 border-blue-200")}>
+              <p className={cn("text-sm", darkMode ? "text-blue-200" : "text-blue-900")}>
                 <strong>Demo:</strong> admin@pharmgpt.com / admin123
               </p>
             </div>
@@ -67,38 +81,38 @@ export default function HomePage() {
       <section className="pb-20 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+            <div className={cn("text-center p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow", darkMode ? "bg-gray-800" : "bg-white")}>
               <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <MessageSquare className="w-8 h-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className={cn("text-xl font-semibold mb-2", darkMode ? "text-white" : "text-gray-900")}>
                 Interactive Chat
               </h3>
-              <p className="text-gray-600">
+              <p className={cn(darkMode ? "text-gray-300" : "text-gray-600")}>
                 Natural conversations about pharmaceutical topics with context-aware AI responses
               </p>
             </div>
 
-            <div className="text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+            <div className={cn("text-center p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow", darkMode ? "bg-gray-800" : "bg-white")}>
               <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-purple-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className={cn("text-xl font-semibold mb-2", darkMode ? "text-white" : "text-gray-900")}>
                 Document Analysis
               </h3>
-              <p className="text-gray-600">
+              <p className={cn(darkMode ? "text-gray-300" : "text-gray-600")}>
                 Upload research papers and clinical documents for intelligent Q&A
               </p>
             </div>
 
-            <div className="text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+            <div className={cn("text-center p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow", darkMode ? "bg-gray-800" : "bg-white")}>
               <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className={cn("text-xl font-semibold mb-2", darkMode ? "text-white" : "text-gray-900")}>
                 Fast & Detailed Modes
               </h3>
-              <p className="text-gray-600">
+              <p className={cn(darkMode ? "text-gray-300" : "text-gray-600")}>
                 Choose between quick answers or comprehensive analysis for your queries
               </p>
             </div>
