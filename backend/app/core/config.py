@@ -71,7 +71,10 @@ class Settings(BaseSettings):
     @validator("ALLOWED_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
+            # Handle comma-separated string from environment variable
             return [i.strip() for i in v.split(",")]
+        elif isinstance(v, list):
+            return v
         return v
     
     @validator("SUPABASE_URL")
@@ -108,6 +111,13 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        
+        @classmethod
+        def parse_env_var(cls, field_name: str, raw_val: str):
+            # Don't try to JSON parse ALLOWED_ORIGINS, just return the string
+            if field_name == 'ALLOWED_ORIGINS':
+                return raw_val
+            return cls.json_loads(raw_val)
 
 
 # Global settings instance
