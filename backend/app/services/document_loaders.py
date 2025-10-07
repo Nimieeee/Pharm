@@ -13,8 +13,8 @@ from langchain_core.documents import Document
 from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
+    Docx2txtLoader,
 )
-from langchain_community.document_loaders.docx import Docx2txtLoader
 
 from app.core.config import settings
 
