@@ -193,9 +193,14 @@ class ChatService:
             if not conversation:
                 return None
             
-            # Insert message
-            msg_dict = message_data.dict()
-            msg_dict["user_id"] = str(user.id)
+            # Insert message - convert UUIDs to strings for JSON serialization
+            msg_dict = {
+                "conversation_id": str(message_data.conversation_id),
+                "user_id": str(user.id),
+                "role": message_data.role,
+                "content": message_data.content,
+                "metadata": message_data.metadata or {}
+            }
             
             result = self.db.table("messages").insert(msg_dict).execute()
             
