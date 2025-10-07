@@ -4,19 +4,21 @@ pydantic==1.10.12
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
-supabase==2.10.0
-mistralai==0.0.11
+supabase==2.3.0
+mistralai==0.1.2
 python-docx==1.1.0
 aiofiles==23.2.1
-# httpx version will be resolved by dependencies
+httpx==0.24.1
 psycopg2-binary==2.9.9
 setuptools>=65.0.0
 wheel>=0.37.0
-# LangChain and related dependencies - use compatible versions
+# LangChain and related dependencies
 langchain==0.1.0
 langchain-community==0.0.10
 langchain-core==0.1.12
 langchain-text-splitters==0.0.1
+# HuggingFace embeddings (replaces Mistral for embeddings)
+sentence-transformers==2.2.2
 # Document processing
 pypdf==3.17.4
 docx2txt==0.8

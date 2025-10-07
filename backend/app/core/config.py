@@ -29,9 +29,13 @@ class Settings(BaseSettings):
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     
-    # Mistral Embeddings settings
+    # HuggingFace Embeddings settings
+    HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "all-MiniLM-L6-v2")
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "384"))
+    
+    # Keep Mistral settings for chat (not embeddings)
     MISTRAL_EMBED_MODEL: str = os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
-    MISTRAL_EMBED_DIMENSIONS: int = int(os.getenv("MISTRAL_EMBED_DIMENSIONS", "1024"))
+    MISTRAL_EMBED_DIMENSIONS: int = int(os.getenv("MISTRAL_EMBED_DIMENSIONS", "384"))
     MISTRAL_MAX_RETRIES: int = int(os.getenv("MISTRAL_MAX_RETRIES", "3"))
     MISTRAL_TIMEOUT: int = int(os.getenv("MISTRAL_TIMEOUT", "30"))
     
@@ -50,10 +54,10 @@ class Settings(BaseSettings):
     MIGRATION_PARALLEL_WORKERS: int = int(os.getenv("MIGRATION_PARALLEL_WORKERS", "2"))
     
     # Feature Flags
-    USE_MISTRAL_EMBEDDINGS: bool = os.getenv("USE_MISTRAL_EMBEDDINGS", "true").lower() == "true"
+    USE_HUGGINGFACE_EMBEDDINGS: bool = os.getenv("USE_HUGGINGFACE_EMBEDDINGS", "true").lower() == "true"
     USE_LANGCHAIN_LOADERS: bool = os.getenv("USE_LANGCHAIN_LOADERS", "true").lower() == "true"
     ENABLE_EMBEDDING_CACHE: bool = os.getenv("ENABLE_EMBEDDING_CACHE", "true").lower() == "true"
-    FALLBACK_TO_HASH_EMBEDDINGS: bool = os.getenv("FALLBACK_TO_HASH_EMBEDDINGS", "false").lower() == "true"
+    FALLBACK_TO_HASH_EMBEDDINGS: bool = os.getenv("FALLBACK_TO_HASH_EMBEDDINGS", "true").lower() == "true"
     
     # CORS settings
     ALLOWED_ORIGINS: List[str] = [
