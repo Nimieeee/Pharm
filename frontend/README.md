@@ -1,6 +1,6 @@
 # PharmGPT Frontend
 
-Modern React frontend for the PharmGPT AI-powered pharmacology assistant.
+Modern React frontend for the PharmGPT AI-powered pharmacology assistant focused on pharmacology education and research.
 
 ## Features
 

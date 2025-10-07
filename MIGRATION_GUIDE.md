@@ -305,7 +305,7 @@ After successful migration, you'll have:
 
 ### Improved Search Quality
 - More accurate semantic search
-- Better handling of pharmaceutical terminology
+- Better handling of pharmacology terminology
 - Improved relevance scoring
 
 ### Enhanced Performance

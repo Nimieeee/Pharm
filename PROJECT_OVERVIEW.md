@@ -2,7 +2,7 @@
 
 ## 🎯 Project Summary
 
-PharmGPT is a modern web application that provides AI-powered pharmacology assistance with secure user authentication, document processing, and administrative capabilities.
+PharmGPT is a modern web application that provides AI-powered pharmacology assistance with secure user authentication, document processing, and administrative capabilities focused on pharmacology education and research.
 
 ## 🏗️ Architecture
 
@@ -170,4 +170,4 @@ For questions or issues:
 
 ---
 
-**Built with ❤️ for the pharmaceutical community**
+**Built with ❤️ for the pharmacology community**

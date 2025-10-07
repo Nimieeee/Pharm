@@ -1,6 +1,6 @@
 # PharmGPT - AI-Powered Pharmacology Assistant
 
-A modern web application designed for pharmaceutical and medical queries, featuring RAG (Retrieval-Augmented Generation) capabilities, user authentication, multi-conversation support, and specialized pharmacology expertise.
+A modern web application designed for pharmacology and medical queries, featuring RAG (Retrieval-Augmented Generation) capabilities, user authentication, multi-conversation support, and specialized pharmacology expertise.
 
 ## 🚀 Modern Web Application
 
@@ -14,7 +14,7 @@ Complete web application with:
 
 ## ✨ Features
 
-- **⚕️ Pharmacology Expertise**: Specialized system prompts for pharmaceutical and medical queries
+- **⚕️ Pharmacology Expertise**: Specialized system prompts for pharmacology and medical queries
 - **📚 RAG System**: LangChain + Mistral embeddings + Supabase pgvector for optimized document processing and search
 - **💬 Multi-Conversation**: Manage multiple chat sessions with separate knowledge bases
 - **🌙 Modern UI**: Dark mode interface with responsive design and accessibility features
@@ -105,7 +105,7 @@ Key features:
 ### Primary Model: Mistral Medium
 - **Purpose**: Detailed pharmacology responses
 - **Specialization**: Drug interactions, mechanisms, clinical applications
-- **System Prompt**: Specialized for pharmaceutical expertise
+- **System Prompt**: Specialized for pharmacology expertise
 
 
 ### RAG System
@@ -187,7 +187,7 @@ docker run -p 8501:8501 --env-file .env pharmgpt
 
 ## 🎯 Use Cases
 
-### Pharmaceutical Research
+### Pharmacology Research
 - Drug interaction analysis
 - Mechanism of action explanations
 - Clinical trial information
@@ -276,6 +276,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for the pharmaceutical and medical community**
+**Built with ❤️ for the pharmacology and medical community**
 
 *Powered by Streamlit, Supabase, Mistral AI, and modern ML technologies*
