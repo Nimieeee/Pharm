@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from uuid import UUID
 import bcrypt
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 from fastapi import HTTPException, status
 from supabase import Client
 
@@ -82,7 +83,7 @@ class AuthService:
             
             return TokenData(user_id=user_id, email=email, is_admin=is_admin)
             
-        except JWTError:
+        except InvalidTokenError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials"
