@@ -61,7 +61,9 @@ class Settings(BaseSettings):
         "http://localhost:3000",  # Local development
         "http://localhost:5173",  # Vite dev server
         "https://*.netlify.app",  # Netlify deployments
-        "https://pharmgpt.netlify.app",  # Production frontend
+        "https://pharmgpt.netlify.app",  # Production frontend (Netlify)
+        "https://*.vercel.app",  # Vercel preview deployments
+        "https://pharmgpt-frontend.vercel.app",  # Production frontend (Vercel)
     ]
     
     # Admin settings
