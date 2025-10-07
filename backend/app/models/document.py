@@ -28,7 +28,8 @@ class DocumentChunkInDB(DocumentChunkBase):
     embedding: List[float]
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class DocumentChunk(DocumentChunkBase):
@@ -38,7 +39,8 @@ class DocumentChunk(DocumentChunkBase):
     created_at: datetime
     similarity: Optional[float] = None  # For search results
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class DocumentUpload(BaseModel):

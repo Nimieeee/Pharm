@@ -30,7 +30,8 @@ class ConversationInDB(ConversationBase):
     created_at: datetime
     updated_at: datetime
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class Conversation(ConversationBase):
@@ -43,7 +44,8 @@ class Conversation(ConversationBase):
     document_count: int = 0
     last_activity: Optional[datetime] = None
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class MessageBase(BaseModel):
@@ -65,7 +67,8 @@ class MessageInDB(MessageBase):
     user_id: UUID
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class Message(MessageBase):
@@ -74,7 +77,8 @@ class Message(MessageBase):
     conversation_id: UUID
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class ConversationWithMessages(Conversation):

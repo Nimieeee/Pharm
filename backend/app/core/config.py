@@ -4,8 +4,7 @@ Configuration settings for PharmGPT Backend
 
 import os
 from typing import List, Optional
-from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings, validator
 
 
 class Settings(BaseSettings):
@@ -69,53 +68,46 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@pharmgpt.com")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
     
-    @field_validator("ALLOWED_ORIGINS", mode="before")
-    @classmethod
+    @validator("ALLOWED_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
         return v
     
-    @field_validator("SUPABASE_URL")
-    @classmethod
+    @validator("SUPABASE_URL")
     def validate_supabase_url(cls, v):
         if not v:
             raise ValueError("SUPABASE_URL is required")
         return v
     
-    @field_validator("SUPABASE_ANON_KEY")
-    @classmethod
+    @validator("SUPABASE_ANON_KEY")
     def validate_supabase_key(cls, v):
         if not v:
             raise ValueError("SUPABASE_ANON_KEY is required")
         return v
     
-    @field_validator("MISTRAL_API_KEY")
-    @classmethod
+    @validator("MISTRAL_API_KEY")
     def validate_mistral_key(cls, v):
         if not v:
             print("⚠️  Warning: MISTRAL_API_KEY not set - embeddings will use fallback")
         return v
     
-    @field_validator("LANGCHAIN_CHUNK_SIZE")
-    @classmethod
+    @validator("LANGCHAIN_CHUNK_SIZE")
     def validate_chunk_size(cls, v):
         if v < 100 or v > 5000:
             raise ValueError("LANGCHAIN_CHUNK_SIZE must be between 100 and 5000")
         return v
     
-    @field_validator("LANGCHAIN_CHUNK_OVERLAP")
-    @classmethod
-    def validate_chunk_overlap(cls, v, info):
-        chunk_size = info.data.get("LANGCHAIN_CHUNK_SIZE", 1500)
+    @validator("LANGCHAIN_CHUNK_OVERLAP")
+    def validate_chunk_overlap(cls, v, values):
+        chunk_size = values.get("LANGCHAIN_CHUNK_SIZE", 1500)
         if v >= chunk_size:
             raise ValueError("LANGCHAIN_CHUNK_OVERLAP must be less than LANGCHAIN_CHUNK_SIZE")
         return v
     
-    model_config = {
-        "env_file": ".env",
-        "case_sensitive": True
-    }
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 
 # Global settings instance

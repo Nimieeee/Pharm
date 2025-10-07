@@ -5,7 +5,7 @@ Support request data models
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, validator
 
 
 class SupportRequestBase(BaseModel):
@@ -14,8 +14,7 @@ class SupportRequestBase(BaseModel):
     subject: str
     message: str
     
-    @field_validator('subject')
-    @classmethod
+    @validator('subject')
     def validate_subject(cls, v):
         if len(v.strip()) < 5:
             raise ValueError('Subject must be at least 5 characters long')
@@ -23,8 +22,7 @@ class SupportRequestBase(BaseModel):
             raise ValueError('Subject must be less than 500 characters')
         return v.strip()
     
-    @field_validator('message')
-    @classmethod
+    @validator('message')
     def validate_message(cls, v):
         if len(v.strip()) < 10:
             raise ValueError('Message must be at least 10 characters long')
@@ -43,8 +41,7 @@ class SupportRequestUpdate(BaseModel):
     status: Optional[str] = None
     admin_response: Optional[str] = None
     
-    @field_validator('status')
-    @classmethod
+    @validator('status')
     def validate_status(cls, v):
         if v and v not in ['open', 'in_progress', 'resolved', 'closed']:
             raise ValueError('Invalid status')
@@ -60,7 +57,8 @@ class SupportRequestInDB(SupportRequestBase):
     created_at: datetime
     updated_at: datetime
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class SupportRequest(SupportRequestBase):
@@ -72,7 +70,8 @@ class SupportRequest(SupportRequestBase):
     created_at: datetime
     updated_at: datetime
     
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 
 class SupportRequestResponse(BaseModel):
@@ -81,15 +80,13 @@ class SupportRequestResponse(BaseModel):
     response: str
     status: str = 'resolved'
     
-    @field_validator('response')
-    @classmethod
+    @validator('response')
     def validate_response(cls, v):
         if len(v.strip()) < 10:
             raise ValueError('Response must be at least 10 characters long')
         return v.strip()
     
-    @field_validator('status')
-    @classmethod
+    @validator('status')
     def validate_status(cls, v):
         if v not in ['in_progress', 'resolved', 'closed']:
             raise ValueError('Invalid status for response')
