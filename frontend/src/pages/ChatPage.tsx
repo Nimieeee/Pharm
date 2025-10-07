@@ -163,14 +163,101 @@ export default function ChatPage() {
   }
 
   const formatMessage = (content: string) => {
-    return content.split('\n').map((line, i) => {
-      line = line.replace(/^#+\s/, '').replace(/\*\*/g, '')
-      if (line.match(/^\d+\.\s/)) {
-        const match = line.match(/^(\d+)\.\s(.*)/)
-        if (match) return <div key={i} className="mb-2"><span className="font-semibold text-blue-500">{match[1]}.</span> {match[2]}</div>
+    const lines = content.split('\n')
+    const elements: JSX.Element[] = []
+    let inTable = false
+    let tableRows: string[] = []
+    
+    const renderTable = (rows: string[]) => {
+      if (rows.length === 0) return null
+      
+      // Parse table rows
+      const parsedRows = rows.map(row => 
+        row.split('|').map(cell => cell.trim()).filter(cell => cell)
+      )
+      
+      if (parsedRows.length < 2) return null
+      
+      const headers = parsedRows[0]
+      const dataRows = parsedRows.slice(2) // Skip separator row
+      
+      return (
+        <div className="overflow-x-auto my-4">
+          <table className={cn("min-w-full border-collapse text-sm", darkMode ? "border-gray-700" : "border-gray-300")}>
+            <thead className={cn(darkMode ? "bg-gray-800" : "bg-gray-100")}>
+              <tr>
+                {headers.map((header, idx) => (
+                  <th key={idx} className={cn("border px-4 py-2 text-left font-semibold", darkMode ? "border-gray-700" : "border-gray-300")}>
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataRows.map((row, rowIdx) => (
+                <tr key={rowIdx} className={cn(darkMode ? "hover:bg-gray-800/50" : "hover:bg-gray-50")}>
+                  {row.map((cell, cellIdx) => (
+                    <td key={cellIdx} className={cn("border px-4 py-2", darkMode ? "border-gray-700" : "border-gray-300")}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+    
+    lines.forEach((line, i) => {
+      // Detect table rows (lines with |)
+      if (line.includes('|') && line.trim().startsWith('|')) {
+        if (!inTable) {
+          inTable = true
+          tableRows = []
+        }
+        tableRows.push(line)
+      } else {
+        // If we were in a table, render it
+        if (inTable) {
+          const table = renderTable(tableRows)
+          if (table) elements.push(<div key={`table-${i}`}>{table}</div>)
+          inTable = false
+          tableRows = []
+        }
+        
+        // Format regular lines
+        let processedLine = line.replace(/^#+\s/, '').replace(/\*\*/g, '')
+        
+        // Numbered lists
+        if (processedLine.match(/^\d+\.\s/)) {
+          const match = processedLine.match(/^(\d+)\.\s(.*)/)
+          if (match) {
+            elements.push(
+              <div key={i} className="mb-2">
+                <span className="font-semibold text-blue-500">{match[1]}.</span> {match[2]}
+              </div>
+            )
+            return
+          }
+        }
+        
+        // Regular lines
+        if (processedLine.trim()) {
+          elements.push(<div key={i} className="mb-2">{processedLine}</div>)
+        } else {
+          elements.push(<div key={i} className="mb-1"></div>)
+        }
       }
-      return line.trim() ? <div key={i} className="mb-2">{line}</div> : <div key={i} className="mb-1"></div>
     })
+    
+    // Handle table at end of content
+    if (inTable && tableRows.length > 0) {
+      const table = renderTable(tableRows)
+      if (table) elements.push(<div key="table-end">{table}</div>)
+    }
+    
+    return elements
   }
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
