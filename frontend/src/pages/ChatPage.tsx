@@ -89,13 +89,16 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!inputMessage.trim() || !conversationId || isSending) return
     const userMessage = inputMessage.trim()
+    const attachedFiles = [...uploadedFiles]
     setInputMessage('')
+    setUploadedFiles([])
     setIsSending(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
 
     const tempUserMessage: Message = {
       id: 'temp-' + Date.now(), conversation_id: conversationId, role: 'user',
-      content: userMessage, created_at: new Date().toISOString()
+      content: userMessage, created_at: new Date().toISOString(),
+      metadata: { attachedFiles }
     }
     setMessages(prev => [...prev, tempUserMessage])
 
@@ -245,6 +248,23 @@ export default function ChatPage() {
                 <div key={message.id} className={cn("mb-6 lg:mb-8 flex", message.role === 'user' ? "justify-end" : "justify-start")}>
                   {message.role === 'user' ? (
                     <div className={cn("max-w-[85%] lg:max-w-[70%] rounded-2xl px-4 py-3", darkMode ? "bg-blue-600 text-white" : "bg-blue-500 text-white")}>
+                      {message.metadata?.attachedFiles && message.metadata.attachedFiles.length > 0 && (
+                        <div className="mb-3 space-y-2">
+                          {message.metadata.attachedFiles.map((file: any) => (
+                            <div key={file.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 backdrop-blur">
+                              <div className="w-8 h-8 rounded bg-red-500 flex items-center justify-center shrink-0">
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">{file.name}</div>
+                                <div className="text-xs opacity-75">PDF</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div className="text-sm leading-relaxed break-words">{message.content}</div>
                     </div>
                   ) : (
