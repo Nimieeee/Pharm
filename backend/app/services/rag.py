@@ -15,12 +15,6 @@ import numpy as np
 
 # Additional imports for document processing
 try:
-    from pptx import Presentation
-    PPTX_AVAILABLE = True
-except ImportError:
-    PPTX_AVAILABLE = False
-
-try:
     import docx
     DOCX_AVAILABLE = True
 except ImportError:
@@ -246,9 +240,6 @@ class RAGService:
             elif file_extension == 'docx' and DOCX_AVAILABLE:
                 return self._process_docx(file_path, filename)
                 
-            elif file_extension == 'pptx' and PPTX_AVAILABLE:
-                return self._process_pptx(file_path, filename)
-                
             else:
                 print(f"❌ Unsupported file type: {file_extension}")
                 return []
@@ -338,40 +329,7 @@ class RAGService:
             print(f"❌ Error processing DOCX '{filename}': {e}")
             return []
     
-    def _process_pptx(self, file_path: str, filename: str) -> List[SimpleDocument]:
-        """Process PowerPoint files"""
-        try:
-            prs = Presentation(file_path)
-            
-            text_content = []
-            slide_number = 0
-            
-            for slide in prs.slides:
-                slide_number += 1
-                slide_text = []
-                
-                for shape in slide.shapes:
-                    if hasattr(shape, "text") and shape.text.strip():
-                        slide_text.append(shape.text.strip())
-                
-                if slide_text:
-                    slide_content = f"Slide {slide_number}:\n" + '\n'.join(slide_text)
-                    text_content.append(slide_content)
-            
-            if not text_content:
-                return []
-            
-            full_text = '\n\n'.join(text_content)
-            document = SimpleDocument(
-                page_content=full_text,
-                metadata={"source": filename, "file_type": "pptx", "slides": slide_number}
-            )
-            
-            return [document]
-            
-        except Exception as e:
-            print(f"❌ Error processing PowerPoint '{filename}': {e}")
-            return []
+
     
 
     
