@@ -57,20 +57,35 @@ When provided with document context, use it to give more accurate and specific a
     ) -> str:
         """Generate AI response for a message"""
         try:
+            print(f"🤖 Generating response for user {user.id}, conversation {conversation_id}")
+            
             if not self.mistral_api_key:
+                print("❌ No Mistral API key configured")
                 return "AI service is not available. Please check configuration."
             
             # Get conversation context
             context = ""
             if use_rag:
-                context = await self.rag_service.get_conversation_context(
-                    message, conversation_id, user.id, max_chunks=20
-                )
+                try:
+                    print("📚 Getting RAG context...")
+                    context = await self.rag_service.get_conversation_context(
+                        message, conversation_id, user.id, max_chunks=20
+                    )
+                    print(f"✅ RAG context retrieved: {len(context)} chars")
+                except Exception as e:
+                    print(f"⚠️ RAG context failed: {e}")
+                    context = ""
             
             # Get recent conversation history
-            recent_messages = await self.chat_service.get_recent_messages(
-                conversation_id, user, limit=10
-            )
+            try:
+                print("💬 Getting recent messages...")
+                recent_messages = await self.chat_service.get_recent_messages(
+                    conversation_id, user, limit=10
+                )
+                print(f"✅ Retrieved {len(recent_messages)} recent messages")
+            except Exception as e:
+                print(f"⚠️ Recent messages failed: {e}")
+                recent_messages = []
             
             # Build conversation history
             conversation_history = []
@@ -100,6 +115,8 @@ When provided with document context, use it to give more accurate and specific a
                 "top_p": 0.9
             }
             
+            print(f"🚀 Calling Mistral API with model: {model_name}")
+            
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.mistral_base_url}/chat/completions",
@@ -111,19 +128,28 @@ When provided with document context, use it to give more accurate and specific a
                     timeout=30.0
                 )
                 
+                print(f"📡 Mistral API response: {response.status_code}")
+                
                 if response.status_code == 200:
                     result = response.json()
                     if result.get("choices") and len(result["choices"]) > 0:
-                        return result["choices"][0]["message"]["content"]
+                        response_text = result["choices"][0]["message"]["content"]
+                        print(f"✅ Generated response: {len(response_text)} chars")
+                        return response_text
                     else:
+                        print("❌ No choices in Mistral response")
                         return "I apologize, but I couldn't generate a response. Please try again."
                 else:
                     error_msg = f"API error: {response.status_code}"
-                    print(f"❌ Mistral API error: {error_msg} - {response.text}")
+                    error_text = response.text
+                    print(f"❌ Mistral API error: {error_msg} - {error_text}")
                     return f"AI service error ({response.status_code}). Please try again."
                 
         except Exception as e:
             error_str = str(e)
+            print(f"❌ AI Service Error: {error_str}")
+            print(f"❌ Error type: {type(e).__name__}")
+            
             if "401" in error_str or "Unauthorized" in error_str:
                 return "AI service authentication error. Please check API configuration."
             elif "429" in error_str or "rate limit" in error_str.lower():
