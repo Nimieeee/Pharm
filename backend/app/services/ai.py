@@ -111,7 +111,7 @@ When provided with document context, use it to give more accurate and specific a
                 "model": model_name,
                 "messages": messages,
                 "temperature": 0.7,
-                "max_tokens": 4000,
+                "max_tokens": 10000,
                 "top_p": 0.9
             }
             
