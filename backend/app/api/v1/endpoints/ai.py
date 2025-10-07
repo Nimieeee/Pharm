@@ -68,17 +68,26 @@ async def chat(
     - **use_rag**: Whether to use document context
     """
     try:
+        print(f"💬 Chat endpoint called by user {current_user.id}")
+        print(f"📝 Message: {chat_request.message[:100]}...")
+        print(f"🆔 Conversation ID: {chat_request.conversation_id}")
+        print(f"⚙️ Mode: {chat_request.mode}, RAG: {chat_request.use_rag}")
+        
         # Validate conversation belongs to user
+        print("🔍 Validating conversation...")
         conversation = await chat_service.get_conversation(
             chat_request.conversation_id, current_user
         )
         if not conversation:
+            print("❌ Conversation not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found"
             )
+        print("✅ Conversation validated")
         
         # Add user message to conversation
+        print("💾 Adding user message to database...")
         user_message = MessageCreate(
             conversation_id=chat_request.conversation_id,
             role="user",
@@ -86,8 +95,10 @@ async def chat(
         )
         
         await chat_service.add_message(user_message, current_user)
+        print("✅ User message added")
         
         # Generate AI response
+        print("🤖 Calling AI service...")
         ai_response = await ai_service.generate_response(
             message=chat_request.message,
             conversation_id=chat_request.conversation_id,
@@ -95,8 +106,10 @@ async def chat(
             mode=chat_request.mode,
             use_rag=chat_request.use_rag
         )
+        print(f"✅ AI response generated: {len(ai_response)} chars")
         
         # Add AI response to conversation
+        print("💾 Adding AI response to database...")
         assistant_message = MessageCreate(
             conversation_id=chat_request.conversation_id,
             role="assistant",
@@ -108,7 +121,9 @@ async def chat(
         )
         
         await chat_service.add_message(assistant_message, current_user)
+        print("✅ AI response added")
         
+        print("🎉 Chat endpoint completed successfully")
         return ChatResponse(
             response=ai_response,
             conversation_id=chat_request.conversation_id,
@@ -116,9 +131,12 @@ async def chat(
             context_used=chat_request.use_rag
         )
         
-    except HTTPException:
+    except HTTPException as e:
+        print(f"❌ HTTP Exception in chat endpoint: {e.detail}")
         raise
     except Exception as e:
+        print(f"❌ Unexpected error in chat endpoint: {str(e)}")
+        print(f"❌ Error type: {type(e).__name__}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate response: {str(e)}"
