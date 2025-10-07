@@ -466,10 +466,10 @@ class EnhancedRAGService:
         conversation_id: UUID, 
         user_id: UUID
     ) -> List[DocumentChunk]:
-        """Get all chunks for a conversation with enhanced metadata"""
+        """Get all chunks for a conversation"""
         try:
             result = self.db.table("document_chunks").select(
-                "id, content, metadata, created_at, embedding_version"
+                "id, content, metadata, created_at"
             ).eq("conversation_id", str(conversation_id)).eq(
                 "user_id", str(user_id)
             ).order("created_at").execute()
