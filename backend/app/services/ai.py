@@ -4,6 +4,8 @@ Handles AI model integration for chat responses
 """
 
 import os
+import httpx
+import json
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 from supabase import Client
@@ -13,14 +15,6 @@ from app.services.enhanced_rag import EnhancedRAGService
 from app.services.chat import ChatService
 from app.models.user import User
 
-# Import Mistral AI
-try:
-    from mistralai import Mistral
-    MISTRAL_AVAILABLE = True
-except ImportError:
-    MISTRAL_AVAILABLE = False
-    print("❌ Mistral AI not available. Install with: pip install mistralai")
-
 
 class AIService:
     """AI service for generating chat responses"""
@@ -29,17 +23,18 @@ class AIService:
         self.db = db
         self.rag_service = EnhancedRAGService(db)
         self.chat_service = ChatService(db)
-        self.mistral_client = None
+        self.mistral_api_key = None
+        self.mistral_base_url = "https://api.mistral.ai/v1"
         self._initialize_mistral()
     
     def _initialize_mistral(self):
-        """Initialize Mistral client"""
+        """Initialize Mistral HTTP client"""
         try:
-            if MISTRAL_AVAILABLE and settings.MISTRAL_API_KEY:
-                self.mistral_client = Mistral(api_key=settings.MISTRAL_API_KEY)
-                print("✅ Mistral AI client initialized")
+            if settings.MISTRAL_API_KEY:
+                self.mistral_api_key = settings.MISTRAL_API_KEY
+                print("✅ Mistral AI HTTP client initialized")
             else:
-                print("⚠️ Mistral AI not configured")
+                print("⚠️ Mistral API key not configured")
         except Exception as e:
             print(f"❌ Error initializing Mistral: {e}")
     
@@ -62,7 +57,7 @@ When provided with document context, use it to give more accurate and specific a
     ) -> str:
         """Generate AI response for a message"""
         try:
-            if not self.mistral_client:
+            if not self.mistral_api_key:
                 return "AI service is not available. Please check configuration."
             
             # Get conversation context
@@ -94,21 +89,38 @@ When provided with document context, use it to give more accurate and specific a
                 {"role": "user", "content": user_message}
             ]
             
-            # Generate response
+            # Generate response via HTTP
             model_name = "mistral-small-latest" if mode == "fast" else "mistral-large-latest"
             
-            response = self.mistral_client.chat.complete(
-                model=model_name,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=4000,
-                top_p=0.9
-            )
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 4000,
+                "top_p": 0.9
+            }
             
-            if response and response.choices and len(response.choices) > 0:
-                return response.choices[0].message.content
-            else:
-                return "I apologize, but I couldn't generate a response. Please try again."
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.mistral_base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.mistral_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get("choices") and len(result["choices"]) > 0:
+                        return result["choices"][0]["message"]["content"]
+                    else:
+                        return "I apologize, but I couldn't generate a response. Please try again."
+                else:
+                    error_msg = f"API error: {response.status_code}"
+                    print(f"❌ Mistral API error: {error_msg} - {response.text}")
+                    return f"AI service error ({response.status_code}). Please try again."
                 
         except Exception as e:
             error_str = str(e)
@@ -161,7 +173,7 @@ When provided with document context, use it to give more accurate and specific a
     ):
         """Generate streaming AI response"""
         try:
-            if not self.mistral_client:
+            if not self.mistral_api_key:
                 yield "AI service is not available. Please check configuration."
                 return
             
@@ -193,30 +205,50 @@ When provided with document context, use it to give more accurate and specific a
                 {"role": "user", "content": user_message}
             ]
             
-            # Generate streaming response
+            # Generate streaming response via HTTP
             model_name = "mistral-small-latest" if mode == "fast" else "mistral-large-latest"
             
-            stream = self.mistral_client.chat.complete(
-                model=model_name,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=4000,
-                top_p=0.9,
-                stream=True
-            )
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 4000,
+                "top_p": 0.9,
+                "stream": True
+            }
             
-            for chunk in stream:
-                if chunk.choices and len(chunk.choices) > 0:
-                    delta = chunk.choices[0].delta
-                    if delta.content:
-                        yield delta.content
+            async with httpx.AsyncClient() as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.mistral_base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.mistral_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=30.0
+                ) as response:
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data = line[6:]
+                            if data == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data)
+                                if chunk.get("choices") and len(chunk["choices"]) > 0:
+                                    delta = chunk["choices"][0].get("delta", {})
+                                    content = delta.get("content")
+                                    if content:
+                                        yield content
+                            except json.JSONDecodeError:
+                                continue
                         
         except Exception as e:
             yield f"Error generating response: {str(e)}"
     
     def is_available(self) -> bool:
         """Check if AI service is available"""
-        return self.mistral_client is not None
+        return self.mistral_api_key is not None
     
     def get_available_modes(self) -> Dict[str, str]:
         """Get available AI modes"""
