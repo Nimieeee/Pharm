@@ -31,7 +31,7 @@ class ConversationInDB(ConversationBase):
     updated_at: datetime
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class Conversation(ConversationBase):
@@ -45,7 +45,7 @@ class Conversation(ConversationBase):
     last_activity: Optional[datetime] = None
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class MessageBase(BaseModel):
@@ -68,7 +68,7 @@ class MessageInDB(MessageBase):
     created_at: datetime
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class Message(MessageBase):
@@ -78,7 +78,7 @@ class Message(MessageBase):
     created_at: datetime
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class ConversationWithMessages(Conversation):

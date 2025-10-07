@@ -29,7 +29,7 @@ class DocumentChunkInDB(DocumentChunkBase):
     created_at: datetime
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class DocumentChunk(DocumentChunkBase):
@@ -40,7 +40,7 @@ class DocumentChunk(DocumentChunkBase):
     similarity: Optional[float] = None  # For search results
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class DocumentUpload(BaseModel):
