@@ -38,9 +38,18 @@ app = FastAPI(
 )
 
 # Configure CORS for Netlify frontend
+# Allow all Netlify domains and localhost for development
+allowed_origins = []
+for origin in settings.ALLOWED_ORIGINS:
+    if "*" in origin:
+        # For wildcard patterns, we'll use allow_origin_regex
+        continue
+    allowed_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_origin_regex=r"https://.*\.netlify\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
