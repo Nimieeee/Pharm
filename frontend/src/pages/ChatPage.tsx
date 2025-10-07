@@ -323,7 +323,7 @@ export default function ChatPage() {
               <div key={conv.id} className={cn("group flex items-center gap-2 px-3 py-2 rounded-lg mb-1 cursor-pointer", conversationId === conv.id ? (darkMode ? "bg-gray-800" : "bg-gray-200") : (darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"))} onClick={() => { navigate(`/chat/${conv.id}`); if (window.innerWidth < 1024) setSidebarOpen(false) }}>
                 <MessageSquare className="w-4 h-4 shrink-0" />
                 <span className="flex-1 text-sm truncate">{conv.title}</span>
-                <button onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 rounded">
+                <button onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }} className="p-1 hover:bg-red-500/10 rounded">
                   <Trash2 className="w-3 h-3 text-red-500" />
                 </button>
               </div>

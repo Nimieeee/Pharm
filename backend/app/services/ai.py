@@ -63,24 +63,38 @@ When provided with document context, use it to give more accurate and specific a
                 print("❌ No Mistral API key configured")
                 return "AI service is not available. Please check configuration."
             
-            # Get conversation context
+            # Get conversation context - use ALL document chunks
             context = ""
             if use_rag:
                 try:
-                    print("📚 Getting RAG context...")
-                    context = await self.rag_service.get_conversation_context(
-                        message, conversation_id, user.id, max_chunks=20
+                    print("📚 Getting RAG context (all documents)...")
+                    # Get ALL chunks from the conversation
+                    all_chunks = await self.rag_service.get_all_conversation_chunks(
+                        conversation_id, user.id
                     )
-                    print(f"✅ RAG context retrieved: {len(context)} chars")
+                    
+                    if all_chunks:
+                        # Build full context from all chunks
+                        context_parts = []
+                        for chunk in all_chunks:
+                            context_parts.append(chunk.content)
+                        context = "\n\n".join(context_parts)
+                        print(f"✅ RAG context retrieved: {len(all_chunks)} chunks, {len(context)} chars")
+                    else:
+                        print("⚠️ No document chunks found")
                 except Exception as e:
                     print(f"⚠️ RAG context failed: {e}")
+                    import traceback
+                    traceback.print_exc()
                     context = ""
             
             # Get recent conversation history
             try:
                 print("💬 Getting recent messages...")
+                # Limit history for detailed mode
+                history_limit = 6 if mode == "detailed" else 8
                 recent_messages = await self.chat_service.get_recent_messages(
-                    conversation_id, user, limit=10
+                    conversation_id, user, limit=history_limit
                 )
                 print(f"✅ Retrieved {len(recent_messages)} recent messages")
             except Exception as e:
@@ -89,10 +103,12 @@ When provided with document context, use it to give more accurate and specific a
             
             # Build conversation history
             conversation_history = []
-            for msg in recent_messages[-10:]:  # Last 10 messages
+            for msg in recent_messages:
+                # Truncate long messages to save tokens
+                content = msg.content[:500] if len(msg.content) > 500 else msg.content
                 conversation_history.append({
                     "role": msg.role,
-                    "content": msg.content
+                    "content": content
                 })
             
             # Build user message with context
@@ -107,25 +123,28 @@ When provided with document context, use it to give more accurate and specific a
             # Generate response via HTTP
             model_name = "mistral-small-latest" if mode == "fast" else "mistral-large-latest"
             
+            # Set max_tokens to 8000 for comprehensive responses
+            max_tokens = 8000
+            
             payload = {
                 "model": model_name,
                 "messages": messages,
                 "temperature": 0.7,
-                "max_tokens": 10000,
+                "max_tokens": max_tokens,
                 "top_p": 0.9
             }
             
-            print(f"🚀 Calling Mistral API with model: {model_name}")
+            print(f"🚀 Calling Mistral API with model: {model_name}, max_tokens: {max_tokens}")
             
-            async with httpx.AsyncClient() as client:
+            # 3 minute timeout for processing
+            async with httpx.AsyncClient(timeout=180.0) as client:
                 response = await client.post(
                     f"{self.mistral_base_url}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {self.mistral_api_key}",
                         "Content-Type": "application/json"
                     },
-                    json=payload,
-                    timeout=30.0
+                    json=payload
                 )
                 
                 print(f"📡 Mistral API response: {response.status_code}")
@@ -168,12 +187,12 @@ When provided with document context, use it to give more accurate and specific a
         """Build user message with context and history"""
         parts = []
         
-        # Add conversation history if available
+        # Add conversation history if available (already truncated in caller)
         if conversation_history:
             parts.append("**Previous Conversation:**")
-            for msg in conversation_history[-6:]:  # Last 6 messages for context
+            for msg in conversation_history:
                 role = "You" if msg["role"] == "assistant" else "User"
-                parts.append(f"{role}: {msg['content'][:200]}...")  # Truncate for brevity
+                parts.append(f"{role}: {msg['content']}")
             parts.append("")
         
         # Add document context if available

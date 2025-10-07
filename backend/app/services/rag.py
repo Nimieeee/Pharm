@@ -167,15 +167,24 @@ class RAGService:
     ) -> DocumentUploadResponse:
         """Process uploaded file and store chunks using LangChain"""
         try:
+            print(f"📄 Processing file: {filename} ({len(file_content)} bytes)")
+            print(f"📁 Conversation: {conversation_id}, User: {user_id}")
+            
             # Save file temporarily
             file_extension = filename.lower().split('.')[-1]
+            print(f"📝 File extension: {file_extension}")
+            
             with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as tmp_file:
                 tmp_file.write(file_content)
                 tmp_file_path = tmp_file.name
             
+            print(f"💾 Saved to temp file: {tmp_file_path}")
+            
             try:
                 # Load document
+                print(f"📖 Loading document...")
                 documents = self._load_document(tmp_file_path, filename)
+                print(f"✅ Loaded {len(documents)} document(s)")
                 
                 if not documents:
                     return DocumentUploadResponse(
@@ -185,9 +194,12 @@ class RAGService:
                     )
                 
                 # Split into chunks
+                print(f"✂️ Splitting into chunks...")
                 chunks = self.text_splitter.split_documents(documents)
+                print(f"✅ Created {len(chunks)} chunks")
                 
                 if not chunks:
+                    print("❌ No chunks created")
                     return DocumentUploadResponse(
                         success=False,
                         message=f"No content found in file: {filename}",
@@ -204,12 +216,18 @@ class RAGService:
                     })
                 
                 # Store chunks using direct database operations
+                print(f"💾 Storing chunks in database...")
                 success_count = 0
-                for chunk in chunks:
+                for i, chunk in enumerate(chunks):
+                    print(f"  Storing chunk {i+1}/{len(chunks)}...")
                     if await self._process_and_store_chunk(
                         chunk, filename, conversation_id, user_id
                     ):
                         success_count += 1
+                    else:
+                        print(f"  ❌ Failed to store chunk {i+1}")
+                
+                print(f"✅ Successfully stored {success_count}/{len(chunks)} chunks")
                 
                 return DocumentUploadResponse(
                     success=success_count > 0,
@@ -238,9 +256,12 @@ class RAGService:
         """Process chunk and store in database"""
         try:
             # Generate embedding
+            print(f"    🔢 Generating embedding for chunk ({len(chunk.page_content)} chars)...")
             embedding = self._generate_embedding(chunk.page_content)
             if not embedding:
+                print(f"    ❌ Failed to generate embedding")
                 return False
+            print(f"    ✅ Generated {len(embedding)}-dimensional embedding")
             
             # Determine embedding version
             embedding_version = "mistral-v1" if self.mistral_api_key else "hash-v1"
@@ -265,11 +286,19 @@ class RAGService:
                 "metadata": metadata
             }
             
+            print(f"    💾 Inserting into database...")
             result = self.db.table("document_chunks").insert(chunk_data).execute()
-            return len(result.data) > 0
+            success = len(result.data) > 0
+            if success:
+                print(f"    ✅ Chunk stored successfully")
+            else:
+                print(f"    ❌ No data returned from insert")
+            return success
             
         except Exception as e:
-            print(f"❌ Error storing chunk: {e}")
+            print(f"    ❌ Error storing chunk: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def _load_document(self, file_path: str, filename: str) -> List[SimpleDocument]:
