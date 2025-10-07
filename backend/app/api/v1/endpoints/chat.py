@@ -10,7 +10,7 @@ from supabase import Client
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.services.chat import ChatService
-from app.services.rag import RAGService
+from app.services.enhanced_rag import EnhancedRAGService
 from app.models.user import User
 from app.models.conversation import (
     Conversation, ConversationCreate, ConversationUpdate, ConversationWithMessages,
@@ -26,9 +26,9 @@ def get_chat_service(db: Client = Depends(get_db)) -> ChatService:
     return ChatService(db)
 
 
-def get_rag_service(db: Client = Depends(get_db)) -> RAGService:
-    """Get RAG service"""
-    return RAGService(db)
+def get_rag_service(db: Client = Depends(get_db)) -> EnhancedRAGService:
+    """Get Enhanced RAG service with LangChain"""
+    return EnhancedRAGService(db)
 
 
 @router.get("/conversations", response_model=List[Conversation])
@@ -233,7 +233,7 @@ async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service),
-    rag_service: RAGService = Depends(get_rag_service)
+    rag_service: EnhancedRAGService = Depends(get_rag_service)
 ):
     """
     Upload a document to a conversation
@@ -289,7 +289,7 @@ async def delete_conversation_documents(
     conversation_id: UUID,
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service),
-    rag_service: RAGService = Depends(get_rag_service)
+    rag_service: EnhancedRAGService = Depends(get_rag_service)
 ):
     """
     Delete all documents from a conversation

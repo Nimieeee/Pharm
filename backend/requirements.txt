@@ -21,6 +21,7 @@ langchain-core>=0.1.28,<0.2.0
 langchain-text-splitters>=0.0.1,<0.1.0
 # Document processing
 pypdf==3.17.4
+PyPDF2==3.0.1
 docx2txt==0.8
 # Caching and utilities
 cachetools==5.3.2
