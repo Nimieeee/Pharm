@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { cn, validatePassword } from '@/lib/utils'
 
 const registerSchema = z.object({
@@ -32,6 +33,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { register: registerUser, isLoading } = useAuth()
+  const { darkMode } = useTheme()
 
   const {
     register,
@@ -59,10 +61,10 @@ export default function RegisterForm({ className }: RegisterFormProps) {
   return (
     <div className={cn('w-full max-w-md mx-auto', className)}>
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className={cn("text-3xl font-bold mb-2", darkMode ? "text-white" : "text-gray-900")}>
           Create your account
         </h1>
-        <p className="text-gray-600">
+        <p className={cn(darkMode ? "text-gray-300" : "text-gray-600")}>
           Join PharmGPT to access AI-powered pharmacology assistance
         </p>
       </div>
@@ -71,12 +73,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
         {/* Name Fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="first_name" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
               First name
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-400" />
+                <User className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
               </div>
               <input
                 {...register('first_name')}
@@ -85,6 +87,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
                 autoComplete="given-name"
                 className={cn(
                   'input pl-10',
+                  darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
                   errors.first_name && 'border-red-500 focus:ring-red-500'
                 )}
                 placeholder="First name"
@@ -97,7 +100,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
           </div>
 
           <div>
-            <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="last_name" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
               Last name
             </label>
             <input
@@ -107,6 +110,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="family-name"
               className={cn(
                 'input',
+                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
                 errors.last_name && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Last name"
@@ -120,12 +124,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="email" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
             Email address
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-gray-400" />
+              <Mail className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
             </div>
             <input
               {...register('email')}
@@ -134,6 +138,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="email"
               className={cn(
                 'input pl-10',
+                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
                 errors.email && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Enter your email"
@@ -147,12 +152,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="password" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
             Password
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-400" />
+              <Lock className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
             </div>
             <input
               {...register('password')}
@@ -161,6 +166,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="new-password"
               className={cn(
                 'input pl-10 pr-10',
+                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
                 errors.password && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Create a password"
@@ -173,9 +179,9 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               disabled={isFormLoading}
             >
               {showPassword ? (
-                <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <EyeOff className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
               ) : (
-                <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <Eye className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
               )}
             </button>
           </div>
@@ -205,12 +211,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
         {/* Confirm Password Field */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="confirmPassword" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
             Confirm password
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-400" />
+              <Lock className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
             </div>
             <input
               {...register('confirmPassword')}
@@ -219,6 +225,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="new-password"
               className={cn(
                 'input pl-10 pr-10',
+                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
                 errors.confirmPassword && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Confirm your password"
@@ -231,9 +238,9 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               disabled={isFormLoading}
             >
               {showConfirmPassword ? (
-                <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <EyeOff className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
               ) : (
-                <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                <Eye className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
               )}
             </button>
           </div>
@@ -264,20 +271,20 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
       {/* Links */}
       <div className="mt-6 text-center space-y-2">
-        <p className="text-sm text-gray-600">
+        <p className={cn("text-sm", darkMode ? "text-gray-300" : "text-gray-600")}>
           Already have an account?{' '}
           <Link
             to="/login"
-            className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
+            className={cn("font-medium transition-colors", darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}
           >
             Sign in
           </Link>
         </p>
         
-        <p className="text-sm text-gray-600">
+        <p className={cn("text-sm", darkMode ? "text-gray-300" : "text-gray-600")}>
           <Link
             to="/"
-            className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
+            className={cn("font-medium transition-colors", darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}
           >
             Back to home
           </Link>
@@ -286,13 +293,13 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
       {/* Terms */}
       <div className="mt-6 text-center">
-        <p className="text-xs text-gray-500">
+        <p className={cn("text-xs", darkMode ? "text-gray-400" : "text-gray-500")}>
           By creating an account, you agree to our{' '}
-          <a href="#" className="text-primary-600 hover:text-primary-500">
+          <a href="#" className={cn(darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}>
             Terms of Service
           </a>{' '}
           and{' '}
-          <a href="#" className="text-primary-600 hover:text-primary-500">
+          <a href="#" className={cn(darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}>
             Privacy Policy
           </a>
         </p>
