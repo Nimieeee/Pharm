@@ -128,6 +128,8 @@ export default function ChatPage() {
         await new Promise(resolve => setTimeout(resolve, 20))
       }
       
+      // Remove streaming message and reload to get actual messages
+      setMessages(prev => prev.filter(m => m.id !== streamingMessageId && m.id !== tempUserMessage.id))
       await loadConversation(conversationId)
     } catch (error) {
       toast.error('Failed to send message')
@@ -271,7 +273,7 @@ export default function ChatPage() {
                     <div className="flex gap-3 max-w-full">
                       <img src="/PharmGPT.png" alt="AI" className="w-8 h-8 rounded-full shrink-0" />
                       <div className="flex-1 min-w-0">
-                        {!message.content && isSending ? (
+                        {!message.content ? (
                           <div className="flex items-center gap-3">
                             <div className="ai-loader scale-50"></div>
                             <span className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>Thinking...</span>
