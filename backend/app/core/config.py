@@ -63,7 +63,8 @@ class Settings(BaseSettings):
         "https://*.netlify.app",  # Netlify deployments
         "https://pharmgpt.netlify.app",  # Production frontend (Netlify)
         "https://*.vercel.app",  # Vercel preview deployments
-        "https://pharmgpt-frontend.vercel.app",  # Production frontend (Vercel)
+        "https://pharmgpt.vercel.app",  # Production frontend (Vercel)
+        "https://pharmgpt-frontend.vercel.app",  # Alternative Vercel domain
     ]
     
     # Admin settings
