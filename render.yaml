@@ -1,15 +1,11 @@
 services:
   - type: web
     name: pharmgpt-backend
-    env: python
+    env: docker
     plan: starter
     region: oregon
     rootDirectory: backend
-    buildCommand: |
-      python --version
-      pip install --upgrade pip
-      pip install -r requirements.txt
-    startCommand: python main.py
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health
     envVars:
       - key: PORT
