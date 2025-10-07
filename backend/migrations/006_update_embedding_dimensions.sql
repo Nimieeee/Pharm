@@ -1,21 +1,30 @@
 -- Migration: Update embedding dimensions from 384 to 1024 for Mistral embeddings
 -- This migration updates the vector column to support Mistral's 1024-dimensional embeddings
 
--- Step 1: Drop existing vector column and recreate with new dimensions
-ALTER TABLE document_chunks 
-DROP COLUMN IF EXISTS embedding;
+-- Step 1: Drop dependent view first
+DROP VIEW IF EXISTS langchain_documents CASCADE;
 
--- Step 2: Add new embedding column with 1024 dimensions
+-- Step 2: Drop existing vector column and recreate with new dimensions
+ALTER TABLE document_chunks 
+DROP COLUMN IF EXISTS embedding CASCADE;
+
+-- Step 3: Add new embedding column with 1024 dimensions
 ALTER TABLE document_chunks 
 ADD COLUMN embedding vector(1024);
 
--- Step 3: Create index for vector similarity search
+-- Step 4: Create index for vector similarity search
 CREATE INDEX IF NOT EXISTS document_chunks_embedding_idx 
 ON document_chunks 
 USING ivfflat (embedding vector_cosine_ops)
 WITH (lists = 100);
 
--- Step 4: Update the match function to use 1024 dimensions
+-- Step 5: Recreate the langchain_documents view (if it was being used)
+-- Uncomment if you need this view:
+-- CREATE VIEW langchain_documents AS
+-- SELECT id, content, metadata, embedding, created_at
+-- FROM document_chunks;
+
+-- Step 6: Update the match function to use 1024 dimensions
 CREATE OR REPLACE FUNCTION match_documents_with_user_isolation(
   query_embedding vector(1024),
   conversation_uuid uuid,
