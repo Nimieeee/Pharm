@@ -11,7 +11,6 @@ from supabase import Client
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import SupabaseVectorStore
 from langchain.schema import Document
 import numpy as np
 
@@ -62,40 +61,26 @@ class RAGService:
             self.embeddings = None
     
     def _initialize_vector_store(self):
-        """Initialize Supabase vector store"""
+        """Initialize vector store (using direct Supabase integration)"""
         try:
-            if self.embeddings:
-                self.vector_store = SupabaseVectorStore(
-                    client=self.db,
-                    embedding=self.embeddings,
-                    table_name="document_chunks",
-                    query_name="match_document_chunks"
-                )
-                print("✅ Supabase vector store initialized")
+            # We'll use direct Supabase client instead of LangChain vector store
+            # This is more reliable and doesn't require additional packages
+            self.vector_store = None  # Will use direct database operations
+            print("✅ Direct Supabase integration initialized")
         except Exception as e:
             print(f"❌ Error initializing vector store: {e}")
             self.vector_store = None
     
-    def _get_user_vector_store(self, user_id: UUID, conversation_id: UUID) -> Optional[SupabaseVectorStore]:
-        """Get user-specific vector store with metadata filtering"""
+    def _generate_embedding(self, text: str) -> Optional[List[float]]:
+        """Generate embedding for text using HuggingFace embeddings"""
         try:
-            if not self.embeddings:
+            if not self.embeddings or not text.strip():
                 return None
             
-            # Create vector store with user-specific metadata filter
-            vector_store = SupabaseVectorStore(
-                client=self.db,
-                embedding=self.embeddings,
-                table_name="document_chunks",
-                query_name="match_document_chunks",
-                metadata_filter={
-                    "user_id": str(user_id),
-                    "conversation_id": str(conversation_id)
-                }
-            )
-            return vector_store
+            embedding = self.embeddings.embed_query(text)
+            return embedding
         except Exception as e:
-            print(f"❌ Error creating user vector store: {e}")
+            print(f"❌ Error generating embedding: {e}")
             return None
     
     async def process_uploaded_file(
@@ -143,22 +128,13 @@ class RAGService:
                         "file_type": file_extension
                     })
                 
-                # Store chunks using LangChain vector store
-                if self.vector_store:
-                    texts = [chunk.page_content for chunk in chunks]
-                    metadatas = [chunk.metadata for chunk in chunks]
-                    
-                    # Add documents to vector store
-                    ids = await self._add_documents_to_vector_store(texts, metadatas)
-                    success_count = len(ids) if ids else 0
-                else:
-                    # Fallback to manual storage
-                    success_count = 0
-                    for chunk in chunks:
-                        if await self._process_and_store_chunk_manual(
-                            chunk, filename, conversation_id, user_id
-                        ):
-                            success_count += 1
+                # Store chunks using direct database operations
+                success_count = 0
+                for chunk in chunks:
+                    if await self._process_and_store_chunk(
+                        chunk, filename, conversation_id, user_id
+                    ):
+                        success_count += 1
                 
                 return DocumentUploadResponse(
                     success=success_count > 0,
@@ -177,18 +153,45 @@ class RAGService:
                 chunk_count=0
             )
     
-    async def _add_documents_to_vector_store(self, texts: List[str], metadatas: List[Dict]) -> Optional[List[str]]:
-        """Add documents to vector store"""
+    async def _process_and_store_chunk(
+        self, 
+        chunk: Document, 
+        filename: str, 
+        conversation_id: UUID, 
+        user_id: UUID
+    ) -> bool:
+        """Process chunk and store in database"""
         try:
-            if not self.vector_store:
-                return None
+            # Generate embedding
+            embedding = self._generate_embedding(chunk.page_content)
+            if not embedding:
+                return False
             
-            # Use LangChain's add_texts method
-            ids = self.vector_store.add_texts(texts=texts, metadatas=metadatas)
-            return ids
+            # Prepare metadata
+            metadata = {
+                "filename": filename,
+                "page": chunk.metadata.get("page", 0),
+                "source": chunk.metadata.get("source", filename),
+                "file_type": chunk.metadata.get("file_type", "unknown"),
+                "user_id": str(user_id),
+                "conversation_id": str(conversation_id)
+            }
+            
+            # Store in database
+            chunk_data = {
+                "conversation_id": str(conversation_id),
+                "user_id": str(user_id),
+                "content": chunk.page_content,
+                "embedding": embedding,
+                "metadata": metadata
+            }
+            
+            result = self.db.table("document_chunks").insert(chunk_data).execute()
+            return len(result.data) > 0
+            
         except Exception as e:
-            print(f"❌ Error adding documents to vector store: {e}")
-            return None
+            print(f"❌ Error storing chunk: {e}")
+            return False
     
     def _load_document(self, file_path: str, filename: str) -> List[Document]:
         """Load document based on file type"""
@@ -285,46 +288,7 @@ class RAGService:
             print(f"❌ Error processing PowerPoint '{filename}': {e}")
             return []
     
-    async def _process_and_store_chunk_manual(
-        self, 
-        chunk: Document, 
-        filename: str, 
-        conversation_id: UUID, 
-        user_id: UUID
-    ) -> bool:
-        """Fallback method to manually process and store chunk"""
-        try:
-            # Generate embedding using HuggingFace embeddings
-            if not self.embeddings:
-                return False
-            
-            embedding = self.embeddings.embed_query(chunk.page_content)
-            
-            # Prepare metadata
-            metadata = {
-                "filename": filename,
-                "page": chunk.metadata.get("page", 0),
-                "source": chunk.metadata.get("source", filename),
-                "file_type": chunk.metadata.get("file_type", "unknown"),
-                "user_id": str(user_id),
-                "conversation_id": str(conversation_id)
-            }
-            
-            # Store in database
-            chunk_data = {
-                "conversation_id": str(conversation_id),
-                "user_id": str(user_id),
-                "content": chunk.page_content,
-                "embedding": embedding,
-                "metadata": metadata
-            }
-            
-            result = self.db.table("document_chunks").insert(chunk_data).execute()
-            return len(result.data) > 0
-            
-        except Exception as e:
-            print(f"❌ Error storing chunk manually: {e}")
-            return False
+
     
     async def search_similar_chunks(
         self, 
@@ -334,67 +298,17 @@ class RAGService:
         max_results: int = 10,
         similarity_threshold: float = 0.7
     ) -> List[DocumentChunk]:
-        """Search for similar document chunks using LangChain vector store"""
+        """Search for similar document chunks using direct database operations"""
         try:
-            # Get user-specific vector store
-            user_vector_store = self._get_user_vector_store(user_id, conversation_id)
-            
-            if user_vector_store:
-                # Use LangChain similarity search
-                docs = user_vector_store.similarity_search_with_score(
-                    query=query,
-                    k=max_results,
-                    filter={
-                        "user_id": str(user_id),
-                        "conversation_id": str(conversation_id)
-                    }
-                )
-                
-                chunks = []
-                for doc, score in docs:
-                    # Convert score to similarity (higher is better)
-                    similarity = 1.0 - score if score <= 1.0 else 1.0 / (1.0 + score)
-                    
-                    if similarity >= similarity_threshold:
-                        chunk = DocumentChunk(
-                            id=doc.metadata.get('id', ''),
-                            conversation_id=conversation_id,
-                            content=doc.page_content,
-                            metadata=doc.metadata,
-                            similarity=similarity,
-                            created_at=doc.metadata.get('created_at', '2024-01-01T00:00:00Z')
-                        )
-                        chunks.append(chunk)
-                
-                return chunks
-            else:
-                # Fallback to manual search
-                return await self._search_chunks_manual(query, conversation_id, user_id, max_results, similarity_threshold)
-            
-        except Exception as e:
-            print(f"❌ Error searching chunks with LangChain: {e}")
-            # Fallback to recent chunks
-            return await self._get_recent_chunks(conversation_id, user_id, max_results)
-    
-    async def _search_chunks_manual(
-        self, 
-        query: str, 
-        conversation_id: UUID, 
-        user_id: UUID, 
-        max_results: int,
-        similarity_threshold: float
-    ) -> List[DocumentChunk]:
-        """Manual search fallback using database function"""
-        try:
-            if not self.embeddings:
-                return await self._get_recent_chunks(conversation_id, user_id, max_results)
-            
             # Generate query embedding
-            query_embedding = self.embeddings.embed_query(query)
+            query_embedding = self._generate_embedding(query)
+            if not query_embedding:
+                # Fallback to recent chunks
+                return await self._get_recent_chunks(conversation_id, user_id, max_results)
             
             # Search using database function
             result = self.db.rpc(
-                'match_document_chunks',
+                'match_documents_with_user_isolation',
                 {
                     'query_embedding': query_embedding,
                     'conversation_uuid': str(conversation_id),
@@ -419,8 +333,11 @@ class RAGService:
             return chunks
             
         except Exception as e:
-            print(f"❌ Error in manual search: {e}")
+            print(f"❌ Error searching chunks: {e}")
+            # Fallback to recent chunks
             return await self._get_recent_chunks(conversation_id, user_id, max_results)
+    
+
     
     async def _get_recent_chunks(
         self, 
