@@ -8,10 +8,9 @@ import tempfile
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
 from supabase import Client
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.schema import Document
+import re
+from typing import List, Dict, Any, Optional, Tuple
+from uuid import UUID
 import numpy as np
 
 # Additional imports for document processing
@@ -31,53 +30,93 @@ from app.core.config import settings
 from app.models.document import DocumentChunk, DocumentChunkCreate, DocumentUploadResponse
 
 
+class SimpleDocument:
+    """Simple document class to replace LangChain Document"""
+    def __init__(self, page_content: str, metadata: Dict[str, Any] = None):
+        self.page_content = page_content
+        self.metadata = metadata or {}
+
+
+class SimpleTextSplitter:
+    """Simple text splitter to replace LangChain RecursiveCharacterTextSplitter"""
+    
+    def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 300):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.separators = ["\n\n", "\n", ". ", " ", ""]
+    
+    def split_documents(self, documents: List[SimpleDocument]) -> List[SimpleDocument]:
+        """Split documents into chunks"""
+        chunks = []
+        for doc in documents:
+            text_chunks = self._split_text(doc.page_content)
+            for chunk_text in text_chunks:
+                chunk = SimpleDocument(
+                    page_content=chunk_text,
+                    metadata=doc.metadata.copy()
+                )
+                chunks.append(chunk)
+        return chunks
+    
+    def _split_text(self, text: str) -> List[str]:
+        """Split text into chunks"""
+        if len(text) <= self.chunk_size:
+            return [text]
+        
+        chunks = []
+        start = 0
+        
+        while start < len(text):
+            end = start + self.chunk_size
+            
+            if end >= len(text):
+                chunks.append(text[start:])
+                break
+            
+            # Try to find a good split point
+            split_point = end
+            for separator in self.separators:
+                last_sep = text.rfind(separator, start, end)
+                if last_sep > start:
+                    split_point = last_sep + len(separator)
+                    break
+            
+            chunks.append(text[start:split_point])
+            start = split_point - self.chunk_overlap if self.chunk_overlap > 0 else split_point
+        
+        return [chunk.strip() for chunk in chunks if chunk.strip()]
+
+
 class RAGService:
-    """RAG service for document processing and retrieval using LangChain + Supabase pgvector"""
+    """RAG service for document processing and retrieval using direct Supabase integration"""
     
     def __init__(self, db: Client):
         self.db = db
-        self.text_splitter = RecursiveCharacterTextSplitter(
+        self.text_splitter = SimpleTextSplitter(
             chunk_size=1500,
-            chunk_overlap=300,
-            length_function=len,
-            separators=["\n\n", "\n", ". ", " ", ""]
+            chunk_overlap=300
         )
-        self.embeddings = None
-        self.vector_store = None
-        self._initialize_embeddings()
-        self._initialize_vector_store()
-    
-    def _initialize_embeddings(self):
-        """Initialize HuggingFace embedding model for LangChain"""
-        try:
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name='all-MiniLM-L6-v2',
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
-            )
-            print("✅ LangChain embeddings initialized")
-        except Exception as e:
-            print(f"❌ Error initializing embeddings: {e}")
-            self.embeddings = None
-    
-    def _initialize_vector_store(self):
-        """Initialize vector store (using direct Supabase integration)"""
-        try:
-            # We'll use direct Supabase client instead of LangChain vector store
-            # This is more reliable and doesn't require additional packages
-            self.vector_store = None  # Will use direct database operations
-            print("✅ Direct Supabase integration initialized")
-        except Exception as e:
-            print(f"❌ Error initializing vector store: {e}")
-            self.vector_store = None
+        print("✅ RAG service initialized with direct Supabase integration")
     
     def _generate_embedding(self, text: str) -> Optional[List[float]]:
-        """Generate embedding for text using HuggingFace embeddings"""
+        """Generate simple embedding for text (placeholder implementation)"""
         try:
-            if not self.embeddings or not text.strip():
+            if not text.strip():
                 return None
             
-            embedding = self.embeddings.embed_query(text)
+            # Simple hash-based embedding for now (384 dimensions to match schema)
+            # In production, you would use a proper embedding model
+            import hashlib
+            hash_obj = hashlib.sha256(text.encode())
+            hash_bytes = hash_obj.digest()
+            
+            # Convert to 384-dimensional vector
+            embedding = []
+            for i in range(384):
+                byte_val = hash_bytes[i % len(hash_bytes)]
+                # Normalize to [-1, 1] range
+                embedding.append((byte_val / 255.0) * 2.0 - 1.0)
+            
             return embedding
         except Exception as e:
             print(f"❌ Error generating embedding: {e}")
@@ -155,7 +194,7 @@ class RAGService:
     
     async def _process_and_store_chunk(
         self, 
-        chunk: Document, 
+        chunk: SimpleDocument, 
         filename: str, 
         conversation_id: UUID, 
         user_id: UUID
@@ -193,18 +232,16 @@ class RAGService:
             print(f"❌ Error storing chunk: {e}")
             return False
     
-    def _load_document(self, file_path: str, filename: str) -> List[Document]:
+    def _load_document(self, file_path: str, filename: str) -> List[SimpleDocument]:
         """Load document based on file type"""
         try:
             file_extension = filename.lower().split('.')[-1]
             
             if file_extension == 'pdf':
-                loader = PyPDFLoader(file_path)
-                return loader.load()
+                return self._process_pdf(file_path, filename)
                 
             elif file_extension in ['txt', 'md']:
-                loader = TextLoader(file_path, encoding='utf-8')
-                return loader.load()
+                return self._process_text(file_path, filename)
                 
             elif file_extension == 'docx' and DOCX_AVAILABLE:
                 return self._process_docx(file_path, filename)
@@ -220,7 +257,55 @@ class RAGService:
             print(f"❌ Error loading document '{filename}': {e}")
             return []
     
-    def _process_docx(self, file_path: str, filename: str) -> List[Document]:
+    def _process_pdf(self, file_path: str, filename: str) -> List[SimpleDocument]:
+        """Process PDF files"""
+        try:
+            import PyPDF2
+            documents = []
+            
+            with open(file_path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                
+                for page_num, page in enumerate(pdf_reader.pages):
+                    text = page.extract_text()
+                    if text.strip():
+                        doc = SimpleDocument(
+                            page_content=text,
+                            metadata={
+                                "source": filename,
+                                "page": page_num + 1,
+                                "file_type": "pdf"
+                            }
+                        )
+                        documents.append(doc)
+            
+            return documents
+        except Exception as e:
+            print(f"❌ Error processing PDF '{filename}': {e}")
+            return []
+    
+    def _process_text(self, file_path: str, filename: str) -> List[SimpleDocument]:
+        """Process text files"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+                
+            if content.strip():
+                doc = SimpleDocument(
+                    page_content=content,
+                    metadata={
+                        "source": filename,
+                        "file_type": "text"
+                    }
+                )
+                return [doc]
+            
+            return []
+        except Exception as e:
+            print(f"❌ Error processing text file '{filename}': {e}")
+            return []
+    
+    def _process_docx(self, file_path: str, filename: str) -> List[SimpleDocument]:
         """Process DOCX files"""
         try:
             doc = docx.Document(file_path)
@@ -242,7 +327,7 @@ class RAGService:
                 return []
             
             full_text = '\n\n'.join(text_content)
-            document = Document(
+            document = SimpleDocument(
                 page_content=full_text,
                 metadata={"source": filename, "file_type": "docx"}
             )
@@ -253,7 +338,7 @@ class RAGService:
             print(f"❌ Error processing DOCX '{filename}': {e}")
             return []
     
-    def _process_pptx(self, file_path: str, filename: str) -> List[Document]:
+    def _process_pptx(self, file_path: str, filename: str) -> List[SimpleDocument]:
         """Process PowerPoint files"""
         try:
             prs = Presentation(file_path)
@@ -277,7 +362,7 @@ class RAGService:
                 return []
             
             full_text = '\n\n'.join(text_content)
-            document = Document(
+            document = SimpleDocument(
                 page_content=full_text,
                 metadata={"source": filename, "file_type": "pptx", "slides": slide_number}
             )
