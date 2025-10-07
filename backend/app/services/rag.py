@@ -90,30 +90,72 @@ class RAGService:
             chunk_size=1500,
             chunk_overlap=300
         )
-        print("✅ RAG service initialized with direct Supabase integration")
+        self.mistral_api_key = os.getenv("MISTRAL_API_KEY")
+        self.mistral_base_url = "https://api.mistral.ai/v1"
+        print("✅ RAG service initialized with Mistral embeddings")
     
     def _generate_embedding(self, text: str) -> Optional[List[float]]:
-        """Generate simple embedding for text (placeholder implementation)"""
+        """Generate embedding using Mistral API"""
         try:
             if not text.strip():
                 return None
             
-            # Simple hash-based embedding for now (384 dimensions to match schema)
-            # In production, you would use a proper embedding model
+            if not self.mistral_api_key:
+                print("⚠️ Mistral API key not configured, using fallback")
+                return self._generate_fallback_embedding(text)
+            
+            import httpx
+            
+            # Use Mistral's embedding model
+            payload = {
+                "model": "mistral-embed",
+                "input": [text]
+            }
+            
+            with httpx.Client() as client:
+                response = client.post(
+                    f"{self.mistral_base_url}/embeddings",
+                    headers={
+                        "Authorization": f"Bearer {self.mistral_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get("data") and len(result["data"]) > 0:
+                        embedding = result["data"][0]["embedding"]
+                        print(f"✅ Generated Mistral embedding: {len(embedding)} dimensions")
+                        return embedding
+                    else:
+                        print("❌ No embedding data in response")
+                        return self._generate_fallback_embedding(text)
+                else:
+                    print(f"❌ Mistral API error: {response.status_code}")
+                    return self._generate_fallback_embedding(text)
+            
+        except Exception as e:
+            print(f"❌ Error generating Mistral embedding: {e}")
+            return self._generate_fallback_embedding(text)
+    
+    def _generate_fallback_embedding(self, text: str) -> Optional[List[float]]:
+        """Generate fallback hash-based embedding"""
+        try:
             import hashlib
             hash_obj = hashlib.sha256(text.encode())
             hash_bytes = hash_obj.digest()
             
-            # Convert to 384-dimensional vector
+            # Convert to 1024-dimensional vector (Mistral embed dimension)
             embedding = []
-            for i in range(384):
+            for i in range(1024):
                 byte_val = hash_bytes[i % len(hash_bytes)]
-                # Normalize to [-1, 1] range
                 embedding.append((byte_val / 255.0) * 2.0 - 1.0)
             
             return embedding
         except Exception as e:
-            print(f"❌ Error generating embedding: {e}")
+            print(f"❌ Error generating fallback embedding: {e}")
             return None
     
     async def process_uploaded_file(
@@ -200,6 +242,9 @@ class RAGService:
             if not embedding:
                 return False
             
+            # Determine embedding version
+            embedding_version = "mistral-v1" if self.mistral_api_key else "hash-v1"
+            
             # Prepare metadata
             metadata = {
                 "filename": filename,
@@ -216,6 +261,7 @@ class RAGService:
                 "user_id": str(user_id),
                 "content": chunk.page_content,
                 "embedding": embedding,
+                "embedding_version": embedding_version,
                 "metadata": metadata
             }
             
@@ -339,19 +385,29 @@ class RAGService:
         conversation_id: UUID, 
         user_id: UUID, 
         max_results: int = 10,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0.5
     ) -> List[DocumentChunk]:
         """Search for similar document chunks using direct database operations"""
         try:
             # Generate query embedding
             query_embedding = self._generate_embedding(query)
             if not query_embedding:
-                # Fallback to recent chunks
+                print("⚠️ No query embedding generated, using recent chunks")
                 return await self._get_recent_chunks(conversation_id, user_id, max_results)
+            
+            # Determine embedding dimension
+            embedding_dim = len(query_embedding)
+            print(f"🔍 Searching with {embedding_dim}-dimensional embedding")
+            
+            # Use appropriate function based on dimension
+            if embedding_dim == 1024:
+                function_name = 'match_documents_with_user_isolation_v2'
+            else:
+                function_name = 'match_documents_with_user_isolation'
             
             # Search using database function
             result = self.db.rpc(
-                'match_documents_with_user_isolation',
+                function_name,
                 {
                     'query_embedding': query_embedding,
                     'conversation_uuid': str(conversation_id),
@@ -373,6 +429,7 @@ class RAGService:
                 )
                 chunks.append(chunk)
             
+            print(f"✅ Found {len(chunks)} similar chunks")
             return chunks
             
         except Exception as e:
