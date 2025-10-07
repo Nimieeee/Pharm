@@ -12,11 +12,11 @@ aiofiles==23.2.1
 psycopg2-binary==2.9.9
 setuptools>=65.0.0
 wheel>=0.37.0
-# LangChain and related dependencies
-langchain==0.1.0
-langchain-community==0.0.10
-langchain-core==0.1.28
-langchain-text-splitters==0.0.1
+# LangChain and related dependencies - using compatible versions
+langchain>=0.1.0,<0.2.0
+langchain-community>=0.0.10,<0.1.0
+langchain-core>=0.1.28,<0.2.0
+langchain-text-splitters>=0.0.1,<0.1.0
 # Document processing
 pypdf==3.17.4
 docx2txt==0.8
