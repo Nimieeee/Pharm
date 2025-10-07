@@ -8,16 +8,16 @@ supabase==2.3.0
 mistralai==0.1.2
 python-docx==1.1.0
 aiofiles==23.2.1
-httpx==0.25.2
+httpx==0.24.1
 psycopg2-binary==2.9.9
 setuptools>=65.0.0
 wheel>=0.37.0
-# LangChain and related dependencies
+# LangChain and related dependencies - use compatible versions
 langchain==0.1.0
 langchain-community==0.0.10
 langchain-core==0.1.12
 langchain-text-splitters==0.0.1
-# Document processing - use only one PDF library
+# Document processing
 pypdf==3.17.4
 docx2txt==0.8
 # Caching and utilities
