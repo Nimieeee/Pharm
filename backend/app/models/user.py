@@ -5,7 +5,7 @@ User data models and schemas
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class UserBase(BaseModel):
@@ -20,7 +20,8 @@ class UserCreate(UserBase):
     """User creation model"""
     password: str
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
@@ -49,8 +50,7 @@ class UserInDB(UserBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class User(UserBase):
@@ -60,8 +60,7 @@ class User(UserBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class UserProfile(BaseModel):
@@ -77,5 +76,4 @@ class UserProfile(BaseModel):
     conversation_count: int = 0
     last_login: Optional[datetime] = None
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
