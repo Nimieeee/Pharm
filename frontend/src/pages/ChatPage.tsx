@@ -231,7 +231,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-32">
           {!conversationId ? (
             <div className="flex items-center justify-center h-full p-4">
               <div className="text-center">
@@ -292,7 +292,7 @@ export default function ChatPage() {
         </div>
 
         {conversationId && (
-          <div className={cn("border-t p-3 lg:p-4", darkMode ? "border-gray-800" : "border-gray-200")}>
+          <div className={cn("fixed bottom-0 left-0 right-0 p-3 lg:p-4", darkMode ? "bg-[#212121]" : "bg-white", sidebarOpen && window.innerWidth >= 1024 ? "lg:left-64" : "")}>
             <div className="max-w-4xl mx-auto">
               {uploadedFiles.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -316,9 +316,9 @@ export default function ChatPage() {
                   ))}
                 </div>
               )}
-              <div className={cn("flex items-end gap-2 rounded-3xl border p-2", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300")}>
+              <div className={cn("flex items-end gap-2 rounded-3xl p-2 shadow-lg", darkMode ? "bg-[#2f2f2f]" : "bg-[#f4f4f4]")}>
                 <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept=".pdf,.docx,.txt" className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={cn("p-2 rounded-lg shrink-0", darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100")} title="Upload document">
+                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={cn("p-2 rounded-lg shrink-0", darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200")} title="Upload document">
                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
                 </button>
                 <textarea ref={textareaRef} value={inputMessage} onChange={handleTextareaChange} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="Message PharmGPT..." className={cn("flex-1 resize-none bg-transparent border-none outline-none px-2 py-2 max-h-[200px]", darkMode ? "text-white placeholder-gray-500" : "text-gray-900 placeholder-gray-400")} rows={1} disabled={isSending} style={{ minHeight: '24px' }} />
@@ -326,9 +326,9 @@ export default function ChatPage() {
                   {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                 </button>
               </div>
-              <p className={cn("text-xs mt-2 px-2", darkMode ? "text-gray-500" : "text-gray-600")}>
-                Mode: {mode === 'fast' ? 'Fast ⚡' : 'Detailed 🧠'}
-                {currentConversation && currentConversation.document_count > 0 && ` • ${currentConversation.document_count} document(s) uploaded`}
+              <p className={cn("text-xs text-center mt-2", darkMode ? "text-gray-500" : "text-gray-600")}>
+                {mode === 'fast' ? 'Fast ⚡' : 'Detailed 🧠'}
+                {currentConversation && currentConversation.document_count > 0 && ` • ${currentConversation.document_count} doc(s)`}
               </p>
             </div>
           </div>
