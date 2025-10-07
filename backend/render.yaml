@@ -5,7 +5,7 @@ services:
     plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
-    healthCheckPath: /health
+    healthCheckPath: /api/v1/health
     envVars:
       - key: PORT
         value: 8000
@@ -29,3 +29,40 @@ services:
         generateValue: true
       - key: ALLOWED_ORIGINS
         value: https://pharmgpt.netlify.app,http://localhost:3000,http://localhost:5173
+      # Mistral Embeddings Configuration
+      - key: MISTRAL_EMBED_MODEL
+        value: mistral-embed
+      - key: MISTRAL_EMBED_DIMENSIONS
+        value: 1024
+      - key: MISTRAL_MAX_RETRIES
+        value: 3
+      - key: MISTRAL_TIMEOUT
+        value: 30
+      # LangChain Configuration
+      - key: LANGCHAIN_CHUNK_SIZE
+        value: 1500
+      - key: LANGCHAIN_CHUNK_OVERLAP
+        value: 300
+      - key: LANGCHAIN_CACHE_ENABLED
+        value: true
+      # Embedding Cache Configuration
+      - key: EMBEDDING_CACHE_TTL
+        value: 3600
+      - key: EMBEDDING_CACHE_MAX_SIZE
+        value: 1000
+      # Migration Configuration
+      - key: EMBEDDING_MIGRATION_ENABLED
+        value: false
+      - key: EMBEDDING_BATCH_SIZE
+        value: 100
+      - key: MIGRATION_PARALLEL_WORKERS
+        value: 2
+      # Feature Flags
+      - key: USE_MISTRAL_EMBEDDINGS
+        value: true
+      - key: USE_LANGCHAIN_LOADERS
+        value: true
+      - key: ENABLE_EMBEDDING_CACHE
+        value: true
+      - key: FALLBACK_TO_HASH_EMBEDDINGS
+        value: false

@@ -15,11 +15,11 @@ Complete web application with:
 ## ✨ Features
 
 - **⚕️ Pharmacology Expertise**: Specialized system prompts for pharmaceutical and medical queries
-- **📚 RAG System**: LangChain + Supabase pgvector for optimized document processing and search
+- **📚 RAG System**: LangChain + Mistral embeddings + Supabase pgvector for optimized document processing and search
 - **💬 Multi-Conversation**: Manage multiple chat sessions with separate knowledge bases
 - **🌙 Modern UI**: Dark mode interface with responsive design and accessibility features
 - **🗄️ Persistent Storage**: Supabase backend for conversations, messages, and document chunks
-- **🔍 Vector Search**: HNSW-indexed semantic search with HuggingFace embeddings
+- **🔍 Vector Search**: HNSW-indexed semantic search with Mistral embeddings (1024 dimensions)
 - **📱 Responsive Design**: Works seamlessly across mobile, tablet, and desktop
 
 ## 🚀 Quick Start
@@ -66,6 +66,15 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # AI Model APIs
 MISTRAL_API_KEY=your_mistral_api_key
+
+# Enhanced RAG Configuration
+USE_MISTRAL_EMBEDDINGS=true
+USE_LANGCHAIN_LOADERS=true
+ENABLE_EMBEDDING_CACHE=true
+LANGCHAIN_CHUNK_SIZE=1500
+LANGCHAIN_CHUNK_OVERLAP=300
+
+# Optional
 GROQ_API_KEY=your_groq_api_key  # Optional for fast model
 ```
 
@@ -101,11 +110,11 @@ Key features:
 
 ### RAG System
 - **Framework**: LangChain with Supabase pgvector integration
-- **Embeddings**: HuggingFace all-MiniLM-L6-v2 (384 dimensions)
+- **Embeddings**: Mistral embeddings (1024 dimensions) with caching
 - **Indexing**: HNSW + IVFFlat for optimized similarity search
-- **Chunking**: Recursive text splitting with overlap
+- **Chunking**: LangChain RecursiveCharacterTextSplitter with overlap
 - **Search**: Vector similarity with user isolation and metadata filtering
-- **Formats**: PDF, DOCX, TXT, MD, PPTX support
+- **Formats**: PDF, DOCX, TXT support with enhanced error handling
 
 ## 📱 Application Variants
 

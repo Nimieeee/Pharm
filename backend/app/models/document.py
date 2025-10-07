@@ -56,6 +56,8 @@ class DocumentUploadResponse(BaseModel):
     message: str
     chunk_count: int = 0
     document_id: Optional[str] = None
+    processing_time: Optional[float] = None
+    errors: Optional[List[str]] = None
 
 
 class DocumentSearchRequest(BaseModel):

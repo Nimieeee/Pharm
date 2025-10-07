@@ -5,7 +5,7 @@ FastAPI backend for the PharmGPT web application with user authentication, RAG f
 ## Features
 
 - **User Authentication**: JWT-based authentication with refresh tokens
-- **RAG System**: LangChain + Supabase pgvector for optimized document processing
+- **RAG System**: Custom implementation + Supabase pgvector for optimized document processing
 - **Vector Search**: HNSW indexing for fast similarity search with user isolation
 - **Chat API**: AI-powered chat with Mistral integration
 - **Admin Panel**: User management and system monitoring

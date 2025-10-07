@@ -31,8 +31,8 @@ PharmGPT is a modern web application that provides AI-powered pharmacology assis
 
 ### AI & RAG System
 - ✅ Mistral AI integration for chat responses
-- ✅ LangChain + Supabase pgvector for document processing
-- ✅ Document upload and processing (PDF, DOCX, TXT, MD, PPTX)
+- ✅ Custom RAG implementation + Supabase pgvector for document processing
+- ✅ Document upload and processing (PDF, DOCX, TXT)
 - ✅ Optimized vector search with HNSW indexing
 - ✅ User isolation and context-aware responses
 
@@ -150,7 +150,7 @@ PharmGPT/
 ### Backend
 - FastAPI, Pydantic, SQLAlchemy
 - JWT authentication, bcrypt
-- LangChain, HuggingFace Embeddings
+- Custom RAG implementation
 - Mistral AI, Supabase pgvector
 - Async processing, vector optimization
 

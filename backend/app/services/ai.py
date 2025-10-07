@@ -9,7 +9,7 @@ from uuid import UUID
 from supabase import Client
 
 from app.core.config import settings
-from app.services.rag import RAGService
+from app.services.enhanced_rag import EnhancedRAGService
 from app.services.chat import ChatService
 from app.models.user import User
 
@@ -27,7 +27,7 @@ class AIService:
     
     def __init__(self, db: Client):
         self.db = db
-        self.rag_service = RAGService(db)
+        self.rag_service = EnhancedRAGService(db)
         self.chat_service = ChatService(db)
         self.mistral_client = None
         self._initialize_mistral()

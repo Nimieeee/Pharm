@@ -29,6 +29,32 @@ class Settings(BaseSettings):
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     
+    # Mistral Embeddings settings
+    MISTRAL_EMBED_MODEL: str = os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
+    MISTRAL_EMBED_DIMENSIONS: int = int(os.getenv("MISTRAL_EMBED_DIMENSIONS", "1024"))
+    MISTRAL_MAX_RETRIES: int = int(os.getenv("MISTRAL_MAX_RETRIES", "3"))
+    MISTRAL_TIMEOUT: int = int(os.getenv("MISTRAL_TIMEOUT", "30"))
+    
+    # LangChain settings
+    LANGCHAIN_CHUNK_SIZE: int = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "1500"))
+    LANGCHAIN_CHUNK_OVERLAP: int = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "300"))
+    LANGCHAIN_CACHE_ENABLED: bool = os.getenv("LANGCHAIN_CACHE_ENABLED", "true").lower() == "true"
+    
+    # Embedding Cache settings
+    EMBEDDING_CACHE_TTL: int = int(os.getenv("EMBEDDING_CACHE_TTL", "3600"))  # 1 hour
+    EMBEDDING_CACHE_MAX_SIZE: int = int(os.getenv("EMBEDDING_CACHE_MAX_SIZE", "1000"))
+    
+    # Migration settings
+    EMBEDDING_MIGRATION_ENABLED: bool = os.getenv("EMBEDDING_MIGRATION_ENABLED", "false").lower() == "true"
+    EMBEDDING_BATCH_SIZE: int = int(os.getenv("EMBEDDING_BATCH_SIZE", "100"))
+    MIGRATION_PARALLEL_WORKERS: int = int(os.getenv("MIGRATION_PARALLEL_WORKERS", "2"))
+    
+    # Feature Flags
+    USE_MISTRAL_EMBEDDINGS: bool = os.getenv("USE_MISTRAL_EMBEDDINGS", "true").lower() == "true"
+    USE_LANGCHAIN_LOADERS: bool = os.getenv("USE_LANGCHAIN_LOADERS", "true").lower() == "true"
+    ENABLE_EMBEDDING_CACHE: bool = os.getenv("ENABLE_EMBEDDING_CACHE", "true").lower() == "true"
+    FALLBACK_TO_HASH_EMBEDDINGS: bool = os.getenv("FALLBACK_TO_HASH_EMBEDDINGS", "false").lower() == "true"
+    
     # CORS settings
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",  # Local development
@@ -57,6 +83,25 @@ class Settings(BaseSettings):
     def validate_supabase_key(cls, v):
         if not v:
             raise ValueError("SUPABASE_ANON_KEY is required")
+        return v
+    
+    @validator("MISTRAL_API_KEY")
+    def validate_mistral_key(cls, v):
+        if not v:
+            print("⚠️  Warning: MISTRAL_API_KEY not set - embeddings will use fallback")
+        return v
+    
+    @validator("LANGCHAIN_CHUNK_SIZE")
+    def validate_chunk_size(cls, v):
+        if v < 100 or v > 5000:
+            raise ValueError("LANGCHAIN_CHUNK_SIZE must be between 100 and 5000")
+        return v
+    
+    @validator("LANGCHAIN_CHUNK_OVERLAP")
+    def validate_chunk_overlap(cls, v, values):
+        chunk_size = values.get("LANGCHAIN_CHUNK_SIZE", 1500)
+        if v >= chunk_size:
+            raise ValueError("LANGCHAIN_CHUNK_OVERLAP must be less than LANGCHAIN_CHUNK_SIZE")
         return v
     
     class Config:

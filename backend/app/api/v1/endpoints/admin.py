@@ -10,6 +10,7 @@ from supabase import Client
 from app.core.database import get_db
 from app.core.security import get_current_admin_user
 from app.services.admin import AdminService
+from app.services.migration import get_migration_service
 from app.models.user import User, UserProfile
 
 router = APIRouter()
@@ -234,4 +235,90 @@ async def get_system_health(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get system health: {str(e)}"
+        )
+
+
+@router.get("/migration/status", response_model=Dict[str, Any])
+async def get_migration_status(
+    current_admin: User = Depends(get_current_admin_user),
+    db: Client = Depends(get_db)
+):
+    """
+    Get embedding migration status
+    
+    Requires admin access. Returns migration progress and statistics.
+    """
+    try:
+        migration_service = get_migration_service(db)
+        status = await migration_service.get_migration_status()
+        return status
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get migration status: {str(e)}"
+        )
+
+
+@router.post("/migration/run", response_model=Dict[str, Any])
+async def run_migration(
+    max_chunks: Optional[int] = Query(None, ge=1, le=10000),
+    batch_size: Optional[int] = Query(None, ge=1, le=1000),
+    current_admin: User = Depends(get_current_admin_user),
+    db: Client = Depends(get_db)
+):
+    """
+    Run embedding migration
+    
+    Requires admin access. Migrates embeddings from hash-based to Mistral embeddings.
+    
+    Query parameters:
+    - **max_chunks**: Maximum number of chunks to migrate (optional)
+    - **batch_size**: Batch size for migration (optional)
+    """
+    try:
+        migration_service = get_migration_service(db)
+        
+        # Check if migration is enabled
+        status = await migration_service.get_migration_status()
+        if not status.get('migration_enabled', False):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Migration is disabled in configuration"
+            )
+        
+        # Run migration
+        result = await migration_service.run_migration(
+            max_chunks=max_chunks,
+            batch_size=batch_size
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to run migration: {str(e)}"
+        )
+
+
+@router.post("/migration/validate", response_model=Dict[str, Any])
+async def validate_migration(
+    current_admin: User = Depends(get_current_admin_user),
+    db: Client = Depends(get_db)
+):
+    """
+    Validate migration results
+    
+    Requires admin access. Validates that migration was successful.
+    """
+    try:
+        migration_service = get_migration_service(db)
+        validation = await migration_service.validate_migration()
+        return validation
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to validate migration: {str(e)}"
         )
