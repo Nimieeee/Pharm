@@ -12,6 +12,10 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
+  .dark body {
+    @apply bg-gray-900 text-white;
+  }
+  
   html {
     scroll-behavior: smooth;
   }
@@ -34,8 +38,16 @@
     @apply btn border border-secondary-300 bg-white hover:bg-secondary-50 hover:text-secondary-900;
   }
   
+  .dark .btn-outline {
+    @apply border-gray-600 bg-gray-800 text-white hover:bg-gray-700;
+  }
+  
   .btn-ghost {
     @apply btn hover:bg-secondary-50 hover:text-secondary-900;
+  }
+  
+  .dark .btn-ghost {
+    @apply hover:bg-gray-700 hover:text-white;
   }
   
   .btn-sm {
@@ -52,6 +64,10 @@
   
   .input {
     @apply flex h-10 w-full rounded-md border border-secondary-300 bg-white px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-secondary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  .dark .input {
+    @apply border-gray-600 bg-gray-700 text-white placeholder:text-gray-400;
   }
   
   .card {
