@@ -229,14 +229,13 @@ class EnhancedRAGService:
                 "langchain_processed": True
             })
             
-            # Store in database
+            # Store in database (embedding_version stored in metadata)
             chunk_data = {
                 "conversation_id": str(conversation_id),
                 "user_id": str(user_id),
                 "content": chunk.page_content,
                 "embedding": embedding,
-                "metadata": metadata,
-                "embedding_version": "mistral-v1"
+                "metadata": metadata
             }
             
             result = self.db.table("document_chunks").insert(chunk_data).execute()
