@@ -73,7 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (userData.is_admin) {
         navigate('/admin')
       } else {
-        navigate('/dashboard')
+        navigate('/chat')
       }
     } catch (error: any) {
       console.error('Login failed:', error)
@@ -199,7 +199,7 @@ export function useRequireAdmin() {
       if (!isAuthenticated) {
         navigate('/login')
       } else if (!user?.is_admin) {
-        navigate('/dashboard')
+        navigate('/chat')
         toast.error('Admin access required')
       }
     }
@@ -217,7 +217,7 @@ export function useRedirectIfAuthenticated() {
       if (user?.is_admin) {
         navigate('/admin')
       } else {
-        navigate('/dashboard')
+        navigate('/chat')
       }
     }
   }, [isAuthenticated, user, isLoading, navigate])

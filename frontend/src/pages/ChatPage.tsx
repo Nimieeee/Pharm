@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Send, Upload, Plus, MessageSquare, Trash2, Menu, Sun, Moon, Loader2, Paperclip, ChevronLeft, Zap, Brain } from 'lucide-react'
+import { Send, Upload, Plus, MessageSquare, Trash2, Menu, Loader2, Paperclip, ChevronLeft, Zap, Brain } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { chatAPI, Conversation, Message, ConversationWithMessages } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -10,6 +11,7 @@ export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId?: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { darkMode } = useTheme()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -22,7 +24,6 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
-  const [darkMode, setDarkMode] = useState(true)
   const [mode, setMode] = useState<'fast' | 'detailed'>('fast')
   const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string, id: string}>>([])
 
@@ -131,11 +132,44 @@ export default function ChatPage() {
       // Remove streaming message and reload to get actual messages
       setMessages(prev => prev.filter(m => m.id !== streamingMessageId && m.id !== tempUserMessage.id))
       await loadConversation(conversationId)
+      
+      // Generate title if this is the first message
+      if (currentConversation && currentConversation.message_count === 0) {
+        await generateConversationTitle(conversationId, userMessage, response.response)
+      }
     } catch (error) {
       toast.error('Failed to send message')
       setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id && m.id !== streamingMessageId))
     } finally {
       setIsSending(false)
+    }
+  }
+
+  const generateConversationTitle = async (convId: string, userMsg: string, aiResponse: string) => {
+    try {
+      // Generate a summary title (7+ words) from the conversation
+      const prompt = `${userMsg.substring(0, 100)}... ${aiResponse.substring(0, 100)}...`
+      const words = prompt.split(' ').filter(w => w.length > 0)
+      
+      // Create a title with at least 7 words
+      let title = words.slice(0, Math.max(7, Math.min(12, words.length))).join(' ')
+      
+      // Clean up and truncate if needed
+      title = title.replace(/[^\w\s-]/g, '').trim()
+      if (title.length > 60) {
+        title = title.substring(0, 57) + '...'
+      }
+      
+      // Ensure minimum 7 words
+      const titleWords = title.split(' ')
+      if (titleWords.length < 7) {
+        title = `Conversation about ${title}`
+      }
+      
+      await chatAPI.updateConversation(convId, title)
+      await loadConversations()
+    } catch (error) {
+      console.error('Failed to generate title:', error)
     }
   }
 
@@ -313,9 +347,6 @@ export default function ChatPage() {
             </button>
             <button onClick={() => setMode('detailed')} className={cn("p-2 rounded-lg", mode === 'detailed' ? "bg-blue-600 text-white" : (darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"))} title="Detailed mode">
               <Brain className="w-4 h-4" />
-            </button>
-            <button onClick={() => setDarkMode(!darkMode)} className={cn("p-2 rounded-lg", darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
           </div>
         </div>

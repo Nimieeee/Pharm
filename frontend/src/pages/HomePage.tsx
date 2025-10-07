@@ -1,25 +1,16 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, MessageSquare, FileText, Zap, Sun, Moon } from 'lucide-react'
+import { ArrowRight, MessageSquare, FileText, Zap } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth()
-  const [darkMode, setDarkMode] = useState(false)
+  const { darkMode } = useTheme()
 
   return (
     <div className={cn("min-h-screen", darkMode ? "dark bg-[#212121] text-white" : "bg-gradient-to-br from-blue-50 via-white to-purple-50")}>
-      {/* Dark mode toggle */}
-      <div className="fixed top-4 right-4 z-50">
-        <button 
-          onClick={() => setDarkMode(!darkMode)} 
-          className={cn("p-3 rounded-full shadow-lg", darkMode ? "bg-gray-800 hover:bg-gray-700" : "bg-white hover:bg-gray-100")}
-        >
-          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
-      </div>
-
       {/* Hero Section */}
       <section className="pt-20 pb-32 px-4">
         <div className="max-w-4xl mx-auto text-center">
