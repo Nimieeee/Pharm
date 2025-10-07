@@ -9,8 +9,6 @@ from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
 from supabase import Client
 from langchain_core.documents import Document
-from langchain_community.vectorstores import SupabaseVectorStore
-from langchain_core.embeddings import Embeddings
 
 from app.core.config import settings
 from app.models.document import DocumentChunk, DocumentUploadResponse
@@ -21,36 +19,8 @@ from app.services.text_splitter import text_splitter
 logger = logging.getLogger(__name__)
 
 
-class MistralEmbeddingsWrapper(Embeddings):
-    """Wrapper to make our embeddings service compatible with LangChain"""
-    
-    def __init__(self, embeddings_service):
-        self.embeddings_service = embeddings_service
-    
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Embed a list of documents"""
-        import asyncio
-        loop = asyncio.get_event_loop()
-        embeddings = []
-        for text in texts:
-            embedding = loop.run_until_complete(self.embeddings_service.generate_embedding(text))
-            if embedding:
-                embeddings.append(embedding)
-            else:
-                # Return zero vector if embedding fails
-                embeddings.append([0.0] * settings.MISTRAL_EMBED_DIMENSIONS)
-        return embeddings
-    
-    def embed_query(self, text: str) -> List[float]:
-        """Embed a query"""
-        import asyncio
-        loop = asyncio.get_event_loop()
-        embedding = loop.run_until_complete(self.embeddings_service.generate_embedding(text))
-        return embedding if embedding else [0.0] * settings.MISTRAL_EMBED_DIMENSIONS
-
-
 class EnhancedRAGService:
-    """Enhanced RAG service using LangChain and Mistral embeddings"""
+    """Enhanced RAG service using LangChain document processing and Mistral embeddings"""
     
     def __init__(self, db: Client):
         self.db = db
@@ -58,18 +28,7 @@ class EnhancedRAGService:
         self.document_loader = document_loader
         self.text_splitter = text_splitter
         
-        # Initialize LangChain embeddings wrapper
-        self.embeddings = MistralEmbeddingsWrapper(embeddings_service)
-        
-        # Initialize Supabase vector store
-        self.vector_store = SupabaseVectorStore(
-            client=db,
-            embedding=self.embeddings,
-            table_name="document_chunks",
-            query_name="match_documents_with_user_isolation"
-        )
-        
-        logger.info("✅ Enhanced RAG service initialized with LangChain SupabaseVectorStore and Mistral embeddings")
+        logger.info("✅ Enhanced RAG service initialized with LangChain and Mistral embeddings")
     
     async def process_uploaded_file(
         self, 
@@ -164,49 +123,32 @@ class EnhancedRAGService:
                     "embedding_version": "mistral-v1"
                 })
             
-            # Store chunks using LangChain vector store
-            try:
-                logger.info(f"💾 Storing {len(chunks)} chunks using LangChain SupabaseVectorStore...")
-                
-                # Use LangChain's add_documents method
-                ids = self.vector_store.add_documents(chunks)
-                
-                success_count = len(ids) if ids else 0
-                failed_count = len(chunks) - success_count
-                
-                logger.info(f"✅ Successfully stored {success_count}/{len(chunks)} chunks via LangChain")
-                
-            except Exception as e:
-                logger.error(f"❌ Error storing chunks via LangChain: {e}")
-                import traceback
-                traceback.print_exc()
-                
-                # Fallback to manual storage
-                logger.info("⚠️  Falling back to manual chunk storage...")
-                success_count = 0
-                failed_count = 0
-                
-                for chunk_index, chunk in enumerate(chunks):
-                    try:
-                        success = await self._process_and_store_chunk(
-                            chunk=chunk,
-                            filename=filename,
-                            conversation_id=conversation_id,
-                            user_id=user_id,
-                            chunk_index=chunk_index
-                        )
-                        
-                        if success:
-                            success_count += 1
-                        else:
-                            failed_count += 1
-                            processing_errors.append(f"Failed to store chunk {chunk_index}")
-                            
-                    except Exception as e:
+            # Store chunks directly using database
+            logger.info(f"💾 Storing {len(chunks)} chunks in database...")
+            success_count = 0
+            failed_count = 0
+            
+            for chunk_index, chunk in enumerate(chunks):
+                try:
+                    success = await self._process_and_store_chunk(
+                        chunk=chunk,
+                        filename=filename,
+                        conversation_id=conversation_id,
+                        user_id=user_id,
+                        chunk_index=chunk_index
+                    )
+                    
+                    if success:
+                        success_count += 1
+                    else:
                         failed_count += 1
-                        error_msg = f"Error processing chunk {chunk_index}: {str(e)}"
-                        logger.error(f"❌ {error_msg}")
-                        processing_errors.append(error_msg)
+                        processing_errors.append(f"Failed to store chunk {chunk_index}")
+                        
+                except Exception as e:
+                    failed_count += 1
+                    error_msg = f"Error processing chunk {chunk_index}: {str(e)}"
+                    logger.error(f"❌ {error_msg}")
+                    processing_errors.append(error_msg)
             
             processing_time = time.time() - start_time
             
@@ -316,17 +258,17 @@ class EnhancedRAGService:
         conversation_id: UUID, 
         user_id: UUID, 
         max_results: int = 10,
-        similarity_threshold: float = 0.3
+        similarity_threshold: float = 0.1
     ) -> List[DocumentChunk]:
         """
-        Search for similar document chunks using LangChain SupabaseVectorStore
+        Search for similar document chunks using Mistral embeddings and pgvector
         
         Args:
             query: Search query
             conversation_id: Conversation UUID
             user_id: User UUID
             max_results: Maximum number of results
-            similarity_threshold: Minimum similarity score (0.3 default for better recall)
+            similarity_threshold: Minimum similarity score (0.1 default for better recall)
             
         Returns:
             List of similar document chunks
@@ -334,57 +276,69 @@ class EnhancedRAGService:
         try:
             logger.info(f"🔍 Searching for similar chunks: '{query[:50]}...' (threshold: {similarity_threshold})")
             
-            # Use LangChain's similarity search with metadata filtering
-            filter_dict = {
-                "conversation_id": str(conversation_id),
-                "user_id": str(user_id)
-            }
+            # Generate query embedding using Mistral
+            query_embedding = await self.embeddings_service.generate_embedding(query)
             
-            # Perform similarity search using LangChain
-            docs_with_scores = self.vector_store.similarity_search_with_relevance_scores(
-                query=query,
-                k=max_results,
-                filter=filter_dict
-            )
-            
-            # Filter by threshold and convert to DocumentChunk
-            chunks = []
-            for doc, score in docs_with_scores:
-                # LangChain returns relevance scores (higher is better)
-                # Filter by threshold
-                if score >= similarity_threshold:
-                    chunk = DocumentChunk(
-                        id=doc.metadata.get('id', ''),
-                        conversation_id=conversation_id,
-                        content=doc.page_content,
-                        metadata=doc.metadata,
-                        similarity=score,
-                        created_at=doc.metadata.get('created_at', '2024-01-01T00:00:00Z')
-                    )
-                    chunks.append(chunk)
-            
-            logger.info(f"✅ Found {len(chunks)} similar chunks using LangChain (threshold: {similarity_threshold})")
-            
-            # If no results, try with lower threshold
-            if not chunks and similarity_threshold > 0.1:
-                logger.info(f"⚠️  No results with threshold {similarity_threshold}, retrying with 0.1")
-                return await self.search_similar_chunks(
-                    query, conversation_id, user_id, max_results, 0.1
-                )
-            
-            # If still no results, fallback to recent chunks
-            if not chunks:
-                logger.warning("⚠️  No similar chunks found, falling back to recent chunks")
+            if not query_embedding:
+                logger.warning("⚠️  Failed to generate query embedding, falling back to recent chunks")
                 return await self._get_recent_chunks(conversation_id, user_id, max_results)
             
-            return chunks
+            logger.info(f"✅ Generated query embedding: {len(query_embedding)} dimensions")
+            
+            # Search using database function with pgvector similarity
+            try:
+                result = self.db.rpc(
+                    'match_documents_with_user_isolation',
+                    {
+                        'query_embedding': query_embedding,
+                        'conversation_uuid': str(conversation_id),
+                        'user_session_uuid': str(user_id),
+                        'match_threshold': similarity_threshold,
+                        'match_count': max_results
+                    }
+                ).execute()
+                
+                chunks = []
+                for row in result.data or []:
+                    chunk = DocumentChunk(
+                        id=row['id'],
+                        conversation_id=conversation_id,
+                        content=row['content'],
+                        metadata=row['metadata'],
+                        similarity=row['similarity'],
+                        created_at=row.get('created_at', '2024-01-01T00:00:00Z')
+                    )
+                    chunks.append(chunk)
+                
+                logger.info(f"✅ Found {len(chunks)} similar chunks (threshold: {similarity_threshold})")
+                
+                # If no results and threshold is high, try with lower threshold
+                if not chunks and similarity_threshold > 0.05:
+                    logger.info(f"⚠️  No results with threshold {similarity_threshold}, retrying with 0.05")
+                    return await self.search_similar_chunks(
+                        query, conversation_id, user_id, max_results, 0.05
+                    )
+                
+                # If still no results, fallback to all chunks
+                if not chunks:
+                    logger.warning("⚠️  No similar chunks found, returning all chunks")
+                    return await self.get_all_conversation_chunks(conversation_id, user_id)
+                
+                return chunks
+                
+            except Exception as db_error:
+                logger.error(f"❌ Database search error: {db_error}")
+                import traceback
+                traceback.print_exc()
+                # Fallback to all chunks
+                return await self.get_all_conversation_chunks(conversation_id, user_id)
             
         except Exception as e:
-            logger.error(f"❌ Error in LangChain similarity search: {e}")
+            logger.error(f"❌ Error in similarity search: {e}")
             import traceback
             traceback.print_exc()
-            # Fallback to recent chunks
-            return await self._get_recent_chunks(conversation_id, user_id, max_results)
+            # Fallback to all chunks
+            return await self.get_all_conversation_chunks(conversation_id, user_id)
     
     async def _get_recent_chunks(
         self, 
@@ -439,9 +393,9 @@ class EnhancedRAGService:
             Formatted context string
         """
         try:
-            # Search for relevant chunks with lower threshold for better recall
+            # Search for relevant chunks with very low threshold for maximum recall
             chunks = await self.search_similar_chunks(
-                query, conversation_id, user_id, max_chunks, 0.2
+                query, conversation_id, user_id, max_chunks, 0.05
             )
             
             if not chunks:

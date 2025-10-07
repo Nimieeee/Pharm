@@ -41,11 +41,19 @@ class AIService:
     def _get_system_prompt(self, mode: str = "detailed") -> str:
         """Get system prompt based on mode"""
         if mode == "fast":
-            return """You are PharmGPT, an expert pharmacology assistant. Provide clear, accurate, and concise responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Keep responses focused and to the point."""
+            return """You are PharmGPT, an expert pharmacology assistant. Provide clear, accurate, and concise responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Keep responses focused and to the point.
+
+IMPORTANT: When document context is provided, you MUST base your answer primarily on that context. Reference specific information from the documents."""
         else:
             return """You are PharmGPT, an expert pharmacology assistant. Provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Always provide elaborate and detailed explanations unless specifically asked for brevity.
 
-When provided with document context, use it to give more accurate and specific answers. Reference the documents when relevant and provide detailed explanations based on the available information."""
+CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
+1. When document context is provided, you MUST prioritize information from those documents
+2. Base your answer primarily on the document content
+3. Quote or reference specific sections from the documents when relevant
+4. If the documents contain the answer, use that information first before adding general knowledge
+5. If the question cannot be answered from the documents, clearly state that and then provide general knowledge
+6. Always acknowledge when you're using information from the uploaded documents"""
     
     async def generate_response(
         self,
@@ -63,25 +71,30 @@ When provided with document context, use it to give more accurate and specific a
                 print("❌ No Mistral API key configured")
                 return "AI service is not available. Please check configuration."
             
-            # Get conversation context - use ALL document chunks
+            # Get conversation context using semantic search
             context = ""
             if use_rag:
                 try:
-                    print("📚 Getting RAG context (all documents)...")
-                    # Get ALL chunks from the conversation
-                    all_chunks = await self.rag_service.get_all_conversation_chunks(
-                        conversation_id, user.id
+                    print("📚 Getting RAG context with semantic search...")
+                    # Use semantic search to find relevant chunks
+                    context = await self.rag_service.get_conversation_context(
+                        message, conversation_id, user.id, max_chunks=20
                     )
                     
-                    if all_chunks:
-                        # Build full context from all chunks
-                        context_parts = []
-                        for chunk in all_chunks:
-                            context_parts.append(chunk.content)
-                        context = "\n\n".join(context_parts)
-                        print(f"✅ RAG context retrieved: {len(all_chunks)} chunks, {len(context)} chars")
+                    if context:
+                        print(f"✅ RAG context retrieved: {len(context)} chars")
                     else:
-                        print("⚠️ No document chunks found")
+                        print("⚠️ No relevant context found, trying all chunks...")
+                        # Fallback: get all chunks if semantic search returns nothing
+                        all_chunks = await self.rag_service.get_all_conversation_chunks(
+                            conversation_id, user.id
+                        )
+                        if all_chunks:
+                            context_parts = []
+                            for chunk in all_chunks[:20]:  # Limit to first 20 chunks
+                                context_parts.append(chunk.content)
+                            context = "\n\n".join(context_parts)
+                            print(f"✅ Fallback context: {len(all_chunks)} chunks, {len(context)} chars")
                 except Exception as e:
                     print(f"⚠️ RAG context failed: {e}")
                     import traceback
