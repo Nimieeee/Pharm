@@ -37,8 +37,9 @@ class Settings(BaseSettings):
     MISTRAL_TIMEOUT: int = int(os.getenv("MISTRAL_TIMEOUT", "30"))
     
     # LangChain settings
-    LANGCHAIN_CHUNK_SIZE: int = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "1500"))
-    LANGCHAIN_CHUNK_OVERLAP: int = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "300"))
+    # Increased chunk size to reduce API calls and avoid rate limiting
+    LANGCHAIN_CHUNK_SIZE: int = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "3000"))
+    LANGCHAIN_CHUNK_OVERLAP: int = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "400"))
     LANGCHAIN_CACHE_ENABLED: bool = os.getenv("LANGCHAIN_CACHE_ENABLED", "true").lower() == "true"
     
     # Embedding Cache settings
@@ -100,8 +101,8 @@ class Settings(BaseSettings):
     
     @validator("LANGCHAIN_CHUNK_SIZE")
     def validate_chunk_size(cls, v):
-        if v < 100 or v > 5000:
-            raise ValueError("LANGCHAIN_CHUNK_SIZE must be between 100 and 5000")
+        if v < 100 or v > 8000:
+            raise ValueError("LANGCHAIN_CHUNK_SIZE must be between 100 and 8000")
         return v
     
     @validator("LANGCHAIN_CHUNK_OVERLAP")
