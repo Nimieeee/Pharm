@@ -176,7 +176,18 @@ export default function ChatPage() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file || !conversationId) return
+    if (!file || !conversationId) {
+      console.log('Upload cancelled: no file or conversation', { file: !!file, conversationId })
+      return
+    }
+    
+    console.log('📤 Starting upload:', { 
+      filename: file.name, 
+      size: file.size, 
+      type: file.type,
+      conversationId 
+    })
+    
     setIsUploading(true)
     const fileId = 'file-' + Date.now()
     setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
@@ -187,7 +198,9 @@ export default function ChatPage() {
     })
     
     try {
+      console.log('🔄 Calling API...')
       const result = await chatAPI.uploadDocument(conversationId, file)
+      console.log('✅ Upload result:', result)
       
       // Dismiss cold start toast
       toast.dismiss(coldStartToast)
@@ -211,6 +224,15 @@ export default function ChatPage() {
     } catch (error: any) {
       // Dismiss cold start toast
       toast.dismiss(coldStartToast)
+      
+      console.error('❌ Upload error:', error)
+      console.error('Error details:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message,
+        code: error?.code
+      })
       
       const is520Error = error?.response?.status === 520
       const errorMsg = is520Error 
