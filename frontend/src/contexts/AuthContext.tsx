@@ -60,18 +60,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setIsLoading(true)
         
-        // Show cold start message on first retry
-        if (attempt === 1) {
-          toast.loading('Backend is waking up, please wait...', { id: 'cold-start', duration: 45000 })
-        }
-        
         // Login and get tokens
         const tokenResponse = await authAPI.login(credentials)
-        
-        // Dismiss cold start message if shown
-        if (attempt > 0) {
-          toast.dismiss('cold-start')
-        }
         
         // Store tokens
         tokenManager.setToken(tokenResponse.access_token)
@@ -109,8 +99,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         // Not a cold start error or out of retries
-        toast.dismiss('cold-start')
-        
         // Handle specific error cases
         if (error.response?.status === 401) {
           toast.error('Invalid email or password')
@@ -129,7 +117,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     
     // If we get here, all retries failed
-    toast.dismiss('cold-start')
     throw lastError
   }
 
@@ -141,18 +128,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setIsLoading(true)
         
-        // Show cold start message on first retry
-        if (attempt === 1) {
-          toast.loading('Backend is waking up, please wait...', { id: 'cold-start', duration: 45000 })
-        }
-        
         // Register user
         await authAPI.register(userData)
-        
-        // Dismiss cold start message if shown
-        if (attempt > 0) {
-          toast.dismiss('cold-start')
-        }
         
         toast.success('Registration successful! Please log in.')
         navigate('/login')
@@ -174,8 +151,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         // Not a cold start error or out of retries
-        toast.dismiss('cold-start')
-        
         // Handle specific error cases
         if (error.response?.status === 400) {
           const detail = error.response.data?.detail
@@ -197,7 +172,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     
     // If we get here, all retries failed
-    toast.dismiss('cold-start')
     throw lastError
   }
 
