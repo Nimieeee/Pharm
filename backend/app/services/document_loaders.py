@@ -35,8 +35,14 @@ class EnhancedDocumentLoader:
             '.txt': self._load_text,
             '.md': self._load_text,
             '.docx': self._load_docx,
+            '.png': self._load_image,
+            '.jpg': self._load_image,
+            '.jpeg': self._load_image,
+            '.gif': self._load_image,
+            '.bmp': self._load_image,
+            '.webp': self._load_image,
         }
-        logger.info("✅ Enhanced document loader initialized")
+        logger.info("✅ Enhanced document loader initialized (supports text, PDF, DOCX, and images)")
     
     def is_supported_format(self, filename: str) -> bool:
         """Check if file format is supported"""
@@ -212,6 +218,41 @@ class EnhancedDocumentLoader:
             if "docx" in str(e).lower() or "corrupt" in str(e).lower():
                 raise DocumentProcessingError(f"Corrupted or invalid DOCX file: {filename}")
             raise DocumentProcessingError(f"DOCX processing error: {str(e)}")
+    
+    async def _load_image(self, file_path: str, filename: str) -> List[Document]:
+        """
+        Load image document - creates a document with image path for embedding
+        The actual image embedding will be handled by Cohere's multimodal embeddings
+        """
+        try:
+            # Verify image file exists and is readable
+            if not os.path.exists(file_path):
+                raise DocumentProcessingError(f"Image file not found: {filename}")
+            
+            # Get image file size
+            file_size = os.path.getsize(file_path)
+            if file_size == 0:
+                raise DocumentProcessingError(f"Image file is empty: {filename}")
+            
+            # Create a document with image metadata
+            # The content will be a placeholder that indicates this is an image
+            doc = Document(
+                page_content=f"[IMAGE: {filename}]",
+                metadata={
+                    "source": filename,
+                    "loader": "ImageLoader",
+                    "file_type": "image",
+                    "image_path": file_path,
+                    "file_size": file_size,
+                    "extension": Path(filename).suffix.lower()
+                }
+            )
+            
+            logger.debug(f"Successfully loaded image file: {filename} ({file_size} bytes)")
+            return [doc]
+            
+        except Exception as e:
+            raise DocumentProcessingError(f"Image processing error: {str(e)}")
     
     def _clean_text(self, text: str) -> str:
         """Clean and normalize extracted text"""

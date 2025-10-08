@@ -201,8 +201,26 @@ class EnhancedRAGService:
     ) -> bool:
         """Process a single chunk and store it in the database"""
         try:
-            # Generate embedding using Mistral API
-            embedding = await self.embeddings_service.generate_embedding(chunk.page_content)
+            # Check if this is an image document
+            is_image = chunk.metadata.get("file_type") == "image"
+            image_path = chunk.metadata.get("image_path")
+            
+            # Generate embedding based on content type
+            if is_image and image_path:
+                # Use Cohere's image embedding for images
+                logger.debug(f"🖼️  Generating image embedding for {filename}")
+                if hasattr(self.embeddings_service, 'embed_image'):
+                    embedding = await self.embeddings_service.embed_image(
+                        image_path=image_path,
+                        image_description=chunk.page_content  # Use placeholder text as description
+                    )
+                else:
+                    # Fallback to text embedding if image embedding not supported
+                    logger.warning(f"⚠️  Image embedding not supported, using text embedding for {filename}")
+                    embedding = await self.embeddings_service.generate_embedding(chunk.page_content)
+            else:
+                # Generate text embedding
+                embedding = await self.embeddings_service.generate_embedding(chunk.page_content)
             
             if not embedding:
                 logger.error(f"❌ Failed to generate embedding for chunk {chunk_index}")
