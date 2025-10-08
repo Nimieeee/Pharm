@@ -27,19 +27,27 @@ class Settings(BaseSettings):
     
     # AI Model settings
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
+    COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    
+    # Embedding settings
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "cohere")  # "mistral" or "cohere"
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # 1024 for both Mistral and Cohere
     
     # Mistral Embeddings settings (using API)
     MISTRAL_EMBED_MODEL: str = os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
     MISTRAL_EMBED_DIMENSIONS: int = int(os.getenv("MISTRAL_EMBED_DIMENSIONS", "1024"))
-    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # Mistral embed dimensions
     MISTRAL_MAX_RETRIES: int = int(os.getenv("MISTRAL_MAX_RETRIES", "3"))
     MISTRAL_TIMEOUT: int = int(os.getenv("MISTRAL_TIMEOUT", "30"))
     
+    # Cohere Embeddings settings
+    COHERE_EMBED_MODEL: str = os.getenv("COHERE_EMBED_MODEL", "embed-english-v3.0")
+    COHERE_EMBED_DIMENSIONS: int = int(os.getenv("COHERE_EMBED_DIMENSIONS", "1024"))
+    
     # LangChain settings
-    # Increased chunk size to reduce API calls and avoid rate limiting
-    LANGCHAIN_CHUNK_SIZE: int = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "3000"))
-    LANGCHAIN_CHUNK_OVERLAP: int = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "400"))
+    # Optimized chunk size for best quality and speed with Cohere
+    LANGCHAIN_CHUNK_SIZE: int = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "1000"))
+    LANGCHAIN_CHUNK_OVERLAP: int = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "200"))
     LANGCHAIN_CACHE_ENABLED: bool = os.getenv("LANGCHAIN_CACHE_ENABLED", "true").lower() == "true"
     
     # Embedding Cache settings

@@ -25,3 +25,5 @@ PyPDF2==3.0.1
 docx2txt==0.8
 # Caching and utilities
 cachetools==5.3.2
+# Cohere for embeddings
+cohere==5.11.0

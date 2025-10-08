@@ -311,7 +311,17 @@ class MistralEmbeddingsService:
 
 
 # Global embeddings service instance
-embeddings_service = MistralEmbeddingsService()
+_mistral_service = None
 
-# Backward compatibility alias
+
+def get_mistral_embeddings_service() -> MistralEmbeddingsService:
+    """Get or create the global Mistral embeddings service instance"""
+    global _mistral_service
+    if _mistral_service is None:
+        _mistral_service = MistralEmbeddingsService()
+    return _mistral_service
+
+
+# Backward compatibility
+embeddings_service = get_mistral_embeddings_service()
 HuggingFaceEmbeddingsService = MistralEmbeddingsService

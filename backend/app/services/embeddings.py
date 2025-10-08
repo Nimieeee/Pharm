@@ -1,13 +1,32 @@
 """
-Embeddings Service - Wrapper for HuggingFace Embeddings
-Provides backward compatibility while using HuggingFace sentence-transformers
+Embeddings Service - Wrapper that supports multiple embedding providers
+Supports: Cohere (default), Mistral, HuggingFace
 """
 
-# Import HuggingFace embeddings service
-from app.services.hf_embeddings import HuggingFaceEmbeddingsService, embeddings_service as hf_embeddings_service
+import logging
+from app.core.config import settings
 
-# Export for backward compatibility
-embeddings_service = hf_embeddings_service
+logger = logging.getLogger(__name__)
+
+# Determine which embedding service to use
+EMBEDDING_PROVIDER = settings.EMBEDDING_PROVIDER.lower()
+
+if EMBEDDING_PROVIDER == "cohere":
+    logger.info("🚀 Using Cohere embeddings (fast, 100 req/min)")
+    from app.services.cohere_embeddings import CohereEmbeddingsService, get_cohere_embeddings_service
+    embeddings_service = get_cohere_embeddings_service()
+    EmbeddingsService = CohereEmbeddingsService
+elif EMBEDDING_PROVIDER == "mistral":
+    logger.info("🐌 Using Mistral embeddings (slow, 1 req/sec)")
+    from app.services.hf_embeddings import MistralEmbeddingsService, get_mistral_embeddings_service
+    embeddings_service = get_mistral_embeddings_service()
+    EmbeddingsService = MistralEmbeddingsService
+else:
+    # Default to Cohere
+    logger.warning(f"⚠️  Unknown embedding provider '{EMBEDDING_PROVIDER}', defaulting to Cohere")
+    from app.services.cohere_embeddings import CohereEmbeddingsService, get_cohere_embeddings_service
+    embeddings_service = get_cohere_embeddings_service()
+    EmbeddingsService = CohereEmbeddingsService
 
 # Legacy class name for compatibility
-MistralEmbeddingsService = HuggingFaceEmbeddingsService
+MistralEmbeddingsService = EmbeddingsService
