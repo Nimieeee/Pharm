@@ -115,9 +115,9 @@ export default function ChatPage() {
 
     try {
       const response = await chatAPI.sendMessage({
-        message: userMessage, 
-        conversation_id: conversationId, 
-        mode, 
+        message: userMessage,
+        conversation_id: conversationId,
+        mode,
         use_rag: true,
         metadata: attachedFiles.length > 0 ? { attachedFiles } : undefined
       })
@@ -510,7 +510,7 @@ export default function ChatPage() {
                 </div>
               )}
               <div className={cn("flex items-end gap-2 rounded-3xl p-2 shadow-lg", darkMode ? "bg-[#2f2f2f]" : "bg-[#f4f4f4]")}>
-                <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept=".pdf,.docx,.txt" className="hidden" />
+                <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept=".pdf,.docx,.txt,.pptx,.ppt,.png,.jpg,.jpeg,.gif,.bmp,.webp" className="hidden" />
                 <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFiles.some(f => f.status === 'uploading')} className={cn("p-2 rounded-lg shrink-0", darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200")} title="Upload document">
                   <Paperclip className="w-5 h-5" />
                 </button>

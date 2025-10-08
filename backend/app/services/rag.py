@@ -20,6 +20,24 @@ try:
 except ImportError:
     DOCX_AVAILABLE = False
 
+try:
+    from pptx import Presentation
+    PPTX_AVAILABLE = True
+except ImportError:
+    PPTX_AVAILABLE = False
+
+try:
+    from PIL import Image
+    import pytesseract
+    IMAGE_OCR_AVAILABLE = True
+except ImportError:
+    IMAGE_OCR_AVAILABLE = False
+    try:
+        from PIL import Image
+        IMAGE_AVAILABLE = True
+    except ImportError:
+        IMAGE_AVAILABLE = False
+
 from app.core.config import settings
 from app.models.document import DocumentChunk, DocumentChunkCreate, DocumentUploadResponse
 
@@ -315,6 +333,12 @@ class RAGService:
             elif file_extension == 'docx' and DOCX_AVAILABLE:
                 return self._process_docx(file_path, filename)
                 
+            elif file_extension in ['ppt', 'pptx'] and PPTX_AVAILABLE:
+                return self._process_pptx(file_path, filename)
+                
+            elif file_extension in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff']:
+                return self._process_image(file_path, filename)
+                
             else:
                 print(f"❌ Unsupported file type: {file_extension}")
                 return []
@@ -402,6 +426,119 @@ class RAGService:
             
         except Exception as e:
             print(f"❌ Error processing DOCX '{filename}': {e}")
+            return []
+    
+    def _process_pptx(self, file_path: str, filename: str) -> List[SimpleDocument]:
+        """Process PowerPoint files"""
+        try:
+            prs = Presentation(file_path)
+            documents = []
+            
+            for slide_num, slide in enumerate(prs.slides):
+                text_content = []
+                
+                # Extract text from shapes
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        text_content.append(shape.text.strip())
+                    
+                    # Extract text from tables
+                    if shape.has_table:
+                        for row in shape.table.rows:
+                            row_text = []
+                            for cell in row.cells:
+                                if cell.text.strip():
+                                    row_text.append(cell.text.strip())
+                            if row_text:
+                                text_content.append(" | ".join(row_text))
+                
+                # Extract notes
+                if slide.has_notes_slide:
+                    notes_text = slide.notes_slide.notes_text_frame.text
+                    if notes_text.strip():
+                        text_content.append(f"Notes: {notes_text.strip()}")
+                
+                if text_content:
+                    slide_text = '\n'.join(text_content)
+                    doc = SimpleDocument(
+                        page_content=slide_text,
+                        metadata={
+                            "source": filename,
+                            "slide": slide_num + 1,
+                            "file_type": "pptx"
+                        }
+                    )
+                    documents.append(doc)
+            
+            return documents
+            
+        except Exception as e:
+            print(f"❌ Error processing PPTX '{filename}': {e}")
+            return []
+    
+    def _process_image(self, file_path: str, filename: str) -> List[SimpleDocument]:
+        """Process image files with OCR"""
+        try:
+            # Try OCR first if available
+            if IMAGE_OCR_AVAILABLE:
+                try:
+                    image = Image.open(file_path)
+                    
+                    # Convert to RGB if necessary
+                    if image.mode != 'RGB':
+                        image = image.convert('RGB')
+                    
+                    # Perform OCR
+                    text = pytesseract.image_to_string(image)
+                    
+                    if text.strip():
+                        doc = SimpleDocument(
+                            page_content=text.strip(),
+                            metadata={
+                                "source": filename,
+                                "file_type": "image",
+                                "ocr": True,
+                                "image_size": f"{image.width}x{image.height}"
+                            }
+                        )
+                        return [doc]
+                    else:
+                        print(f"⚠️ No text extracted from image '{filename}'")
+                        # Return basic image info
+                        doc = SimpleDocument(
+                            page_content=f"Image file: {filename} (No text detected)",
+                            metadata={
+                                "source": filename,
+                                "file_type": "image",
+                                "ocr": False,
+                                "image_size": f"{image.width}x{image.height}"
+                            }
+                        )
+                        return [doc]
+                        
+                except Exception as ocr_error:
+                    print(f"⚠️ OCR failed for '{filename}': {ocr_error}")
+            
+            # Fallback: basic image info without OCR
+            if IMAGE_AVAILABLE:
+                image = Image.open(file_path)
+                doc = SimpleDocument(
+                    page_content=f"Image file: {filename} ({image.format}, {image.width}x{image.height})",
+                    metadata={
+                        "source": filename,
+                        "file_type": "image",
+                        "ocr": False,
+                        "image_size": f"{image.width}x{image.height}",
+                        "format": image.format
+                    }
+                )
+                return [doc]
+            
+            print(f"❌ Image processing not available for '{filename}'")
+            return []
+            
+        except Exception as e:
+            print(f"❌ Error processing image '{filename}': {e}")
             return []
     
 
