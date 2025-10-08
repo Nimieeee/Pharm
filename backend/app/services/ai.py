@@ -73,6 +73,7 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
             
             # Get conversation context using semantic search
             context = ""
+            context_used = False
             if use_rag:
                 try:
                     print("📚 Getting RAG context with semantic search...")
@@ -82,7 +83,9 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
                     )
                     
                     if context:
+                        context_used = True
                         print(f"✅ RAG context retrieved: {len(context)} chars")
+                        print(f"📄 Context preview: {context[:200]}...")
                     else:
                         print("⚠️ No relevant context found, trying all chunks...")
                         # Fallback: get all chunks if semantic search returns nothing
@@ -94,12 +97,15 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
                             for chunk in all_chunks[:20]:  # Limit to first 20 chunks
                                 context_parts.append(chunk.content)
                             context = "\n\n".join(context_parts)
+                            context_used = True
                             print(f"✅ Fallback context: {len(all_chunks)} chunks, {len(context)} chars")
+                            print(f"📄 Context preview: {context[:200]}...")
                 except Exception as e:
                     print(f"⚠️ RAG context failed: {e}")
                     import traceback
                     traceback.print_exc()
                     context = ""
+                    context_used = False
             
             # Get recent conversation history
             try:
@@ -167,6 +173,11 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
                     if result.get("choices") and len(result["choices"]) > 0:
                         response_text = result["choices"][0]["message"]["content"]
                         print(f"✅ Generated response: {len(response_text)} chars")
+                        
+                        # Add document indicator if context was used
+                        if context_used and context:
+                            response_text = f"📚 *Based on uploaded documents*\n\n{response_text}"
+                        
                         return response_text
                     else:
                         print("❌ No choices in Mistral response")

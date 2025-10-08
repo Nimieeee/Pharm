@@ -26,6 +26,7 @@ docx2txt==0.8
 Pillow==10.4.0  # For image processing
 # Caching and utilities
 cachetools==5.3.2
-# Cohere for embeddings - use httpx directly to avoid sagemaker conflicts
-# cohere==5.11.0  # Conflicts with pydantic 1.x
-# We'll use direct HTTP calls instead
+# Sentence Transformers for local embeddings (no API calls, no rate limits)
+sentence-transformers==2.2.2
+torch==2.0.1
+transformers==4.30.2

@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     
     # Embedding settings
-    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "cohere")  # "mistral" or "cohere"
-    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # 1024 for both Mistral and Cohere
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")  # "sentence-transformers", "cohere", or "mistral"
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "384"))  # 384 for sentence-transformers, 1024 for Mistral/Cohere
     
     # Mistral Embeddings settings (using API)
     MISTRAL_EMBED_MODEL: str = os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
