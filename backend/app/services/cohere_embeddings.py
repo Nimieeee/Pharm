@@ -3,18 +3,20 @@ Cohere Embeddings Service
 Handles embedding generation using Cohere API with caching
 Supports both text and image embeddings
 Much faster than Mistral - 100 requests/minute on free tier
+Uses direct HTTP calls to avoid dependency conflicts
 """
 
 import asyncio
 import base64
 import hashlib
+import httpx
+import json
 import logging
 import time
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 from cachetools import TTLCache
 from pathlib import Path
-import cohere
 
 from app.core.config import settings
 
@@ -35,6 +37,7 @@ class CohereEmbeddingsService:
     
     def __init__(self):
         self.cohere_api_key = settings.COHERE_API_KEY
+        self.cohere_base_url = "https://api.cohere.ai/v1"
         self.text_model_name = "embed-english-v3.0"
         self.multimodal_model_name = "embed-english-v3.0"  # Same model handles both
         self.embedding_dimensions = 1024  # Cohere embed-english-v3.0 dimensions
@@ -52,17 +55,11 @@ class CohereEmbeddingsService:
         self.last_api_call_time = 0
         self.min_time_between_calls = 0.6  # 0.6 seconds = 100 requests/minute
         
-        # Initialize Cohere client
+        # Check API key
         if not self.cohere_api_key:
             logger.warning("⚠️  COHERE_API_KEY not set - embeddings will fail")
-            self.client = None
         else:
-            try:
-                self.client = cohere.Client(self.cohere_api_key)
-                logger.info("✅ Cohere client initialized")
-            except Exception as e:
-                logger.error(f"❌ Failed to initialize Cohere client: {e}")
-                self.client = None
+            logger.info("✅ Cohere embeddings service initialized (direct HTTP)")
         
         # Initialize cache if enabled
         if settings.ENABLE_EMBEDDING_CACHE:
@@ -141,26 +138,40 @@ class CohereEmbeddingsService:
             logger.debug(f"✅ Cache hit for text (length={len(text)})")
             return cached_embedding
         
-        # Check if client is initialized
-        if not self.client:
-            logger.error("❌ Cohere client not initialized")
+        # Check if API key is set
+        if not self.cohere_api_key:
+            logger.error("❌ Cohere API key not configured")
             raise ValueError("Cohere API key not configured")
         
         # Rate limiting
         await self._rate_limit()
         
         try:
-            # Call Cohere API
+            # Call Cohere API via HTTP
             self.cache_stats["api_calls"] += 1
             logger.debug(f"🔄 Calling Cohere API for text (length={len(text)})")
             
-            response = self.client.embed(
-                texts=[text],
-                model=self.text_model_name,
-                input_type="search_document"  # For document indexing
-            )
-            
-            embedding = response.embeddings[0]
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{self.cohere_base_url}/embed",
+                    headers={
+                        "Authorization": f"Bearer {self.cohere_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "texts": [text],
+                        "model": self.text_model_name,
+                        "input_type": "search_document"
+                    }
+                )
+                
+                response.raise_for_status()
+                data = response.json()
+                
+                if "embeddings" not in data or not data["embeddings"]:
+                    raise ValueError("No embeddings returned from Cohere API")
+                
+                embedding = data["embeddings"][0]
             
             # Validate embedding
             if not embedding or len(embedding) != self.embedding_dimensions:
@@ -172,6 +183,10 @@ class CohereEmbeddingsService:
             logger.debug(f"✅ Generated text embedding (dimensions={len(embedding)})")
             return embedding
             
+        except httpx.HTTPStatusError as e:
+            self.cache_stats["errors"] += 1
+            logger.error(f"❌ Cohere API error: {e.response.status_code} - {e.response.text}")
+            raise
         except Exception as e:
             self.cache_stats["errors"] += 1
             logger.error(f"❌ Error generating text embedding: {e}")
@@ -191,9 +206,9 @@ class CohereEmbeddingsService:
         self.cache_stats["total_requests"] += 1
         self.cache_stats["image_requests"] += 1
         
-        # Check if client is initialized
-        if not self.client:
-            logger.error("❌ Cohere client not initialized")
+        # Check if API key is set
+        if not self.cohere_api_key:
+            logger.error("❌ Cohere API key not configured")
             raise ValueError("Cohere API key not configured")
         
         # Check if file exists
@@ -207,18 +222,31 @@ class CohereEmbeddingsService:
             # Encode image to base64
             image_base64 = self._encode_image_to_base64(image_path)
             
-            # Call Cohere API
+            # Call Cohere API via HTTP
             self.cache_stats["api_calls"] += 1
             logger.debug(f"🔄 Calling Cohere API for image: {image_path}")
             
-            # Cohere multimodal embedding
-            response = self.client.embed(
-                images=[image_base64],
-                model=self.multimodal_model_name,
-                input_type="image"
-            )
-            
-            embedding = response.embeddings[0]
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{self.cohere_base_url}/embed",
+                    headers={
+                        "Authorization": f"Bearer {self.cohere_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "images": [image_base64],
+                        "model": self.multimodal_model_name,
+                        "input_type": "image"
+                    }
+                )
+                
+                response.raise_for_status()
+                data = response.json()
+                
+                if "embeddings" not in data or not data["embeddings"]:
+                    raise ValueError("No embeddings returned from Cohere API")
+                
+                embedding = data["embeddings"][0]
             
             # Validate embedding
             if not embedding or len(embedding) != self.embedding_dimensions:
@@ -227,6 +255,10 @@ class CohereEmbeddingsService:
             logger.debug(f"✅ Generated image embedding (dimensions={len(embedding)})")
             return embedding
             
+        except httpx.HTTPStatusError as e:
+            self.cache_stats["errors"] += 1
+            logger.error(f"❌ Cohere API error: {e.response.status_code} - {e.response.text}")
+            raise
         except Exception as e:
             self.cache_stats["errors"] += 1
             logger.error(f"❌ Error generating image embedding: {e}")
@@ -255,9 +287,9 @@ class CohereEmbeddingsService:
         # Both text and image provided - combine them
         self.cache_stats["total_requests"] += 1
         
-        # Check if client is initialized
-        if not self.client:
-            logger.error("❌ Cohere client not initialized")
+        # Check if API key is set
+        if not self.cohere_api_key:
+            logger.error("❌ Cohere API key not configured")
             raise ValueError("Cohere API key not configured")
         
         # Rate limiting
@@ -267,18 +299,32 @@ class CohereEmbeddingsService:
             # Encode image to base64
             image_base64 = self._encode_image_to_base64(image_path)
             
-            # Call Cohere API with both text and image
+            # Call Cohere API with both text and image via HTTP
             self.cache_stats["api_calls"] += 1
             logger.debug(f"🔄 Calling Cohere API for multimodal (text + image)")
             
-            response = self.client.embed(
-                texts=[text],
-                images=[image_base64],
-                model=self.multimodal_model_name,
-                input_type="search_document"
-            )
-            
-            embedding = response.embeddings[0]
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{self.cohere_base_url}/embed",
+                    headers={
+                        "Authorization": f"Bearer {self.cohere_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "texts": [text],
+                        "images": [image_base64],
+                        "model": self.multimodal_model_name,
+                        "input_type": "search_document"
+                    }
+                )
+                
+                response.raise_for_status()
+                data = response.json()
+                
+                if "embeddings" not in data or not data["embeddings"]:
+                    raise ValueError("No embeddings returned from Cohere API")
+                
+                embedding = data["embeddings"][0]
             
             # Validate embedding
             if not embedding or len(embedding) != self.embedding_dimensions:
@@ -287,6 +333,10 @@ class CohereEmbeddingsService:
             logger.debug(f"✅ Generated multimodal embedding (dimensions={len(embedding)})")
             return embedding
             
+        except httpx.HTTPStatusError as e:
+            self.cache_stats["errors"] += 1
+            logger.error(f"❌ Cohere API error: {e.response.status_code} - {e.response.text}")
+            raise
         except Exception as e:
             self.cache_stats["errors"] += 1
             logger.error(f"❌ Error generating multimodal embedding: {e}")
