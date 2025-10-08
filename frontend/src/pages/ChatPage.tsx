@@ -192,24 +192,42 @@ export default function ChatPage() {
     const fileId = 'file-' + Date.now()
     setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
 
-    // Show loading toast for potential cold start
-    const coldStartToast = toast.loading('Uploading document... (Backend may take 30-60s to wake up if idle)')
+    // Show progress with multiple stages
+    let progressToast = toast.loading('📤 Uploading file...')
 
     try {
       console.log('🔄 Calling API...')
+      
+      // Simulate progress updates (since we can't get real progress from the backend)
+      const progressInterval = setInterval(() => {
+        const messages = [
+          '📄 Reading document...',
+          '✂️ Splitting into chunks...',
+          '🧠 Generating embeddings...',
+          '💾 Storing in database...',
+          '⚡ Almost done...'
+        ]
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)]
+        toast.loading(randomMsg, { id: progressToast })
+      }, 3000)
+
       const result = await chatAPI.uploadDocument(conversationId, file)
+      
+      // Clear progress interval
+      clearInterval(progressInterval)
       console.log('✅ Upload result:', result)
 
-      // Dismiss cold start toast
-      toast.dismiss(coldStartToast)
+      // Dismiss progress toast
+      toast.dismiss(progressToast)
 
       // Check if upload was successful
       if (result.success && result.chunk_count > 0) {
-        toast.success(`Document uploaded: ${result.chunk_count} chunks processed`)
+        const processingTime = result.processing_time ? ` in ${result.processing_time.toFixed(1)}s` : ''
+        toast.success(`✅ Document uploaded: ${result.chunk_count} chunks processed${processingTime}`)
       } else if (result.chunk_count === 0) {
         // Check if it's a rate limit issue
         if (result.message && result.message.includes('rate limit')) {
-          toast.error('Upload failed: Mistral API rate limit exceeded. Please wait a few minutes and try again.')
+          toast.error('Upload failed: API rate limit exceeded. Please wait a few minutes and try again.')
         } else {
           toast.error('No content could be extracted from document')
         }
@@ -220,8 +238,8 @@ export default function ChatPage() {
 
       await loadConversation(conversationId)
     } catch (error: any) {
-      // Dismiss cold start toast
-      toast.dismiss(coldStartToast)
+      // Dismiss progress toast
+      toast.dismiss(progressToast)
 
       console.error('❌ Upload error:', error)
       console.error('Error details:', {
@@ -234,7 +252,7 @@ export default function ChatPage() {
 
       const is520Error = error?.response?.status === 520
       const errorMsg = is520Error
-        ? 'Backend is still waking up. Please try again in a moment.'
+        ? '⏳ Backend is waking up. Please try again in a moment.'
         : error?.response?.data?.detail || error?.message || 'Failed to upload document'
       toast.error(errorMsg)
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
