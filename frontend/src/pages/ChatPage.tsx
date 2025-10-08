@@ -192,10 +192,8 @@ export default function ChatPage() {
     const fileId = 'file-' + Date.now()
     setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
     
-    // Show info toast for potential cold start
-    const coldStartToast = toast.info('Uploading document... (Backend may take 30-60s to wake up if idle)', {
-      duration: 60000 // Show for 60 seconds
-    })
+    // Show loading toast for potential cold start
+    const coldStartToast = toast.loading('Uploading document... (Backend may take 30-60s to wake up if idle)')
     
     try {
       console.log('🔄 Calling API...')
