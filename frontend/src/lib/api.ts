@@ -219,6 +219,7 @@ export interface ChatRequest {
   conversation_id: string
   mode?: 'fast' | 'detailed'
   use_rag?: boolean
+  metadata?: Record<string, any>
 }
 
 export interface ChatResponse {
@@ -273,9 +274,6 @@ export const chatAPI = {
   deleteConversation: (id: string): Promise<void> =>
     api.delete(`/chat/conversations/${id}`).then(res => res.data),
   
-  addMessage: (conversationId: string, data: { role: string; content: string; metadata?: Record<string, any> }): Promise<Message> =>
-    api.post(`/chat/conversations/${conversationId}/messages`, data).then(res => res.data),
-
   sendMessage: async (data: ChatRequest): Promise<ChatResponse> => {
     // Retry logic for Render cold starts (free tier spins down after inactivity)
     const maxRetries = 2

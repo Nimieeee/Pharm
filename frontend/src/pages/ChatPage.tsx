@@ -114,17 +114,12 @@ export default function ChatPage() {
     setMessages(prev => [...prev, streamingMessage])
 
     try {
-      // Save user message with document metadata first
-      if (attachedFiles.length > 0) {
-        await chatAPI.addMessage(conversationId, {
-          role: 'user',
-          content: userMessage,
-          metadata: { attachedFiles }
-        })
-      }
-
       const response = await chatAPI.sendMessage({
-        message: userMessage, conversation_id: conversationId, mode, use_rag: true
+        message: userMessage, 
+        conversation_id: conversationId, 
+        mode, 
+        use_rag: true,
+        metadata: attachedFiles.length > 0 ? { attachedFiles } : undefined
       })
 
       const fullText = response.response

@@ -27,6 +27,7 @@ class ChatRequest(BaseModel):
     conversation_id: UUID
     mode: str = "detailed"  # "fast" or "detailed"
     use_rag: bool = True
+    metadata: Dict[str, Any] = {}
 
 
 class ChatResponse(BaseModel):
@@ -91,7 +92,8 @@ async def chat(
         user_message = MessageCreate(
             conversation_id=chat_request.conversation_id,
             role="user",
-            content=chat_request.message
+            content=chat_request.message,
+            metadata=chat_request.metadata
         )
         
         await chat_service.add_message(user_message, current_user)
@@ -170,7 +172,8 @@ async def chat_stream(
         user_message = MessageCreate(
             conversation_id=chat_request.conversation_id,
             role="user",
-            content=chat_request.message
+            content=chat_request.message,
+            metadata=chat_request.metadata
         )
         
         await chat_service.add_message(user_message, current_user)
