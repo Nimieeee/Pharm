@@ -6,7 +6,6 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
-import ThemeToggle from './components/ThemeToggle'
 
 // Pages
 import HomePage from './pages/HomePage'
@@ -35,7 +34,6 @@ function App() {
 
   return (
     <ThemeProvider>
-      <ThemeToggle />
       <Routes>
         <Route path="/" element={<Layout />}>
           {/* Public routes */}

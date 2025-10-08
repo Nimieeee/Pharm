@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Send, Upload, Plus, MessageSquare, Trash2, Menu, Loader2, Paperclip, ChevronLeft, Zap, Brain } from 'lucide-react'
+import { Send, Upload, Plus, MessageSquare, Trash2, Menu, Loader2, Paperclip, ChevronLeft, Zap, Brain, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { chatAPI, Conversation, Message, ConversationWithMessages } from '@/lib/api'
@@ -11,7 +11,7 @@ export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId?: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { darkMode } = useTheme()
+  const { darkMode, toggleDarkMode } = useTheme()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -347,6 +347,10 @@ export default function ChatPage() {
             </button>
             <button onClick={() => setMode('detailed')} className={cn("p-2 rounded-lg", mode === 'detailed' ? "bg-blue-600 text-white" : (darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"))} title="Detailed mode">
               <Brain className="w-4 h-4" />
+            </button>
+            <div className={cn("w-px h-6 mx-1", darkMode ? "bg-gray-700" : "bg-gray-300")} />
+            <button onClick={toggleDarkMode} className={cn("p-2 rounded-lg", darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100")} title="Toggle theme">
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
         </div>
