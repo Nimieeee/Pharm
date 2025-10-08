@@ -274,7 +274,9 @@ export const chatAPI = {
     api.delete(`/chat/conversations/${id}`).then(res => res.data),
   
   sendMessage: (data: ChatRequest): Promise<ChatResponse> =>
-    api.post('/ai/chat', data).then(res => res.data),
+    api.post('/ai/chat', data, {
+      timeout: 180000 // 3 minutes for detailed mode with RAG
+    }).then(res => res.data),
   
   uploadDocument: (conversationId: string, file: File): Promise<any> => {
     const formData = new FormData()
