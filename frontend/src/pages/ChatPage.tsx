@@ -25,7 +25,7 @@ export default function ChatPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
   const [mode, setMode] = useState<'fast' | 'detailed'>('fast')
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string, id: string}>>([])
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string, id: string }>>([])
 
   useEffect(() => { loadConversations() }, [])
   useEffect(() => { if (conversationId) loadConversation(conversationId) }, [conversationId])
@@ -115,25 +115,25 @@ export default function ChatPage() {
       const response = await chatAPI.sendMessage({
         message: userMessage, conversation_id: conversationId, mode, use_rag: true
       })
-      
+
       const fullText = response.response
       let currentText = ''
       const words = fullText.split(' ')
-      
+
       for (let i = 0; i < words.length; i++) {
         currentText += (i > 0 ? ' ' : '') + words[i]
-        setMessages(prev => prev.map(m => 
-          m.id === streamingMessageId 
+        setMessages(prev => prev.map(m =>
+          m.id === streamingMessageId
             ? { ...m, content: currentText, metadata: { mode: response.mode, context_used: response.context_used } }
             : m
         ))
         await new Promise(resolve => setTimeout(resolve, 20))
       }
-      
+
       // Remove streaming message and reload to get actual messages
       setMessages(prev => prev.filter(m => m.id !== streamingMessageId && m.id !== tempUserMessage.id))
       await loadConversation(conversationId)
-      
+
       // Generate title if this is the first message
       if (currentConversation && currentConversation.message_count === 0) {
         await generateConversationTitle(conversationId, userMessage, response.response)
@@ -151,22 +151,22 @@ export default function ChatPage() {
       // Generate a summary title (7+ words) from the conversation
       const prompt = `${userMsg.substring(0, 100)}... ${aiResponse.substring(0, 100)}...`
       const words = prompt.split(' ').filter(w => w.length > 0)
-      
+
       // Create a title with at least 7 words
       let title = words.slice(0, Math.max(7, Math.min(12, words.length))).join(' ')
-      
+
       // Clean up and truncate if needed
       title = title.replace(/[^\w\s-]/g, '').trim()
       if (title.length > 60) {
         title = title.substring(0, 57) + '...'
       }
-      
+
       // Ensure minimum 7 words
       const titleWords = title.split(' ')
       if (titleWords.length < 7) {
         title = `Conversation about ${title}`
       }
-      
+
       await chatAPI.updateConversation(convId, title)
       await loadConversations()
     } catch (error) {
@@ -180,29 +180,29 @@ export default function ChatPage() {
       console.log('Upload cancelled: no file or conversation', { file: !!file, conversationId })
       return
     }
-    
-    console.log('📤 Starting upload:', { 
-      filename: file.name, 
-      size: file.size, 
+
+    console.log('📤 Starting upload:', {
+      filename: file.name,
+      size: file.size,
       type: file.type,
-      conversationId 
+      conversationId
     })
-    
+
     setIsUploading(true)
     const fileId = 'file-' + Date.now()
     setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
-    
+
     // Show loading toast for potential cold start
     const coldStartToast = toast.loading('Uploading document... (Backend may take 30-60s to wake up if idle)')
-    
+
     try {
       console.log('🔄 Calling API...')
       const result = await chatAPI.uploadDocument(conversationId, file)
       console.log('✅ Upload result:', result)
-      
+
       // Dismiss cold start toast
       toast.dismiss(coldStartToast)
-      
+
       // Check if upload was successful
       if (result.success && result.chunk_count > 0) {
         toast.success(`Document uploaded: ${result.chunk_count} chunks processed`)
@@ -217,12 +217,12 @@ export default function ChatPage() {
       } else {
         toast.warning(result.message || 'Document partially uploaded')
       }
-      
+
       await loadConversation(conversationId)
     } catch (error: any) {
       // Dismiss cold start toast
       toast.dismiss(coldStartToast)
-      
+
       console.error('❌ Upload error:', error)
       console.error('Error details:', {
         status: error?.response?.status,
@@ -231,9 +231,9 @@ export default function ChatPage() {
         message: error?.message,
         code: error?.code
       })
-      
+
       const is520Error = error?.response?.status === 520
-      const errorMsg = is520Error 
+      const errorMsg = is520Error
         ? 'Backend is still waking up. Please try again in a moment.'
         : error?.response?.data?.detail || error?.message || 'Failed to upload document'
       toast.error(errorMsg)
@@ -253,22 +253,22 @@ export default function ChatPage() {
     const elements: JSX.Element[] = []
     let inTable = false
     let tableRows: string[] = []
-    
+
     const renderTable = (rows: string[]) => {
       if (rows.length === 0) return null
-      
+
       // Parse table rows and clean up markdown formatting
-      const parsedRows = rows.map(row => 
+      const parsedRows = rows.map(row =>
         row.split('|')
           .map(cell => cell.trim().replace(/\*\*/g, '').replace(/\*/g, ''))
           .filter(cell => cell)
       )
-      
+
       if (parsedRows.length < 2) return null
-      
+
       const headers = parsedRows[0]
       const dataRows = parsedRows.slice(2) // Skip separator row
-      
+
       return (
         <div className="overflow-x-auto my-4">
           <table className={cn("min-w-full border-collapse text-sm", darkMode ? "border-gray-700" : "border-gray-300")}>
@@ -296,7 +296,7 @@ export default function ChatPage() {
         </div>
       )
     }
-    
+
     lines.forEach((line, i) => {
       // Detect table rows (lines with |)
       if (line.includes('|') && line.trim().startsWith('|')) {
@@ -313,10 +313,10 @@ export default function ChatPage() {
           inTable = false
           tableRows = []
         }
-        
+
         // Format regular lines
         let processedLine = line.replace(/^#+\s/, '').replace(/\*\*/g, '')
-        
+
         // Numbered lists
         if (processedLine.match(/^\d+\.\s/)) {
           const match = processedLine.match(/^(\d+)\.\s(.*)/)
@@ -329,7 +329,7 @@ export default function ChatPage() {
             return
           }
         }
-        
+
         // Regular lines
         if (processedLine.trim()) {
           elements.push(<div key={i} className="mb-2">{processedLine}</div>)
@@ -338,13 +338,13 @@ export default function ChatPage() {
         }
       }
     })
-    
+
     // Handle table at end of content
     if (inTable && tableRows.length > 0) {
       const table = renderTable(tableRows)
       if (table) elements.push(<div key="table-end">{table}</div>)
     }
-    
+
     return elements
   }
 
@@ -359,7 +359,7 @@ export default function ChatPage() {
       {sidebarOpen && window.innerWidth < 1024 && (
         <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
       )}
-      
+
       <div className={cn("flex flex-col transition-all duration-300 border-r z-50", darkMode ? "bg-[#171717] border-gray-800" : "bg-gray-50 border-gray-200", sidebarOpen ? "w-64 fixed lg:relative h-full" : "w-0 border-r-0")}>
         {sidebarOpen && (<>
           <div className={cn("p-3 border-b flex items-center justify-between", darkMode ? "border-gray-800" : "border-gray-200")}>
