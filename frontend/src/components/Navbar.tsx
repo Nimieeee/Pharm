@@ -54,13 +54,10 @@ export default function Navbar() {
           {/* Logo and brand */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
+              <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
               <span className={cn("text-xl font-bold", darkMode ? "text-white" : "text-gray-900")}>PharmGPT</span>
             </Link>
           </div>
-
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => {
