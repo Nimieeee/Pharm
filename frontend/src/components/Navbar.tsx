@@ -24,19 +24,16 @@ export default function Navbar() {
 
   const publicNavItems = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Support', href: '/support', icon: MessageSquare },
   ]
 
   const userNavItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Chat', href: '/chat', icon: MessageSquare },
-    { name: 'Support', href: '/support', icon: MessageSquare },
   ]
 
   const adminNavItems = [
     { name: 'Admin', href: '/admin', icon: Shield },
     { name: 'Users', href: '/admin/users', icon: User },
-    { name: 'Support', href: '/admin/support', icon: MessageSquare },
   ]
 
   const getNavItems = () => {

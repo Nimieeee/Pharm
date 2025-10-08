@@ -92,7 +92,8 @@ export default function ChatPage() {
     const userMessage = inputMessage.trim()
     const attachedFiles = [...uploadedFiles]
     setInputMessage('')
-    setUploadedFiles([])
+    // Don't clear uploaded files - keep them visible after sending
+    // setUploadedFiles([])
     setIsSending(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
 

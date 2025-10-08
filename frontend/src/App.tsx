@@ -12,10 +12,8 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ChatPage from './pages/ChatPage'
-import SupportPage from './pages/SupportPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
-import AdminSupport from './pages/admin/AdminSupport'
 import NotFoundPage from './pages/NotFoundPage'
 
 function App() {
@@ -40,7 +38,6 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
-          <Route path="support" element={<SupportPage />} />
           
           {/* Protected routes - redirect dashboard to home */}
           <Route path="dashboard" element={
@@ -71,12 +68,6 @@ function App() {
           <Route path="admin/users" element={
             <AdminRoute>
               <AdminUsers />
-            </AdminRoute>
-          } />
-          
-          <Route path="admin/support" element={
-            <AdminRoute>
-              <AdminSupport />
             </AdminRoute>
           } />
           
