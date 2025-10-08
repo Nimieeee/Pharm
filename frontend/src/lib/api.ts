@@ -280,7 +280,8 @@ export const chatAPI = {
     const formData = new FormData()
     formData.append('file', file)
     return api.post(`/chat/conversations/${conversationId}/documents`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000 // 2 minutes timeout for document uploads (rate limiting = 1 req/sec)
     }).then(res => res.data)
   },
 }
