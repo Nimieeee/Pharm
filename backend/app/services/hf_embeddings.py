@@ -43,6 +43,9 @@ class MistralEmbeddingsService:
             "api_calls": 0,
             "total_requests": 0
         }
+        # Rate limiting: Mistral free tier allows 1 request per second
+        self.last_api_call_time = 0
+        self.min_time_between_calls = 1.1  # 1.1 seconds to be safe
         
         # Check API key
         if self.mistral_api_key:
@@ -97,11 +100,19 @@ class MistralEmbeddingsService:
             self.cache_stats["errors"] += 1
     
     async def _generate_embedding_with_api(self, text: str) -> Optional[List[float]]:
-        """Generate embedding using Mistral API via direct HTTP calls"""
+        """Generate embedding using Mistral API via direct HTTP calls with rate limiting"""
         if not self.mistral_api_key:
             return None
         
         try:
+            # Rate limiting: Wait if needed to respect 1 request per second limit
+            current_time = time.time()
+            time_since_last_call = current_time - self.last_api_call_time
+            if time_since_last_call < self.min_time_between_calls:
+                wait_time = self.min_time_between_calls - time_since_last_call
+                logger.debug(f"⏱️  Rate limiting: waiting {wait_time:.2f}s")
+                await asyncio.sleep(wait_time)
+            
             self.cache_stats["api_calls"] += 1
             start_time = time.time()
             
@@ -122,6 +133,9 @@ class MistralEmbeddingsService:
                     json=payload,
                     timeout=30.0
                 )
+                
+                # Update last call time
+                self.last_api_call_time = time.time()
                 
                 if response.status_code == 200:
                     result = response.json()
