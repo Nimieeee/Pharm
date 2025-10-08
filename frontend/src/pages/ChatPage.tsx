@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Send, Upload, Plus, MessageSquare, Trash2, Menu, Loader2, Paperclip, ChevronLeft, Zap, Brain, Sun, Moon } from 'lucide-react'
+import { Send, Upload, Plus, MessageSquare, Trash2, Menu, Loader2, Paperclip, ChevronLeft, ChevronRight, Zap, Brain, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { chatAPI, Conversation, Message, ConversationWithMessages } from '@/lib/api'
@@ -352,10 +352,9 @@ export default function ChatPage() {
         <div className={cn("flex items-center justify-between px-3 lg:px-4 py-3 border-b", darkMode ? "border-gray-800" : "border-gray-200")}>
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className={cn("p-2 rounded-lg", darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
-              <Menu className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             </button>
-            <img src="/PharmGPT.png" alt="PharmGPT" className="w-6 h-6" />
-            <h1 className="text-base lg:text-lg font-semibold">PharmGPT</h1>
+            <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setMode('fast')} className={cn("p-2 rounded-lg", mode === 'fast' ? "bg-blue-600 text-white" : (darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"))} title="Fast mode">
