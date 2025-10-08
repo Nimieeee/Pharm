@@ -60,8 +60,9 @@ app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/")
+@app.head("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint - supports both GET and HEAD requests"""
     return {
         "message": "PharmGPT Backend API",
         "version": "2.0.0",
@@ -71,8 +72,9 @@ async def root():
 
 
 @app.get("/health")
+@app.head("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint - supports both GET and HEAD requests"""
     return {
         "status": "healthy",
         "service": "pharmgpt-backend",
