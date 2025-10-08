@@ -179,8 +179,17 @@ export default function ChatPage() {
     setIsUploading(true)
     const fileId = 'file-' + Date.now()
     setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
+    
+    // Show info toast for potential cold start
+    const coldStartToast = toast.info('Uploading document... (Backend may take 30-60s to wake up if idle)', {
+      duration: 60000 // Show for 60 seconds
+    })
+    
     try {
       const result = await chatAPI.uploadDocument(conversationId, file)
+      
+      // Dismiss cold start toast
+      toast.dismiss(coldStartToast)
       
       // Check if upload was successful
       if (result.success && result.chunk_count > 0) {
@@ -199,7 +208,13 @@ export default function ChatPage() {
       
       await loadConversation(conversationId)
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.detail || error?.message || 'Failed to upload document'
+      // Dismiss cold start toast
+      toast.dismiss(coldStartToast)
+      
+      const is520Error = error?.response?.status === 520
+      const errorMsg = is520Error 
+        ? 'Backend is still waking up. Please try again in a moment.'
+        : error?.response?.data?.detail || error?.message || 'Failed to upload document'
       toast.error(errorMsg)
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
     } finally {

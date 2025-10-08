@@ -273,18 +273,72 @@ export const chatAPI = {
   deleteConversation: (id: string): Promise<void> =>
     api.delete(`/chat/conversations/${id}`).then(res => res.data),
   
-  sendMessage: (data: ChatRequest): Promise<ChatResponse> =>
-    api.post('/ai/chat', data, {
-      timeout: 240000 // 4 minutes to handle detailed mode with large documents
-    }).then(res => res.data),
+  sendMessage: async (data: ChatRequest): Promise<ChatResponse> => {
+    // Retry logic for Render cold starts (free tier spins down after inactivity)
+    const maxRetries = 2
+    let lastError: any
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await api.post('/ai/chat', data, {
+          timeout: 240000 // 4 minutes to handle detailed mode with large documents
+        })
+        return response.data
+      } catch (error: any) {
+        lastError = error
+        
+        // Retry on 520 errors (Render cold start) or network errors
+        const is520Error = error.response?.status === 520
+        const isNetworkError = error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED'
+        
+        if ((is520Error || isNetworkError) && attempt < maxRetries) {
+          console.log(`Backend is waking up (attempt ${attempt + 1}/${maxRetries + 1})...`)
+          // Wait longer on first retry (cold start takes ~30-60s)
+          await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 45000 : 15000))
+          continue
+        }
+        
+        throw error
+      }
+    }
+    
+    throw lastError
+  },
   
-  uploadDocument: (conversationId: string, file: File): Promise<any> => {
+  uploadDocument: async (conversationId: string, file: File): Promise<any> => {
     const formData = new FormData()
     formData.append('file', file)
-    return api.post(`/chat/conversations/${conversationId}/documents`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 120000 // 2 minutes timeout for document uploads (rate limiting = 1 req/sec)
-    }).then(res => res.data)
+    
+    // Retry logic for Render cold starts (free tier spins down after inactivity)
+    const maxRetries = 2
+    let lastError: any
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await api.post(`/chat/conversations/${conversationId}/documents`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 120000 // 2 minutes timeout for document uploads (rate limiting = 1 req/sec)
+        })
+        return response.data
+      } catch (error: any) {
+        lastError = error
+        
+        // Retry on 520 errors (Render cold start) or network errors
+        const is520Error = error.response?.status === 520
+        const isNetworkError = error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED'
+        
+        if ((is520Error || isNetworkError) && attempt < maxRetries) {
+          console.log(`Backend is waking up (attempt ${attempt + 1}/${maxRetries + 1})...`)
+          // Wait longer on first retry (cold start takes ~30-60s)
+          await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 45000 : 15000))
+          continue
+        }
+        
+        throw error
+      }
+    }
+    
+    throw lastError
   },
 }
 
