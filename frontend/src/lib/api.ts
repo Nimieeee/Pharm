@@ -275,7 +275,7 @@ export const chatAPI = {
   
   sendMessage: (data: ChatRequest): Promise<ChatResponse> =>
     api.post('/ai/chat', data, {
-      timeout: 180000 // 3 minutes for detailed mode with RAG
+      timeout: 240000 // 4 minutes to handle detailed mode with large documents
     }).then(res => res.data),
   
   uploadDocument: (conversationId: string, file: File): Promise<any> => {
