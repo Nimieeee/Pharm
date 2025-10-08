@@ -165,12 +165,22 @@ export default function LoginForm({ className }: LoginFormProps) {
         </p>
       </div>
 
-      {/* Demo Credentials */}
-      <div className={cn("mt-8 p-4 rounded-lg border", darkMode ? "bg-blue-900/30 border-blue-800" : "bg-blue-50 border-blue-200")}>
-        <h3 className={cn("text-sm font-medium mb-2", darkMode ? "text-blue-200" : "text-blue-900")}>Demo Credentials</h3>
-        <div className={cn("text-xs space-y-1", darkMode ? "text-blue-300" : "text-blue-700")}>
-          <p><strong>Admin:</strong> admin@pharmgpt.com / admin123</p>
-          <p><strong>User:</strong> Create a new account to test user features</p>
+      {/* Info Boxes */}
+      <div className="mt-8 space-y-3">
+        {/* Demo Credentials */}
+        <div className={cn("p-4 rounded-lg border", darkMode ? "bg-blue-900/30 border-blue-800" : "bg-blue-50 border-blue-200")}>
+          <h3 className={cn("text-sm font-medium mb-2", darkMode ? "text-blue-200" : "text-blue-900")}>Demo Credentials</h3>
+          <div className={cn("text-xs space-y-1", darkMode ? "text-blue-300" : "text-blue-700")}>
+            <p><strong>Admin:</strong> admin@pharmgpt.com / admin123</p>
+            <p><strong>User:</strong> Create a new account to test user features</p>
+          </div>
+        </div>
+        
+        {/* Cold Start Notice */}
+        <div className={cn("p-3 rounded-lg border", darkMode ? "bg-yellow-900/30 border-yellow-800" : "bg-yellow-50 border-yellow-200")}>
+          <p className={cn("text-xs", darkMode ? "text-yellow-300" : "text-yellow-700")}>
+            ⏱️ <strong>First login may take 30-60 seconds</strong> as the server wakes up. Please be patient!
+          </p>
         </div>
       </div>
     </div>

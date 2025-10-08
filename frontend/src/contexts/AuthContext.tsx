@@ -53,74 +53,152 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const login = async (credentials: LoginRequest) => {
-    try {
-      setIsLoading(true)
-      
-      // Login and get tokens
-      const tokenResponse = await authAPI.login(credentials)
-      
-      // Store tokens
-      tokenManager.setToken(tokenResponse.access_token)
-      tokenManager.setRefreshToken(tokenResponse.refresh_token)
-      
-      // Get user data
-      const userData = await authAPI.getCurrentUser()
-      setUser(userData)
-      
-      toast.success('Welcome back!')
-      
-      // Redirect based on user role
-      if (userData.is_admin) {
-        navigate('/admin')
-      } else {
-        navigate('/chat')
+    const maxRetries = 2
+    let lastError: any
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        setIsLoading(true)
+        
+        // Show cold start message on first retry
+        if (attempt === 1) {
+          toast.loading('Backend is waking up, please wait...', { id: 'cold-start', duration: 45000 })
+        }
+        
+        // Login and get tokens
+        const tokenResponse = await authAPI.login(credentials)
+        
+        // Dismiss cold start message if shown
+        if (attempt > 0) {
+          toast.dismiss('cold-start')
+        }
+        
+        // Store tokens
+        tokenManager.setToken(tokenResponse.access_token)
+        tokenManager.setRefreshToken(tokenResponse.refresh_token)
+        
+        // Get user data
+        const userData = await authAPI.getCurrentUser()
+        setUser(userData)
+        
+        toast.success('Welcome back!')
+        
+        // Redirect based on user role
+        if (userData.is_admin) {
+          navigate('/admin')
+        } else {
+          navigate('/chat')
+        }
+        
+        return // Success, exit function
+        
+      } catch (error: any) {
+        lastError = error
+        console.error(`Login attempt ${attempt + 1} failed:`, error)
+        
+        // Check if it's a cold start error (network error or timeout)
+        const isNetworkError = error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || !error.response
+        const is520Error = error.response?.status === 520
+        
+        // Retry on cold start errors
+        if ((isNetworkError || is520Error) && attempt < maxRetries) {
+          console.log(`Retrying login (attempt ${attempt + 2}/${maxRetries + 1})...`)
+          // Wait before retry (longer on first retry for cold start)
+          await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 45000 : 15000))
+          continue
+        }
+        
+        // Not a cold start error or out of retries
+        toast.dismiss('cold-start')
+        
+        // Handle specific error cases
+        if (error.response?.status === 401) {
+          toast.error('Invalid email or password')
+        } else if (error.response?.data?.detail) {
+          toast.error(error.response.data.detail)
+        } else if (isNetworkError) {
+          toast.error('Cannot connect to server. Please check your connection or try again in a moment.')
+        } else {
+          toast.error('Login failed. Please try again.')
+        }
+        
+        throw error
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error: any) {
-      console.error('Login failed:', error)
-      
-      // Handle specific error cases
-      if (error.response?.status === 401) {
-        toast.error('Invalid email or password')
-      } else if (error.response?.data?.detail) {
-        toast.error(error.response.data.detail)
-      } else {
-        toast.error('Login failed. Please try again.')
-      }
-      
-      throw error
-    } finally {
-      setIsLoading(false)
     }
+    
+    // If we get here, all retries failed
+    toast.dismiss('cold-start')
+    throw lastError
   }
 
   const register = async (userData: RegisterRequest) => {
-    try {
-      setIsLoading(true)
-      
-      // Register user
-      await authAPI.register(userData)
-      
-      toast.success('Registration successful! Please log in.')
-      navigate('/login')
-    } catch (error: any) {
-      console.error('Registration failed:', error)
-      
-      // Handle specific error cases
-      if (error.response?.status === 400) {
-        const detail = error.response.data?.detail
-        if (detail?.includes('already registered')) {
-          toast.error('Email is already registered')
-        } else {
-          toast.error(detail || 'Registration failed')
+    const maxRetries = 2
+    let lastError: any
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        setIsLoading(true)
+        
+        // Show cold start message on first retry
+        if (attempt === 1) {
+          toast.loading('Backend is waking up, please wait...', { id: 'cold-start', duration: 45000 })
         }
-      } else {
-        toast.error('Registration failed. Please try again.')
+        
+        // Register user
+        await authAPI.register(userData)
+        
+        // Dismiss cold start message if shown
+        if (attempt > 0) {
+          toast.dismiss('cold-start')
+        }
+        
+        toast.success('Registration successful! Please log in.')
+        navigate('/login')
+        return // Success
+        
+      } catch (error: any) {
+        lastError = error
+        console.error(`Registration attempt ${attempt + 1} failed:`, error)
+        
+        // Check if it's a cold start error
+        const isNetworkError = error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || !error.response
+        const is520Error = error.response?.status === 520
+        
+        // Retry on cold start errors
+        if ((isNetworkError || is520Error) && attempt < maxRetries) {
+          console.log(`Retrying registration (attempt ${attempt + 2}/${maxRetries + 1})...`)
+          await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 45000 : 15000))
+          continue
+        }
+        
+        // Not a cold start error or out of retries
+        toast.dismiss('cold-start')
+        
+        // Handle specific error cases
+        if (error.response?.status === 400) {
+          const detail = error.response.data?.detail
+          if (detail?.includes('already registered')) {
+            toast.error('Email is already registered')
+          } else {
+            toast.error(detail || 'Registration failed')
+          }
+        } else if (isNetworkError) {
+          toast.error('Cannot connect to server. Please check your connection or try again in a moment.')
+        } else {
+          toast.error('Registration failed. Please try again.')
+        }
+        
+        throw error
+      } finally {
+        setIsLoading(false)
       }
-      
-      throw error
-    } finally {
-      setIsLoading(false)
     }
+    
+    // If we get here, all retries failed
+    toast.dismiss('cold-start')
+    throw lastError
   }
 
   const logout = async () => {
