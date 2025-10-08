@@ -174,9 +174,9 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
                         response_text = result["choices"][0]["message"]["content"]
                         print(f"✅ Generated response: {len(response_text)} chars")
                         
-                        # Add document indicator if context was used
+                        # Log if context was used (for debugging only)
                         if context_used and context:
-                            response_text = f"📚 *Based on uploaded documents*\n\n{response_text}"
+                            print(f"📚 Response generated using document context")
                         
                         return response_text
                     else:

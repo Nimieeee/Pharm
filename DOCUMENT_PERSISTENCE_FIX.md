@@ -22,8 +22,8 @@
 **Solution**:
 - Added extensive logging to track RAG context retrieval
 - Added fallback to retrieve all chunks if semantic search returns nothing
-- Added visual indicator "📚 *Based on uploaded documents*" when AI uses document context
 - Added context preview in logs for debugging
+- Improved system prompt to emphasize using document context
 
 ## Changes Made
 
@@ -53,8 +53,8 @@ addMessage: (conversationId: string, data: {
 ### Backend (`backend/app/services/ai.py`)
 - Added `context_used` flag to track when documents are retrieved
 - Added context preview logging for debugging
-- Added visual indicator in AI response when documents are used
 - Improved fallback logic to use all chunks if semantic search fails
+- Enhanced system prompt to prioritize document context
 
 ## Testing
 
@@ -67,7 +67,7 @@ addMessage: (conversationId: string, data: {
 ### Test Document Context Usage
 1. Upload a document with specific information
 2. Ask a question about that information
-3. Verify the AI response includes "📚 *Based on uploaded documents*"
+3. Verify the AI response uses information from the document
 4. Check backend logs for context retrieval confirmation
 
 ## Expected Behavior
@@ -82,8 +82,8 @@ addMessage: (conversationId: string, data: {
 - ✅ Retrieve relevant document chunks using semantic search
 - ✅ Fall back to all chunks if semantic search returns nothing
 - ✅ Include document context in AI prompt
-- ✅ Show visual indicator when documents are used
 - ✅ Log context retrieval for debugging
+- ✅ System prompt emphasizes using document context
 
 ## Debugging
 
