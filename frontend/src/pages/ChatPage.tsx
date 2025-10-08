@@ -180,11 +180,27 @@ export default function ChatPage() {
     const fileId = 'file-' + Date.now()
     setUploadedFiles(prev => [...prev, { name: file.name, id: fileId }])
     try {
-      await chatAPI.uploadDocument(conversationId, file)
-      toast.success(`Document uploaded`)
+      const result = await chatAPI.uploadDocument(conversationId, file)
+      
+      // Check if upload was successful
+      if (result.success && result.chunk_count > 0) {
+        toast.success(`Document uploaded: ${result.chunk_count} chunks processed`)
+      } else if (result.chunk_count === 0) {
+        // Check if it's a rate limit issue
+        if (result.message && result.message.includes('rate limit')) {
+          toast.error('Upload failed: Mistral API rate limit exceeded. Please wait a few minutes and try again.')
+        } else {
+          toast.error('No content could be extracted from document')
+        }
+        setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
+      } else {
+        toast.warning(result.message || 'Document partially uploaded')
+      }
+      
       await loadConversation(conversationId)
-    } catch (error) {
-      toast.error('Failed to upload document')
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.detail || error?.message || 'Failed to upload document'
+      toast.error(errorMsg)
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
     } finally {
       setIsUploading(false)
