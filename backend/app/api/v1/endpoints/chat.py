@@ -238,8 +238,13 @@ async def upload_document(
     """
     Upload a document to a conversation
     
-    Supported file types: PDF, TXT, MD, DOCX, PPTX
+    Supported file types: PDF, TXT, MD, DOCX, PPTX, PNG, JPG, JPEG, GIF, BMP, WEBP
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"📤 Document upload started: {file.filename} for conversation {conversation_id}")
+    
     try:
         # Check if conversation exists and belongs to user
         conversation = await chat_service.get_conversation(conversation_id, current_user)
@@ -250,34 +255,43 @@ async def upload_document(
             )
         
         # Validate file type
-        allowed_extensions = {'pdf', 'txt', 'md', 'docx', 'pptx'}
+        allowed_extensions = {'pdf', 'txt', 'md', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
         file_extension = file.filename.lower().split('.')[-1] if file.filename else ''
         
+        logger.info(f"📄 File type: {file_extension}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")
+        
         if file_extension not in allowed_extensions:
+            logger.error(f"❌ Unsupported file type: {file_extension}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}"
             )
         
         # Read file content
+        logger.info(f"📖 Reading file content...")
         file_content = await file.read()
+        logger.info(f"✅ File read: {len(file_content)} bytes")
         
         if len(file_content) == 0:
+            logger.error(f"❌ Empty file")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Empty file"
             )
         
         # Process file
+        logger.info(f"⚙️  Processing file with RAG service...")
         result = await rag_service.process_uploaded_file(
             file_content, file.filename, conversation_id, current_user.id
         )
         
+        logger.info(f"✅ Upload complete: {result.chunk_count} chunks processed")
         return result
         
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ Upload failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload document: {str(e)}"
