@@ -6,6 +6,10 @@ services:
     region: oregon
     rootDirectory: backend
     buildCommand: |
+      # Install Tesseract OCR for image text extraction
+      apt-get update
+      apt-get install -y tesseract-ocr tesseract-ocr-eng
+      # Install Python dependencies
       python --version
       pip install --upgrade pip
       pip install -r requirements.txt

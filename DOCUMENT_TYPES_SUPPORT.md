@@ -94,13 +94,17 @@ Once uploaded, you can ask questions about the document:
 - **Pillow**: Image handling
 - **pytesseract**: OCR for text extraction from images
 
-### OCR Setup (Optional)
+### OCR Setup
 
-For image OCR to work, Tesseract must be installed on the server:
+**Production (Render)**: OCR is automatically installed and configured.
+
+**Local Development**:
+
+For image OCR to work locally, install Tesseract:
 
 **Ubuntu/Debian**:
 ```bash
-sudo apt-get install tesseract-ocr
+sudo apt-get install tesseract-ocr tesseract-ocr-eng
 ```
 
 **macOS**:
@@ -111,7 +115,7 @@ brew install tesseract
 **Windows**:
 Download from: https://github.com/UB-Mannheim/tesseract/wiki
 
-If Tesseract is not available, images will still be processed but without text extraction.
+If Tesseract is not available locally, images will still be processed but without text extraction.
 
 ### Embedding Generation
 
