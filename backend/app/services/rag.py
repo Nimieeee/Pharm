@@ -123,6 +123,7 @@ class RAGService:
                 return self._generate_fallback_embedding(text)
             
             import httpx
+            import time
             
             # Use Mistral's embedding model
             payload = {
@@ -130,29 +131,46 @@ class RAGService:
                 "input": [text]
             }
             
-            with httpx.Client() as client:
-                response = client.post(
-                    f"{self.mistral_base_url}/embeddings",
-                    headers={
-                        "Authorization": f"Bearer {self.mistral_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json=payload,
-                    timeout=30.0
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get("data") and len(result["data"]) > 0:
-                        embedding = result["data"][0]["embedding"]
-                        print(f"✅ Generated Mistral embedding: {len(embedding)} dimensions")
-                        return embedding
+            # Retry logic for rate limits
+            max_retries = 3
+            retry_delays = [1, 3, 5]  # Exponential backoff
+            
+            for attempt in range(max_retries):
+                with httpx.Client() as client:
+                    response = client.post(
+                        f"{self.mistral_base_url}/embeddings",
+                        headers={
+                            "Authorization": f"Bearer {self.mistral_api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json=payload,
+                        timeout=30.0
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        if result.get("data") and len(result["data"]) > 0:
+                            embedding = result["data"][0]["embedding"]
+                            print(f"✅ Generated Mistral embedding: {len(embedding)} dimensions")
+                            return embedding
+                        else:
+                            print("❌ No embedding data in response")
+                            return self._generate_fallback_embedding(text)
+                    
+                    elif response.status_code == 429:
+                        # Rate limit - retry with backoff
+                        if attempt < max_retries - 1:
+                            delay = retry_delays[attempt]
+                            print(f"⏳ Embedding rate limit (429), retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                            time.sleep(delay)
+                            continue
+                        else:
+                            print(f"❌ Embedding rate limit exceeded after {max_retries} attempts, using fallback")
+                            return self._generate_fallback_embedding(text)
+                    
                     else:
-                        print("❌ No embedding data in response")
+                        print(f"❌ Mistral API error: {response.status_code}")
                         return self._generate_fallback_embedding(text)
-                else:
-                    print(f"❌ Mistral API error: {response.status_code}")
-                    return self._generate_fallback_embedding(text)
             
         except Exception as e:
             print(f"❌ Error generating Mistral embedding: {e}")

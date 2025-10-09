@@ -6,6 +6,7 @@ Handles AI model integration for chat responses
 import os
 import httpx
 import json
+import asyncio
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 from supabase import Client
@@ -155,38 +156,70 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
             
             print(f"🚀 Calling Mistral API with model: {model_name}, max_tokens: {max_tokens}")
             
-            # 3 minute timeout for processing
-            async with httpx.AsyncClient(timeout=180.0) as client:
-                response = await client.post(
-                    f"{self.mistral_base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.mistral_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json=payload
-                )
-                
-                print(f"📡 Mistral API response: {response.status_code}")
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get("choices") and len(result["choices"]) > 0:
-                        response_text = result["choices"][0]["message"]["content"]
-                        print(f"✅ Generated response: {len(response_text)} chars")
+            # Retry logic for rate limits (429 errors)
+            max_retries = 3
+            retry_delays = [2, 5, 10]  # Exponential backoff: 2s, 5s, 10s
+            
+            for attempt in range(max_retries):
+                try:
+                    # 3 minute timeout for processing
+                    async with httpx.AsyncClient(timeout=180.0) as client:
+                        response = await client.post(
+                            f"{self.mistral_base_url}/chat/completions",
+                            headers={
+                                "Authorization": f"Bearer {self.mistral_api_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json=payload
+                        )
                         
-                        # Log if context was used (for debugging only)
-                        if context_used and context:
-                            print(f"📚 Response generated using document context")
+                        print(f"📡 Mistral API response: {response.status_code}")
                         
-                        return response_text
+                        if response.status_code == 200:
+                            result = response.json()
+                            if result.get("choices") and len(result["choices"]) > 0:
+                                response_text = result["choices"][0]["message"]["content"]
+                                print(f"✅ Generated response: {len(response_text)} chars")
+                                
+                                # Log if context was used (for debugging only)
+                                if context_used and context:
+                                    print(f"📚 Response generated using document context")
+                                
+                                return response_text
+                            else:
+                                print("❌ No choices in Mistral response")
+                                return "I apologize, but I couldn't generate a response. Please try again."
+                        
+                        elif response.status_code == 429:
+                            # Rate limit error - retry with backoff
+                            if attempt < max_retries - 1:
+                                delay = retry_delays[attempt]
+                                print(f"⏳ Rate limit hit (429), retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                                await asyncio.sleep(delay)
+                                continue
+                            else:
+                                print(f"❌ Rate limit exceeded after {max_retries} attempts")
+                                return "The AI service is currently experiencing high demand. Please try again in a moment."
+                        
+                        else:
+                            error_msg = f"API error: {response.status_code}"
+                            error_text = response.text
+                            print(f"❌ Mistral API error: {error_msg} - {error_text}")
+                            return f"AI service error ({response.status_code}). Please try again."
+                
+                except httpx.TimeoutException:
+                    if attempt < max_retries - 1:
+                        delay = retry_delays[attempt]
+                        print(f"⏳ Request timeout, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                        await asyncio.sleep(delay)
+                        continue
                     else:
-                        print("❌ No choices in Mistral response")
-                        return "I apologize, but I couldn't generate a response. Please try again."
-                else:
-                    error_msg = f"API error: {response.status_code}"
-                    error_text = response.text
-                    print(f"❌ Mistral API error: {error_msg} - {error_text}")
-                    return f"AI service error ({response.status_code}). Please try again."
+                        print(f"❌ Request timed out after {max_retries} attempts")
+                        return "Request timed out. Please try again."
+                
+                except Exception as request_error:
+                    print(f"❌ Request error: {request_error}")
+                    raise  # Re-raise to be caught by outer exception handler
                 
         except Exception as e:
             error_str = str(e)
