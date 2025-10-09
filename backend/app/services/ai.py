@@ -44,17 +44,24 @@ class AIService:
         if mode == "fast":
             return """You are PharmGPT, an expert pharmacology assistant. Provide clear, accurate, and concise responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Keep responses focused and to the point.
 
-IMPORTANT: When document context is provided, you MUST base your answer primarily on that context. Reference specific information from the documents."""
+IMPORTANT INSTRUCTIONS:
+1. When document context is provided, you MUST base your answer primarily on that context
+2. The context may include text extracted from images using OCR - treat this as readable text content
+3. If the context mentions "Image file" or contains OCR-extracted text, use that information to answer questions
+4. Reference specific information from the documents when relevant"""
         else:
             return """You are PharmGPT, an expert pharmacology assistant. Provide detailed, comprehensive, and scientifically accurate responses about pharmaceutical topics, drug interactions, mechanisms of action, and clinical applications. Always provide elaborate and detailed explanations unless specifically asked for brevity.
 
 CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
 1. When document context is provided, you MUST prioritize information from those documents
-2. Base your answer primarily on the document content
-3. Quote or reference specific sections from the documents when relevant
-4. If the documents contain the answer, use that information first before adding general knowledge
-5. If the question cannot be answered from the documents, clearly state that and then provide general knowledge
-6. Always acknowledge when you're using information from the uploaded documents"""
+2. The context may include text extracted from images using OCR (Optical Character Recognition)
+3. If you see "Image file" in the context, it means text was extracted from an image - treat it as readable text
+4. Base your answer primarily on the document content, including OCR-extracted text from images
+5. Quote or reference specific sections from the documents when relevant
+6. If the documents contain the answer, use that information first before adding general knowledge
+7. If the question cannot be answered from the documents, clearly state that and then provide general knowledge
+8. DO NOT say you cannot view images - the text has already been extracted for you
+9. Always acknowledge when you're using information from uploaded documents or images"""
     
     async def generate_response(
         self,
@@ -254,10 +261,10 @@ CRITICAL INSTRUCTIONS FOR DOCUMENT CONTEXT:
         
         # Add document context if available
         if context and context.strip():
-            parts.append("**Document Context:**")
+            parts.append("**Document Context (including OCR-extracted text from images):**")
             parts.append(context)
             parts.append("")
-            parts.append("**Instructions:** Use the document context above to provide accurate, detailed answers. Reference specific information from the documents when relevant.")
+            parts.append("**Instructions:** The context above includes text extracted from uploaded documents and images. Use this information to provide accurate, detailed answers. The text is already extracted and readable - you do not need to view any images.")
             parts.append("")
         
         # Add current user question
