@@ -214,7 +214,7 @@ class EnhancedDocumentLoader:
             f"📄 Starting document load: {filename} ({file_size} bytes, {file_extension})",
             extra={
                 'operation': 'document_load',
-                'filename': filename,
+                'document_name': filename,
                 'file_size': file_size,
                 'file_type': file_extension
             }
@@ -226,7 +226,7 @@ class EnhancedDocumentLoader:
                 f"❌ Document load failed: {filename} - Empty file",
                 extra={
                     'operation': 'document_load',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_size': 0,
                     'error_type': ErrorCategory.EMPTY_CONTENT,
                     'duration': (time.time() - start_time) * 1000
@@ -249,7 +249,7 @@ class EnhancedDocumentLoader:
                 f"❌ Document load failed: {filename} - Unsupported format {file_extension}",
                 extra={
                     'operation': 'document_load',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_extension,
                     'error_type': ErrorCategory.UNSUPPORTED_FORMAT,
                     'duration': (time.time() - start_time) * 1000
@@ -279,7 +279,7 @@ class EnhancedDocumentLoader:
                 f"📝 Created temporary file for {filename} ({tmp_file_duration:.3f}s)",
                 extra={
                     'operation': 'temp_file_creation',
-                    'filename': filename,
+                    'document_name': filename,
                     'duration': tmp_file_duration * 1000
                 }
             )
@@ -288,7 +288,7 @@ class EnhancedDocumentLoader:
                 f"❌ Failed to create temporary file for {filename}: {e}",
                 extra={
                     'operation': 'temp_file_creation',
-                    'filename': filename,
+                    'document_name': filename,
                     'error_type': 'temp_file_error',
                     'duration': (time.time() - start_time) * 1000
                 },
@@ -311,7 +311,7 @@ class EnhancedDocumentLoader:
                 f"🔧 Using loader {loader_name} for {filename}",
                 extra={
                     'operation': 'loader_selection',
-                    'filename': filename,
+                    'document_name': filename,
                     'loader': loader_name,
                     'file_type': file_extension
                 }
@@ -325,7 +325,7 @@ class EnhancedDocumentLoader:
                     f"❌ Document load failed: {filename} - No documents extracted",
                     extra={
                         'operation': 'document_load',
-                        'filename': filename,
+                        'document_name': filename,
                         'file_type': file_extension,
                         'loader': loader_name,
                         'error_type': ErrorCategory.EMPTY_CONTENT,
@@ -365,7 +365,7 @@ class EnhancedDocumentLoader:
                 f"({total_chars} chars, {total_words} words, {total_duration:.2f}s)",
                 extra={
                     'operation': 'document_load',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_size': file_size,
                     'file_type': file_extension,
                     'loader': loader_name,
@@ -387,7 +387,7 @@ class EnhancedDocumentLoader:
                 f"❌ Error loading document {filename}: {e}",
                 extra={
                     'operation': 'document_load',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_extension,
                     'error_type': ErrorCategory.PROCESSING_ERROR,
                     'duration': total_duration * 1000
@@ -407,14 +407,14 @@ class EnhancedDocumentLoader:
                     os.unlink(tmp_file_path)
                     logger.debug(
                         f"🗑️  Cleaned up temporary file for {filename}",
-                        extra={'operation': 'temp_file_cleanup', 'filename': filename}
+                        extra={'operation': 'temp_file_cleanup', 'document_name': filename}
                     )
                 except Exception as e:
                     logger.warning(
                         f"⚠️  Failed to clean up temporary file {tmp_file_path}: {e}",
                         extra={
                             'operation': 'temp_file_cleanup',
-                            'filename': filename,
+                            'document_name': filename,
                             'error_type': 'cleanup_error'
                         }
                     )
@@ -1127,7 +1127,7 @@ class EnhancedDocumentLoader:
             f"🔍 Starting content validation for {filename} ({len(documents) if documents else 0} documents)",
             extra={
                 'operation': 'content_validation',
-                'filename': filename,
+                'document_name': filename,
                 'file_type': file_type,
                 'document_count': len(documents) if documents else 0
             }
@@ -1163,7 +1163,7 @@ class EnhancedDocumentLoader:
                 f"⚠️  Validation failed for {filename}: No documents extracted",
                 extra={
                     'operation': 'content_validation',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_type,
                     'validation_result': 'failed',
                     'failure_reason': 'no_documents',
@@ -1224,7 +1224,7 @@ class EnhancedDocumentLoader:
                 f"(document_count={stats['document_count']}, pages_with_content=0)",
                 extra={
                     'operation': 'content_validation',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_type,
                     'validation_result': 'failed',
                     'failure_reason': 'empty_content',
@@ -1250,7 +1250,7 @@ class EnhancedDocumentLoader:
                 f"(total_chars={stats['total_characters']}, non_whitespace=0)",
                 extra={
                     'operation': 'content_validation',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_type,
                     'validation_result': 'failed',
                     'failure_reason': 'whitespace_only',
@@ -1277,7 +1277,7 @@ class EnhancedDocumentLoader:
                 f"(chars={stats['total_characters']}, min={MIN_CONTENT_THRESHOLD})",
                 extra={
                     'operation': 'content_validation',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_type,
                     'validation_result': 'failed',
                     'failure_reason': 'insufficient_content',
@@ -1326,7 +1326,7 @@ class EnhancedDocumentLoader:
                 f"{stats['pages_with_content']} pages ({duration:.3f}s)",
                 extra={
                     'operation': 'content_validation',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_type': file_type,
                     'validation_result': 'passed',
                     'total_characters': stats['total_characters'],
