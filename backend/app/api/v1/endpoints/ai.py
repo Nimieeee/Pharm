@@ -272,7 +272,7 @@ async def upload_document(
     Upload and process a document for RAG
     
     - **conversation_id**: Conversation to associate the document with
-    - **file**: Document file (PDF, DOCX, TXT)
+    - **file**: Document file (PDF, DOCX, TXT, PPTX, XLSX, CSV, images)
     """
     try:
         # Validate conversation belongs to user

@@ -238,7 +238,7 @@ async def upload_document(
     """
     Upload a document to a conversation
     
-    Supported file types: PDF, TXT, MD, DOCX, PPTX, PNG, JPG, JPEG, GIF, BMP, WEBP
+    Supported file types: PDF, TXT, MD, DOCX, PPTX, XLSX, CSV, PNG, JPG, JPEG, GIF, BMP, WEBP
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -255,7 +255,7 @@ async def upload_document(
             )
         
         # Validate file type
-        allowed_extensions = {'pdf', 'txt', 'md', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+        allowed_extensions = {'pdf', 'txt', 'md', 'docx', 'pptx', 'xlsx', 'csv', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
         file_extension = file.filename.lower().split('.')[-1] if file.filename else ''
         
         logger.info(f"📄 File type: {file_extension}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")

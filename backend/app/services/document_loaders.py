@@ -14,7 +14,9 @@ from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
     Docx2txtLoader,
+    UnstructuredPowerPointLoader,
 )
+import pandas as pd
 
 from app.core.config import settings
 
@@ -35,6 +37,9 @@ class EnhancedDocumentLoader:
             '.txt': self._load_text,
             '.md': self._load_text,
             '.docx': self._load_docx,
+            '.pptx': self._load_pptx,
+            '.xlsx': self._load_xlsx,
+            '.csv': self._load_csv,
             '.png': self._load_image,
             '.jpg': self._load_image,
             '.jpeg': self._load_image,
@@ -42,7 +47,7 @@ class EnhancedDocumentLoader:
             '.bmp': self._load_image,
             '.webp': self._load_image,
         }
-        logger.info("✅ Enhanced document loader initialized (supports text, PDF, DOCX, and images)")
+        logger.info("✅ Enhanced document loader initialized (supports text, PDF, DOCX, PPTX, XLSX, CSV, and images)")
     
     def is_supported_format(self, filename: str) -> bool:
         """Check if file format is supported"""
@@ -219,6 +224,132 @@ class EnhancedDocumentLoader:
                 raise DocumentProcessingError(f"Corrupted or invalid DOCX file: {filename}")
             raise DocumentProcessingError(f"DOCX processing error: {str(e)}")
     
+    async def _load_pptx(self, file_path: str, filename: str) -> List[Document]:
+        """Load PPTX document using UnstructuredPowerPointLoader"""
+        try:
+            loader = UnstructuredPowerPointLoader(file_path)
+            documents = loader.load()
+            
+            if not documents or not documents[0].page_content.strip():
+                raise DocumentProcessingError("No content extracted from PPTX file")
+            
+            # Clean and enhance the document
+            doc = documents[0]
+            doc.page_content = self._clean_text(doc.page_content)
+            doc.metadata.update({
+                "source": filename,
+                "loader": "UnstructuredPowerPointLoader"
+            })
+            
+            logger.debug(f"Successfully loaded PPTX file: {filename}")
+            return [doc]
+            
+        except Exception as e:
+            if "pptx" in str(e).lower() or "corrupt" in str(e).lower():
+                raise DocumentProcessingError(f"Corrupted or invalid PPTX file: {filename}")
+            raise DocumentProcessingError(f"PPTX processing error: {str(e)}")
+    
+    async def _load_xlsx(self, file_path: str, filename: str) -> List[Document]:
+        """Load XLSX document using pandas"""
+        try:
+            # Read all sheets from the Excel file
+            excel_file = pd.ExcelFile(file_path, engine='openpyxl')
+            documents = []
+            
+            for sheet_name in excel_file.sheet_names:
+                df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                
+                # Convert dataframe to text representation
+                # Include column headers and data
+                content_parts = [f"Sheet: {sheet_name}\n"]
+                
+                # Add column headers
+                content_parts.append("Columns: " + ", ".join(df.columns.astype(str)) + "\n\n")
+                
+                # Add data rows
+                for idx, row in df.iterrows():
+                    row_text = " | ".join([f"{col}: {val}" for col, val in row.items() if pd.notna(val)])
+                    if row_text:
+                        content_parts.append(row_text + "\n")
+                
+                content = "".join(content_parts)
+                
+                if content.strip():
+                    doc = Document(
+                        page_content=self._clean_text(content),
+                        metadata={
+                            "source": filename,
+                            "sheet_name": sheet_name,
+                            "loader": "PandasExcelLoader",
+                            "rows": len(df),
+                            "columns": len(df.columns)
+                        }
+                    )
+                    documents.append(doc)
+            
+            if not documents:
+                raise DocumentProcessingError("No content extracted from XLSX file")
+            
+            logger.debug(f"Successfully loaded XLSX file: {filename} ({len(documents)} sheets)")
+            return documents
+            
+        except Exception as e:
+            if "xlsx" in str(e).lower() or "corrupt" in str(e).lower() or "excel" in str(e).lower():
+                raise DocumentProcessingError(f"Corrupted or invalid XLSX file: {filename}")
+            raise DocumentProcessingError(f"XLSX processing error: {str(e)}")
+    
+    async def _load_csv(self, file_path: str, filename: str) -> List[Document]:
+        """Load CSV document using pandas"""
+        try:
+            # Try different encodings for CSV
+            encodings_to_try = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            df = None
+            
+            for encoding in encodings_to_try:
+                try:
+                    df = pd.read_csv(file_path, encoding=encoding)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if df is None:
+                raise DocumentProcessingError(f"Could not decode CSV file with any supported encoding")
+            
+            # Convert dataframe to text representation
+            content_parts = []
+            
+            # Add column headers
+            content_parts.append("Columns: " + ", ".join(df.columns.astype(str)) + "\n\n")
+            
+            # Add data rows
+            for idx, row in df.iterrows():
+                row_text = " | ".join([f"{col}: {val}" for col, val in row.items() if pd.notna(val)])
+                if row_text:
+                    content_parts.append(row_text + "\n")
+            
+            content = "".join(content_parts)
+            
+            if not content.strip():
+                raise DocumentProcessingError("No content extracted from CSV file")
+            
+            doc = Document(
+                page_content=self._clean_text(content),
+                metadata={
+                    "source": filename,
+                    "loader": "PandasCSVLoader",
+                    "rows": len(df),
+                    "columns": len(df.columns)
+                }
+            )
+            
+            logger.debug(f"Successfully loaded CSV file: {filename} ({len(df)} rows, {len(df.columns)} columns)")
+            return [doc]
+            
+        except Exception as e:
+            if "csv" in str(e).lower() or "corrupt" in str(e).lower():
+                raise DocumentProcessingError(f"Corrupted or invalid CSV file: {filename}")
+            raise DocumentProcessingError(f"CSV processing error: {str(e)}")
+    
     async def _load_image(self, file_path: str, filename: str) -> List[Document]:
         """
         Load image document - creates a document with image path for embedding
@@ -333,11 +464,17 @@ class EnhancedDocumentLoader:
                 ".pdf": "PyPDFLoader",
                 ".txt": "TextLoader",
                 ".md": "TextLoader", 
-                ".docx": "Docx2txtLoader"
+                ".docx": "Docx2txtLoader",
+                ".pptx": "UnstructuredPowerPointLoader",
+                ".xlsx": "PandasExcelLoader",
+                ".csv": "PandasCSVLoader"
             },
             "features": [
                 "Encoding detection for text files",
                 "Page-by-page PDF processing",
+                "Multi-sheet Excel processing",
+                "CSV with encoding detection",
+                "PowerPoint slide extraction",
                 "Text cleaning and normalization",
                 "Metadata enhancement",
                 "Content validation"
