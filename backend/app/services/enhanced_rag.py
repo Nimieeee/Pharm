@@ -72,7 +72,7 @@ class EnhancedRAGService:
                 f"📤 Processing uploaded file: {filename} ({file_size} bytes) for user {user_id}",
                 extra={
                     'operation': 'file_upload',
-                    'filename': filename,
+                    'document_name': filename,
                     'file_size': file_size,
                     'file_type': file_extension,
                     'user_id': str(user_id),
@@ -159,7 +159,7 @@ class EnhancedRAGService:
                     f"❌ No chunks generated from {filename}",
                     extra={
                         'operation': 'chunk_generation',
-                        'filename': filename,
+                        'document_name': filename,
                         'user_id': str(user_id),
                         'conversation_id': str(conversation_id),
                         'document_count': len(documents),
@@ -178,7 +178,7 @@ class EnhancedRAGService:
                 f"✂️  Generated {len(chunks)} chunks from {filename} ({chunk_duration:.2f}s)",
                 extra={
                     'operation': 'chunk_generation',
-                    'filename': filename,
+                    'document_name': filename,
                     'user_id': str(user_id),
                     'conversation_id': str(conversation_id),
                     'document_count': len(documents),
@@ -203,7 +203,7 @@ class EnhancedRAGService:
                 f"💾 Storing {len(chunks)} chunks in database...",
                 extra={
                     'operation': 'chunk_storage',
-                    'filename': filename,
+                    'document_name': filename,
                     'user_id': str(user_id),
                     'conversation_id': str(conversation_id),
                     'chunk_count': len(chunks)
@@ -235,7 +235,7 @@ class EnhancedRAGService:
                         f"❌ {error_msg}",
                         extra={
                             'operation': 'chunk_storage',
-                            'filename': filename,
+                            'document_name': filename,
                             'user_id': str(user_id),
                             'conversation_id': str(conversation_id),
                             'chunk_index': chunk_index,
@@ -253,7 +253,7 @@ class EnhancedRAGService:
                 f"({storage_duration:.2f}s)",
                 extra={
                     'operation': 'chunk_storage',
-                    'filename': filename,
+                    'document_name': filename,
                     'user_id': str(user_id),
                     'conversation_id': str(conversation_id),
                     'total_chunks': len(chunks),
@@ -275,7 +275,7 @@ class EnhancedRAGService:
                     f"✅ {message} (processing time: {processing_time:.2f}s)",
                     extra={
                         'operation': 'file_upload',
-                        'filename': filename,
+                        'document_name': filename,
                         'user_id': str(user_id),
                         'conversation_id': str(conversation_id),
                         'file_size': file_size,
@@ -312,7 +312,7 @@ class EnhancedRAGService:
                     f"❌ Failed to process any chunks from {filename}",
                     extra={
                         'operation': 'file_upload',
-                        'filename': filename,
+                        'document_name': filename,
                         'user_id': str(user_id),
                         'conversation_id': str(conversation_id),
                         'file_size': file_size,
@@ -350,7 +350,7 @@ class EnhancedRAGService:
                 f"❌ {error_msg}",
                 extra={
                     'operation': 'file_upload',
-                    'filename': filename,
+                    'document_name': filename,
                     'user_id': str(user_id),
                     'conversation_id': str(conversation_id),
                     'file_size': file_size,
