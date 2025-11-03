@@ -15,8 +15,10 @@ from app.models.document import DocumentChunk, DocumentUploadResponse
 from app.services.embeddings import embeddings_service
 from app.services.document_loaders import document_loader, DocumentProcessingError
 from app.services.text_splitter import text_splitter
+from app.core.logging_config import RAGLogger
 
 logger = logging.getLogger(__name__)
+rag_logger = RAGLogger(__name__)
 
 
 class EnhancedRAGService:
@@ -51,16 +53,40 @@ class EnhancedRAGService:
         """
         start_time = time.time()
         processing_errors = []
+        processing_warnings = []
+        
+        # Collect file information
+        from pathlib import Path
+        file_extension = Path(filename).suffix.lower()
+        file_size = len(file_content)
+        file_info = {
+            "filename": filename,
+            "format": file_extension,
+            "size_bytes": file_size,
+            "content_length": 0,  # Will be updated after extraction
+            "encoding": None  # Will be updated if applicable
+        }
         
         try:
-            logger.info(f"Processing file: {filename} for user {user_id}")
+            logger.info(
+                f"📤 Processing uploaded file: {filename} ({file_size} bytes) for user {user_id}",
+                extra={
+                    'operation': 'file_upload',
+                    'filename': filename,
+                    'file_size': file_size,
+                    'file_type': file_extension,
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id)
+                }
+            )
             
             # Check if file format is supported
             if not self.document_loader.is_supported_format(filename):
                 return DocumentUploadResponse(
                     success=False,
                     message=f"Unsupported file format. Supported formats: {', '.join(self.document_loader.get_supported_formats())}",
-                    chunk_count=0
+                    chunk_count=0,
+                    file_info=file_info
                 )
             
             # Load document using LangChain loaders
@@ -74,44 +100,92 @@ class EnhancedRAGService:
                     }
                 )
             except DocumentProcessingError as e:
+                # Use structured error information from DocumentProcessingError
+                logger.error(
+                    f"❌ Document processing error for {filename}: "
+                    f"category={e.error_category}, is_user_error={e.is_user_error}, "
+                    f"details={e.details}"
+                )
                 return DocumentUploadResponse(
                     success=False,
-                    message=str(e),
-                    chunk_count=0
+                    message=e.message,
+                    chunk_count=0,
+                    errors=[e.message],
+                    processing_time=time.time() - start_time
                 )
             
             if not documents:
                 return DocumentUploadResponse(
                     success=False,
                     message=f"No content could be extracted from {filename}",
-                    chunk_count=0
+                    chunk_count=0,
+                    file_info=file_info
                 )
             
-            # Validate document content
-            validation_result = await self.document_loader.validate_document_content(documents)
+            # Update file_info with content length and encoding from documents
+            total_content_length = sum(len(doc.page_content) for doc in documents)
+            file_info["content_length"] = total_content_length
+            
+            # Extract encoding from document metadata if available
+            if documents and documents[0].metadata.get("encoding"):
+                file_info["encoding"] = documents[0].metadata.get("encoding")
+            
+            # Validate document content with enhanced error messages
+            validation_result = await self.document_loader.validate_document_content(
+                documents=documents,
+                filename=filename,
+                file_type=file_extension
+            )
             if not validation_result["valid"]:
                 return DocumentUploadResponse(
                     success=False,
                     message=validation_result.get("error", "Document validation failed"),
-                    chunk_count=0
+                    chunk_count=0,
+                    file_info=file_info
                 )
             
-            # Log validation warnings
+            # Collect validation warnings
             for warning in validation_result.get("warnings", []):
                 logger.warning(f"⚠️  Document validation warning: {warning}")
-                processing_errors.append(f"Warning: {warning}")
+                processing_warnings.append(warning)
             
             # Split documents into chunks using LangChain text splitter
+            chunk_start_time = time.time()
             chunks = self.text_splitter.split_documents(documents)
+            chunk_duration = time.time() - chunk_start_time
             
             if not chunks:
+                logger.error(
+                    f"❌ No chunks generated from {filename}",
+                    extra={
+                        'operation': 'chunk_generation',
+                        'filename': filename,
+                        'user_id': str(user_id),
+                        'conversation_id': str(conversation_id),
+                        'document_count': len(documents),
+                        'chunk_count': 0,
+                        'duration': chunk_duration * 1000
+                    }
+                )
                 return DocumentUploadResponse(
                     success=False,
                     message=f"No chunks could be generated from {filename}",
-                    chunk_count=0
+                    chunk_count=0,
+                    file_info=file_info
                 )
             
-            logger.info(f"Generated {len(chunks)} chunks from {filename}")
+            logger.info(
+                f"✂️  Generated {len(chunks)} chunks from {filename} ({chunk_duration:.2f}s)",
+                extra={
+                    'operation': 'chunk_generation',
+                    'filename': filename,
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id),
+                    'document_count': len(documents),
+                    'chunk_count': len(chunks),
+                    'duration': chunk_duration * 1000
+                }
+            )
             
             # Add metadata to all chunks
             for chunk in chunks:
@@ -124,7 +198,17 @@ class EnhancedRAGService:
                 })
             
             # Store chunks directly using database
-            logger.info(f"💾 Storing {len(chunks)} chunks in database...")
+            storage_start_time = time.time()
+            logger.info(
+                f"💾 Storing {len(chunks)} chunks in database...",
+                extra={
+                    'operation': 'chunk_storage',
+                    'filename': filename,
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id),
+                    'chunk_count': len(chunks)
+                }
+            )
             success_count = 0
             failed_count = 0
             
@@ -147,48 +231,155 @@ class EnhancedRAGService:
                 except Exception as e:
                     failed_count += 1
                     error_msg = f"Error processing chunk {chunk_index}: {str(e)}"
-                    logger.error(f"❌ {error_msg}")
+                    logger.error(
+                        f"❌ {error_msg}",
+                        extra={
+                            'operation': 'chunk_storage',
+                            'filename': filename,
+                            'user_id': str(user_id),
+                            'conversation_id': str(conversation_id),
+                            'chunk_index': chunk_index,
+                            'error_type': 'chunk_storage_error'
+                        }
+                    )
                     processing_errors.append(error_msg)
             
+            storage_duration = time.time() - storage_start_time
             processing_time = time.time() - start_time
+            
+            # Log storage statistics
+            logger.info(
+                f"💾 Chunk storage completed: {success_count}/{len(chunks)} successful "
+                f"({storage_duration:.2f}s)",
+                extra={
+                    'operation': 'chunk_storage',
+                    'filename': filename,
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id),
+                    'total_chunks': len(chunks),
+                    'success_count': success_count,
+                    'failed_count': failed_count,
+                    'duration': storage_duration * 1000
+                }
+            )
             
             # Prepare response
             if success_count > 0:
                 message = f"Successfully processed {success_count} chunks from {filename}"
                 if failed_count > 0:
                     message += f" ({failed_count} chunks failed)"
-                if processing_errors:
-                    message += f". Warnings: {len(processing_errors)}"
+                if processing_warnings:
+                    message += f". {len(processing_warnings)} warning(s)"
                 
-                logger.info(f"✅ {message} (processing time: {processing_time:.2f}s)")
+                logger.info(
+                    f"✅ {message} (processing time: {processing_time:.2f}s)",
+                    extra={
+                        'operation': 'file_upload',
+                        'filename': filename,
+                        'user_id': str(user_id),
+                        'conversation_id': str(conversation_id),
+                        'file_size': file_size,
+                        'chunk_count': success_count,
+                        'failed_count': failed_count,
+                        'warning_count': len(processing_warnings),
+                        'duration': processing_time * 1000
+                    }
+                )
+                
+                # Use RAGLogger for comprehensive statistics
+                rag_logger.log_document_processing(
+                    operation='file_upload',
+                    filename=filename,
+                    user_id=str(user_id),
+                    conversation_id=str(conversation_id),
+                    duration=processing_time,
+                    chunk_count=success_count,
+                    file_size=file_size,
+                    success=True
+                )
                 
                 return DocumentUploadResponse(
                     success=True,
                     message=message,
                     chunk_count=success_count,
                     processing_time=processing_time,
-                    errors=processing_errors if processing_errors else None
+                    errors=processing_errors if processing_errors else None,
+                    warnings=processing_warnings if processing_warnings else None,
+                    file_info=file_info
                 )
             else:
+                logger.error(
+                    f"❌ Failed to process any chunks from {filename}",
+                    extra={
+                        'operation': 'file_upload',
+                        'filename': filename,
+                        'user_id': str(user_id),
+                        'conversation_id': str(conversation_id),
+                        'file_size': file_size,
+                        'error_count': len(processing_errors),
+                        'duration': processing_time * 1000
+                    }
+                )
+                
+                # Use RAGLogger for comprehensive statistics
+                rag_logger.log_document_processing(
+                    operation='file_upload',
+                    filename=filename,
+                    user_id=str(user_id),
+                    conversation_id=str(conversation_id),
+                    duration=processing_time,
+                    chunk_count=0,
+                    file_size=file_size,
+                    success=False,
+                    error=f"Failed to process any chunks ({len(processing_errors)} errors)"
+                )
+                
                 return DocumentUploadResponse(
                     success=False,
                     message=f"Failed to process any chunks from {filename}",
                     chunk_count=0,
                     processing_time=processing_time,
-                    errors=processing_errors
+                    errors=processing_errors,
+                    file_info=file_info
                 )
                 
         except Exception as e:
             processing_time = time.time() - start_time
             error_msg = f"Unexpected error processing {filename}: {str(e)}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(
+                f"❌ {error_msg}",
+                extra={
+                    'operation': 'file_upload',
+                    'filename': filename,
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id),
+                    'file_size': file_size,
+                    'error_type': 'unexpected_error',
+                    'duration': processing_time * 1000
+                },
+                exc_info=True
+            )
+            
+            # Use RAGLogger for comprehensive statistics
+            rag_logger.log_document_processing(
+                operation='file_upload',
+                filename=filename,
+                user_id=str(user_id),
+                conversation_id=str(conversation_id),
+                duration=processing_time,
+                chunk_count=0,
+                file_size=file_size,
+                success=False,
+                error=error_msg
+            )
             
             return DocumentUploadResponse(
                 success=False,
                 message=error_msg,
                 chunk_count=0,
                 processing_time=processing_time,
-                errors=[error_msg]
+                errors=[error_msg],
+                file_info=file_info
             )
     
     async def _process_and_store_chunk(
@@ -290,8 +481,21 @@ class EnhancedRAGService:
         Returns:
             List of similar document chunks
         """
+        start_time = time.time()
+        query_length = len(query)
+        
         try:
-            logger.info(f"🔍 Searching for similar chunks: '{query[:50]}...' (threshold: {similarity_threshold})")
+            logger.info(
+                f"🔍 Searching for similar chunks: '{query[:50]}...' (threshold: {similarity_threshold})",
+                extra={
+                    'operation': 'similarity_search',
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id),
+                    'query_length': query_length,
+                    'max_results': max_results,
+                    'similarity_threshold': similarity_threshold
+                }
+            )
             
             # Generate query embedding using Mistral
             query_embedding = await self.embeddings_service.generate_embedding(query)
@@ -327,7 +531,38 @@ class EnhancedRAGService:
                     )
                     chunks.append(chunk)
                 
-                logger.info(f"✅ Found {len(chunks)} similar chunks (threshold: {similarity_threshold})")
+                # Calculate similarity statistics
+                max_similarity = max([c.similarity for c in chunks]) if chunks else 0.0
+                avg_similarity = sum([c.similarity for c in chunks]) / len(chunks) if chunks else 0.0
+                search_duration = time.time() - start_time
+                
+                logger.info(
+                    f"✅ Found {len(chunks)} similar chunks (threshold: {similarity_threshold}, "
+                    f"max_sim: {max_similarity:.3f}, avg_sim: {avg_similarity:.3f}, {search_duration:.3f}s)",
+                    extra={
+                        'operation': 'similarity_search',
+                        'user_id': str(user_id),
+                        'conversation_id': str(conversation_id),
+                        'query_length': query_length,
+                        'result_count': len(chunks),
+                        'max_similarity': max_similarity,
+                        'avg_similarity': avg_similarity,
+                        'similarity_threshold': similarity_threshold,
+                        'duration': search_duration * 1000
+                    }
+                )
+                
+                # Use RAGLogger for comprehensive statistics
+                rag_logger.log_similarity_search(
+                    query_length=query_length,
+                    user_id=str(user_id),
+                    conversation_id=str(conversation_id),
+                    duration=search_duration,
+                    result_count=len(chunks),
+                    max_similarity=max_similarity,
+                    avg_similarity=avg_similarity,
+                    success=True
+                )
                 
                 # If no results and threshold is high, try with lower threshold
                 if not chunks and similarity_threshold > 0.05:
@@ -344,16 +579,60 @@ class EnhancedRAGService:
                 return chunks
                 
             except Exception as db_error:
-                logger.error(f"❌ Database search error: {db_error}")
-                import traceback
-                traceback.print_exc()
+                search_duration = time.time() - start_time
+                logger.error(
+                    f"❌ Database search error: {db_error}",
+                    extra={
+                        'operation': 'similarity_search',
+                        'user_id': str(user_id),
+                        'conversation_id': str(conversation_id),
+                        'query_length': query_length,
+                        'error_type': 'database_error',
+                        'duration': search_duration * 1000
+                    },
+                    exc_info=True
+                )
+                
+                # Use RAGLogger for comprehensive statistics
+                rag_logger.log_similarity_search(
+                    query_length=query_length,
+                    user_id=str(user_id),
+                    conversation_id=str(conversation_id),
+                    duration=search_duration,
+                    result_count=0,
+                    success=False,
+                    error=str(db_error)
+                )
+                
                 # Fallback to all chunks
                 return await self.get_all_conversation_chunks(conversation_id, user_id)
             
         except Exception as e:
-            logger.error(f"❌ Error in similarity search: {e}")
-            import traceback
-            traceback.print_exc()
+            search_duration = time.time() - start_time
+            logger.error(
+                f"❌ Error in similarity search: {e}",
+                extra={
+                    'operation': 'similarity_search',
+                    'user_id': str(user_id),
+                    'conversation_id': str(conversation_id),
+                    'query_length': query_length,
+                    'error_type': 'unexpected_error',
+                    'duration': search_duration * 1000
+                },
+                exc_info=True
+            )
+            
+            # Use RAGLogger for comprehensive statistics
+            rag_logger.log_similarity_search(
+                query_length=query_length,
+                user_id=str(user_id),
+                conversation_id=str(conversation_id),
+                duration=search_duration,
+                result_count=0,
+                success=False,
+                error=str(e)
+            )
+            
             # Fallback to all chunks
             return await self.get_all_conversation_chunks(conversation_id, user_id)
     

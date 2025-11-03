@@ -20,6 +20,11 @@ FastAPI backend for the PharmGPT web application with user authentication, RAG f
    pip install -r requirements.txt
    ```
 
+   **Note on RDKit (Optional)**: RDKit is included for SDF/MOL chemical file support. If installation fails:
+   - SDF files will still work with fallback parsing (limited functionality)
+   - To skip RDKit: `pip install -r requirements.txt --no-deps rdkit-pypi` or remove from requirements.txt
+   - For conda users: `conda install -c conda-forge rdkit` (recommended for better compatibility)
+
 2. **Set up environment variables**
    ```bash
    cp .env.example .env

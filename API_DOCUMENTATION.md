@@ -51,7 +51,7 @@ Upload documents for RAG processing with enhanced LangChain loaders.
 
 **Parameters:**
 - `conversation_id` (query): UUID of conversation
-- `file` (form-data): Document file (PDF, DOCX, TXT)
+- `file` (form-data): Document file
 
 **Response:**
 ```json
@@ -60,18 +60,70 @@ Upload documents for RAG processing with enhanced LangChain loaders.
   "message": "Successfully processed 5 chunks from document.pdf",
   "chunk_count": 5,
   "processing_time": 2.34,
-  "errors": []
+  "errors": [],
+  "warnings": [
+    "Document contains minimal text content (45 characters)"
+  ],
+  "file_info": {
+    "filename": "document.pdf",
+    "format": "pdf",
+    "size_bytes": 102400,
+    "content_length": 1250,
+    "encoding": null
+  }
 }
 ```
 
 **Supported Formats:**
-- PDF (via PyPDFLoader)
-- DOCX (via Docx2txtLoader) 
-- TXT/MD (via TextLoader with encoding detection)
+- **Documents**: PDF (via PyPDFLoader), DOCX (via Docx2txtLoader), TXT/MD (via TextLoader with encoding detection)
+- **Presentations**: PPTX (via UnstructuredPowerPointLoader)
+- **Spreadsheets**: XLSX, CSV (via pandas)
+- **Images**: PNG, JPG, JPEG, GIF, BMP, WEBP (via pytesseract OCR)
+- **Chemical Structures**: SDF, MOL (via RDKit or fallback parser)
+
+**Response Fields:**
+- `success` (boolean): Whether the upload succeeded
+- `message` (string): Human-readable status message
+- `chunk_count` (integer): Number of text chunks created
+- `processing_time` (float): Processing duration in seconds
+- `errors` (array): List of error messages (if any)
+- `warnings` (array): Non-critical issues (e.g., minimal content)
+- `file_info` (object): Metadata about the uploaded file
+  - `filename`: Original filename
+  - `format`: Detected file format
+  - `size_bytes`: File size in bytes
+  - `content_length`: Extracted text length in characters
+  - `encoding`: Text encoding used (for text files)
 
 **Limits:**
 - Maximum file size: 10MB
 - Maximum chunks per document: 1000
+
+**SDF/MOL File Support:**
+
+Chemical structure files are processed to extract:
+- Compound names and identifiers
+- Molecular formulas and weights
+- Atom and bond counts
+- SMILES and InChI representations (with RDKit)
+- All property fields from the SDF file
+
+Example SDF response:
+```json
+{
+  "success": true,
+  "message": "Successfully processed 3 chunks from compounds.sdf",
+  "chunk_count": 3,
+  "processing_time": 1.52,
+  "file_info": {
+    "filename": "compounds.sdf",
+    "format": "sdf",
+    "size_bytes": 45600,
+    "content_length": 2340,
+    "encoding": null
+  }
+}
+```
 
 ### Document Search
 
@@ -165,7 +217,7 @@ Comprehensive system health check.
     },
     "document_loader": {
       "status": "healthy",
-      "supported_formats": [".pdf", ".docx", ".txt"]
+      "supported_formats": [".pdf", ".docx", ".txt", ".md", ".pptx", ".xlsx", ".csv", ".sdf", ".mol", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"]
     },
     "database": {
       "status": "healthy",
@@ -374,15 +426,72 @@ Requires admin authentication.
 
 Document processing errors include specific details:
 
+**Unsupported Format Error:**
 ```json
 {
   "success": false,
-  "message": "Unsupported file format: .xyz. Supported formats: .pdf, .docx, .txt",
+  "message": "Unsupported file format: .xyz. Supported formats: .pdf, .docx, .txt, .md, .pptx, .xlsx, .csv, .sdf, .mol, .png, .jpg, .jpeg, .gif, .bmp, .webp",
   "chunk_count": 0,
   "errors": [
-    "File format validation failed",
-    "No content could be extracted"
+    "File format validation failed"
   ]
+}
+```
+
+**Empty Content Error:**
+```json
+{
+  "success": false,
+  "message": "No content could be extracted from document.pdf. The file appears to be empty or contains only non-text elements.",
+  "chunk_count": 0,
+  "errors": [
+    "Empty content after extraction"
+  ]
+}
+```
+
+**Encoding Error:**
+```json
+{
+  "success": false,
+  "message": "Could not decode text file document.txt. Please ensure the file is saved in UTF-8, UTF-16, or Latin-1 encoding.",
+  "chunk_count": 0,
+  "errors": [
+    "Text encoding detection failed"
+  ]
+}
+```
+
+**Corrupted File Error:**
+```json
+{
+  "success": false,
+  "message": "The file document.pdf appears to be corrupted or invalid. Please try re-saving or re-exporting the file.",
+  "chunk_count": 0,
+  "errors": [
+    "File parsing failed",
+    "Invalid file structure"
+  ]
+}
+```
+
+**Insufficient Content Warning:**
+```json
+{
+  "success": true,
+  "message": "Successfully processed 1 chunk from document.txt",
+  "chunk_count": 1,
+  "processing_time": 0.45,
+  "warnings": [
+    "Document contains minimal text content (15 characters). The document was processed but may not provide useful context for queries."
+  ],
+  "file_info": {
+    "filename": "document.txt",
+    "format": "txt",
+    "size_bytes": 150,
+    "content_length": 15,
+    "encoding": "utf-8"
+  }
 }
 ```
 
@@ -482,6 +591,10 @@ client = PharmGPTClient("https://pharmgpt-backend.onrender.com", "your_token")
 # Upload document
 result = client.upload_document("conversation_uuid", "drug_guide.pdf")
 print(f"Uploaded: {result['chunk_count']} chunks")
+if result.get('warnings'):
+    print(f"Warnings: {', '.join(result['warnings'])}")
+if result.get('file_info'):
+    print(f"File info: {result['file_info']['format']}, {result['file_info']['content_length']} chars")
 
 # Search documents
 results = client.search_documents("aspirin side effects", "conversation_uuid")
@@ -558,6 +671,12 @@ const client = new PharmGPTClient('https://pharmgpt-backend.onrender.com', 'your
 const fileInput = document.getElementById('file-input');
 const result = await client.uploadDocument('conversation_uuid', fileInput.files[0]);
 console.log(`Uploaded: ${result.chunk_count} chunks`);
+if (result.warnings) {
+  console.log(`Warnings: ${result.warnings.join(', ')}`);
+}
+if (result.file_info) {
+  console.log(`File: ${result.file_info.format}, ${result.file_info.content_length} chars`);
+}
 
 // Search and chat
 const searchResults = await client.searchDocuments('aspirin side effects', 'conversation_uuid');
@@ -565,6 +684,29 @@ const chatResponse = await client.chatWithRAG('What are aspirin side effects?', 
 ```
 
 ## Changelog
+
+### v2.2.0 - Document Processing Enhancements
+
+**Added:**
+- SDF/MOL chemical structure file support
+- Enhanced error categorization and messages
+- Response warnings field for non-critical issues
+- File info metadata in upload responses
+- Comprehensive logging throughout pipeline
+- Support for PPTX, XLSX, CSV, and image formats (PNG, JPG, etc.)
+- OCR support for image-based documents
+
+**Improved:**
+- Content validation with specific error messages
+- Encoding detection for text files
+- Error handling with detailed stack traces
+- User-friendly error messages
+- Temporary file cleanup on all error paths
+
+**Changed:**
+- Minimum content threshold: 50 → 10 characters
+- Error responses now include specific failure reasons
+- Upload responses include warnings and file_info fields
 
 ### v2.1.0 - Enhanced RAG System
 

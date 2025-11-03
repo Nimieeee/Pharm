@@ -294,9 +294,32 @@ async def upload_document(
             )
         
         if len(file_content) == 0:
+            # Get supported formats for better error message
+            supported_formats = rag_service.document_loader.get_supported_formats()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Empty file uploaded"
+                detail={
+                    "error": "Empty file uploaded",
+                    "message": f"The uploaded file '{file.filename}' is empty (0 bytes). Please upload a valid file.",
+                    "supported_formats": supported_formats
+                }
+            )
+        
+        # Check if file format is supported before processing
+        if not rag_service.document_loader.is_supported_format(file.filename or "unknown"):
+            from pathlib import Path
+            file_extension = Path(file.filename or "unknown").suffix.lower()
+            supported_formats = rag_service.document_loader.get_supported_formats()
+            
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "Unsupported file format",
+                    "message": f"File format '{file_extension}' is not supported. File '{file.filename}' cannot be processed.",
+                    "file_extension": file_extension,
+                    "filename": file.filename,
+                    "supported_formats": supported_formats
+                }
             )
         
         # Process document
@@ -312,9 +335,20 @@ async def upload_document(
     except HTTPException:
         raise
     except Exception as e:
+        # Get supported formats for error context
+        try:
+            supported_formats = rag_service.document_loader.get_supported_formats()
+        except:
+            supported_formats = [".pdf", ".docx", ".txt", ".md", ".pptx", ".xlsx", ".csv", ".sdf", ".mol", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"]
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process document: {str(e)}"
+            detail={
+                "error": "Document processing failed",
+                "message": f"Failed to process document '{file.filename}': {str(e)}",
+                "supported_formats": supported_formats,
+                "filename": file.filename
+            }
         )
 
 

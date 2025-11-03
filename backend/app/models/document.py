@@ -58,6 +58,8 @@ class DocumentUploadResponse(BaseModel):
     document_id: Optional[str] = None
     processing_time: Optional[float] = None
     errors: Optional[List[str]] = None
+    warnings: Optional[List[str]] = None
+    file_info: Optional[Dict[str, Any]] = None
 
 
 class DocumentSearchRequest(BaseModel):
