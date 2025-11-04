@@ -269,10 +269,10 @@ async def upload_document(
     chat_service: ChatService = Depends(get_chat_service)
 ):
     """
-    Upload and process a document for RAG
+    Upload and process a single document for RAG
     
     - **conversation_id**: Conversation to associate the document with
-    - **file**: Document file (PDF, DOCX, TXT, PPTX, XLSX, CSV, images)
+    - **file**: Document file (PDF, DOCX, TXT, PPTX, XLSX, CSV, SDF, images)
     """
     try:
         # Validate conversation belongs to user
@@ -290,11 +290,10 @@ async def upload_document(
         if len(file_content) > max_size:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="File too large. Maximum size is 10MB"
+                detail=f"File '{file.filename}' is too large ({len(file_content)} bytes). Maximum size is 10MB."
             )
         
         if len(file_content) == 0:
-            # Get supported formats for better error message
             supported_formats = rag_service.document_loader.get_supported_formats()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -305,7 +304,7 @@ async def upload_document(
                 }
             )
         
-        # Check if file format is supported before processing
+        # Check if file format is supported
         if not rag_service.document_loader.is_supported_format(file.filename or "unknown"):
             from pathlib import Path
             file_extension = Path(file.filename or "unknown").suffix.lower()
@@ -335,12 +334,11 @@ async def upload_document(
     except HTTPException:
         raise
     except Exception as e:
-        # Get supported formats for error context
-        try:
-            supported_formats = rag_service.document_loader.get_supported_formats()
-        except:
-            supported_formats = [".pdf", ".docx", ".txt", ".md", ".pptx", ".xlsx", ".csv", ".sdf", ".mol", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"]
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Upload error: {error_trace}")
         
+        supported_formats = rag_service.document_loader.get_supported_formats()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -348,6 +346,145 @@ async def upload_document(
                 "message": f"Failed to process document '{file.filename}': {str(e)}",
                 "supported_formats": supported_formats,
                 "filename": file.filename
+            }
+        )
+
+
+@router.post("/documents/upload-multiple")
+async def upload_multiple_documents(
+    conversation_id: UUID,
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+    rag_service: EnhancedRAGService = Depends(get_rag_service),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Upload and process multiple documents for RAG
+    
+    - **conversation_id**: Conversation to associate the documents with
+    - **files**: List of document files (PDF, DOCX, TXT, PPTX, XLSX, CSV, SDF, images)
+    
+    Returns summary of all uploads with individual results
+    """
+    try:
+        # Validate conversation belongs to user
+        conversation = await chat_service.get_conversation(conversation_id, current_user)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+        
+        if not files or len(files) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No files provided"
+            )
+        
+        # Process each file
+        results = []
+        successful_count = 0
+        failed_count = 0
+        total_chunks = 0
+        max_size = 10 * 1024 * 1024  # 10MB per file
+        
+        for file in files:
+            try:
+                # Read file content
+                file_content = await file.read()
+                
+                # Validate file size
+                if len(file_content) > max_size:
+                    results.append({
+                        "filename": file.filename,
+                        "success": False,
+                        "message": f"File too large ({len(file_content)} bytes). Maximum size is 10MB.",
+                        "chunk_count": 0
+                    })
+                    failed_count += 1
+                    continue
+                
+                if len(file_content) == 0:
+                    results.append({
+                        "filename": file.filename,
+                        "success": False,
+                        "message": "File is empty (0 bytes)",
+                        "chunk_count": 0
+                    })
+                    failed_count += 1
+                    continue
+                
+                # Check if format is supported
+                if not rag_service.document_loader.is_supported_format(file.filename or "unknown"):
+                    from pathlib import Path
+                    file_extension = Path(file.filename or "unknown").suffix.lower()
+                    supported_formats = rag_service.document_loader.get_supported_formats()
+                    
+                    results.append({
+                        "filename": file.filename,
+                        "success": False,
+                        "message": f"Unsupported file format '{file_extension}'. Supported: {', '.join(supported_formats)}",
+                        "chunk_count": 0
+                    })
+                    failed_count += 1
+                    continue
+                
+                # Process document
+                result = await rag_service.process_uploaded_file(
+                    file_content=file_content,
+                    filename=file.filename or "unknown",
+                    conversation_id=conversation_id,
+                    user_id=current_user.id
+                )
+                
+                results.append({
+                    "filename": file.filename,
+                    "success": result.success,
+                    "message": result.message,
+                    "chunk_count": result.chunk_count,
+                    "processing_time": result.processing_time,
+                    "warnings": result.warnings,
+                    "file_info": result.file_info
+                })
+                
+                if result.success:
+                    successful_count += 1
+                    total_chunks += result.chunk_count
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                results.append({
+                    "filename": file.filename,
+                    "success": False,
+                    "message": f"Error processing file: {str(e)}",
+                    "chunk_count": 0
+                })
+                failed_count += 1
+        
+        # Return summary
+        return {
+            "success": successful_count > 0,
+            "message": f"Processed {len(files)} files: {successful_count} successful, {failed_count} failed",
+            "total_files": len(files),
+            "successful_count": successful_count,
+            "failed_count": failed_count,
+            "total_chunks": total_chunks,
+            "results": results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Multiple upload error: {error_trace}")
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "Batch upload failed",
+                "message": f"Failed to process multiple documents: {str(e)}"
             }
         )
 

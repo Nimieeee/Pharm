@@ -193,8 +193,8 @@ class EnhancedRAGService:
                     "filename": filename,
                     "user_id": str(user_id),
                     "conversation_id": str(conversation_id),
-                    "embedding_model": settings.MISTRAL_EMBED_MODEL,
-                    "embedding_version": "mistral-v1"
+                    "embedding_model": settings.EMBEDDING_PROVIDER,
+                    "embedding_dimensions": settings.EMBEDDING_DIMENSIONS
                 })
             
             # Store chunks directly using database
@@ -418,10 +418,11 @@ class EnhancedRAGService:
                 return False
             
             # Validate embedding dimensions
-            if len(embedding) != settings.MISTRAL_EMBED_DIMENSIONS:
+            expected_dims = settings.EMBEDDING_DIMENSIONS
+            if len(embedding) != expected_dims:
                 logger.error(
                     f"❌ Invalid embedding dimensions: {len(embedding)} "
-                    f"(expected {settings.MISTRAL_EMBED_DIMENSIONS})"
+                    f"(expected {expected_dims})"
                 )
                 return False
             
@@ -431,8 +432,8 @@ class EnhancedRAGService:
                 "filename": filename,
                 "user_id": str(user_id),
                 "conversation_id": str(conversation_id),
-                "embedding_model": settings.MISTRAL_EMBED_MODEL,
-                "embedding_version": "mistral-v1",
+                "embedding_model": settings.EMBEDDING_PROVIDER,
+                "embedding_dimensions": expected_dims,
                 "processing_timestamp": time.time(),
                 "chunk_length": len(chunk.page_content),
                 "langchain_processed": True
