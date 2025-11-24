@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Send, Plus, MessageSquare, Trash2, Paperclip, Menu, X, Zap, Brain, Sun, Moon, Check, Loader2, User, LogOut, Home } from 'lucide-react'
-import { Streamdown } from 'streamdown'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { chatAPI, Conversation, Message, ConversationWithMessages } from '@/lib/api'
+import { chatAPI, Conversation, ConversationWithMessages } from '@/lib/api'
+import { useStreamingChat } from '@/hooks/useStreamingChat'
+import { StreamingMessage } from '@/components/StreamingMessage'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -26,13 +27,28 @@ export default function ChatPage() {
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = useState<ConversationWithMessages | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [inputMessage, setInputMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768)
   const [mode, setMode] = useState<'fast' | 'detailed'>('fast')
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+
+  // Use streaming chat hook
+  const {
+    messages,
+    input,
+    handleInputChange,
+    isLoading,
+    sendMessage: sendStreamingMessage,
+    uploadFile,
+    stop,
+    setMessages
+  } = useStreamingChat({
+    conversationId,
+    mode,
+    onNewMessage: () => {
+      loadConversations()
+    }
+  })
 
   useEffect(() => { loadConversations() }, [])
   useEffect(() => { if (conversationId) loadConversation(conversationId) }, [conversationId])
@@ -56,15 +72,12 @@ export default function ChatPage() {
   }
 
   const loadConversation = async (id: string) => {
-    setIsLoading(true)
     try {
       const data = await chatAPI.getConversation(id)
       setCurrentConversation(data)
       setMessages(data.messages || [])
     } catch (error) {
       toast.error('Failed to load conversation')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -97,75 +110,17 @@ export default function ChatPage() {
   }
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !conversationId || isLoading) return
+    if (!input.trim() || !conversationId || isLoading) return
     
-    const messageText = inputMessage.trim()
-    const attachedDocs = uploadingFiles.filter(f => f.status === 'complete')
+    const attachedDocs = uploadingFiles.filter(f => f.status === 'complete').map(f => f.id)
     
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      conversation_id: conversationId,
-      role: 'user',
-      content: messageText,
-      created_at: new Date().toISOString(),
-      metadata: attachedDocs.length > 0 
-        ? { attachedFiles: attachedDocs }
-        : undefined
-    }
+    // Send with streaming
+    await sendStreamingMessage(input.trim(), attachedDocs)
     
-    // Update UI immediately
-    setMessages(prev => [...prev, userMessage])
-    setInputMessage('')
+    // Clear files and reset textarea
     setUploadingFiles([])
-    if (textareaRef.current) textareaRef.current.style.height = 'auto'
-    
-    // Add loading message
-    const loadingMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      conversation_id: conversationId,
-      role: 'assistant',
-      content: '',
-      created_at: new Date().toISOString()
-    }
-    setMessages(prev => [...prev, loadingMessage])
-    setIsLoading(true)
-    
-    try {
-      const response = await chatAPI.sendMessage({
-        message: messageText,
-        conversation_id: conversationId,
-        mode: mode,
-        use_rag: true,
-        metadata: attachedDocs.length > 0 ? { document_ids: attachedDocs.map(f => f.id) } : {}
-      })
-      
-      // Create assistant message from response
-      const assistantMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: response.response,
-        created_at: new Date().toISOString(),
-        metadata: {
-          mode: response.mode,
-          context_used: response.context_used
-        }
-      }
-      
-      // Replace loading message with actual response
-      setMessages(prev => prev.map(m => 
-        m.id === loadingMessage.id ? assistantMessage : m
-      ))
-      loadConversations()
-    } catch (error) {
-      console.error('Send message error:', error)
-      toast.error('Failed to send message')
-      // Remove both user and loading messages on error
-      setMessages(prev => prev.filter(m => 
-        m.id !== userMessage.id && m.id !== loadingMessage.id
-      ))
-    } finally {
-      setIsLoading(false)
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
     }
   }
 
@@ -184,20 +139,23 @@ export default function ChatPage() {
       setUploadingFiles(prev => [...prev, uploadingFile])
       
       try {
-        const result = await chatAPI.uploadDocument(conversationId, file)
+        const fileId = await uploadFile(file)
         
-        setUploadingFiles(prev => prev.map(f => 
-          f.id === uploadingFile.id 
-            ? { ...f, id: result.id, status: 'complete', progress: 100 }
-            : f
-        ))
-        
-        toast.success(`${file.name} uploaded`)
+        if (fileId) {
+          setUploadingFiles(prev => prev.map(f => 
+            f.id === uploadingFile.id 
+              ? { ...f, id: fileId, status: 'complete', progress: 100 }
+              : f
+          ))
+        } else {
+          setUploadingFiles(prev => prev.map(f => 
+            f.id === uploadingFile.id ? { ...f, status: 'error' } : f
+          ))
+        }
       } catch (error) {
         setUploadingFiles(prev => prev.map(f => 
           f.id === uploadingFile.id ? { ...f, status: 'error' } : f
         ))
-        toast.error(`Failed to upload ${file.name}`)
       }
     })
     
@@ -209,7 +167,7 @@ export default function ChatPage() {
   }
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputMessage(e.target.value)
+    handleInputChange(e)
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
@@ -444,61 +402,11 @@ export default function ChatPage() {
             ) : (
               <div className="space-y-6">
                 {messages.map((message, idx) => (
-                  <div
+                  <StreamingMessage
                     key={message.id || idx}
-                    className={cn(
-                      'flex gap-4',
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    {message.role === 'assistant' && (
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-spa flex items-center justify-center" 
-                             style={{ background: 'var(--accent)' }}>
-                          <MessageSquare size={20} style={{ color: 'var(--bg-primary)' }} strokeWidth={2} />
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div
-                      className={cn(
-                        message.role === 'user'
-                          ? 'max-w-[80%] px-4 py-3 rounded-spa'
-                          : 'flex-1'
-                      )}
-                      style={message.role === 'user' ? {
-                        background: 'var(--bg-tertiary)',
-                        color: 'var(--text-primary)'
-                      } : {}}
-                    >
-                      {message.metadata?.attachedFiles && message.metadata.attachedFiles.length > 0 && (
-                        <div className="mb-3 space-y-2">
-                          {message.metadata.attachedFiles.map((file: any) => (
-                            <div key={file.id} className="flex items-center gap-2 px-3 py-2 rounded-spa" 
-                                 style={{ background: 'var(--bg-secondary)' }}>
-                              <Paperclip size={14} strokeWidth={2} />
-                              <div className="text-xs font-medium truncate">{file.name}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {message.role === 'assistant' ? (
-                        <div className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                          {message.content ? (
-                            <Streamdown>{message.content}</Streamdown>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <div className="spinner-spa"></div>
-                              <span style={{ color: 'var(--text-secondary)' }}>Thinking...</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                      )}
-                    </div>
-                  </div>
+                    message={message}
+                    isStreaming={isLoading && idx === messages.length - 1}
+                  />
                 ))}
                 <div ref={messagesEndRef} />
               </div>
@@ -576,7 +484,7 @@ export default function ChatPage() {
 
                 <textarea
                   ref={textareaRef}
-                  value={inputMessage}
+                  value={input}
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Message PharmGPT..."
@@ -593,12 +501,12 @@ export default function ChatPage() {
 
                 <button
                   onClick={sendMessage}
-                  disabled={!inputMessage.trim() || isLoading}
+                  disabled={!input.trim() || isLoading}
                   className="p-2 rounded-full transition-all"
                   style={{ 
-                    background: inputMessage.trim() && !isLoading ? 'var(--accent)' : 'transparent',
-                    color: inputMessage.trim() && !isLoading ? 'white' : 'var(--text-tertiary)',
-                    opacity: inputMessage.trim() && !isLoading ? 1 : 0.4
+                    background: input.trim() && !isLoading ? 'var(--accent)' : 'transparent',
+                    color: input.trim() && !isLoading ? 'white' : 'var(--text-tertiary)',
+                    opacity: input.trim() && !isLoading ? 1 : 0.4
                   }}
                   title="Send message"
                 >
