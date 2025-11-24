@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Send, Plus, MessageSquare, Trash2, Loader2, Paperclip, ChevronLeft, ChevronRight, Zap, Brain, Sun, Moon, X, Check } from 'lucide-react'
+import { Streamdown } from 'streamdown'
 
 import { useTheme } from '@/contexts/ThemeContext'
 import { chatAPI, Conversation, Message, ConversationWithMessages } from '@/lib/api'
@@ -555,7 +556,9 @@ export default function ChatPage() {
                             </span>
                           </div>
                         ) : (
-                          <div className="text-sm font-sans leading-relaxed break-words">{formatMessage(message.content)}</div>
+                          <div className="text-sm font-sans leading-relaxed break-words prose prose-sm max-w-none">
+                            <Streamdown>{message.content}</Streamdown>
+                          </div>
                         )}
                       </div>
                     </div>

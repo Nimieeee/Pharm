@@ -100,62 +100,107 @@ class MistralEmbeddingsService:
             self.cache_stats["errors"] += 1
     
     async def _generate_embedding_with_api(self, text: str) -> Optional[List[float]]:
-        """Generate embedding using Mistral API via direct HTTP calls with rate limiting"""
+        """Generate embedding using Mistral API with retry logic and rate limiting"""
         if not self.mistral_api_key:
             return None
         
-        try:
-            # Rate limiting: Wait if needed to respect 1 request per second limit
-            current_time = time.time()
-            time_since_last_call = current_time - self.last_api_call_time
-            if time_since_last_call < self.min_time_between_calls:
-                wait_time = self.min_time_between_calls - time_since_last_call
-                logger.debug(f"⏱️  Rate limiting: waiting {wait_time:.2f}s")
-                await asyncio.sleep(wait_time)
-            
-            self.cache_stats["api_calls"] += 1
-            start_time = time.time()
-            
-            # Prepare request payload
-            payload = {
-                "model": self.model_name,
-                "input": [text]
-            }
-            
-            # Make HTTP request to Mistral API
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.mistral_base_url}/embeddings",
-                    headers={
-                        "Authorization": f"Bearer {self.mistral_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json=payload,
-                    timeout=30.0
-                )
+        max_retries = 5
+        base_delay = 1.0  # Base delay for exponential backoff
+        
+        for attempt in range(max_retries):
+            try:
+                # Rate limiting: Wait if needed to respect 1 request per second limit
+                current_time = time.time()
+                time_since_last_call = current_time - self.last_api_call_time
+                if time_since_last_call < self.min_time_between_calls:
+                    wait_time = self.min_time_between_calls - time_since_last_call
+                    logger.debug(f"⏱️  Rate limiting: waiting {wait_time:.2f}s")
+                    await asyncio.sleep(wait_time)
                 
-                # Update last call time
-                self.last_api_call_time = time.time()
+                self.cache_stats["api_calls"] += 1
+                start_time = time.time()
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    duration = time.time() - start_time
-                    logger.debug(f"Mistral embedding generated in {duration:.2f}s")
+                # Prepare request payload
+                payload = {
+                    "model": self.model_name,
+                    "input": [text]
+                }
+                
+                # Make HTTP request to Mistral API
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        f"{self.mistral_base_url}/embeddings",
+                        headers={
+                            "Authorization": f"Bearer {self.mistral_api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json=payload,
+                        timeout=30.0
+                    )
                     
-                    # Extract embedding from response
-                    if result.get("data") and len(result["data"]) > 0:
-                        embedding = result["data"][0]["embedding"]
-                        return embedding
+                    # Update last call time
+                    self.last_api_call_time = time.time()
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        duration = time.time() - start_time
+                        logger.debug(f"✅ Mistral embedding generated in {duration:.2f}s")
+                        
+                        # Extract embedding from response
+                        if result.get("data") and len(result["data"]) > 0:
+                            embedding = result["data"][0]["embedding"]
+                            return embedding
+                        else:
+                            logger.error("❌ No embedding data in Mistral API response")
+                            return None
+                    
+                    elif response.status_code == 429:
+                        # Rate limit exceeded - exponential backoff
+                        if attempt < max_retries - 1:
+                            retry_delay = base_delay * (2 ** attempt)
+                            logger.warning(f"⚠️  Rate limit hit (429), retrying in {retry_delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                            await asyncio.sleep(retry_delay)
+                            continue
+                        else:
+                            logger.error(f"❌ Rate limit exceeded after {max_retries} attempts")
+                            return None
+                    
+                    elif response.status_code >= 500:
+                        # Server error - retry with backoff
+                        if attempt < max_retries - 1:
+                            retry_delay = base_delay * (2 ** attempt)
+                            logger.warning(f"⚠️  Server error ({response.status_code}), retrying in {retry_delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                            await asyncio.sleep(retry_delay)
+                            continue
+                        else:
+                            logger.error(f"❌ Server error after {max_retries} attempts: {response.status_code}")
+                            return None
+                    
                     else:
-                        logger.error("❌ No embedding data in Mistral API response")
+                        logger.error(f"❌ Mistral API error: {response.status_code} - {response.text}")
                         return None
+                
+            except httpx.TimeoutException:
+                if attempt < max_retries - 1:
+                    retry_delay = base_delay * (2 ** attempt)
+                    logger.warning(f"⚠️  Request timeout, retrying in {retry_delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(retry_delay)
+                    continue
                 else:
-                    logger.error(f"❌ Mistral API error: {response.status_code} - {response.text}")
+                    logger.error(f"❌ Request timeout after {max_retries} attempts")
                     return None
             
-        except Exception as e:
-            logger.error(f"❌ Mistral API error: {e}")
-            return None
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    retry_delay = base_delay * (2 ** attempt)
+                    logger.warning(f"⚠️  API error: {e}, retrying in {retry_delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    logger.error(f"❌ Mistral API error after {max_retries} attempts: {e}")
+                    return None
+        
+        return None
     
     def _generate_fallback_embedding(self, text: str) -> List[float]:
         """Generate fallback hash-based embedding"""

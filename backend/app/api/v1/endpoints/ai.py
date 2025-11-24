@@ -17,8 +17,14 @@ from app.services.enhanced_rag import EnhancedRAGService
 from app.models.user import User
 from app.models.conversation import MessageCreate
 from app.models.document import DocumentUploadResponse, DocumentSearchRequest, DocumentSearchResponse
+from app.security import LLMSecurityGuard, SecurityViolationException, get_hardened_prompt
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# Initialize security guard (singleton)
+security_guard = LLMSecurityGuard()
 
 
 class ChatRequest(BaseModel):
@@ -74,6 +80,18 @@ async def chat(
         print(f"🆔 Conversation ID: {chat_request.conversation_id}")
         print(f"⚙️ Mode: {chat_request.mode}, RAG: {chat_request.use_rag}")
         
+        # Security Layer: Validate input before processing
+        print("🔒 Running security checks...")
+        try:
+            security_guard.validate_transaction(chat_request.message)
+            print("✅ Security checks passed")
+        except SecurityViolationException as e:
+            logger.warning(f"🚨 Security violation blocked: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.to_dict()
+            )
+        
         # Validate conversation belongs to user
         print("🔍 Validating conversation...")
         conversation = await chat_service.get_conversation(
@@ -99,16 +117,32 @@ async def chat(
         await chat_service.add_message(user_message, current_user)
         print("✅ User message added")
         
-        # Generate AI response
+        # Generate AI response with hardened prompt
         print("🤖 Calling AI service...")
+        # Use hardened system prompt template
+        hardened_message = get_hardened_prompt(chat_request.message)
+        
         ai_response = await ai_service.generate_response(
-            message=chat_request.message,
+            message=hardened_message,
             conversation_id=chat_request.conversation_id,
             user=current_user,
             mode=chat_request.mode,
             use_rag=chat_request.use_rag
         )
         print(f"✅ AI response generated: {len(ai_response)} chars")
+        
+        # Security Layer: Audit output
+        print("🔒 Auditing AI response...")
+        try:
+            security_guard.validate_transaction(
+                prompt=chat_request.message,
+                response=ai_response
+            )
+            print("✅ Output audit passed")
+        except SecurityViolationException as e:
+            logger.error(f"🚨 Output security violation: {e}")
+            # Return a safe error message instead of the potentially compromised response
+            ai_response = "I apologize, but I cannot provide that response as it may violate safety guidelines. Please rephrase your question."
         
         # Add AI response to conversation
         print("💾 Adding AI response to database...")
