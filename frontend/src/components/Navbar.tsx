@@ -45,18 +45,18 @@ export default function Navbar() {
   const navItems = getNavItems()
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-surface backdrop-blur-xl bg-surface-primary/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <nav className="sticky top-0 z-50 glass-spa" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="container-spa">
+        <div className="flex justify-between items-center h-16">
           {/* Logo and brand */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-3 group">
+            <Link to="/" className="flex items-center gap-3 group">
               <img 
                 src="/PharmGPT.png" 
                 alt="PharmGPT" 
-                className="w-8 h-8 transition-transform group-hover:scale-110" 
+                className="w-8 h-8 transition-transform group-hover:scale-105" 
               />
-              <span className="text-lg font-medium transition-colors text-content-primary">
+              <span className="text-lg font-semibold transition-colors" style={{ color: 'var(--text-primary)' }}>
                 PharmGPT
               </span>
             </Link>
@@ -72,13 +72,19 @@ export default function Navbar() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 touch-target',
+                    'flex items-center gap-2 px-4 py-2 rounded-spa text-sm font-medium transition-spa',
                     active
-                      ? 'bg-surface-tertiary text-content-primary'
-                      : 'text-content-secondary hover:text-content-primary hover:bg-surface-secondary'
+                      ? 'text-primary'
+                      : 'text-secondary hover:text-primary'
                   )}
+                  style={active ? { 
+                    background: 'var(--bg-tertiary)', 
+                    color: 'var(--text-primary)' 
+                  } : { 
+                    color: 'var(--text-secondary)' 
+                  }}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon size={18} strokeWidth={2} />
                   <span>{item.name}</span>
                 </Link>
               )
@@ -133,17 +139,11 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-content-secondary hover:text-content-primary hover:bg-surface-secondary touch-target"
-                >
-                  Sign in
+                <Link to="/login" className="btn-spa btn-ghost">
+                  <span>Sign in</span>
                 </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 rounded-gemini text-sm font-medium bg-gemini-gradient text-white hover:opacity-90 transition-opacity touch-target"
-                >
-                  Sign up
+                <Link to="/register" className="btn-spa btn-primary">
+                  <span>Sign up</span>
                 </Link>
               </div>
             )}
