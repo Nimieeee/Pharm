@@ -71,6 +71,27 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
           }),
           signal: abortControllerRef.current.signal
         })
+        
+        // Check if streaming endpoint returned an error (405, 404, etc.)
+        if (!response.ok && (response.status === 405 || response.status === 404)) {
+          console.log(`Streaming endpoint returned ${response.status}, using regular endpoint`)
+          useStreaming = false
+          response = await fetch('/api/v1/ai/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
+            },
+            body: JSON.stringify({
+              message: content.trim(),
+              conversation_id: conversationId,
+              mode,
+              use_rag: true,
+              metadata: documentIds && documentIds.length > 0 ? { document_ids: documentIds } : {}
+            }),
+            signal: abortControllerRef.current.signal
+          })
+        }
       } catch (streamError) {
         // Fallback to regular endpoint if streaming fails
         console.log('Streaming endpoint failed, using regular endpoint')
