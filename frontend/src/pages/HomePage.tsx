@@ -11,163 +11,181 @@ export default function HomePage() {
 
   return (
     <div className={cn(
-      "min-h-screen relative overflow-hidden",
+      "min-h-screen relative",
       darkMode 
-        ? "dark bg-[#0a1f1c] text-teal-50" 
-        : "bg-white"
+        ? "dark bg-[#1a1a1a] text-white" 
+        : "bg-white text-neutral-900"
     )}>
-      {/* Animated background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={cn(
-          "absolute inset-0",
-          darkMode 
-            ? "bg-gradient-to-br from-teal-950 via-[#0a1f1c] to-teal-900" 
-            : "bg-gradient-to-br from-teal-50 via-white to-accent-50"
-        )} />
-        <div className={cn(
-          "absolute inset-0 bg-grid-pattern bg-grid opacity-30",
-          darkMode ? "opacity-20" : "opacity-30"
-        )} />
-        <div className="absolute top-20 left-10 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }} />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+      {/* Brutalist grid background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 50px, currentColor 50px, currentColor 51px), repeating-linear-gradient(90deg, transparent, transparent 50px, currentColor 50px, currentColor 51px)'
+        }} />
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-40 px-4">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="mb-10 animate-fade-in">
-            <img 
-              src="/PharmGPT.png" 
-              alt="PharmGPT" 
-              className="w-24 h-24 mx-auto mb-8 drop-shadow-2xl animate-float" 
-            />
-          </div>
-          
-          <h1 className={cn(
-            "text-6xl md:text-8xl font-display font-black mb-8 animate-fade-in",
-            darkMode ? "text-teal-50" : "text-teal-900"
-          )} style={{ animationDelay: '0.1s' }}>
-            PharmGPT
-          </h1>
-          
-          <p className={cn(
-            "text-lg md:text-xl mb-14 max-w-3xl mx-auto leading-relaxed animate-fade-in",
-            darkMode ? "text-teal-200" : "text-teal-800"
-          )} style={{ animationDelay: '0.2s' }}>
-            Your AI-powered pharmacology assistant. Get expert insights on drug interactions, 
-            mechanisms of action, and clinical applications—backed by cutting-edge research.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-5 justify-center mb-16 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            {isAuthenticated ? (
-              <Link
-                to="/chat"
-                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-2xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300 shadow-2xl shadow-teal-500/40 hover:shadow-teal-500/60 hover:scale-105"
-              >
-                Open Chat
-                <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/register"
-                  className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-2xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300 shadow-2xl shadow-teal-500/40 hover:shadow-teal-500/60 hover:scale-105"
-                >
-                  Get Started
-                  <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  to="/login"
-                  className={cn(
-                    "inline-flex items-center justify-center px-10 py-5 text-lg font-semibold rounded-2xl border-2 transition-all duration-300 hover:scale-105", 
-                    darkMode 
-                      ? "text-teal-300 bg-teal-950/50 border-teal-600 hover:bg-teal-950 hover:border-teal-500 shadow-xl shadow-teal-900/30" 
-                      : "text-teal-700 bg-white border-teal-400 hover:bg-teal-50 hover:border-teal-500 shadow-xl shadow-teal-500/20"
-                  )}
-                >
-                  Sign In
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Demo credentials */}
-          {!isAuthenticated && (
-            <div className={cn(
-              "inline-block p-5 rounded-2xl border-2 backdrop-blur-sm animate-fade-in",
-              darkMode 
-                ? "bg-teal-950/50 border-teal-700 shadow-xl shadow-teal-900/30" 
-                : "bg-teal-50/80 border-teal-300 shadow-xl shadow-teal-500/20"
-            )} style={{ animationDelay: '0.4s' }}>
-              <p className={cn("text-sm font-medium", darkMode ? "text-teal-200" : "text-teal-900")}>
-                <strong className="font-bold">Demo:</strong> admin@pharmgpt.com / admin123
-              </p>
+      <section className="relative pt-16 pb-24 px-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Header stamp */}
+          <div className="mb-12 animate-stamp">
+            <div className="inline-block">
+              <div className={cn(
+                "px-6 py-3 border-4 transform -rotate-3 font-bold uppercase tracking-widest text-sm",
+                darkMode ? "border-primary-500 text-primary-500" : "border-primary-600 text-primary-600"
+              )}>
+                Pharmaceutical AI System
+              </div>
             </div>
-          )}
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <h1 className={cn(
+                "text-7xl md:text-8xl font-display font-black leading-none animate-fade-in",
+                darkMode ? "text-white" : "text-neutral-900"
+              )} style={{ animationDelay: '0.1s' }}>
+                Pharm<span className="text-accent-600">GPT</span>
+              </h1>
+              
+              <div className={cn(
+                "border-l-4 pl-6 animate-fade-in",
+                darkMode ? "border-white" : "border-neutral-900"
+              )} style={{ animationDelay: '0.2s' }}>
+                <p className="text-lg md:text-xl font-sans leading-relaxed">
+                  Advanced pharmacology intelligence system. Query drug interactions, 
+                  mechanisms of action, and clinical applications with precision.
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                {isAuthenticated ? (
+                  <Link
+                    to="/chat"
+                    className="btn-primary btn-lg group"
+                  >
+                    Access System
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/register"
+                      className="btn-primary btn-lg group"
+                    >
+                      Initialize
+                      <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                    <Link
+                      to="/login"
+                      className="btn-outline btn-lg"
+                    >
+                      Login
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              {/* Demo credentials */}
+              {!isAuthenticated && (
+                <div className={cn(
+                  "inline-block p-4 border-3 animate-fade-in",
+                  darkMode ? "border-neutral-700 bg-neutral-800" : "border-neutral-300 bg-neutral-50"
+                )} style={{ animationDelay: '0.4s' }}>
+                  <p className="text-xs font-sans uppercase tracking-wider">
+                    <span className="font-bold">Test Access:</span> admin@pharmgpt.com / admin123
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Right side - Feature blocks */}
+            <div className="space-y-4">
+              <div className={cn(
+                "p-6 border-4 animate-slide-in-right",
+                darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
+              )} style={{ animationDelay: '0.2s' }}>
+                <div className="label mb-3">01</div>
+                <h3 className="text-2xl font-display font-bold mb-2">Document Processing</h3>
+                <p className="font-sans text-sm">PDF, DOCX, XLSX, SDF, TXT, PPTX support with intelligent extraction</p>
+              </div>
+
+              <div className={cn(
+                "p-6 border-4 animate-slide-in-right",
+                darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
+              )} style={{ animationDelay: '0.3s' }}>
+                <div className="label mb-3">02</div>
+                <h3 className="text-2xl font-display font-bold mb-2">RAG Architecture</h3>
+                <p className="font-sans text-sm">Context-aware responses powered by retrieval-augmented generation</p>
+              </div>
+
+              <div className={cn(
+                "p-6 border-4 animate-slide-in-right",
+                darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
+              )} style={{ animationDelay: '0.4s' }}>
+                <div className="label mb-3">03</div>
+                <h3 className="text-2xl font-display font-bold mb-2">Dual Mode Operation</h3>
+                <p className="font-sans text-sm">Fast responses or detailed analysis - optimized for your workflow</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="relative pb-32 px-4">
+      {/* Capabilities Grid */}
+      <section className="relative pb-24 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className={cn(
+            "mb-12 pb-6 border-b-4",
+            darkMode ? "border-white" : "border-neutral-900"
+          )}>
+            <h2 className="text-4xl md:text-5xl font-display font-black">
+              System Capabilities
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className={cn(
-              "group text-center p-10 rounded-3xl border-2 transition-all duration-500 hover:scale-105 animate-fade-in backdrop-blur-sm",
+              "p-8 border-4 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 animate-fade-in",
               darkMode 
-                ? "bg-teal-950/40 border-teal-800 hover:border-teal-600 shadow-2xl shadow-teal-900/30 hover:shadow-teal-700/40" 
-                : "bg-white/80 border-teal-200 hover:border-teal-400 shadow-2xl shadow-teal-500/20 hover:shadow-teal-500/30"
+                ? "border-white bg-neutral-900 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]" 
+                : "border-neutral-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             )} style={{ animationDelay: '0.5s' }}>
-              <div className={cn(
-                "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
-                darkMode ? "bg-teal-900/50" : "bg-teal-100"
-              )}>
-                <MessageSquare className={cn("w-10 h-10", darkMode ? "text-teal-400" : "text-teal-600")} />
-              </div>
-              <h3 className={cn("text-2xl font-display font-bold mb-4", darkMode ? "text-teal-50" : "text-teal-900")}>
-                Interactive Chat
+              <MessageSquare className="w-12 h-12 mb-4" />
+              <h3 className="text-2xl font-display font-bold mb-3">
+                Interactive Query
               </h3>
-              <p className={cn("leading-relaxed", darkMode ? "text-teal-300" : "text-teal-700")}>
-                Natural conversations about pharmaceutical topics with context-aware AI responses
+              <p className="font-sans text-sm leading-relaxed">
+                Natural language processing for pharmaceutical inquiries with contextual understanding
               </p>
             </div>
 
             <div className={cn(
-              "group text-center p-10 rounded-3xl border-2 transition-all duration-500 hover:scale-105 animate-fade-in backdrop-blur-sm",
+              "p-8 border-4 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 animate-fade-in",
               darkMode 
-                ? "bg-teal-950/40 border-teal-800 hover:border-teal-600 shadow-2xl shadow-teal-900/30 hover:shadow-teal-700/40" 
-                : "bg-white/80 border-teal-200 hover:border-teal-400 shadow-2xl shadow-teal-500/20 hover:shadow-teal-500/30"
+                ? "border-white bg-neutral-900 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]" 
+                : "border-neutral-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             )} style={{ animationDelay: '0.6s' }}>
-              <div className={cn(
-                "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
-                darkMode ? "bg-accent-900/50" : "bg-accent-100"
-              )}>
-                <FileText className={cn("w-10 h-10", darkMode ? "text-accent-400" : "text-accent-600")} />
-              </div>
-              <h3 className={cn("text-2xl font-display font-bold mb-4", darkMode ? "text-teal-50" : "text-teal-900")}>
-                Document Analysis
+              <FileText className="w-12 h-12 mb-4" />
+              <h3 className="text-2xl font-display font-bold mb-3">
+                Multi-Format Ingestion
               </h3>
-              <p className={cn("leading-relaxed", darkMode ? "text-teal-300" : "text-teal-700")}>
-                Upload research papers and clinical documents for intelligent Q&A
+              <p className="font-sans text-sm leading-relaxed">
+                Process research papers, clinical data, and molecular structures across multiple file formats
               </p>
             </div>
 
             <div className={cn(
-              "group text-center p-10 rounded-3xl border-2 transition-all duration-500 hover:scale-105 animate-fade-in backdrop-blur-sm",
+              "p-8 border-4 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 animate-fade-in",
               darkMode 
-                ? "bg-teal-950/40 border-teal-800 hover:border-teal-600 shadow-2xl shadow-teal-900/30 hover:shadow-teal-700/40" 
-                : "bg-white/80 border-teal-200 hover:border-teal-400 shadow-2xl shadow-teal-500/20 hover:shadow-teal-500/30"
+                ? "border-white bg-neutral-900 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]" 
+                : "border-neutral-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             )} style={{ animationDelay: '0.7s' }}>
-              <div className={cn(
-                "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
-                darkMode ? "bg-teal-900/50" : "bg-teal-100"
-              )}>
-                <Zap className={cn("w-10 h-10", darkMode ? "text-teal-400" : "text-teal-600")} />
-              </div>
-              <h3 className={cn("text-2xl font-display font-bold mb-4", darkMode ? "text-teal-50" : "text-teal-900")}>
-                Fast & Detailed Modes
+              <Zap className="w-12 h-12 mb-4" />
+              <h3 className="text-2xl font-display font-bold mb-3">
+                Adaptive Processing
               </h3>
-              <p className={cn("leading-relaxed", darkMode ? "text-teal-300" : "text-teal-700")}>
-                Choose between quick answers or comprehensive analysis for your queries
+              <p className="font-sans text-sm leading-relaxed">
+                Toggle between rapid response and comprehensive analysis modes based on query complexity
               </p>
             </div>
           </div>

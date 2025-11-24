@@ -368,50 +368,31 @@ export default function ChatPage() {
 
   return (
     <div className={cn(
-      "flex h-screen overflow-hidden relative",
-      darkMode ? "dark bg-[#0a1f1c] text-teal-50" : "bg-white text-teal-900"
+      "flex h-screen overflow-hidden",
+      darkMode ? "dark bg-[#1a1a1a] text-white" : "bg-white text-neutral-900"
     )}>
-      {/* Background pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={cn(
-          "absolute inset-0",
-          darkMode 
-            ? "bg-gradient-to-br from-teal-950 via-[#0a1f1c] to-teal-900" 
-            : "bg-gradient-to-br from-teal-50/30 via-white to-accent-50/30"
-        )} />
-        <div className={cn(
-          "absolute inset-0 bg-grid-pattern bg-grid",
-          darkMode ? "opacity-10" : "opacity-20"
-        )} />
-      </div>
-
       {sidebarOpen && window.innerWidth < 1024 && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/80 z-40" onClick={() => setSidebarOpen(false)} />
       )}
 
       <div className={cn(
-        "flex flex-col transition-all duration-300 border-r-2 z-50 relative",
-        darkMode ? "bg-teal-950/80 border-teal-800 backdrop-blur-xl" : "bg-white/80 border-teal-200 backdrop-blur-xl",
-        sidebarOpen ? "w-72 fixed lg:relative h-full shadow-2xl" : "w-0 border-r-0"
+        "flex flex-col transition-all duration-200 border-r-4 z-50",
+        darkMode ? "bg-neutral-900 border-white" : "bg-neutral-50 border-neutral-900",
+        sidebarOpen ? "w-72 fixed lg:relative h-full" : "w-0 border-r-0"
       )}>
         {sidebarOpen && (<>
-          <div className={cn("p-4 border-b-2 flex items-center justify-between", darkMode ? "border-teal-800" : "border-teal-200")}>
+          <div className={cn("p-4 border-b-4 flex items-center justify-between", darkMode ? "border-white" : "border-neutral-900")}>
             <button 
               onClick={createNewConversation} 
-              className={cn(
-                "flex-1 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold mr-2 transition-all duration-300 hover:scale-105",
-                darkMode 
-                  ? "bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-teal-50 shadow-lg shadow-teal-900/50" 
-                  : "bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white shadow-lg shadow-teal-500/30"
-              )}
+              className="flex-1 btn-primary btn-sm mr-2"
             >
-              <Plus className="w-4 h-4" />New chat
+              <Plus className="w-4 h-4 mr-2" />New
             </button>
             <button 
               onClick={() => setSidebarOpen(false)} 
               className={cn(
-                "lg:hidden p-2 rounded-lg transition-colors",
-                darkMode ? "hover:bg-teal-900" : "hover:bg-teal-100"
+                "lg:hidden p-2 border-3 transition-colors",
+                darkMode ? "border-white hover:bg-white hover:text-neutral-900" : "border-neutral-900 hover:bg-neutral-900 hover:text-white"
               )}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -422,29 +403,26 @@ export default function ChatPage() {
               <div 
                 key={conv.id} 
                 className={cn(
-                  "group flex items-center gap-3 px-4 py-3 rounded-xl mb-2 cursor-pointer transition-all duration-300",
+                  "group flex items-center gap-3 px-3 py-3 mb-2 cursor-pointer transition-all duration-200 border-3",
                   conversationId === conv.id 
                     ? (darkMode 
-                        ? "bg-teal-900/60 border-2 border-teal-700 shadow-lg shadow-teal-900/30" 
-                        : "bg-teal-100 border-2 border-teal-300 shadow-lg shadow-teal-500/20"
+                        ? "bg-white text-neutral-900 border-white" 
+                        : "bg-neutral-900 text-white border-neutral-900"
                       )
                     : (darkMode 
-                        ? "hover:bg-teal-900/40 border-2 border-transparent" 
-                        : "hover:bg-teal-50 border-2 border-transparent"
+                        ? "border-neutral-700 hover:border-white" 
+                        : "border-neutral-300 hover:border-neutral-900"
                       )
                 )} 
                 onClick={() => { navigate(`/chat/${conv.id}`); if (window.innerWidth < 1024) setSidebarOpen(false) }}
               >
                 <MessageSquare className="w-4 h-4 shrink-0" />
-                <span className="flex-1 text-sm truncate font-medium">{conv.title}</span>
+                <span className="flex-1 text-xs truncate font-bold uppercase tracking-wide">{conv.title}</span>
                 <button 
                   onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }} 
-                  className={cn(
-                    "p-1.5 rounded-lg transition-all duration-300 hover:scale-110",
-                    darkMode ? "hover:bg-red-900/30" : "hover:bg-red-100"
-                  )}
+                  className="p-1 hover:scale-110 transition-transform"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  <Trash2 className="w-3.5 h-3.5 text-accent-600" />
                 </button>
               </div>
             ))}
@@ -452,32 +430,32 @@ export default function ChatPage() {
         </>)}
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex flex-col min-w-0">
         <div className={cn(
-          "flex items-center justify-between px-4 lg:px-6 py-4 border-b-2 backdrop-blur-xl relative z-10",
-          darkMode ? "border-teal-800 bg-teal-950/60" : "border-teal-200 bg-white/60"
+          "flex items-center justify-between px-4 lg:px-6 py-3 border-b-4",
+          darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
         )}>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)} 
               className={cn(
-                "p-2.5 rounded-xl transition-all duration-300 hover:scale-110",
-                darkMode ? "hover:bg-teal-900" : "hover:bg-teal-100"
+                "p-2 border-3 transition-colors",
+                darkMode ? "border-white hover:bg-white hover:text-neutral-900" : "border-neutral-900 hover:bg-neutral-900 hover:text-white"
               )}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-            <img src="/PharmGPT.png" alt="PharmGPT" className="w-9 h-9 drop-shadow-lg" />
-            <span className="font-display font-bold text-lg hidden sm:block">PharmGPT</span>
+            <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
+            <span className="font-display font-black text-lg hidden sm:block">PharmGPT</span>
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setMode('fast')} 
               className={cn(
-                "p-2.5 rounded-xl transition-all duration-300 hover:scale-110",
+                "p-2 border-3 transition-all duration-200",
                 mode === 'fast' 
-                  ? "bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-lg shadow-teal-500/40" 
-                  : (darkMode ? "hover:bg-teal-900 text-teal-400" : "hover:bg-teal-100 text-teal-600")
+                  ? (darkMode ? "bg-white text-neutral-900 border-white" : "bg-neutral-900 text-white border-neutral-900")
+                  : (darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900")
               )} 
               title="Fast mode"
             >
@@ -486,21 +464,21 @@ export default function ChatPage() {
             <button 
               onClick={() => setMode('detailed')} 
               className={cn(
-                "p-2.5 rounded-xl transition-all duration-300 hover:scale-110",
+                "p-2 border-3 transition-all duration-200",
                 mode === 'detailed' 
-                  ? "bg-gradient-to-r from-accent-600 to-accent-500 text-white shadow-lg shadow-accent-500/40" 
-                  : (darkMode ? "hover:bg-teal-900 text-teal-400" : "hover:bg-teal-100 text-teal-600")
+                  ? (darkMode ? "bg-white text-neutral-900 border-white" : "bg-neutral-900 text-white border-neutral-900")
+                  : (darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900")
               )} 
               title="Detailed mode"
             >
               <Brain className="w-4 h-4" />
             </button>
-            <div className={cn("w-px h-6 mx-1", darkMode ? "bg-teal-800" : "bg-teal-300")} />
+            <div className={cn("w-px h-6 mx-1 border-l-2", darkMode ? "border-neutral-700" : "border-neutral-300")} />
             <button 
               onClick={toggleDarkMode} 
               className={cn(
-                "p-2.5 rounded-xl transition-all duration-300 hover:scale-110",
-                darkMode ? "hover:bg-teal-900 text-teal-400" : "hover:bg-teal-100 text-teal-600"
+                "p-2 border-3 transition-colors",
+                darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900"
               )} 
               title="Toggle theme"
             >
@@ -509,19 +487,16 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pb-32 relative">
+        <div className="flex-1 overflow-y-auto pb-32">
           {!conversationId ? (
             <div className="flex items-center justify-center h-full p-4">
-              <div className="text-center animate-fade-in">
-                <img src="/PharmGPT.png" alt="PharmGPT" className="w-20 h-20 mx-auto mb-6 drop-shadow-2xl animate-float" />
-                <h2 className={cn(
-                  "text-2xl lg:text-3xl font-display font-bold mb-3",
-                  darkMode ? "text-teal-50" : "text-teal-900"
-                )}>
-                  Welcome to PharmGPT
+              <div className="text-center">
+                <img src="/PharmGPT.png" alt="PharmGPT" className="w-16 h-16 mx-auto mb-4" />
+                <h2 className="text-2xl lg:text-3xl font-display font-black mb-2">
+                  PharmGPT System
                 </h2>
-                <p className={cn("text-sm", darkMode ? "text-teal-400" : "text-teal-600")}>
-                  Start a new conversation
+                <p className="text-sm font-sans uppercase tracking-wider">
+                  Initialize conversation
                 </p>
               </div>
             </div>
@@ -530,57 +505,57 @@ export default function ChatPage() {
               <div className="ai-loader"></div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 lg:py-10">
+            <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6">
               {messages.map((message, idx) => (
                 <div 
                   key={message.id} 
                   className={cn(
-                    "mb-8 lg:mb-10 flex animate-fade-in",
+                    "mb-6 flex",
                     message.role === 'user' ? "justify-end" : "justify-start"
                   )}
-                  style={{ animationDelay: `${idx * 0.05}s` }}
                 >
                   {message.role === 'user' ? (
                     <div className={cn(
-                      "max-w-[85%] lg:max-w-[70%] rounded-2xl px-5 py-4 shadow-xl transition-all duration-300 hover:scale-[1.02]",
+                      "max-w-[85%] lg:max-w-[70%] px-4 py-3 border-4",
                       darkMode 
-                        ? "bg-gradient-to-br from-teal-700 to-teal-600 text-teal-50 shadow-teal-900/40" 
-                        : "bg-gradient-to-br from-teal-500 to-teal-400 text-white shadow-teal-500/30"
+                        ? "bg-white text-neutral-900 border-white" 
+                        : "bg-neutral-900 text-white border-neutral-900"
                     )}>
                       {message.metadata?.attachedFiles && message.metadata.attachedFiles.length > 0 && (
-                        <div className="mb-4 space-y-2">
+                        <div className="mb-3 space-y-2">
                           {message.metadata.attachedFiles.map((file: any) => (
-                            <div key={file.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/10 backdrop-blur">
-                              <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                                <Paperclip className="w-4 h-4" />
-                              </div>
+                            <div key={file.id} className={cn(
+                              "flex items-center gap-2 px-2 py-1 border-2",
+                              darkMode ? "border-neutral-900 bg-neutral-100" : "border-white bg-neutral-800"
+                            )}>
+                              <Paperclip className="w-3 h-3 shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-sm truncate">{file.name}</div>
+                                <div className="text-xs font-bold uppercase truncate">{file.name}</div>
                               </div>
                             </div>
                           ))}
                         </div>
                       )}
-                      <div className="text-sm leading-relaxed break-words">{message.content}</div>
+                      <div className="text-sm font-sans leading-relaxed break-words">{message.content}</div>
                     </div>
                   ) : (
-                    <div className="flex gap-4 max-w-full">
-                      <img src="/PharmGPT.png" alt="AI" className="w-10 h-10 rounded-xl shrink-0 drop-shadow-lg" />
+                    <div className="flex gap-3 max-w-full">
+                      <img src="/PharmGPT.png" alt="AI" className="w-8 h-8 shrink-0" />
                       <div className={cn(
-                        "flex-1 min-w-0 rounded-2xl px-5 py-4 shadow-xl backdrop-blur-sm",
+                        "flex-1 min-w-0 px-4 py-3 border-4",
                         darkMode 
-                          ? "bg-teal-950/60 border-2 border-teal-800 shadow-teal-900/30" 
-                          : "bg-white/80 border-2 border-teal-200 shadow-teal-500/20"
+                          ? "bg-neutral-900 border-neutral-700" 
+                          : "bg-white border-neutral-300"
                       )}>
                         {!message.content ? (
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3">
                             <div className="ai-loader scale-75"></div>
-                            <span className={cn("text-sm font-medium", darkMode ? "text-teal-400" : "text-teal-600")}>
-                              Thinking...
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                              Processing...
                             </span>
                           </div>
                         ) : (
-                          <div className="text-sm leading-relaxed break-words">{formatMessage(message.content)}</div>
+                          <div className="text-sm font-sans leading-relaxed break-words">{formatMessage(message.content)}</div>
                         )}
                       </div>
                     </div>
@@ -594,71 +569,68 @@ export default function ChatPage() {
 
         {conversationId && (
           <div className={cn(
-            "fixed bottom-0 left-0 right-0 p-4 lg:p-6 backdrop-blur-xl border-t-2 z-20",
-            darkMode ? "bg-teal-950/80 border-teal-800" : "bg-white/80 border-teal-200",
+            "fixed bottom-0 left-0 right-0 p-4 border-t-4 z-20",
+            darkMode ? "bg-neutral-900 border-white" : "bg-white border-neutral-900",
             sidebarOpen && window.innerWidth >= 1024 ? "lg:left-72" : ""
           )}>
             <div className="max-w-4xl mx-auto">
               {uploadingFiles.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-3">
+                <div className="mb-3 flex flex-wrap gap-2">
                   {uploadingFiles.map(file => (
                     <div 
                       key={file.id} 
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm border-2 backdrop-blur-sm shadow-lg transition-all duration-300",
+                        "flex items-center gap-2 px-3 py-2 text-xs border-3",
                         darkMode 
-                          ? "bg-teal-950/60 border-teal-800" 
-                          : "bg-white/80 border-teal-200"
+                          ? "bg-neutral-800 border-neutral-700" 
+                          : "bg-neutral-50 border-neutral-300"
                       )}
                     >
                       <div className={cn(
-                        "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300",
-                        file.status === 'complete' ? 'bg-teal-500 shadow-lg shadow-teal-500/40' :
-                          file.status === 'error' ? 'bg-red-500 shadow-lg shadow-red-500/40' :
-                            'bg-accent-500 shadow-lg shadow-accent-500/40'
+                        "w-6 h-6 flex items-center justify-center shrink-0 border-2",
+                        file.status === 'complete' ? 'bg-primary-600 border-primary-600' :
+                          file.status === 'error' ? 'bg-accent-600 border-accent-600' :
+                            'bg-neutral-900 border-neutral-900'
                       )}>
                         {file.status === 'complete' ? (
-                          <Check className="w-4 h-4 text-white" />
+                          <Check className="w-3 h-3 text-white" />
                         ) : file.status === 'error' ? (
-                          <X className="w-4 h-4 text-white" />
+                          <X className="w-3 h-3 text-white" />
                         ) : (
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                          <Loader2 className="w-3 h-3 text-white animate-spin" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">{file.name}</div>
-                        <div className={cn("text-xs font-medium", darkMode ? "text-teal-400" : "text-teal-600")}>
-                          {file.status === 'complete' ? 'Ready' :
-                            file.status === 'error' ? 'Failed' :
+                        <div className="font-bold uppercase truncate">{file.name}</div>
+                        <div className="text-xs">
+                          {file.status === 'complete' ? 'READY' :
+                            file.status === 'error' ? 'FAILED' :
                               `${file.progress}%`}
                         </div>
                       </div>
                       <button 
                         onClick={() => removeUploadingFile(file.id)} 
-                        className={cn(
-                          "p-1.5 rounded-lg shrink-0 transition-all duration-300 hover:scale-110",
-                          darkMode ? "hover:bg-teal-900" : "hover:bg-teal-100"
-                        )}
+                        className="p-1 hover:scale-110 transition-transform"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
               <div className={cn(
-                "flex items-end gap-3 rounded-2xl p-3 shadow-2xl border-2 backdrop-blur-sm",
+                "flex items-end gap-2 p-2 border-4",
                 darkMode 
-                  ? "bg-teal-950/60 border-teal-800 shadow-teal-900/40" 
-                  : "bg-white/80 border-teal-200 shadow-teal-500/20"
+                  ? "bg-neutral-900 border-white" 
+                  : "bg-white border-neutral-900"
               )}>
-                <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept=".pdf,.docx,.txt,.pptx,.ppt,.png,.jpg,.jpeg,.gif,.bmp,.webp" className="hidden" />
+                <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept=".pdf,.docx,.txt,.pptx,.ppt,.xlsx,.csv,.sdf,.mol,.png,.jpg,.jpeg,.gif,.bmp,.webp,.md" className="hidden" />
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
                   disabled={uploadingFiles.some(f => f.status === 'uploading')} 
                   className={cn(
-                    "p-3 rounded-xl shrink-0 transition-all duration-300 hover:scale-110",
-                    darkMode ? "hover:bg-teal-900 text-teal-400" : "hover:bg-teal-100 text-teal-600"
+                    "p-2 border-3 shrink-0 transition-colors",
+                    darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900"
                   )} 
                   title="Upload document"
                 >
@@ -669,11 +641,8 @@ export default function ChatPage() {
                   value={inputMessage} 
                   onChange={handleTextareaChange} 
                   onKeyDown={handleKeyDown} 
-                  placeholder="Message PharmGPT..." 
-                  className={cn(
-                    "flex-1 resize-none bg-transparent border-none outline-none px-2 py-3 max-h-[200px] font-medium",
-                    darkMode ? "text-teal-50 placeholder-teal-700" : "text-teal-900 placeholder-teal-400"
-                  )} 
+                  placeholder="Enter query..." 
+                  className="flex-1 resize-none bg-transparent border-none outline-none px-2 py-2 max-h-[200px] font-sans text-sm"
                   rows={1} 
                   style={{ minHeight: '24px' }} 
                 />
@@ -681,21 +650,18 @@ export default function ChatPage() {
                   onClick={sendMessage} 
                   disabled={!inputMessage.trim()} 
                   className={cn(
-                    "p-3 rounded-xl shrink-0 transition-all duration-300",
+                    "p-2 border-3 shrink-0 transition-all duration-200",
                     inputMessage.trim() 
-                      ? "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-lg shadow-teal-500/40 hover:scale-110" 
-                      : (darkMode ? "bg-teal-900/30 text-teal-800" : "bg-teal-100 text-teal-300")
+                      ? (darkMode ? "bg-white text-neutral-900 border-white hover:translate-y-0.5" : "bg-neutral-900 text-white border-neutral-900 hover:translate-y-0.5")
+                      : (darkMode ? "border-neutral-800 text-neutral-800" : "border-neutral-200 text-neutral-300")
                   )}
                 >
                   <Send className="w-5 h-5" />
                 </button>
               </div>
-              <p className={cn(
-                "text-xs text-center mt-3 font-medium",
-                darkMode ? "text-teal-500" : "text-teal-600"
-              )}>
-                {mode === 'fast' ? 'Fast ⚡' : 'Detailed 🧠'}
-                {currentConversation && currentConversation.document_count > 0 && ` • ${currentConversation.document_count} doc(s)`}
+              <p className="text-xs text-center mt-2 font-sans uppercase tracking-wider">
+                {mode === 'fast' ? '[FAST MODE]' : '[DETAILED MODE]'}
+                {currentConversation && currentConversation.document_count > 0 && ` • ${currentConversation.document_count} DOCS`}
               </p>
             </div>
           </div>
