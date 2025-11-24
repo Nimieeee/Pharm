@@ -392,7 +392,7 @@ export default function ChatPage() {
             <button 
               onClick={() => setSidebarOpen(false)} 
               className={cn(
-                "lg:hidden p-2 border-3 transition-colors",
+                "lg:hidden p-2 border-4 transition-colors",
                 darkMode ? "border-white hover:bg-white hover:text-neutral-900" : "border-neutral-900 hover:bg-neutral-900 hover:text-white"
               )}
             >
@@ -404,7 +404,7 @@ export default function ChatPage() {
               <div 
                 key={conv.id} 
                 className={cn(
-                  "group flex items-center gap-3 px-3 py-3 mb-2 cursor-pointer transition-all duration-200 border-3",
+                  "group flex items-center gap-3 px-3 py-3 mb-2 cursor-pointer transition-all duration-200 border-4",
                   conversationId === conv.id 
                     ? (darkMode 
                         ? "bg-white text-neutral-900 border-white" 
@@ -440,7 +440,7 @@ export default function ChatPage() {
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)} 
               className={cn(
-                "p-2 border-3 transition-colors",
+                "p-2 border-4 transition-colors",
                 darkMode ? "border-white hover:bg-white hover:text-neutral-900" : "border-neutral-900 hover:bg-neutral-900 hover:text-white"
               )}
             >
@@ -453,7 +453,7 @@ export default function ChatPage() {
             <button 
               onClick={() => setMode('fast')} 
               className={cn(
-                "p-2 border-3 transition-all duration-200",
+                "p-2 border-4 transition-all duration-200",
                 mode === 'fast' 
                   ? (darkMode ? "bg-white text-neutral-900 border-white" : "bg-neutral-900 text-white border-neutral-900")
                   : (darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900")
@@ -465,7 +465,7 @@ export default function ChatPage() {
             <button 
               onClick={() => setMode('detailed')} 
               className={cn(
-                "p-2 border-3 transition-all duration-200",
+                "p-2 border-4 transition-all duration-200",
                 mode === 'detailed' 
                   ? (darkMode ? "bg-white text-neutral-900 border-white" : "bg-neutral-900 text-white border-neutral-900")
                   : (darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900")
@@ -478,7 +478,7 @@ export default function ChatPage() {
             <button 
               onClick={toggleDarkMode} 
               className={cn(
-                "p-2 border-3 transition-colors",
+                "p-2 border-4 transition-colors",
                 darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900"
               )} 
               title="Toggle theme"
@@ -583,7 +583,7 @@ export default function ChatPage() {
                     <div 
                       key={file.id} 
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 text-xs border-3",
+                        "flex items-center gap-2 px-3 py-2 text-xs border-4",
                         darkMode 
                           ? "bg-neutral-800 border-neutral-700" 
                           : "bg-neutral-50 border-neutral-300"
@@ -632,7 +632,7 @@ export default function ChatPage() {
                   onClick={() => fileInputRef.current?.click()} 
                   disabled={uploadingFiles.some(f => f.status === 'uploading')} 
                   className={cn(
-                    "p-2 border-3 shrink-0 transition-colors",
+                    "p-2 border-4 shrink-0 transition-colors",
                     darkMode ? "border-neutral-700 hover:border-white" : "border-neutral-300 hover:border-neutral-900"
                   )} 
                   title="Upload document"
@@ -653,7 +653,7 @@ export default function ChatPage() {
                   onClick={sendMessage} 
                   disabled={!inputMessage.trim()} 
                   className={cn(
-                    "p-2 border-3 shrink-0 transition-all duration-200",
+                    "p-2 border-4 shrink-0 transition-all duration-200",
                     inputMessage.trim() 
                       ? (darkMode ? "bg-white text-neutral-900 border-white hover:translate-y-0.5" : "bg-neutral-900 text-white border-neutral-900 hover:translate-y-0.5")
                       : (darkMode ? "border-neutral-800 text-neutral-800" : "border-neutral-200 text-neutral-300")

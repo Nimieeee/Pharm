@@ -66,7 +66,7 @@
   }
   
   .btn-outline {
-    @apply btn border-3 border-neutral-900 bg-transparent text-neutral-900 hover:bg-neutral-900 hover:text-white;
+    @apply btn border-4 border-neutral-900 bg-transparent text-neutral-900 hover:bg-neutral-900 hover:text-white;
   }
   
   .dark .btn-outline {
@@ -94,7 +94,7 @@
   }
   
   .input {
-    @apply flex h-11 w-full border-3 border-neutral-900 bg-white px-4 py-2 text-sm font-sans file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200;
+    @apply flex h-11 w-full border-4 border-neutral-900 bg-white px-4 py-2 text-sm font-sans file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200;
   }
   
   .dark .input {
@@ -102,7 +102,7 @@
   }
   
   .card {
-    @apply border-3 border-neutral-900 bg-white text-neutral-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)];
+    @apply border-4 border-neutral-900 bg-white text-neutral-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)];
   }
   
   .dark .card {
@@ -131,7 +131,7 @@
   
   /* Stamp effect */
   .stamp {
-    @apply inline-block px-4 py-2 border-3 border-accent-600 text-accent-600 font-bold uppercase tracking-wider transform -rotate-12;
+    @apply inline-block px-4 py-2 border-4 border-accent-600 text-accent-600 font-bold uppercase tracking-wider transform -rotate-12;
     box-shadow: 2px 2px 0px rgba(220, 38, 38, 0.3);
   }
   
@@ -189,7 +189,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neutral-900 border-3 border-neutral-900;
+  @apply bg-neutral-900 border-4 border-neutral-900;
 }
 
 .dark ::-webkit-scrollbar-thumb {
@@ -202,7 +202,7 @@
 
 /* Loading spinner */
 .spinner {
-  @apply inline-block w-4 h-4 border-3 border-current border-r-transparent animate-spin;
+  @apply inline-block w-4 h-4 border-4 border-current border-r-transparent animate-spin;
 }
 
 /* Custom AI Loading Spinner - Brutalist style */

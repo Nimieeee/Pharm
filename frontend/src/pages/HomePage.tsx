@@ -88,7 +88,7 @@ export default function HomePage() {
               {/* Demo credentials */}
               {!isAuthenticated && (
                 <div className={cn(
-                  "inline-block p-4 border-3 animate-fade-in",
+                  "inline-block p-4 border-4 animate-fade-in",
                   darkMode ? "border-neutral-700 bg-neutral-800" : "border-neutral-300 bg-neutral-50"
                 )} style={{ animationDelay: '0.4s' }}>
                   <p className="text-xs font-sans uppercase tracking-wider">
