@@ -61,10 +61,10 @@ export default function RegisterForm({ className }: RegisterFormProps) {
   return (
     <div className={cn('w-full max-w-md mx-auto', className)}>
       <div className="text-center mb-8">
-        <h1 className={cn("text-3xl font-bold mb-2", darkMode ? "text-white" : "text-gray-900")}>
+        <h1 className={cn("text-3xl font-semibold mb-2", darkMode ? "text-white" : "text-slate-900")}>
           Create your account
         </h1>
-        <p className={cn(darkMode ? "text-gray-300" : "text-gray-600")}>
+        <p className={cn(darkMode ? "text-slate-400" : "text-slate-600")}>
           Join PharmGPT to access AI-powered pharmacology assistance
         </p>
       </div>
@@ -73,12 +73,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
         {/* Name Fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="first_name" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
+            <label htmlFor="first_name" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
               First name
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
+                <User className={cn("h-5 w-5", darkMode ? "text-slate-500" : "text-slate-400")} />
               </div>
               <input
                 {...register('first_name')}
@@ -87,7 +87,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
                 autoComplete="given-name"
                 className={cn(
                   'input pl-10',
-                  darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
+                  darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
                   errors.first_name && 'border-red-500 focus:ring-red-500'
                 )}
                 placeholder="First name"
@@ -100,7 +100,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
           </div>
 
           <div>
-            <label htmlFor="last_name" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
+            <label htmlFor="last_name" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
               Last name
             </label>
             <input
@@ -110,7 +110,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="family-name"
               className={cn(
                 'input',
-                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
+                darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
                 errors.last_name && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Last name"
@@ -124,12 +124,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
+          <label htmlFor="email" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
             Email address
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
+              <Mail className={cn("h-5 w-5", darkMode ? "text-slate-500" : "text-slate-400")} />
             </div>
             <input
               {...register('email')}
@@ -138,7 +138,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="email"
               className={cn(
                 'input pl-10',
-                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
+                darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
                 errors.email && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Enter your email"
@@ -152,12 +152,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
+          <label htmlFor="password" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
             Password
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
+              <Lock className={cn("h-5 w-5", darkMode ? "text-slate-500" : "text-slate-400")} />
             </div>
             <input
               {...register('password')}
@@ -166,7 +166,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="new-password"
               className={cn(
                 'input pl-10 pr-10',
-                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
+                darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
                 errors.password && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Create a password"
@@ -179,9 +179,9 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               disabled={isFormLoading}
             >
               {showPassword ? (
-                <EyeOff className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
+                <EyeOff className={cn("h-5 w-5", darkMode ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-600")} />
               ) : (
-                <Eye className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
+                <Eye className={cn("h-5 w-5", darkMode ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-600")} />
               )}
             </button>
           </div>
@@ -211,12 +211,12 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
         {/* Confirm Password Field */}
         <div>
-          <label htmlFor="confirmPassword" className={cn("block text-sm font-medium mb-2", darkMode ? "text-gray-200" : "text-gray-700")}>
+          <label htmlFor="confirmPassword" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
             Confirm password
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className={cn("h-5 w-5", darkMode ? "text-gray-500" : "text-gray-400")} />
+              <Lock className={cn("h-5 w-5", darkMode ? "text-slate-500" : "text-slate-400")} />
             </div>
             <input
               {...register('confirmPassword')}
@@ -225,7 +225,7 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               autoComplete="new-password"
               className={cn(
                 'input pl-10 pr-10',
-                darkMode && 'bg-gray-800 border-gray-700 text-white placeholder-gray-500',
+                darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
                 errors.confirmPassword && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Confirm your password"
@@ -238,9 +238,9 @@ export default function RegisterForm({ className }: RegisterFormProps) {
               disabled={isFormLoading}
             >
               {showConfirmPassword ? (
-                <EyeOff className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
+                <EyeOff className={cn("h-5 w-5", darkMode ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-600")} />
               ) : (
-                <Eye className={cn("h-5 w-5", darkMode ? "text-gray-500 hover:text-gray-400" : "text-gray-400 hover:text-gray-600")} />
+                <Eye className={cn("h-5 w-5", darkMode ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-600")} />
               )}
             </button>
           </div>
@@ -271,20 +271,20 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
       {/* Links */}
       <div className="mt-6 text-center space-y-2">
-        <p className={cn("text-sm", darkMode ? "text-gray-300" : "text-gray-600")}>
+        <p className={cn("text-sm", darkMode ? "text-slate-400" : "text-slate-600")}>
           Already have an account?{' '}
           <Link
             to="/login"
-            className={cn("font-medium transition-colors", darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}
+            className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors"
           >
             Sign in
           </Link>
         </p>
         
-        <p className={cn("text-sm", darkMode ? "text-gray-300" : "text-gray-600")}>
+        <p className={cn("text-sm", darkMode ? "text-slate-400" : "text-slate-600")}>
           <Link
             to="/"
-            className={cn("font-medium transition-colors", darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}
+            className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors"
           >
             Back to home
           </Link>
@@ -293,13 +293,13 @@ export default function RegisterForm({ className }: RegisterFormProps) {
 
       {/* Terms */}
       <div className="mt-6 text-center">
-        <p className={cn("text-xs", darkMode ? "text-gray-400" : "text-gray-500")}>
+        <p className={cn("text-xs", darkMode ? "text-slate-500" : "text-slate-500")}>
           By creating an account, you agree to our{' '}
-          <a href="#" className={cn(darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}>
+          <a href="#" className="text-emerald-500 hover:text-emerald-400 transition-colors">
             Terms of Service
           </a>{' '}
           and{' '}
-          <a href="#" className={cn(darkMode ? "text-blue-400 hover:text-blue-300" : "text-primary-600 hover:text-primary-500")}>
+          <a href="#" className="text-emerald-500 hover:text-emerald-400 transition-colors">
             Privacy Policy
           </a>
         </p>
