@@ -51,24 +51,58 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
     abortControllerRef.current = new AbortController()
 
     try {
-      const response = await fetch('/api/v1/ai/chat/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
-        },
-        body: JSON.stringify({
-          message: content.trim(),
-          conversation_id: conversationId,
-          mode,
-          use_rag: true,
-          metadata: documentIds && documentIds.length > 0 ? { document_ids: documentIds } : {}
-        }),
-        signal: abortControllerRef.current.signal
-      })
+      // Try streaming endpoint first
+      let response: Response
+      let useStreaming = true
+      
+      try {
+        response = await fetch('/api/v1/ai/chat/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
+          },
+          body: JSON.stringify({
+            message: content.trim(),
+            conversation_id: conversationId,
+            mode,
+            use_rag: true,
+            metadata: documentIds && documentIds.length > 0 ? { document_ids: documentIds } : {}
+          }),
+          signal: abortControllerRef.current.signal
+        })
+      } catch (streamError) {
+        // Fallback to regular endpoint if streaming fails
+        console.log('Streaming endpoint failed, using regular endpoint')
+        useStreaming = false
+        response = await fetch('/api/v1/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
+          },
+          body: JSON.stringify({
+            message: content.trim(),
+            conversation_id: conversationId,
+            mode,
+            use_rag: true,
+            metadata: documentIds && documentIds.length > 0 ? { document_ids: documentIds } : {}
+          }),
+          signal: abortControllerRef.current.signal
+        })
+      }
 
       if (!response.ok) {
         throw new Error('Failed to get response')
+      }
+      
+      // Handle non-streaming response
+      if (!useStreaming) {
+        const data = await response.json()
+        assistantMessage.content = data.response
+        setMessages(prev => [...prev, assistantMessage])
+        onNewMessage?.(assistantMessage)
+        return
       }
 
       const reader = response.body?.getReader()
