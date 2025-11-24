@@ -210,6 +210,14 @@ export default function ChatPage() {
               <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
               <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>PharmGPT</span>
             </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 rounded-full transition-all hover:bg-opacity-10"
+              style={{ color: 'var(--text-secondary)' }}
+              title="Close sidebar"
+            >
+              <X size={18} strokeWidth={2} />
+            </button>
           </div>
 
           {/* New Chat Button */}
@@ -306,17 +314,20 @@ export default function ChatPage() {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden" style={{ marginLeft: sidebarOpen ? '280px' : '0' }}>
         {/* Top Bar with Controls */}
         <header className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-spa transition-spa hover:bg-opacity-10"
-              style={{ color: 'var(--text-secondary)' }}
+              className="p-2 rounded-full transition-all hover:bg-opacity-10"
+              style={{ 
+                color: 'var(--text-secondary)',
+                background: sidebarOpen ? 'transparent' : 'var(--bg-secondary)'
+              }}
               title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
             >
-              <Menu size={20} strokeWidth={2} />
+              {sidebarOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
             </button>
             <h1 className="text-lg font-semibold hidden sm:block" style={{ color: 'var(--text-primary)' }}>
               {currentConversation?.title || 'PharmGPT'}
@@ -379,8 +390,8 @@ export default function ChatPage() {
         </header>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-4">
-          <div className="max-w-[48rem] mx-auto py-8">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-[48rem] mx-auto px-4 py-8">
             {!conversationId ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-20">
                 <MessageSquare size={64} className="mb-6" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
@@ -416,8 +427,8 @@ export default function ChatPage() {
 
         {/* Floating Input Container */}
         {conversationId && (
-          <div className="sticky bottom-0 px-4 py-6" style={{ background: 'linear-gradient(to top, var(--bg-primary) 80%, transparent)' }}>
-            <div className="max-w-[48rem] mx-auto">
+          <div className="sticky bottom-0 py-6" style={{ background: 'linear-gradient(to top, var(--bg-primary) 80%, transparent)' }}>
+            <div className="max-w-[48rem] mx-auto px-4">
               {/* Uploading Files */}
               {uploadingFiles.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
