@@ -45,12 +45,7 @@ export default function Navbar() {
   const navItems = getNavItems()
 
   return (
-    <nav className={cn(
-      "sticky top-0 z-50 border-b backdrop-blur-xl",
-      darkMode 
-        ? "bg-slate-950/80 border-slate-800" 
-        : "bg-white/80 border-slate-200"
-    )}>
+    <nav className="sticky top-0 z-50 border-b border-surface backdrop-blur-xl bg-surface-primary/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and brand */}
@@ -61,10 +56,7 @@ export default function Navbar() {
                 alt="PharmGPT" 
                 className="w-8 h-8 transition-transform group-hover:scale-110" 
               />
-              <span className={cn(
-                "text-lg font-semibold transition-colors",
-                darkMode ? "text-white" : "text-slate-900"
-              )}>
+              <span className="text-lg font-medium transition-colors text-content-primary">
                 PharmGPT
               </span>
             </Link>
@@ -80,16 +72,10 @@ export default function Navbar() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                    'flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 touch-target',
                     active
-                      ? (darkMode 
-                          ? 'bg-emerald-500/10 text-emerald-400' 
-                          : 'bg-emerald-50 text-emerald-600'
-                        )
-                      : (darkMode 
-                          ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' 
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        )
+                      ? 'bg-surface-tertiary text-content-primary'
+                      : 'text-content-secondary hover:text-content-primary hover:bg-surface-secondary'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -105,14 +91,9 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className={cn(
-                    "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200",
-                    darkMode 
-                      ? "text-slate-300 hover:text-white hover:bg-slate-800" 
-                      : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-                  )}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200 text-content-secondary hover:text-content-primary hover:bg-surface-secondary touch-target"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gemini-gradient flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <span className="text-sm font-medium">
@@ -121,21 +102,11 @@ export default function Navbar() {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className={cn(
-                    "absolute right-0 mt-2 w-56 rounded-xl shadow-lg py-2 z-50 border backdrop-blur-xl", 
-                    darkMode 
-                      ? "bg-slate-900/95 border-slate-800" 
-                      : "bg-white/95 border-slate-200"
-                  )}>
-                    <div className={cn(
-                      "px-4 py-3 text-sm border-b", 
-                      darkMode 
-                        ? "text-slate-400 border-slate-800" 
-                        : "text-slate-600 border-slate-200"
-                    )}>
+                  <div className="absolute right-0 mt-2 w-56 rounded-gemini shadow-gemini-lg py-2 z-50 border border-surface backdrop-blur-xl bg-surface-secondary/95">
+                    <div className="px-4 py-3 text-sm border-b border-surface text-content-secondary">
                       {user?.email}
                       {user?.is_admin && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gemini-gradient text-white">
                           Admin
                         </span>
                       )}
@@ -143,12 +114,7 @@ export default function Navbar() {
                     
                     <Link
                       to="/"
-                      className={cn(
-                        "flex items-center space-x-2 px-4 py-2 text-sm transition-colors", 
-                        darkMode 
-                          ? "text-slate-300 hover:bg-slate-800 hover:text-white" 
-                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                      )}
+                      className="flex items-center space-x-2 px-4 py-2 text-sm transition-colors text-content-secondary hover:bg-surface-tertiary hover:text-content-primary touch-target"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
                       <Home className="w-4 h-4" />
@@ -157,12 +123,7 @@ export default function Navbar() {
                     
                     <button
                       onClick={handleLogout}
-                      className={cn(
-                        "flex items-center space-x-2 px-4 py-2 text-sm w-full transition-colors", 
-                        darkMode 
-                          ? "text-slate-300 hover:bg-slate-800 hover:text-white" 
-                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                      )}
+                      className="flex items-center space-x-2 px-4 py-2 text-sm w-full transition-colors text-content-secondary hover:bg-surface-tertiary hover:text-content-primary touch-target"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Sign out</span>
@@ -174,18 +135,13 @@ export default function Navbar() {
               <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200", 
-                    darkMode 
-                      ? "text-slate-300 hover:text-white hover:bg-slate-800" 
-                      : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-                  )}
+                  className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-content-secondary hover:text-content-primary hover:bg-surface-secondary touch-target"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="btn-primary btn-sm"
+                  className="px-4 py-2 rounded-gemini text-sm font-medium bg-gemini-gradient text-white hover:opacity-90 transition-opacity touch-target"
                 >
                   Sign up
                 </Link>
@@ -197,12 +153,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={cn(
-                "p-2 rounded-lg transition-colors",
-                darkMode 
-                  ? "text-slate-300 hover:text-white hover:bg-slate-800" 
-                  : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-              )}
+              className="p-2 rounded-xl transition-colors text-content-secondary hover:text-content-primary hover:bg-surface-secondary touch-target"
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -216,13 +167,8 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden border-t backdrop-blur-xl">
-          <div className={cn(
-            "px-4 py-3 space-y-2", 
-            darkMode 
-              ? "bg-slate-950/95 border-slate-800" 
-              : "bg-white/95 border-slate-200"
-          )}>
+        <div className="md:hidden border-t border-surface backdrop-blur-xl">
+          <div className="px-4 py-3 space-y-2 bg-surface-primary/95">
             {navItems.map((item) => {
               const Icon = item.icon
               const active = isActivePath(item.href)
@@ -231,16 +177,10 @@ export default function Navbar() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200',
+                    'flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 touch-target',
                     active
-                      ? (darkMode 
-                          ? 'bg-emerald-500/10 text-emerald-400' 
-                          : 'bg-emerald-50 text-emerald-600'
-                        )
-                      : (darkMode 
-                          ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' 
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        )
+                      ? 'bg-surface-tertiary text-content-primary'
+                      : 'text-content-secondary hover:text-content-primary hover:bg-surface-secondary'
                   )}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -251,56 +191,35 @@ export default function Navbar() {
             })}
             
             {isAuthenticated ? (
-              <div className={cn(
-                "border-t pt-4 mt-4", 
-                darkMode ? "border-slate-800" : "border-slate-200"
-              )}>
-                <div className={cn(
-                  "px-4 py-3 text-sm rounded-lg mb-2", 
-                  darkMode 
-                    ? "text-slate-400 bg-slate-900/50" 
-                    : "text-slate-600 bg-slate-50"
-                )}>
+              <div className="border-t border-surface pt-4 mt-4">
+                <div className="px-4 py-3 text-sm rounded-xl mb-2 text-content-secondary bg-surface-secondary">
                   {user?.email}
                   {user?.is_admin && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gemini-gradient text-white">
                       Admin
                     </span>
                   )}
                 </div>
                 <button
                   onClick={handleLogout}
-                  className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium w-full transition-all duration-200", 
-                    darkMode 
-                      ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" 
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                  )}
+                  className="flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium w-full transition-all duration-200 text-content-secondary hover:text-content-primary hover:bg-surface-secondary touch-target"
                 >
                   <LogOut className="w-5 h-5" />
                   <span>Sign out</span>
                 </button>
               </div>
             ) : (
-              <div className={cn(
-                "border-t pt-4 mt-4 space-y-2", 
-                darkMode ? "border-slate-800" : "border-slate-200"
-              )}>
+              <div className="border-t border-surface pt-4 mt-4 space-y-2">
                 <Link
                   to="/login"
-                  className={cn(
-                    "block px-4 py-3 rounded-lg text-base font-medium transition-all duration-200", 
-                    darkMode 
-                      ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" 
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                  )}
+                  className="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 text-content-secondary hover:text-content-primary hover:bg-surface-secondary touch-target"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="block px-4 py-3 rounded-lg text-base font-medium text-white bg-gradient-to-br from-emerald-500 to-teal-600 hover:shadow-lg transition-all duration-200"
+                  className="block px-4 py-3 rounded-gemini text-base font-medium text-white bg-gemini-gradient hover:opacity-90 transition-opacity touch-target"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign up

@@ -10,16 +10,16 @@ export default function RegisterPage() {
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-screen flex items-center justify-center", darkMode ? "bg-slate-950" : "bg-slate-50")}>
-        <div className="spinner w-8 h-8"></div>
+      <div className="min-h-screen flex items-center justify-center bg-surface-primary">
+        <div className="ai-loader"></div>
       </div>
     )
   }
 
   return (
-    <div className={cn("min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8", darkMode ? "bg-slate-950" : "bg-slate-50")}>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-surface-primary">
       <div className="w-full max-w-md">
-        <div className={cn("rounded-2xl shadow-xl p-8 border backdrop-blur-sm", darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200")}>
+        <div className="rounded-gemini shadow-gemini-lg p-8 border border-surface backdrop-blur-sm bg-surface-secondary/80">
           <RegisterForm />
         </div>
       </div>

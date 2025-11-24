@@ -10,10 +10,7 @@ export default function HomePage() {
   const { darkMode } = useTheme()
 
   return (
-    <div className={cn(
-      "min-h-screen relative",
-      darkMode ? "dark bg-slate-950" : "bg-slate-50"
-    )}>
+    <div className="min-h-screen relative bg-surface-primary">
       {/* Hero Section */}
       <section className="relative pt-20 pb-32 px-4 overflow-hidden">
         <div className="max-w-6xl mx-auto">
@@ -25,28 +22,22 @@ export default function HomePage() {
                 alt="PharmGPT" 
                 className="w-16 h-16 drop-shadow-lg" 
               />
-              <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-full blur-2xl -z-10"></div>
+              <div className="absolute -inset-4 bg-gemini-gradient opacity-20 rounded-full blur-2xl -z-10"></div>
             </div>
           </div>
           
           {/* Main Content */}
           <div className="text-center space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium dark:bg-emerald-900/30 dark:text-emerald-400">
-              <Sparkles className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-gemini-full bg-surface-secondary text-content-primary text-sm font-medium border border-surface">
+              <Sparkles className="w-4 h-4 text-gemini-gradient" />
               AI-Powered Pharmaceutical Intelligence
             </div>
             
-            <h1 className={cn(
-              "text-5xl md:text-7xl font-bold tracking-tight",
-              darkMode ? "text-white" : "text-slate-900"
-            )}>
-              Pharm<span className="gradient-text">GPT</span>
+            <h1 className="text-5xl md:text-7xl font-medium tracking-tight text-content-primary">
+              Pharm<span className="text-gemini-gradient">GPT</span>
             </h1>
             
-            <p className={cn(
-              "text-lg md:text-xl max-w-2xl mx-auto leading-relaxed",
-              darkMode ? "text-slate-300" : "text-slate-600"
-            )}>
+            <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed text-content-secondary">
               Advanced AI assistant for pharmacology research. Get instant insights on drug interactions, 
               mechanisms of action, and clinical applications.
             </p>
@@ -82,14 +73,9 @@ export default function HomePage() {
 
             {/* Demo credentials */}
             {!isAuthenticated && (
-              <div className={cn(
-                "inline-block px-4 py-3 rounded-xl animate-fade-in",
-                darkMode 
-                  ? "bg-slate-900/50 border border-slate-800" 
-                  : "bg-white/50 border border-slate-200"
-              )} style={{ animationDelay: '0.3s' }}>
-                <p className={cn("text-sm", darkMode ? "text-slate-400" : "text-slate-600")}>
-                  <span className="font-semibold">Demo:</span> admin@pharmgpt.com / admin123
+              <div className="inline-block px-4 py-3 rounded-gemini animate-fade-in bg-surface-secondary border border-surface" style={{ animationDelay: '0.3s' }}>
+                <p className="text-sm text-content-secondary">
+                  <span className="font-medium text-content-primary">Demo:</span> admin@pharmgpt.com / admin123
                 </p>
               </div>
             )}
@@ -102,73 +88,40 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <div className={cn(
-              "group p-8 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
-              darkMode 
-                ? "bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50" 
-                : "bg-white/50 border border-slate-200 hover:border-emerald-500/50 hover:shadow-xl"
-            )} style={{ animationDelay: '0.4s' }}>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="group p-8 rounded-gemini transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-surface-secondary border border-surface shadow-gemini hover:shadow-gemini-lg" style={{ animationDelay: '0.4s' }}>
+              <div className="w-12 h-12 rounded-xl bg-gemini-gradient flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <MessageSquare className="w-6 h-6 text-white" />
               </div>
-              <h3 className={cn(
-                "text-xl font-semibold mb-3",
-                darkMode ? "text-white" : "text-slate-900"
-              )}>
+              <h3 className="text-xl font-medium mb-3 text-content-primary">
                 Interactive Chat
               </h3>
-              <p className={cn(
-                "leading-relaxed",
-                darkMode ? "text-slate-400" : "text-slate-600"
-              )}>
+              <p className="leading-relaxed text-content-secondary">
                 Natural conversations about pharmaceutical topics with context-aware AI responses
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className={cn(
-              "group p-8 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
-              darkMode 
-                ? "bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50" 
-                : "bg-white/50 border border-slate-200 hover:border-emerald-500/50 hover:shadow-xl"
-            )} style={{ animationDelay: '0.5s' }}>
+            <div className="group p-8 rounded-gemini transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-surface-secondary border border-surface shadow-gemini hover:shadow-gemini-lg" style={{ animationDelay: '0.5s' }}>
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <FileText className="w-6 h-6 text-white" />
               </div>
-              <h3 className={cn(
-                "text-xl font-semibold mb-3",
-                darkMode ? "text-white" : "text-slate-900"
-              )}>
+              <h3 className="text-xl font-medium mb-3 text-content-primary">
                 Document Analysis
               </h3>
-              <p className={cn(
-                "leading-relaxed",
-                darkMode ? "text-slate-400" : "text-slate-600"
-              )}>
+              <p className="leading-relaxed text-content-secondary">
                 Upload research papers and clinical documents for intelligent Q&A
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className={cn(
-              "group p-8 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
-              darkMode 
-                ? "bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50" 
-                : "bg-white/50 border border-slate-200 hover:border-emerald-500/50 hover:shadow-xl"
-            )} style={{ animationDelay: '0.6s' }}>
+            <div className="group p-8 rounded-gemini transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-surface-secondary border border-surface shadow-gemini hover:shadow-gemini-lg" style={{ animationDelay: '0.6s' }}>
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Zap className="w-6 h-6 text-white" />
               </div>
-              <h3 className={cn(
-                "text-xl font-semibold mb-3",
-                darkMode ? "text-white" : "text-slate-900"
-              )}>
+              <h3 className="text-xl font-medium mb-3 text-content-primary">
                 Fast & Detailed Modes
               </h3>
-              <p className={cn(
-                "leading-relaxed",
-                darkMode ? "text-slate-400" : "text-slate-600"
-              )}>
+              <p className="leading-relaxed text-content-secondary">
                 Choose between quick answers or comprehensive analysis for your queries
               </p>
             </div>

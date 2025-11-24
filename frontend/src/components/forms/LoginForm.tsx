@@ -46,10 +46,10 @@ export default function LoginForm({ className }: LoginFormProps) {
   return (
     <div className={cn('w-full max-w-md mx-auto', className)}>
       <div className="text-center mb-8">
-        <h1 className={cn("text-3xl font-semibold mb-2", darkMode ? "text-white" : "text-slate-900")}>
+        <h1 className="text-3xl font-medium mb-2 text-content-primary">
           Welcome back
         </h1>
-        <p className={cn(darkMode ? "text-slate-400" : "text-slate-600")}>
+        <p className="text-content-secondary">
           Sign in to your PharmGPT account
         </p>
       </div>
@@ -57,12 +57,12 @@ export default function LoginForm({ className }: LoginFormProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
+          <label htmlFor="email" className="block text-sm font-medium mb-2 text-content-primary">
             Email address
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className={cn("h-5 w-5", darkMode ? "text-slate-500" : "text-slate-400")} />
+              <Mail className="h-5 w-5 text-content-tertiary" />
             </div>
             <input
               {...register('email')}
@@ -70,8 +70,7 @@ export default function LoginForm({ className }: LoginFormProps) {
               id="email"
               autoComplete="email"
               className={cn(
-                'input pl-10',
-                darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
+                'gemini-input w-full pl-10',
                 errors.email && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Enter your email"
@@ -85,12 +84,12 @@ export default function LoginForm({ className }: LoginFormProps) {
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className={cn("block text-sm font-medium mb-2", darkMode ? "text-slate-300" : "text-slate-700")}>
+          <label htmlFor="password" className="block text-sm font-medium mb-2 text-content-primary">
             Password
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className={cn("h-5 w-5", darkMode ? "text-slate-500" : "text-slate-400")} />
+              <Lock className="h-5 w-5 text-content-tertiary" />
             </div>
             <input
               {...register('password')}
@@ -98,8 +97,7 @@ export default function LoginForm({ className }: LoginFormProps) {
               id="password"
               autoComplete="current-password"
               className={cn(
-                'input pl-10 pr-10',
-                darkMode && 'bg-slate-900 border-slate-700 text-white placeholder-slate-500',
+                'gemini-input w-full pl-10 pr-10',
                 errors.password && 'border-red-500 focus:ring-red-500'
               )}
               placeholder="Enter your password"
@@ -107,14 +105,14 @@ export default function LoginForm({ className }: LoginFormProps) {
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center touch-target"
               onClick={() => setShowPassword(!showPassword)}
               disabled={isFormLoading}
             >
               {showPassword ? (
-                <EyeOff className={cn("h-5 w-5", darkMode ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-600")} />
+                <EyeOff className="h-5 w-5 text-content-tertiary hover:text-content-secondary" />
               ) : (
-                <Eye className={cn("h-5 w-5", darkMode ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-600")} />
+                <Eye className="h-5 w-5 text-content-tertiary hover:text-content-secondary" />
               )}
             </button>
           </div>
@@ -128,7 +126,7 @@ export default function LoginForm({ className }: LoginFormProps) {
           type="submit"
           disabled={isFormLoading}
           className={cn(
-            'btn-primary w-full btn-md',
+            'w-full px-6 py-3 rounded-gemini-full text-base font-medium bg-gemini-gradient text-white hover:opacity-90 transition-opacity touch-target',
             isFormLoading && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -145,20 +143,20 @@ export default function LoginForm({ className }: LoginFormProps) {
 
       {/* Links */}
       <div className="mt-6 text-center space-y-2">
-        <p className={cn("text-sm", darkMode ? "text-slate-400" : "text-slate-600")}>
+        <p className="text-sm text-content-secondary">
           Don't have an account?{' '}
           <Link
             to="/register"
-            className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors"
+            className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity"
           >
             Sign up
           </Link>
         </p>
         
-        <p className={cn("text-sm", darkMode ? "text-slate-400" : "text-slate-600")}>
+        <p className="text-sm text-content-secondary">
           <Link
             to="/"
-            className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors"
+            className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity"
           >
             Back to home
           </Link>
@@ -168,17 +166,17 @@ export default function LoginForm({ className }: LoginFormProps) {
       {/* Info Boxes */}
       <div className="mt-8 space-y-3">
         {/* Demo Credentials */}
-        <div className={cn("p-4 rounded-xl border", darkMode ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200")}>
-          <h3 className={cn("text-sm font-medium mb-2", darkMode ? "text-blue-300" : "text-blue-900")}>Demo Credentials</h3>
-          <div className={cn("text-xs space-y-1", darkMode ? "text-blue-400" : "text-blue-700")}>
+        <div className="p-4 rounded-gemini border border-surface bg-surface-tertiary">
+          <h3 className="text-sm font-medium mb-2 text-content-primary">Demo Credentials</h3>
+          <div className="text-xs space-y-1 text-content-secondary">
             <p><strong>Admin:</strong> admin@pharmgpt.com / admin123</p>
             <p><strong>User:</strong> Create a new account to test user features</p>
           </div>
         </div>
         
         {/* Cold Start Notice */}
-        <div className={cn("p-3 rounded-xl border", darkMode ? "bg-yellow-500/10 border-yellow-500/20" : "bg-yellow-50 border-yellow-200")}>
-          <p className={cn("text-xs", darkMode ? "text-yellow-400" : "text-yellow-700")}>
+        <div className="p-3 rounded-gemini border border-surface bg-surface-tertiary">
+          <p className="text-xs text-content-secondary">
             ⏱️ <strong>First login may take 30-60 seconds</strong> as the server wakes up. Please be patient!
           </p>
         </div>
