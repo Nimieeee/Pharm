@@ -7,58 +7,58 @@ export default function SupportPage() {
   const { darkMode } = useTheme()
   
   return (
-    <div className={cn("min-h-screen py-12", darkMode ? "bg-slate-950" : "bg-slate-50")}>
+    <div className="min-h-screen py-12 bg-surface-primary">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className={cn("text-3xl font-semibold mb-4", darkMode ? "text-white" : "text-slate-900")}>
+          <h1 className="text-3xl font-medium mb-4 text-content-primary">
             Get Support
           </h1>
-          <p className={cn("text-xl", darkMode ? "text-slate-400" : "text-slate-600")}>
+          <p className="text-xl text-content-secondary">
             We're here to help with any questions or issues you may have
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className={cn("p-6 text-center rounded-2xl border", darkMode ? "bg-slate-900/50 border-slate-800" : "bg-white/50 border-slate-200")}>
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
+          <div className="p-6 text-center rounded-gemini border border-surface bg-surface-secondary shadow-gemini">
+            <div className="w-12 h-12 rounded-xl bg-gemini-gradient flex items-center justify-center mx-auto mb-4">
               <Mail className="w-6 h-6 text-white" />
             </div>
-            <h3 className={cn("text-lg font-semibold mb-2", darkMode ? "text-white" : "text-slate-900")}>Email Support</h3>
-            <p className={cn("text-sm mb-4", darkMode ? "text-slate-400" : "text-slate-600")}>
+            <h3 className="text-lg font-medium mb-2 text-content-primary">Email Support</h3>
+            <p className="text-sm mb-4 text-content-secondary">
               Get help via email within 24 hours
             </p>
             <a
               href="mailto:support@pharmgpt.com"
-              className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors"
+              className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity"
             >
               support@pharmgpt.com
             </a>
           </div>
 
-          <div className={cn("p-6 text-center rounded-2xl border", darkMode ? "bg-slate-900/50 border-slate-800" : "bg-white/50 border-slate-200")}>
+          <div className="p-6 text-center rounded-gemini border border-surface bg-surface-secondary shadow-gemini">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-4">
               <MessageSquare className="w-6 h-6 text-white" />
             </div>
-            <h3 className={cn("text-lg font-semibold mb-2", darkMode ? "text-white" : "text-slate-900")}>Live Chat</h3>
-            <p className={cn("text-sm mb-4", darkMode ? "text-slate-400" : "text-slate-600")}>
+            <h3 className="text-lg font-medium mb-2 text-content-primary">Live Chat</h3>
+            <p className="text-sm mb-4 text-content-secondary">
               Chat with our support team
             </p>
-            <button className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors">
+            <button className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity touch-target">
               Start Chat
             </button>
           </div>
 
-          <div className={cn("p-6 text-center rounded-2xl border", darkMode ? "bg-slate-900/50 border-slate-800" : "bg-white/50 border-slate-200")}>
+          <div className="p-6 text-center rounded-gemini border border-surface bg-surface-secondary shadow-gemini">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
               <Phone className="w-6 h-6 text-white" />
             </div>
-            <h3 className={cn("text-lg font-semibold mb-2", darkMode ? "text-white" : "text-slate-900")}>Phone Support</h3>
-            <p className={cn("text-sm mb-4", darkMode ? "text-slate-400" : "text-slate-600")}>
+            <h3 className="text-lg font-medium mb-2 text-content-primary">Phone Support</h3>
+            <p className="text-sm mb-4 text-content-secondary">
               Call us during business hours
             </p>
             <a
               href="tel:+1-555-PHARMGPT"
-              className="font-medium text-emerald-500 hover:text-emerald-400 transition-colors"
+              className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity"
             >
               +1 (555) PHARM-GPT
             </a>
@@ -66,13 +66,13 @@ export default function SupportPage() {
         </div>
 
         {/* Support Form Placeholder */}
-        <div className={cn("p-8 rounded-2xl border", darkMode ? "bg-slate-900/50 border-slate-800" : "bg-white/50 border-slate-200")}>
-          <h2 className={cn("text-2xl font-semibold mb-6", darkMode ? "text-white" : "text-slate-900")}>Send us a message</h2>
-          <div className={cn("rounded-xl p-6 border", darkMode ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200")}>
-            <p className={cn("mb-2 font-medium", darkMode ? "text-blue-300" : "text-blue-700")}>
+        <div className="p-8 rounded-gemini border border-surface bg-surface-secondary shadow-gemini">
+          <h2 className="text-2xl font-medium mb-6 text-content-primary">Send us a message</h2>
+          <div className="rounded-gemini p-6 border border-surface bg-surface-tertiary">
+            <p className="mb-2 font-medium text-content-primary">
               Support form coming soon!
             </p>
-            <p className={cn("text-sm", darkMode ? "text-blue-400" : "text-blue-600")}>
+            <p className="text-sm text-content-secondary">
               The contact form will be implemented in the next phase. 
               For now, please use the email or phone contact methods above.
             </p>
