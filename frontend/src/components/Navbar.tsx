@@ -45,18 +45,26 @@ export default function Navbar() {
   const navItems = getNavItems()
 
   return (
-    <nav className={cn("shadow-sm border-b", darkMode ? "bg-[#171717] border-gray-800" : "bg-white border-gray-200")}>
+    <nav className={cn(
+      "shadow-xl border-b-2 backdrop-blur-xl relative z-50",
+      darkMode ? "bg-teal-950/80 border-teal-800" : "bg-white/80 border-teal-200"
+    )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and brand */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
-              <span className={cn("text-xl font-bold", darkMode ? "text-white" : "text-gray-900")}>PharmGPT</span>
+            <Link to="/" className="flex items-center space-x-3 group">
+              <img src="/PharmGPT.png" alt="PharmGPT" className="w-9 h-9 drop-shadow-lg transition-transform duration-300 group-hover:scale-110" />
+              <span className={cn(
+                "text-xl font-display font-black transition-colors",
+                darkMode ? "text-teal-50" : "text-teal-900"
+              )}>
+                PharmGPT
+              </span>
             </Link>
           </div>
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-2">
             {navItems.map((item) => {
               const Icon = item.icon
               return (
@@ -64,10 +72,16 @@ export default function Navbar() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105',
                     isActivePath(item.href)
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                      ? (darkMode 
+                          ? 'text-teal-50 bg-gradient-to-r from-teal-700 to-teal-600 shadow-lg shadow-teal-900/50' 
+                          : 'text-white bg-gradient-to-r from-teal-500 to-teal-400 shadow-lg shadow-teal-500/30'
+                        )
+                      : (darkMode 
+                          ? 'text-teal-300 hover:text-teal-50 hover:bg-teal-900' 
+                          : 'text-teal-700 hover:text-teal-900 hover:bg-teal-50'
+                        )
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -78,31 +92,39 @@ export default function Navbar() {
           </div>
 
           {/* User menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             {isAuthenticated ? (
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className={cn("flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-md p-2", 
-                    darkMode ? "text-gray-300 hover:text-white" : "text-gray-700 hover:text-gray-900"
+                  className={cn(
+                    "flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-xl p-2 transition-all duration-300 hover:scale-105", 
+                    darkMode ? "text-teal-300 hover:text-teal-50 hover:bg-teal-900" : "text-teal-700 hover:text-teal-900 hover:bg-teal-50"
                   )}
                 >
-                  <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-primary-600" />
+                  <div className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center shadow-lg",
+                    darkMode ? "bg-gradient-to-br from-teal-700 to-teal-600" : "bg-gradient-to-br from-teal-500 to-teal-400"
+                  )}>
+                    <User className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-semibold">
                     {user?.first_name || user?.email}
                   </span>
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className={cn("absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-50 border", 
-                    darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                  <div className={cn(
+                    "absolute right-0 mt-3 w-56 rounded-2xl shadow-2xl py-2 z-50 border-2 backdrop-blur-xl", 
+                    darkMode ? "bg-teal-950/90 border-teal-800" : "bg-white/90 border-teal-200"
                   )}>
-                    <div className={cn("px-4 py-2 text-sm border-b", darkMode ? "text-gray-400 border-gray-700" : "text-gray-500 border-gray-100")}>
+                    <div className={cn(
+                      "px-4 py-3 text-sm border-b-2 font-medium", 
+                      darkMode ? "text-teal-300 border-teal-800" : "text-teal-700 border-teal-200"
+                    )}>
                       {user?.email}
                       {user?.is_admin && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        <span className="ml-2 inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-accent-500 to-accent-400 text-white shadow-lg">
                           Admin
                         </span>
                       )}
@@ -110,8 +132,9 @@ export default function Navbar() {
                     
                     <Link
                       to="/"
-                      className={cn("block px-4 py-2 text-sm flex items-center space-x-2", 
-                        darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                      className={cn(
+                        "block px-4 py-3 text-sm flex items-center space-x-3 font-medium transition-colors", 
+                        darkMode ? "text-teal-300 hover:bg-teal-900 hover:text-teal-50" : "text-teal-700 hover:bg-teal-50 hover:text-teal-900"
                       )}
                       onClick={() => setIsUserMenuOpen(false)}
                     >
@@ -121,8 +144,9 @@ export default function Navbar() {
                     
                     <button
                       onClick={handleLogout}
-                      className={cn("block w-full text-left px-4 py-2 text-sm flex items-center space-x-2", 
-                        darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                      className={cn(
+                        "block w-full text-left px-4 py-3 text-sm flex items-center space-x-3 font-medium transition-colors", 
+                        darkMode ? "text-teal-300 hover:bg-teal-900 hover:text-teal-50" : "text-teal-700 hover:bg-teal-50 hover:text-teal-900"
                       )}
                     >
                       <LogOut className="w-4 h-4" />
@@ -132,11 +156,12 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className={cn("px-3 py-2 rounded-md text-sm font-medium", 
-                    darkMode ? "text-gray-300 hover:text-white" : "text-gray-700 hover:text-gray-900"
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105", 
+                    darkMode ? "text-teal-300 hover:text-teal-50 hover:bg-teal-900" : "text-teal-700 hover:text-teal-900 hover:bg-teal-50"
                   )}
                 >
                   Sign in
@@ -155,7 +180,10 @@ export default function Navbar() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-md p-2"
+              className={cn(
+                "focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-xl p-2 transition-all duration-300 hover:scale-110",
+                darkMode ? "text-teal-300 hover:text-teal-50 hover:bg-teal-900" : "text-teal-700 hover:text-teal-900 hover:bg-teal-50"
+              )}
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -170,8 +198,9 @@ export default function Navbar() {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden">
-          <div className={cn("px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t", 
-            darkMode ? "bg-[#171717] border-gray-800" : "bg-white border-gray-200"
+          <div className={cn(
+            "px-3 pt-3 pb-4 space-y-2 sm:px-4 border-t-2 backdrop-blur-xl", 
+            darkMode ? "bg-teal-950/90 border-teal-800" : "bg-white/90 border-teal-200"
           )}>
             {navItems.map((item) => {
               const Icon = item.icon
@@ -180,10 +209,16 @@ export default function Navbar() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium',
+                    'flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300',
                     isActivePath(item.href)
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                      ? (darkMode 
+                          ? 'text-teal-50 bg-gradient-to-r from-teal-700 to-teal-600 shadow-lg shadow-teal-900/50' 
+                          : 'text-white bg-gradient-to-r from-teal-500 to-teal-400 shadow-lg shadow-teal-500/30'
+                        )
+                      : (darkMode 
+                          ? 'text-teal-300 hover:text-teal-50 hover:bg-teal-900' 
+                          : 'text-teal-700 hover:text-teal-900 hover:bg-teal-50'
+                        )
                   )}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -194,19 +229,23 @@ export default function Navbar() {
             })}
             
             {isAuthenticated ? (
-              <div className={cn("border-t pt-4 mt-4", darkMode ? "border-gray-800" : "border-gray-200")}>
-                <div className={cn("px-3 py-2 text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
+              <div className={cn("border-t-2 pt-4 mt-4", darkMode ? "border-teal-800" : "border-teal-200")}>
+                <div className={cn(
+                  "px-4 py-3 text-sm font-medium rounded-xl mb-2", 
+                  darkMode ? "text-teal-300 bg-teal-900/50" : "text-teal-700 bg-teal-50"
+                )}>
                   {user?.email}
                   {user?.is_admin && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                    <span className="ml-2 inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-accent-500 to-accent-400 text-white shadow-lg">
                       Admin
                     </span>
                   )}
                 </div>
                 <button
                   onClick={handleLogout}
-                  className={cn("flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium w-full text-left", 
-                    darkMode ? "text-gray-300 hover:text-white hover:bg-gray-800" : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  className={cn(
+                    "flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-semibold w-full text-left transition-all duration-300", 
+                    darkMode ? "text-teal-300 hover:text-teal-50 hover:bg-teal-900" : "text-teal-700 hover:text-teal-900 hover:bg-teal-50"
                   )}
                 >
                   <LogOut className="w-5 h-5" />
@@ -214,11 +253,12 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <div className={cn("border-t pt-4 mt-4 space-y-1", darkMode ? "border-gray-800" : "border-gray-200")}>
+              <div className={cn("border-t-2 pt-4 mt-4 space-y-2", darkMode ? "border-teal-800" : "border-teal-200")}>
                 <Link
                   to="/login"
-                  className={cn("block px-3 py-2 rounded-md text-base font-medium", 
-                    darkMode ? "text-gray-300 hover:text-white hover:bg-gray-800" : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  className={cn(
+                    "block px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300", 
+                    darkMode ? "text-teal-300 hover:text-teal-50 hover:bg-teal-900" : "text-teal-700 hover:text-teal-900 hover:bg-teal-50"
                   )}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -226,7 +266,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   to="/register"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-white bg-primary-600 hover:bg-primary-700"
+                  className="block px-4 py-3 rounded-xl text-base font-semibold text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 shadow-lg shadow-teal-500/40 transition-all duration-300"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign up

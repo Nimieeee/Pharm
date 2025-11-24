@@ -1,77 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   * {
-    border-color: theme('colors.secondary.200');
+    border-color: theme('colors.teal.200');
   }
   
   body {
     @apply bg-white text-secondary-900;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: "ss01" 1, "ss02" 1, "cv01" 1;
+    letter-spacing: -0.01em;
   }
   
   .dark body {
-    @apply bg-gray-900 text-white;
+    @apply bg-[#0a1f1c] text-teal-50;
   }
   
   html {
     scroll-behavior: smooth;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    font-weight: 500;
+    letter-spacing: 0.02em;
   }
   
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+    @apply btn bg-gradient-to-r from-teal-600 to-teal-500 text-white hover:from-teal-700 hover:to-teal-600 active:scale-95 shadow-lg shadow-teal-500/30;
   }
   
   .btn-secondary {
-    @apply btn bg-secondary-100 text-secondary-900 hover:bg-secondary-200 active:bg-secondary-300;
+    @apply btn bg-gradient-to-r from-accent-500 to-accent-400 text-white hover:from-accent-600 hover:to-accent-500 active:scale-95 shadow-lg shadow-accent-500/30;
   }
   
   .btn-outline {
-    @apply btn border border-secondary-300 bg-white hover:bg-secondary-50 hover:text-secondary-900;
+    @apply btn border-2 border-teal-500 bg-transparent text-teal-600 hover:bg-teal-50 hover:border-teal-600;
   }
   
   .dark .btn-outline {
-    @apply border-gray-600 bg-gray-800 text-white hover:bg-gray-700;
+    @apply border-teal-400 text-teal-400 hover:bg-teal-950/50 hover:border-teal-300;
   }
   
   .btn-ghost {
-    @apply btn hover:bg-secondary-50 hover:text-secondary-900;
+    @apply btn hover:bg-teal-50 hover:text-teal-700;
   }
   
   .dark .btn-ghost {
-    @apply hover:bg-gray-700 hover:text-white;
+    @apply hover:bg-teal-950/30 hover:text-teal-300;
   }
   
   .btn-sm {
-    @apply h-9 px-3 text-xs;
+    @apply h-9 px-4 text-xs;
   }
   
   .btn-md {
-    @apply h-10 py-2 px-4;
+    @apply h-11 py-2 px-6;
   }
   
   .btn-lg {
-    @apply h-11 px-8;
+    @apply h-12 px-8;
   }
   
   .input {
-    @apply flex h-10 w-full rounded-md border border-secondary-300 bg-white px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-secondary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-11 w-full rounded-xl border-2 border-teal-200 bg-white px-4 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-secondary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:border-teal-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200;
   }
   
   .dark .input {
-    @apply border-gray-600 bg-gray-700 text-white placeholder:text-gray-400;
+    @apply border-teal-800 bg-teal-950/30 text-teal-50 placeholder:text-teal-700;
   }
   
   .card {
-    @apply rounded-lg border border-secondary-200 bg-white text-secondary-900 shadow-sm;
+    @apply rounded-2xl border-2 border-teal-200 bg-white text-secondary-900 shadow-xl shadow-teal-500/10 backdrop-blur-sm;
+  }
+  
+  .dark .card {
+    @apply border-teal-800 bg-teal-950/40 text-teal-50;
   }
   
   .card-header {
@@ -93,29 +107,57 @@
   }
   
   .animate-in {
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .animate-slide-up {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-xl bg-white/80 border-2 border-teal-200 shadow-2xl shadow-teal-500/20;
+  }
+  
+  .dark .glass-effect {
+    @apply bg-teal-950/60 border-teal-800 shadow-teal-900/30;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent;
+  }
+  
+  .dark .gradient-text {
+    @apply from-teal-400 to-teal-200;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-secondary-100;
+  @apply bg-teal-50;
+}
+
+.dark ::-webkit-scrollbar-track {
+  @apply bg-teal-950;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-secondary-300 rounded-full;
+  @apply bg-teal-400 rounded-full;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-teal-700;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-secondary-400;
+  @apply bg-teal-500;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-teal-600;
 }
 
 /* Loading spinner */
@@ -129,24 +171,25 @@
   height: 32px;
   border-radius: 50%;
   position: relative;
-  background: conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6);
+  background: conic-gradient(from 0deg, #14b8a6, #f59e0b, #14b8a6);
   animation: 2s rotate linear infinite;
+  box-shadow: 0 0 30px rgba(20, 184, 166, 0.4);
 }
 
 .ai-loader:before {
   position: absolute;
   content: "";
-  width: 75%;
-  height: 75%;
+  width: 70%;
+  height: 70%;
   border-radius: 50%;
-  top: 12.5%;
-  left: 12.5%;
-  background-color: #212121;
+  top: 15%;
+  left: 15%;
+  background-color: #0a1f1c;
 }
 
 /* Light mode loader background */
 .dark .ai-loader:before {
-  background-color: #212121;
+  background-color: #0a1f1c;
 }
 
 :not(.dark) .ai-loader:before {
