@@ -96,14 +96,17 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!inputMessage.trim() || !conversationId) return
     
+    const messageText = inputMessage.trim()
+    const attachedDocs = uploadingFiles.filter(f => f.status === 'complete')
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       conversation_id: conversationId,
       role: 'user',
-      content: inputMessage,
+      content: messageText,
       created_at: new Date().toISOString(),
-      metadata: uploadingFiles.filter(f => f.status === 'complete').length > 0 
-        ? { attachedFiles: uploadingFiles.filter(f => f.status === 'complete') }
+      metadata: attachedDocs.length > 0 
+        ? { attachedFiles: attachedDocs }
         : undefined
     }
     
@@ -114,15 +117,18 @@ export default function ChatPage() {
     
     try {
       const response = await chatAPI.sendMessage(conversationId, {
-        message: inputMessage,
+        message: messageText,
         mode: mode,
-        document_ids: uploadingFiles.filter(f => f.status === 'complete').map(f => f.id)
+        document_ids: attachedDocs.map(f => f.id)
       })
       
       setMessages(prev => [...prev, response])
       loadConversations()
     } catch (error) {
+      console.error('Send message error:', error)
       toast.error('Failed to send message')
+      // Remove the user message if sending failed
+      setMessages(prev => prev.filter(m => m.id !== userMessage.id))
     }
   }
 
@@ -409,8 +415,15 @@ export default function ChatPage() {
                       )}
                       
                       {message.role === 'assistant' ? (
-                        <div className="prose prose-sm max-w-none" style={{ color: 'var(--text-primary)' }}>
-                          <Streamdown>{message.content}</Streamdown>
+                        <div className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                          {message.content ? (
+                            <Streamdown>{message.content}</Streamdown>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <div className="spinner-spa"></div>
+                              <span style={{ color: 'var(--text-secondary)' }}>Thinking...</span>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm leading-relaxed">{message.content}</p>
