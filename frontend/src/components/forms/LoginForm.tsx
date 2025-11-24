@@ -44,12 +44,16 @@ export default function LoginForm({ className }: LoginFormProps) {
   const isFormLoading = isLoading || isSubmitting
 
   return (
-    <div className={cn('w-full max-w-md mx-auto', className)}>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-medium mb-2 text-content-primary">
+    <div className={cn('w-full', className)}>
+      <div className="text-center mb-10">
+        <h1 className="text-3xl md:text-4xl font-semibold mb-3" 
+            style={{ 
+              color: 'var(--text-primary)',
+              fontFamily: "'Cormorant Garamond', Georgia, serif"
+            }}>
           Welcome back
         </h1>
-        <p className="text-content-secondary">
+        <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
           Sign in to your PharmGPT account
         </p>
       </div>
@@ -57,12 +61,12 @@ export default function LoginForm({ className }: LoginFormProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-2 text-content-primary">
+          <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
             Email address
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-content-tertiary" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Mail size={20} strokeWidth={2} style={{ color: 'var(--text-tertiary)' }} />
             </div>
             <input
               {...register('email')}
@@ -70,26 +74,26 @@ export default function LoginForm({ className }: LoginFormProps) {
               id="email"
               autoComplete="email"
               className={cn(
-                'gemini-input w-full pl-10',
-                errors.email && 'border-red-500 focus:ring-red-500'
+                'input-spa pl-12',
+                errors.email && 'border-red-500'
               )}
-              placeholder="Enter your email"
+              placeholder="you@example.com"
               disabled={isFormLoading}
             />
           </div>
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-2 text-content-primary">
+          <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
             Password
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-content-tertiary" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Lock size={20} strokeWidth={2} style={{ color: 'var(--text-tertiary)' }} />
             </div>
             <input
               {...register('password')}
@@ -97,27 +101,28 @@ export default function LoginForm({ className }: LoginFormProps) {
               id="password"
               autoComplete="current-password"
               className={cn(
-                'gemini-input w-full pl-10 pr-10',
-                errors.password && 'border-red-500 focus:ring-red-500'
+                'input-spa pl-12 pr-12',
+                errors.password && 'border-red-500'
               )}
               placeholder="Enter your password"
               disabled={isFormLoading}
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center touch-target"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center"
               onClick={() => setShowPassword(!showPassword)}
               disabled={isFormLoading}
+              style={{ minWidth: '44px', minHeight: '44px' }}
             >
               {showPassword ? (
-                <EyeOff className="h-5 w-5 text-content-tertiary hover:text-content-secondary" />
+                <EyeOff size={20} strokeWidth={2} style={{ color: 'var(--text-tertiary)' }} />
               ) : (
-                <Eye className="h-5 w-5 text-content-tertiary hover:text-content-secondary" />
+                <Eye size={20} strokeWidth={2} style={{ color: 'var(--text-tertiary)' }} />
               )}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+            <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
           )}
         </div>
 
@@ -126,37 +131,39 @@ export default function LoginForm({ className }: LoginFormProps) {
           type="submit"
           disabled={isFormLoading}
           className={cn(
-            'w-full px-6 py-3 rounded-gemini-full text-base font-medium bg-gemini-gradient text-white hover:opacity-90 transition-opacity touch-target',
+            'btn-spa btn-primary w-full',
             isFormLoading && 'opacity-50 cursor-not-allowed'
           )}
         >
           {isFormLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="spinner mr-2"></div>
-              Signing in...
-            </div>
+            <>
+              <div className="spinner-spa"></div>
+              <span>Signing in...</span>
+            </>
           ) : (
-            'Sign in'
+            <span>Sign in</span>
           )}
         </button>
       </form>
 
       {/* Links */}
-      <div className="mt-6 text-center space-y-2">
-        <p className="text-sm text-content-secondary">
+      <div className="mt-8 text-center space-y-3">
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           Don't have an account?{' '}
           <Link
             to="/register"
-            className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity"
+            className="font-medium transition-spa"
+            style={{ color: 'var(--accent)' }}
           >
             Sign up
           </Link>
         </p>
         
-        <p className="text-sm text-content-secondary">
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           <Link
             to="/"
-            className="font-medium text-gemini-gradient-start hover:opacity-80 transition-opacity"
+            className="font-medium transition-spa"
+            style={{ color: 'var(--accent)' }}
           >
             Back to home
           </Link>
@@ -164,20 +171,20 @@ export default function LoginForm({ className }: LoginFormProps) {
       </div>
 
       {/* Info Boxes */}
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 space-y-4">
         {/* Demo Credentials */}
-        <div className="p-4 rounded-gemini border border-surface bg-surface-tertiary">
-          <h3 className="text-sm font-medium mb-2 text-content-primary">Demo Credentials</h3>
-          <div className="text-xs space-y-1 text-content-secondary">
+        <div className="p-4 rounded-spa" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Demo Credentials</h3>
+          <div className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
             <p><strong>Admin:</strong> admin@pharmgpt.com / admin123</p>
-            <p><strong>User:</strong> Create a new account to test user features</p>
+            <p><strong>User:</strong> Create a new account</p>
           </div>
         </div>
         
         {/* Cold Start Notice */}
-        <div className="p-3 rounded-gemini border border-surface bg-surface-tertiary">
-          <p className="text-xs text-content-secondary">
-            ⏱️ <strong>First login may take 30-60 seconds</strong> as the server wakes up. Please be patient!
+        <div className="p-4 rounded-spa" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <strong>Note:</strong> First login may take 30-60 seconds as the server wakes up.
           </p>
         </div>
       </div>
