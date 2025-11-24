@@ -112,41 +112,48 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || isLoading) return
     
+    const messageText = input.trim()
     const attachedDocs = uploadingFiles.filter(f => f.status === 'complete').map(f => f.id)
     
-    // Try streaming first, fallback to regular API
-    try {
-      await sendStreamingMessage(input.trim(), attachedDocs)
-    } catch (error) {
-      console.error('Streaming failed, using regular API:', error)
-      // Fallback to regular chatAPI
-      try {
-        const response = await chatAPI.sendMessage({
-          message: input.trim(),
-          conversation_id: conversationId,
-          mode,
-          use_rag: true,
-          metadata: attachedDocs.length > 0 ? { document_ids: attachedDocs } : {}
-        })
-        
-        // Add response to messages
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant' as const,
-          content: response.response,
-          created_at: new Date().toISOString()
-        }
-        setMessages(prev => [...prev, assistantMessage])
-      } catch (apiError) {
-        console.error('Regular API also failed:', apiError)
-        toast.error('Failed to send message')
-      }
+    // Add user message immediately
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content: messageText,
+      created_at: new Date().toISOString()
     }
+    setMessages(prev => [...prev, userMessage])
     
-    // Clear files and reset textarea
+    // Clear input
     setUploadingFiles([])
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
+    }
+    
+    // Use regular chatAPI (streaming disabled for now)
+    try {
+      const response = await chatAPI.sendMessage({
+        message: messageText,
+        conversation_id: conversationId,
+        mode,
+        use_rag: true,
+        metadata: attachedDocs.length > 0 ? { document_ids: attachedDocs } : {}
+      })
+      
+      // Add AI response
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: response.response,
+        created_at: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, assistantMessage])
+      loadConversations()
+    } catch (error) {
+      console.error('Send message error:', error)
+      toast.error('Failed to send message')
+      // Remove user message on error
+      setMessages(prev => prev.filter(m => m.id !== userMessage.id))
     }
   }
 
