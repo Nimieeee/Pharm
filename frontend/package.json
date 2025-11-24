@@ -13,6 +13,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
     "@tanstack/react-query": "^5.8.4",
+    "ai": "^5.0.101",
     "axios": "^1.6.2",
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.5",

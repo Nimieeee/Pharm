@@ -1,0 +1,5273 @@
+# Introduction
+
+[AI Elements](https://www.npmjs.com/package/ai-elements) is a component library and custom registry built on top of [shadcn/ui](https://ui.shadcn.com/) to help you build AI-native applications faster. It provides pre-built components like conversations, messages and more.
+
+Installing AI Elements is straightforward and can be done in a couple of ways. You can use the dedicated CLI command for the fastest setup, or integrate via the standard shadcn/ui CLI if you've already adopted shadcn's workflow.
+
+<ElementsInstaller />
+
+## Quick Start
+
+Here are some basic examples of what you can achieve using components from AI Elements.
+
+<ElementsDemo />
+
+## Prerequisites
+
+Before installing AI Elements, make sure your environment meets the following requirements:
+
+* [Node.js](https://nodejs.org/en/download/), version 18 or later
+* A [Next.js](https://nextjs.org/) project with the [AI SDK](https://ai-sdk.dev/) installed.
+* [shadcn/ui](https://ui.shadcn.com/) installed in your project. If you don't have it installed, running any install command will automatically install it for you.
+* We also highly recommend using the [AI Gateway](https://vercel.com/docs/ai-gateway) and adding `AI_GATEWAY_API_KEY` to your `env.local` so you don't have to use an API key from every provider. AI Gateway also gives $5 in usage per month so you can experiment with models. You can obtain an API key [here](https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\&title=Get%20your%20AI%20Gateway%20key).
+
+<Callout>
+  AI Elements is built targeting React 19 (no `forwardRef` usage) and Tailwind CSS 4.
+</Callout>
+
+## Installing Components
+
+You can install AI Elements components using either the AI Elements CLI or the shadcn/ui CLI. Both achieve the same result: adding the selected component’s code and any needed dependencies to your project.
+
+The CLI will download the component’s code and integrate it into your project’s directory (usually under your components folder). By default, AI Elements components are added to the `@/components/ai-elements/` directory (or whatever folder you’ve configured in your shadcn components settings).
+
+After running the command, you should see a confirmation in your terminal that the files were added. You can then proceed to use the component in your code.
+
+# Usage
+
+Once an AI Elements component is installed, you can import it and use it in your application like any other React component. The components are added as part of your codebase (not hidden in a library), so the usage feels very natural.
+
+## Example
+
+After installing AI Elements components, you can use them in your application like any other React component. For example:
+
+```tsx title="conversation.tsx"
+'use client';
+
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
+import { useChat } from '@ai-sdk/react';
+
+const Example = () => {
+  const { messages } = useChat();
+
+  return (
+    <>
+      {messages.map(({ role, parts }, index) => (
+        <Message from={role} key={index}>
+          <MessageContent>
+            {parts.map((part, i) => {
+              switch (part.type) {
+                case 'text':
+                  return <MessageResponse key={`${role}-${i}`}>{part.text}</MessageResponse>;
+              }
+            })}
+          </MessageContent>
+        </Message>
+      ))}
+    </>
+  );
+};
+
+export default Example;
+```
+
+In the example above, we import the `Message` component from our AI Elements directory and include it in our JSX. Then, we compose the component with the `MessageContent` and `MessageResponse` subcomponents. You can style or configure the component just as you would if you wrote it yourself – since the code lives in your project, you can even open the component file to see how it works or make custom modifications.
+
+## Extensibility
+
+All AI Elements components take as many primitive attributes as possible. For example, the `Message` component extends `HTMLAttributes<HTMLDivElement>`, so you can pass any props that a `div` supports. This makes it easy to extend the component with your own styles or functionality.
+
+## Customization
+
+<Callout>
+  If you re-install AI Elements by rerunning `npx ai-elements@latest`, the CLI
+  will ask before overwriting the file so you can save any custom changes you
+  made.
+</Callout>
+
+After installation, no additional setup is needed. The component’s styles (Tailwind CSS classes) and scripts are already integrated. You can start interacting with the component in your app immediately.
+
+For example, if you'd like to remove the rounding on `Message`, you can go to `components/ai-elements/message.tsx` and remove `rounded-lg` as follows:
+
+```tsx title="components/ai-elements/message.tsx" highlight="8"
+export const MessageContent = ({
+  children,
+  className,
+  ...props
+}: MessageContentProps) => (
+  <div
+    className={cn(
+      'flex flex-col gap-2 text-sm text-foreground',
+      'group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground group-[.is-user]:px-4 group-[.is-user]:py-3',
+      className,
+    )}
+    {...props}
+  >
+    <div className="is-user:dark">{children}</div>
+  </div>
+);
+```
+
+# Troubleshooting
+
+## Why are my components not styled?
+
+Make sure your project is configured correctly for shadcn/ui in Tailwind 4 - this means having a `globals.css` file that imports Tailwind and includes the shadcn/ui base styles.
+
+## I ran the AI Elements CLI but nothing was added to my project
+
+Double-check that:
+
+* Your current working directory is the root of your project (where `package.json` lives).
+* Your components.json file (if using shadcn-style config) is set up correctly.
+* You’re using the latest version of the AI Elements CLI:
+
+```bash title="Terminal"
+npx ai-elements@latest
+```
+
+If all else fails, feel free to open an [issue on GitHub](https://github.com/vercel/ai-elements/issues).
+
+## Theme switching doesn’t work — my app stays in light mode
+
+Ensure your app is using the same data-theme system that shadcn/ui and AI Elements expect. The default implementation toggles a data-theme attribute on the `<html>` element. Make sure your tailwind.config.js is using class or data- selectors accordingly:
+
+## The component imports fail with “module not found”
+
+Check the file exists. If it does, make sure your `tsconfig.json` has a proper paths alias for `@/` i.e.
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+```
+
+## My AI coding assistant can't access AI Elements components
+
+1. Verify your config file syntax is valid JSON.
+2. Check that the file path is correct for your AI tool.
+3. Restart your coding assistant after making changes.
+4. Ensure you have a stable internet connection.
+
+## Still stuck?
+
+If none of these answers help, open an [issue on GitHub](https://github.com/vercel/ai-elements/issues) and someone will be happy to assist.
+
+# MCP Server
+
+The **Model Context Protocol (MCP)** is an open standard that allows AI assistants like Claude, Cursor, and other AI-powered tools to securely connect with external data sources and systems. Think of it as a "universal remote" that lets your AI tools access real-world data and functionality.
+
+AI Elements supports MCP to supercharge your AI development workflow.
+
+## Installation Guide
+
+### Step 1: Choose Your AI Tool
+
+First, make sure you're using an AI development tool that supports MCP:
+
+* [Claude Desktop](https://claude.ai/download) (Free - recommended for beginners)
+* [Claude Code](https://www.claude.com/product/claude-code) (AI coding assistant)
+* [Cursor](https://www.cursor.com/) (AI-powered code editor)
+* [Windsurf by Codeium](https://windsurf.com/) (AI development platform)
+* Other MCP-compatible tools
+
+### Step 2: Locate Your Configuration File
+
+Depending on your AI tool, you'll need to edit one of these files:
+
+* **Claude Desktop**: `Claude/claude_desktop_config.json`
+* **Claude Code**: `.claude.json`
+* **Cursor**: `.cursor/mcp.json`
+* **Windsurf**: `.codeium/windsurf/mcp_config.json`
+* **Other tools**: Check your tool's MCP documentation
+
+### Step 3: Add AI Elements Configuration
+
+#### Option A: Manual Configuration (All Tools)
+
+Copy and paste this configuration into your MCP config file:
+
+```json title=".cursor/mcp.json"
+{
+  "mcpServers": {
+    "ai-elements": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://registry.ai-sdk.dev/api/mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Option B: Quick Install (Claude Code Only)
+
+If you're using Claude Code, you can use the built-in command:
+
+`claude mcp add --transport http ai-elements https://registry.ai-sdk.dev/api/mcp`
+
+This automatically adds the server to your .claude.json configuration.
+
+### Step 4: Restart Your AI Tool
+
+Close and reopen your AI application for the changes to take effect.
+
+### Step 5: Verify the Connection
+
+Test the integration by asking your AI assistant:
+
+> What AI Elements components are available for building an AI app?
+
+If successful, your AI should be able to list and explain AI Elements components!
+
+## Multiple MCP Servers
+
+You can use AI Elements alongside other MCP servers:
+
+```json title=".cursor/mcp.json"
+{
+  "mcpServers": {
+    "ai-elements": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://registry.ai-sdk.dev/api/mcp"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    },
+    "filesystem": {
+      "command": "npx", 
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/project"]
+    }
+  }
+}
+```
+
+## Usage Examples
+
+### Getting Component Information
+
+Ask your AI assistant:
+
+> Show me how to use the AI Elements PromptInput component with different variants
+
+Expected response will include current documentation and code examples.
+
+### Building Layouts
+
+> Help me create an AI app layout using AI Elements components
+
+Your AI can suggest appropriate layout components and provide implementation code.
+
+### Styling Guidance
+
+> What are the recommended spacing tokens in AI Elements?
+
+Get up-to-date information about design tokens and styling conventions.
+
+## Security and Privacy
+
+### Data Handling
+
+* The AI Elements MCP server only provides public component documentation
+* No personal data or code is transmitted to our servers
+* All communication happens through your chosen AI tool's security layer
+
+### Authentication
+
+* No authentication required for public component information
+* Future premium features may require API keys
+* Always use official AI Elements MCP endpoints
+
+
+# Chatbot
+
+An example of how to use the AI Elements to build a chatbot.
+
+<Preview path="chatbot" type="block" className="p-0" />
+
+## Tutorial
+
+Let's walk through how to build a chatbot using AI Elements and AI SDK. Our example will include reasoning, web search with citations, and a model picker.
+
+### Setup
+
+First, set up a new Next.js repo and cd into it by running the following command (make sure you choose to use Tailwind the project setup):
+
+```bash title="Terminal"
+npx create-next-app@latest ai-chatbot && cd ai-chatbot
+```
+
+Run the following command to install AI Elements. This will also set up shadcn/ui if you haven't already configured it:
+
+```bash title="Terminal"
+npx ai-elements@latest
+```
+
+Now, install the AI SDK dependencies:
+
+<CodeBlockTabs defaultValue="npm">
+  <CodeBlockTabsList>
+    <CodeBlockTabsTrigger value="npm">
+      npm
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="pnpm">
+      pnpm
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="yarn">
+      yarn
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="bun">
+      bun
+    </CodeBlockTabsTrigger>
+  </CodeBlockTabsList>
+
+  <CodeBlockTab value="npm">
+    ```bash
+    npm i ai @ai-sdk/react zod
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="pnpm">
+    ```bash
+    pnpm add ai @ai-sdk/react zod
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="yarn">
+    ```bash
+    yarn add ai @ai-sdk/react zod
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="bun">
+    ```bash
+    bun add ai @ai-sdk/react zod
+    ```
+  </CodeBlockTab>
+</CodeBlockTabs>
+
+In order to use the providers, let's configure an AI Gateway API key. Create a `.env.local` in your root directory and navigate [here](https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\&title=Get%20your%20AI%20Gateway%20key) to create a token, then paste it in your `.env.local`.
+
+We're now ready to start building our app!
+
+### Client
+
+In your `app/page.tsx`, replace the code with the file below.
+
+Here, we use the `PromptInput` component with its compound components to build a rich input experience with file attachments, model picker, and action menu. The input component uses the new `PromptInputMessage` type for handling both text and file attachments.
+
+The whole chat lives in a `Conversation`. We switch on `message.parts` and render the respective part within `Message`, `Reasoning`, and `Sources`. We also use `status` from `useChat` to stream reasoning tokens, as well as render `Loader`.
+
+```tsx title="app/page.tsx"
+'use client';
+
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+  MessageActions,
+  MessageAction,
+} from '@/components/ai-elements/message';
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputHeader,
+  type PromptInputMessage,
+  PromptInputSelect,
+  PromptInputSelectContent,
+  PromptInputSelectItem,
+  PromptInputSelectTrigger,
+  PromptInputSelectValue,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputTools,
+} from '@/components/ai-elements/prompt-input';
+import { Fragment, useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from '@/components/ai-elements/sources';
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+import { Loader } from '@/components/ai-elements/loader';
+
+const models = [
+  {
+    name: 'GPT 4o',
+    value: 'openai/gpt-4o',
+  },
+  {
+    name: 'Deepseek R1',
+    value: 'deepseek/deepseek-r1',
+  },
+];
+
+const ChatBotDemo = () => {
+  const [input, setInput] = useState('');
+  const [model, setModel] = useState<string>(models[0].value);
+  const [webSearch, setWebSearch] = useState(false);
+  const { messages, sendMessage, status, regenerate } = useChat();
+
+  const handleSubmit = (message: PromptInputMessage) => {
+    const hasText = Boolean(message.text);
+    const hasAttachments = Boolean(message.files?.length);
+
+    if (!(hasText || hasAttachments)) {
+      return;
+    }
+
+    sendMessage(
+      { 
+        text: message.text || 'Sent with attachments',
+        files: message.files 
+      },
+      {
+        body: {
+          model: model,
+          webSearch: webSearch,
+        },
+      },
+    );
+    setInput('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
+      <div className="flex flex-col h-full">
+        <Conversation className="h-full">
+          <ConversationContent>
+            {messages.map((message) => (
+              <div key={message.id}>
+                {message.role === 'assistant' && message.parts.filter((part) => part.type === 'source-url').length > 0 && (
+                  <Sources>
+                    <SourcesTrigger
+                      count={
+                        message.parts.filter(
+                          (part) => part.type === 'source-url',
+                        ).length
+                      }
+                    />
+                    {message.parts.filter((part) => part.type === 'source-url').map((part, i) => (
+                      <SourcesContent key={`${message.id}-${i}`}>
+                        <Source
+                          key={`${message.id}-${i}`}
+                          href={part.url}
+                          title={part.url}
+                        />
+                      </SourcesContent>
+                    ))}
+                  </Sources>
+                )}
+                {message.parts.map((part, i) => {
+                  switch (part.type) {
+                    case 'text':
+                      return (
+                        <Message key={`${message.id}-${i}`} from={message.role}>
+                          <MessageContent>
+                            <MessageResponse>
+                              {part.text}
+                            </MessageResponse>
+                          </MessageContent>
+                          {message.role === 'assistant' && i === messages.length - 1 && (
+                            <MessageActions>
+                              <MessageAction
+                                onClick={() => regenerate()}
+                                label="Retry"
+                              >
+                                <RefreshCcwIcon className="size-3" />
+                              </MessageAction>
+                              <MessageAction
+                                onClick={() =>
+                                  navigator.clipboard.writeText(part.text)
+                                }
+                                label="Copy"
+                              >
+                                <CopyIcon className="size-3" />
+                              </MessageAction>
+                            </MessageActions>
+                          )}
+                        </Message>
+                      );
+                    case 'reasoning':
+                      return (
+                        <Reasoning
+                          key={`${message.id}-${i}`}
+                          className="w-full"
+                          isStreaming={status === 'streaming' && i === message.parts.length - 1 && message.id === messages.at(-1)?.id}
+                        >
+                          <ReasoningTrigger />
+                          <ReasoningContent>{part.text}</ReasoningContent>
+                        </Reasoning>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </div>
+            ))}
+            {status === 'submitted' && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+          <PromptInputHeader>
+            <PromptInputAttachments>
+              {(attachment) => <PromptInputAttachment data={attachment} />}
+            </PromptInputAttachments>
+          </PromptInputHeader>
+          <PromptInputBody>
+            <PromptInputTextarea
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
+            />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputTools>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+              <PromptInputButton
+                variant={webSearch ? 'default' : 'ghost'}
+                onClick={() => setWebSearch(!webSearch)}
+              >
+                <GlobeIcon size={16} />
+                <span>Search</span>
+              </PromptInputButton>
+              <PromptInputSelect
+                onValueChange={(value) => {
+                  setModel(value);
+                }}
+                value={model}
+              >
+                <PromptInputSelectTrigger>
+                  <PromptInputSelectValue />
+                </PromptInputSelectTrigger>
+                <PromptInputSelectContent>
+                  {models.map((model) => (
+                    <PromptInputSelectItem key={model.value} value={model.value}>
+                      {model.name}
+                    </PromptInputSelectItem>
+                  ))}
+                </PromptInputSelectContent>
+              </PromptInputSelect>
+            </PromptInputTools>
+            <PromptInputSubmit disabled={!input && !status} status={status} />
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
+    </div>
+  );
+};
+
+export default ChatBotDemo;
+```
+
+### Server
+
+Create a new route handler `app/api/chat/route.ts` and paste in the following code. We're using `perplexity/sonar` for web search because by default the model returns search results. We also pass `sendSources` and `sendReasoning` to `toUIMessageStreamResponse` in order to receive as parts on the frontend. The handler now also accepts file attachments from the client.
+
+```ts title="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const {
+    messages,
+    model,
+    webSearch,
+  }: { 
+    messages: UIMessage[]; 
+    model: string; 
+    webSearch: boolean;
+  } = await req.json();
+
+  const result = streamText({
+    model: webSearch ? 'perplexity/sonar' : model,
+    messages: convertToModelMessages(messages),
+    system:
+      'You are a helpful assistant that can answer questions and help with tasks',
+  });
+
+  // send sources and reasoning back to the client
+  return result.toUIMessageStreamResponse({
+    sendSources: true,
+    sendReasoning: true,
+  });
+}
+```
+
+You now have a working chatbot app with file attachment support! The chatbot can handle both text and file inputs through the action menu. Feel free to explore other components like [`Tool`](/elements/components/tool) or [`Task`](/elements/components/task) to extend your app, or view the other examples.
+
+
+# Workflow
+
+An example of how to use the AI Elements to build a workflow visualization with interactive nodes and animated connections, built with [React Flow](https://reactflow.dev/).
+
+<Preview path="workflow" type="block" className="p-0" />
+
+## Tutorial
+
+Let's walk through how to build a workflow visualization using AI Elements. Our example will include custom nodes with headers, content, and footers, along with animated and temporary edge types.
+
+### Setup
+
+First, set up a new Next.js repo and cd into it by running the following command (make sure you choose to use Tailwind in the project setup):
+
+```bash title="Terminal"
+npx create-next-app@latest ai-workflow && cd ai-workflow
+```
+
+Run the following command to install AI Elements. This will also set up shadcn/ui if you haven't already configured it:
+
+```bash title="Terminal"
+npx ai-elements@latest
+```
+
+Now, install the required dependencies:
+
+<CodeBlockTabs defaultValue="npm">
+  <CodeBlockTabsList>
+    <CodeBlockTabsTrigger value="npm">
+      npm
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="pnpm">
+      pnpm
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="yarn">
+      yarn
+    </CodeBlockTabsTrigger>
+
+    <CodeBlockTabsTrigger value="bun">
+      bun
+    </CodeBlockTabsTrigger>
+  </CodeBlockTabsList>
+
+  <CodeBlockTab value="npm">
+    ```bash
+    npm i @xyflow/react
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="pnpm">
+    ```bash
+    pnpm add @xyflow/react
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="yarn">
+    ```bash
+    yarn add @xyflow/react
+    ```
+  </CodeBlockTab>
+
+  <CodeBlockTab value="bun">
+    ```bash
+    bun add @xyflow/react
+    ```
+  </CodeBlockTab>
+</CodeBlockTabs>
+
+We're now ready to start building our workflow!
+
+### Client
+
+Let's build the workflow visualization step by step. We'll create the component structure, define our nodes and edges, and configure the canvas.
+
+#### Import the components
+
+First, import the necessary AI Elements components in your `app/page.tsx`:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { Canvas } from '@/components/ai-elements/canvas';
+import { Connection } from '@/components/ai-elements/connection';
+import { Controls } from '@/components/ai-elements/controls';
+import { Edge } from '@/components/ai-elements/edge';
+import {
+  Node,
+  NodeContent,
+  NodeDescription,
+  NodeFooter,
+  NodeHeader,
+  NodeTitle,
+} from '@/components/ai-elements/node';
+import { Panel } from '@/components/ai-elements/panel';
+import { Toolbar } from '@/components/ai-elements/toolbar';
+import { Button } from '@/components/ui/button';
+```
+
+#### Define node IDs
+
+Create a constant object to manage node identifiers. This makes it easier to reference nodes when creating edges:
+
+```tsx title="app/page.tsx"
+const nodeIds = {
+  start: 'start',
+  process1: 'process1',
+  process2: 'process2',
+  decision: 'decision',
+  output1: 'output1',
+  output2: 'output2',
+};
+```
+
+#### Create mock nodes
+
+Define the nodes array with position, type, and data for each node in your workflow:
+
+```tsx title="app/page.tsx"
+const nodes = [
+  {
+    id: nodeIds.start,
+    type: 'workflow',
+    position: { x: 0, y: 0 },
+    data: {
+      label: 'Start',
+      description: 'Initialize workflow',
+      handles: { target: false, source: true },
+      content: 'Triggered by user action at 09:30 AM',
+      footer: 'Status: Ready',
+    },
+  },
+  {
+    id: nodeIds.process1,
+    type: 'workflow',
+    position: { x: 500, y: 0 },
+    data: {
+      label: 'Process Data',
+      description: 'Transform input',
+      handles: { target: true, source: true },
+      content: 'Validating 1,234 records and applying business rules',
+      footer: 'Duration: ~2.5s',
+    },
+  },
+  {
+    id: nodeIds.decision,
+    type: 'workflow',
+    position: { x: 1000, y: 0 },
+    data: {
+      label: 'Decision Point',
+      description: 'Route based on conditions',
+      handles: { target: true, source: true },
+      content: "Evaluating: data.status === 'valid' && data.score > 0.8",
+      footer: 'Confidence: 94%',
+    },
+  },
+  {
+    id: nodeIds.output1,
+    type: 'workflow',
+    position: { x: 1500, y: -300 },
+    data: {
+      label: 'Success Path',
+      description: 'Handle success case',
+      handles: { target: true, source: true },
+      content: '1,156 records passed validation (93.7%)',
+      footer: 'Next: Send to production',
+    },
+  },
+  {
+    id: nodeIds.output2,
+    type: 'workflow',
+    position: { x: 1500, y: 300 },
+    data: {
+      label: 'Error Path',
+      description: 'Handle error case',
+      handles: { target: true, source: true },
+      content: '78 records failed validation (6.3%)',
+      footer: 'Next: Queue for review',
+    },
+  },
+  {
+    id: nodeIds.process2,
+    type: 'workflow',
+    position: { x: 2000, y: 0 },
+    data: {
+      label: 'Complete',
+      description: 'Finalize workflow',
+      handles: { target: true, source: false },
+      content: 'All records processed and routed successfully',
+      footer: 'Total time: 4.2s',
+    },
+  },
+];
+```
+
+#### Create mock edges
+
+Define the connections between nodes. Use `animated` for active paths and `temporary` for conditional or error paths:
+
+```tsx title="app/page.tsx"
+const edges = [
+  {
+    id: 'edge1',
+    source: nodeIds.start,
+    target: nodeIds.process1,
+    type: 'animated',
+  },
+  {
+    id: 'edge2',
+    source: nodeIds.process1,
+    target: nodeIds.decision,
+    type: 'animated',
+  },
+  {
+    id: 'edge3',
+    source: nodeIds.decision,
+    target: nodeIds.output1,
+    type: 'animated',
+  },
+  {
+    id: 'edge4',
+    source: nodeIds.decision,
+    target: nodeIds.output2,
+    type: 'temporary',
+  },
+  {
+    id: 'edge5',
+    source: nodeIds.output1,
+    target: nodeIds.process2,
+    type: 'animated',
+  },
+  {
+    id: 'edge6',
+    source: nodeIds.output2,
+    target: nodeIds.process2,
+    type: 'temporary',
+  },
+];
+```
+
+#### Create the node types
+
+Define custom node rendering using the compound Node components:
+
+```tsx title="app/page.tsx"
+const nodeTypes = {
+  workflow: ({
+    data,
+  }: {
+    data: {
+      label: string;
+      description: string;
+      handles: { target: boolean; source: boolean };
+      content: string;
+      footer: string;
+    };
+  }) => (
+    <Node handles={data.handles}>
+      <NodeHeader>
+        <NodeTitle>{data.label}</NodeTitle>
+        <NodeDescription>{data.description}</NodeDescription>
+      </NodeHeader>
+      <NodeContent>
+        <p className="text-sm">{data.content}</p>
+      </NodeContent>
+      <NodeFooter>
+        <p className="text-muted-foreground text-xs">{data.footer}</p>
+      </NodeFooter>
+      <Toolbar>
+        <Button size="sm" variant="ghost">
+          Edit
+        </Button>
+        <Button size="sm" variant="ghost">
+          Delete
+        </Button>
+      </Toolbar>
+    </Node>
+  ),
+};
+```
+
+#### Create the edge types
+
+Map the edge type names to the Edge components:
+
+```tsx title="app/page.tsx"
+const edgeTypes = {
+  animated: Edge.Animated,
+  temporary: Edge.Temporary,
+};
+```
+
+#### Build the main component
+
+Finally, create the main component that renders the Canvas with all nodes, edges, controls, and custom UI panels:
+
+```tsx title="app/page.tsx"
+const App = () => (
+  <Canvas
+    edges={edges}
+    edgeTypes={edgeTypes}
+    fitView
+    nodes={nodes}
+    nodeTypes={nodeTypes}
+    connectionLineComponent={Connection}
+  >
+    <Controls />
+    <Panel position="top-left">
+      <Button size="sm" variant="secondary">
+        Export
+      </Button>
+    </Panel>
+  </Canvas>
+);
+
+export default App;
+```
+
+### Key Features
+
+The workflow visualization demonstrates several powerful features:
+
+* **Custom Node Components**: Each node uses the compound components (`NodeHeader`, `NodeTitle`, `NodeDescription`, `NodeContent`, `NodeFooter`) for consistent, structured layouts.
+* **Node Toolbars**: The `Toolbar` component attaches contextual actions (like Edit and Delete buttons) to individual nodes, appearing when hovering or selecting them.
+* **Handle Configuration**: Nodes can have source and/or target handles, controlling which connections are possible.
+* **Multiple Edge Types**: The `animated` type shows active data flow, while `temporary` indicates conditional or error paths.
+* **Custom Connection Lines**: The `Connection` component provides styled bezier curves when dragging new connections between nodes.
+* **Interactive Controls**: The `Controls` component adds zoom in/out and fit view buttons with a modern, themed design.
+* **Custom UI Panels**: The `Panel` component allows you to position custom UI elements (like buttons, filters, or legends) anywhere on the canvas.
+* **Automatic Layout**: The `Canvas` component auto-fits the view and provides pan/zoom controls out of the box.
+
+You now have a working workflow visualization! Feel free to explore dynamic workflows by connecting this to AI-generated process flows, or extend it with interactive editing capabilities using React Flow's built-in features.
+
+
+# Chain of Thought
+
+The `ChainOfThought` component provides a visual representation of an AI's reasoning process, showing step-by-step thinking with support for search results, images, and progress indicators. It helps users understand how AI arrives at conclusions.
+
+<Preview path="chain-of-thought" />
+
+## Installation
+
+<ElementsInstaller path="chain-of-thought" />
+
+## Features
+
+* Collapsible interface with smooth animations powered by Radix UI
+* Step-by-step visualization of AI reasoning process
+* Support for different step statuses (complete, active, pending)
+* Built-in search results display with badge styling
+* Image support with captions for visual content
+* Custom icons for different step types
+* Context-aware components using React Context API
+* Fully typed with TypeScript
+* Accessible with keyboard navigation support
+* Responsive design that adapts to different screen sizes
+* Smooth fade and slide animations for content transitions
+* Composable architecture for flexible customization
+
+## Props
+
+### `<ChainOfThought />`
+
+<TypeTable
+  type={{
+  open: {
+    description: 'Controlled open state of the collapsible.',
+    type: 'boolean',
+  },
+  defaultOpen: {
+    description: 'Default open state when uncontrolled.',
+    type: 'boolean',
+    default: 'false',
+  },
+  onOpenChange: {
+    description: 'Callback when the open state changes.',
+    type: '(open: boolean) => void',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ChainOfThoughtHeader />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Custom header text.',
+    type: 'React.ReactNode',
+    default: '"Chain of Thought"',
+  },
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleTrigger component.',
+    type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+  },
+}}
+/>
+
+### `<ChainOfThoughtStep />`
+
+<TypeTable
+  type={{
+  icon: {
+    description: 'Icon to display for the step.',
+    type: 'LucideIcon',
+    default: 'DotIcon',
+  },
+  label: {
+    description: 'The main text label for the step.',
+    type: 'string',
+  },
+  description: {
+    description: 'Optional description text shown below the label.',
+    type: 'string',
+  },
+  status: {
+    description: 'Visual status of the step.',
+    type: '"complete" | "active" | "pending"',
+    default: '"complete"',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ChainOfThoughtSearchResults />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any props are spread to the container div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ChainOfThoughtSearchResult />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any props are spread to the Badge component.',
+    type: 'React.ComponentProps<typeof Badge>',
+  },
+}}
+/>
+
+### `<ChainOfThoughtContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any props are spread to the CollapsibleContent component.',
+    type: 'React.ComponentProps<typeof CollapsibleContent>',
+  },
+}}
+/>
+
+### `<ChainOfThoughtImage />`
+
+<TypeTable
+  type={{
+  caption: {
+    description: 'Optional caption text displayed below the image.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the container div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+
+# Checkpoint
+
+The `Checkpoint` component provides a way to mark specific points in a conversation history and restore the chat to that state. Inspired by VSCode's Copilot checkpoint feature, it allows users to revert to an earlier conversation state while maintaining a clear visual separation between different conversation segments.
+
+<Preview path="checkpoint" />
+
+## Installation
+
+<ElementsInstaller path="checkpoint" />
+
+## Features
+
+* Simple flex layout with icon, trigger, and separator
+* Visual separator line for clear conversation breaks
+* Clickable restore button for reverting to checkpoint
+* Customizable icon (defaults to BookmarkIcon)
+* Keyboard accessible with proper ARIA labels
+* Responsive design that adapts to different screen sizes
+* Seamless light/dark theme integration
+
+## Usage with AI SDK
+
+Build a chat interface with conversation checkpoints that allow users to restore to previous states.
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { useState, Fragment } from 'react';
+import { useChat } from '@ai-sdk/react';
+import {
+  Checkpoint,
+  CheckpointIcon,
+  CheckpointTrigger,
+} from '@/components/ai-elements/checkpoint';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { Conversation, ConversationContent } from '@/components/ai-elements/conversation';
+
+type CheckpointType = {
+  id: string;
+  messageIndex: number;
+  timestamp: Date;
+  messageCount: number;
+};
+
+const CheckpointDemo = () => {
+  const { messages, setMessages } = useChat();
+  const [checkpoints, setCheckpoints] = useState<CheckpointType[]>([]);
+
+  const createCheckpoint = (messageIndex: number) => {
+    const checkpoint: CheckpointType = {
+      id: nanoid(),
+      messageIndex,
+      timestamp: new Date(),
+      messageCount: messageIndex + 1,
+    };
+    setCheckpoints([...checkpoints, checkpoint]);
+  };
+
+  const restoreToCheckpoint = (messageIndex: number) => {
+    // Restore messages to checkpoint state
+    setMessages(messages.slice(0, messageIndex + 1));
+    // Remove checkpoints after this point
+    setCheckpoints(checkpoints.filter(cp => cp.messageIndex <= messageIndex));
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <Conversation>
+        <ConversationContent>
+          {messages.map((message, index) => {
+            const checkpoint = checkpoints.find(cp => cp.messageIndex === index);
+
+            return (
+              <Fragment key={message.id}>
+                <Message from={message.role}>
+                  <MessageContent>
+                    <MessageResponse>{message.content}</MessageResponse>
+                  </MessageContent>
+                </Message>
+                {checkpoint && (
+                  <Checkpoint>
+                    <CheckpointIcon />
+                    <CheckpointTrigger
+                      onClick={() => restoreToCheckpoint(checkpoint.messageIndex)}
+                    >
+                      Restore checkpoint
+                    </CheckpointTrigger>
+                  </Checkpoint>
+                )}
+              </Fragment>
+            );
+          })}
+        </ConversationContent>
+      </Conversation>
+    </div>
+  );
+};
+
+export default CheckpointDemo;
+```
+
+## Use Cases
+
+### Manual Checkpoints
+
+Allow users to manually create checkpoints at important conversation points:
+
+```tsx
+<Button onClick={() => createCheckpoint(messages.length - 1)}>
+  Create Checkpoint
+</Button>
+```
+
+### Automatic Checkpoints
+
+Create checkpoints automatically after significant conversation milestones:
+
+```tsx
+useEffect(() => {
+  // Create checkpoint every 5 messages
+  if (messages.length > 0 && messages.length % 5 === 0) {
+    createCheckpoint(messages.length - 1);
+  }
+}, [messages.length]);
+```
+
+### Branching Conversations
+
+Use checkpoints to enable conversation branching where users can explore different conversation paths:
+
+```tsx
+const restoreAndBranch = (messageIndex: number) => {
+  // Save current branch
+  const currentBranch = messages.slice(messageIndex + 1);
+  saveBranch(currentBranch);
+
+  // Restore to checkpoint
+  restoreToCheckpoint(messageIndex);
+};
+```
+
+## Props
+
+### `<Checkpoint />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The checkpoint icon and trigger components. Automatically includes a Separator at the end.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<CheckpointIcon />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Custom icon content. If not provided, defaults to a BookmarkIcon from lucide-react.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the BookmarkIcon component.',
+    type: 'LucideProps',
+  },
+}}
+/>
+
+### `<CheckpointTrigger />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The text or content to display in the trigger button.',
+    type: 'React.ReactNode',
+  },
+  variant: {
+    description: 'The button variant style.',
+    type: 'string',
+    default: '"ghost"',
+  },
+  size: {
+    description: 'The button size.',
+    type: 'string',
+    default: '"sm"',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+
+# Confirmation
+
+The `Confirmation` component provides a flexible system for displaying tool approval requests and their outcomes. Perfect for showing users when AI tools require approval before execution, and displaying the approval status afterward.
+
+<Preview path="confirmation" />
+
+## Installation
+
+<ElementsInstaller path="confirmation" />
+
+## Usage with AI SDK
+
+Build a chat UI with tool approval workflow where dangerous tools require user confirmation before execution.
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type ToolUIPart } from 'ai';
+import { useState } from 'react';
+import { CheckIcon, XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Confirmation,
+  ConfirmationContent,
+  ConfirmationRequest,
+  ConfirmationAccepted,
+  ConfirmationRejected,
+  ConfirmationActions,
+  ConfirmationAction,
+} from '@/components/ai-elements/confirmation';
+import { MessageResponse } from '@/components/ai-elements/message';
+
+type DeleteFileInput = {
+  filePath: string;
+  confirm: boolean;
+};
+
+type DeleteFileToolUIPart = ToolUIPart<{
+  delete_file: {
+    input: DeleteFileInput;
+    output: { success: boolean; message: string };
+  };
+}>;
+
+const Example = () => {
+  const { messages, sendMessage, status, respondToConfirmationRequest } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+
+  const handleDeleteFile = () => {
+    sendMessage({ text: 'Delete the file at /tmp/example.txt' });
+  };
+
+  const latestMessage = messages[messages.length - 1];
+  const deleteTool = latestMessage?.parts?.find(
+    (part) => part.type === 'tool-delete_file'
+  ) as DeleteFileToolUIPart | undefined;
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full space-y-4">
+        <Button onClick={handleDeleteFile} disabled={status !== 'ready'}>
+          Delete Example File
+        </Button>
+
+        {deleteTool?.approval && (
+          <Confirmation approval={deleteTool.approval} state={deleteTool.state}>
+            <ConfirmationContent>
+              <ConfirmationRequest>
+                This tool wants to delete: <code>{deleteTool.input?.filePath}</code>
+                <br />
+                Do you approve this action?
+              </ConfirmationRequest>
+              <ConfirmationAccepted>
+                <CheckIcon className="size-4" />
+                <span>You approved this tool execution</span>
+              </ConfirmationAccepted>
+              <ConfirmationRejected>
+                <XIcon className="size-4" />
+                <span>You rejected this tool execution</span>
+              </ConfirmationRejected>
+            </ConfirmationContent>
+            <ConfirmationActions>
+              <ConfirmationAction
+                variant="outline"
+                onClick={() =>
+                  respondToConfirmationRequest({
+                    approvalId: deleteTool.approval!.id,
+                    approved: false,
+                  })
+                }
+              >
+                Reject
+              </ConfirmationAction>
+              <ConfirmationAction
+                variant="default"
+                onClick={() =>
+                  respondToConfirmationRequest({
+                    approvalId: deleteTool.approval!.id,
+                    approved: true,
+                  })
+                }
+              >
+                Approve
+              </ConfirmationAction>
+            </ConfirmationActions>
+          </Confirmation>
+        )}
+
+        {deleteTool?.output && (
+          <MessageResponse>
+            {deleteTool.output.success
+              ? deleteTool.output.message
+              : `Error: ${deleteTool.output.message}`}
+          </MessageResponse>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Example;
+```
+
+Add the following route to your backend:
+
+```ts title="app/api/chat/route.tsx"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+import { z } from 'zod';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+    tools: {
+      delete_file: {
+        description: 'Delete a file from the file system',
+        parameters: z.object({
+          filePath: z.string().describe('The path to the file to delete'),
+          confirm: z
+            .boolean()
+            .default(false)
+            .describe('Confirmation that the user wants to delete the file'),
+        }),
+        requireApproval: true, // Enable approval workflow
+        execute: async ({ filePath, confirm }) => {
+          if (!confirm) {
+            return {
+              success: false,
+              message: 'Deletion not confirmed',
+            };
+          }
+
+          // Simulate file deletion
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          return {
+            success: true,
+            message: `Successfully deleted ${filePath}`,
+          };
+        },
+      },
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+* Context-based state management for approval workflow
+* Conditional rendering based on approval state
+* Support for approval-requested, approval-responded, output-denied, and output-available states
+* Built on shadcn/ui Alert and Button components
+* TypeScript support with comprehensive type definitions
+* Customizable styling with Tailwind CSS
+* Keyboard navigation and accessibility support
+* Theme-aware with automatic dark mode support
+
+## Examples
+
+### Approval Request State
+
+Shows the approval request with action buttons when state is `approval-requested`.
+
+<Preview path="confirmation-request" />
+
+### Approved State
+
+Shows the accepted status when user approves and state is `approval-responded` or `output-available`.
+
+<Preview path="confirmation-accepted" />
+
+### Rejected State
+
+Shows the rejected status when user rejects and state is `output-denied`.
+
+<Preview path="confirmation-rejected" />
+
+## Props
+
+### `<Confirmation />`
+
+<TypeTable
+  type={{
+  approval: {
+    description: 'The approval object containing the approval ID and status. If not provided or undefined, the component will not render.',
+    type: 'ToolUIPart["approval"]',
+  },
+  state: {
+    description: 'The current state of the tool (input-streaming, input-available, approval-requested, approval-responded, output-denied, or output-available). Will not render for input-streaming or input-available states.',
+    type: 'ToolUIPart["state"]',
+  },
+  className: {
+    description: 'Additional CSS classes to apply to the Alert component.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the Alert component.',
+    type: 'React.ComponentProps<typeof Alert>',
+  },
+}}
+/>
+
+### `<ConfirmationContent />`
+
+<TypeTable
+  type={{
+  className: {
+    description: 'Additional CSS classes to apply to the AlertDescription component.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the AlertDescription component.',
+    type: 'React.ComponentProps<typeof AlertDescription>',
+  },
+}}
+/>
+
+### `<ConfirmationRequest />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The content to display when approval is requested. Only renders when state is "approval-requested".',
+    type: 'React.ReactNode',
+  },
+}}
+/>
+
+### `<ConfirmationAccepted />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The content to display when approval is accepted. Only renders when approval.approved is true and state is "approval-responded", "output-denied", or "output-available".',
+    type: 'React.ReactNode',
+  },
+}}
+/>
+
+### `<ConfirmationRejected />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The content to display when approval is rejected. Only renders when approval.approved is false and state is "approval-responded", "output-denied", or "output-available".',
+    type: 'React.ReactNode',
+  },
+}}
+/>
+
+### `<ConfirmationActions />`
+
+<TypeTable
+  type={{
+  className: {
+    description: 'Additional CSS classes to apply to the actions container.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the div element. Only renders when state is "approval-requested".',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ConfirmationAction />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the Button component. Styled with h-8 px-3 text-sm classes by default.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+
+# Context
+
+The `Context` component provides a comprehensive view of AI model usage through a compound component system. It displays context window utilization, token consumption breakdown (input, output, reasoning, cache), and cost estimation in an interactive hover card interface.
+
+<Preview path="context" />
+
+## Installation
+
+<ElementsInstaller path="context" />
+
+## Features
+
+* **Compound Component Architecture**: Flexible composition of context display elements
+* **Visual Progress Indicator**: Circular SVG progress ring showing context usage percentage
+* **Token Breakdown**: Detailed view of input, output, reasoning, and cached tokens
+* **Cost Estimation**: Real-time cost calculation using the `tokenlens` library
+* **Intelligent Formatting**: Automatic token count formatting (K, M, B suffixes)
+* **Interactive Hover Card**: Detailed information revealed on hover
+* **Context Provider Pattern**: Clean data flow through React Context API
+* **TypeScript Support**: Full type definitions for all components
+* **Accessible Design**: Proper ARIA labels and semantic HTML
+* **Theme Integration**: Uses currentColor for automatic theme adaptation
+
+## Props
+
+### `<Context />`
+
+<TypeTable
+  type={{
+  maxTokens: {
+    description: 'The total context window size in tokens.',
+    type: 'number',
+  },
+  usedTokens: {
+    description: 'The number of tokens currently used.',
+    type: 'number',
+  },
+  usage: {
+    description: 'Detailed token usage breakdown from the AI SDK (input, output, reasoning, cached tokens).',
+    type: 'LanguageModelUsage',
+  },
+  modelId: {
+    description: 'Model identifier for cost calculation (e.g., "openai:gpt-4", "anthropic:claude-3-opus").',
+    type: 'ModelId',
+  },
+  '...props': {
+    description: 'Any other props are spread to the HoverCard component.',
+    type: 'ComponentProps<HoverCard>',
+  },
+}}
+/>
+
+### `<ContextTrigger />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Custom trigger element. If not provided, renders a default button with percentage and icon.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Props spread to the default button element.',
+    type: 'ComponentProps<Button>',
+  },
+}}
+/>
+
+### `<ContextContent />`
+
+<TypeTable
+  type={{
+  className: {
+    description: 'Additional CSS classes for the hover card content.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Props spread to the HoverCardContent component.',
+    type: 'ComponentProps<HoverCardContent>',
+  },
+}}
+/>
+
+### `<ContextContentHeader />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Custom header content. If not provided, renders percentage and token count with progress bar.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Props spread to the header div element.',
+    type: 'ComponentProps<div>',
+  },
+}}
+/>
+
+### `<ContextContentBody />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Body content, typically containing usage breakdown components.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Props spread to the body div element.',
+    type: 'ComponentProps<div>',
+  },
+}}
+/>
+
+### `<ContextContentFooter />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Custom footer content. If not provided, renders total cost when modelId is provided.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Props spread to the footer div element.',
+    type: 'ComponentProps<div>',
+  },
+}}
+/>
+
+### Usage Components
+
+All usage components (`ContextInputUsage`, `ContextOutputUsage`, `ContextReasoningUsage`, `ContextCacheUsage`) share the same props:
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Custom content. If not provided, renders token count and cost for the respective usage type.',
+    type: 'React.ReactNode',
+  },
+  className: {
+    description: 'Additional CSS classes.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Props spread to the div element.',
+    type: 'ComponentProps<div>',
+  },
+}}
+/>
+
+## Component Architecture
+
+The Context component uses a compound component pattern with React Context for data sharing:
+
+1. **`<Context>`** - Root provider component that holds all context data
+2. **`<ContextTrigger>`** - Interactive trigger element (default: button with percentage)
+3. **`<ContextContent>`** - Hover card content container
+4. **`<ContextContentHeader>`** - Header section with progress visualization
+5. **`<ContextContentBody>`** - Body section for usage breakdowns
+6. **`<ContextContentFooter>`** - Footer section for total cost
+7. **Usage Components** - Individual token usage displays (Input, Output, Reasoning, Cache)
+
+## Token Formatting
+
+The component uses `Intl.NumberFormat` with compact notation for automatic formatting:
+
+* Under 1,000: Shows exact count (e.g., "842")
+* 1,000+: Shows with K suffix (e.g., "32K")
+* 1,000,000+: Shows with M suffix (e.g., "1.5M")
+* 1,000,000,000+: Shows with B suffix (e.g., "2.1B")
+
+## Cost Calculation
+
+When a `modelId` is provided, the component automatically calculates costs using the `tokenlens` library:
+
+* **Input tokens**: Cost based on model's input pricing
+* **Output tokens**: Cost based on model's output pricing
+* **Reasoning tokens**: Special pricing for reasoning-capable models
+* **Cached tokens**: Reduced pricing for cached input tokens
+* **Total cost**: Sum of all token type costs
+
+Costs are formatted using `Intl.NumberFormat` with USD currency.
+
+## Styling
+
+The component uses Tailwind CSS classes and follows your design system:
+
+* Progress indicator uses `currentColor` for theme adaptation
+* Hover card has customizable width and padding
+* Footer has a secondary background for visual separation
+* All text sizes use the `text-xs` class for consistency
+* Muted foreground colors for secondary information
+
+
+# Conversation
+
+The `Conversation` component wraps messages and automatically scrolls to the bottom. Also includes a scroll button that appears when not at the bottom.
+
+<Preview path="conversation" className="p-0" />
+
+## Installation
+
+<ElementsInstaller path="conversation" />
+
+## Usage with AI SDK
+
+Build a simple conversational UI with `Conversation` and [`PromptInput`](/elements/components/prompt-input):
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { 
+  Message, 
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+
+const ConversationDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.length === 0 ? (
+              <ConversationEmptyState
+                icon={<MessageSquare className="size-12" />}
+                title="Start a conversation"
+                description="Type a message below to begin chatting"
+              />
+            ) : (
+              messages.map((message) => (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    {message.parts.map((part, i) => {
+                      switch (part.type) {
+                        case 'text': // we don't use any reasoning or tool calls in this example
+                          return (
+                            <MessageResponse key={`${message.id}-${i}`}>
+                              {part.text}
+                            </MessageResponse>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
+                  </MessageContent>
+                </Message>
+              ))
+            )}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default ConversationDemo;
+```
+
+Add the following route to your backend:
+
+```tsx title="api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+* Automatic scrolling to the bottom when new messages are added
+* Smooth scrolling behavior with configurable animation
+* Scroll button that appears when not at the bottom
+* Responsive design with customizable padding and spacing
+* Flexible content layout with consistent message spacing
+* Accessible with proper ARIA roles for screen readers
+* Customizable styling through className prop
+* Support for any number of child message components
+
+## Props
+
+### `<Conversation />`
+
+<TypeTable
+  type={{
+  contextRef: {
+    description: 'Optional ref to access the StickToBottom context object.',
+    type: 'React.Ref<StickToBottomContext>',
+  },
+  instance: {
+    description: 'Optional instance for controlling the StickToBottom component.',
+    type: 'StickToBottomInstance',
+  },
+  children: {
+    description: 'Render prop or ReactNode for custom rendering with context.',
+    type: '((context: StickToBottomContext) => ReactNode) | ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'Omit<React.HTMLAttributes<HTMLDivElement>, "children">',
+  },
+}}
+/>
+
+### `<ConversationContent />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Render prop or ReactNode for custom rendering with context.',
+    type: '((context: StickToBottomContext) => ReactNode) | ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'Omit<React.HTMLAttributes<HTMLDivElement>, "children">',
+  },
+}}
+/>
+
+### `<ConversationEmptyState />`
+
+<TypeTable
+  type={{
+  title: {
+    description: 'The title text to display.',
+    type: 'string',
+    default: '"No messages yet"',
+  },
+  description: {
+    description: 'The description text to display.',
+    type: 'string',
+    default: '"Start a conversation to see messages here"',
+  },
+  icon: {
+    description: 'Optional icon to display above the text.',
+    type: 'React.ReactNode',
+  },
+  children: {
+    description: 'Optional additional content to render below the text.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ConversationScrollButton />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+
+# Inline Citation
+
+The `InlineCitation` component provides a way to display citations inline with text content, similar to academic papers or research documents. It consists of a citation pill that shows detailed source information on hover, making it perfect for AI-generated content that needs to reference sources.
+
+<Preview path="inline-citation" />
+
+## Installation
+
+<ElementsInstaller path="inline-citation" />
+
+## Usage with AI SDK
+
+Build citations for AI-generated content using [`experimental_generateObject`](/docs/reference/ai-sdk-ui/use-object).
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import {
+  InlineCitation,
+  InlineCitationText,
+  InlineCitationCard,
+  InlineCitationCardTrigger,
+  InlineCitationCardBody,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselPrev,
+  InlineCitationCarouselNext,
+  InlineCitationSource,
+  InlineCitationQuote,
+} from '@/components/ai-elements/inline-citation';
+import { Button } from '@/components/ui/button';
+import { citationSchema } from '@/app/api/citation/route';
+
+const CitationDemo = () => {
+  const { object, submit, isLoading } = useObject({
+    api: '/api/citation',
+    schema: citationSchema,
+  });
+
+  const handleSubmit = (topic: string) => {
+    submit({ prompt: topic });
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex gap-2 mb-6">
+        <Button
+          onClick={() => handleSubmit('artificial intelligence')}
+          disabled={isLoading}
+          variant="outline"
+        >
+          Generate AI Content
+        </Button>
+        <Button
+          onClick={() => handleSubmit('climate change')}
+          disabled={isLoading}
+          variant="outline"
+        >
+          Generate Climate Content
+        </Button>
+      </div>
+
+      {isLoading && !object && (
+        <div className="text-muted-foreground">
+          Generating content with citations...
+        </div>
+      )}
+
+      {object?.content && (
+        <div className="prose prose-sm max-w-none">
+          <p className="leading-relaxed">
+            {object.content.split(/(\[\d+\])/).map((part, index) => {
+              const citationMatch = part.match(/\[(\d+)\]/);
+              if (citationMatch) {
+                const citationNumber = citationMatch[1];
+                const citation = object.citations?.find(
+                  (c: any) => c.number === citationNumber,
+                );
+
+                if (citation) {
+                  return (
+                    <InlineCitation key={index}>
+                      <InlineCitationCard>
+                        <InlineCitationCardTrigger sources={[citation.url]} />
+                        <InlineCitationCardBody>
+                          <InlineCitationCarousel>
+                            <InlineCitationCarouselHeader>
+                              <InlineCitationCarouselPrev />
+                              <InlineCitationCarouselNext />
+                              <InlineCitationCarouselIndex />
+                            </InlineCitationCarouselHeader>
+                            <InlineCitationCarouselContent>
+                              <InlineCitationCarouselItem>
+                                <InlineCitationSource
+                                  title={citation.title}
+                                  url={citation.url}
+                                  description={citation.description}
+                                />
+                                {citation.quote && (
+                                  <InlineCitationQuote>
+                                    {citation.quote}
+                                  </InlineCitationQuote>
+                                )}
+                              </InlineCitationCarouselItem>
+                            </InlineCitationCarouselContent>
+                          </InlineCitationCarousel>
+                        </InlineCitationCardBody>
+                      </InlineCitationCard>
+                    </InlineCitation>
+                  );
+                }
+              }
+              return part;
+            })}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CitationDemo;
+```
+
+Add the following route to your backend:
+
+```ts title="app/api/citation/route.ts"
+import { streamObject } from 'ai';
+import { z } from 'zod';
+
+export const citationSchema = z.object({
+  content: z.string(),
+  citations: z.array(
+    z.object({
+      number: z.string(),
+      title: z.string(),
+      url: z.string(),
+      description: z.string().optional(),
+      quote: z.string().optional(),
+    }),
+  ),
+});
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { prompt } = await req.json();
+
+  const result = streamObject({
+    model: 'openai/gpt-4o',
+    schema: citationSchema,
+    prompt: `Generate a well-researched paragraph about ${prompt} with proper citations. 
+    
+    Include:
+    - A comprehensive paragraph with inline citations marked as [1], [2], etc.
+    - 2-3 citations with realistic source information
+    - Each citation should have a title, URL, and optional description/quote
+    - Make the content informative and the sources credible
+    
+    Format citations as numbered references within the text.`,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+## Features
+
+* Hover interaction to reveal detailed citation information
+* **Carousel navigation** for multiple citations with prev/next controls
+* **Live index tracking** showing current slide position (e.g., "1/5")
+* Support for source titles, URLs, and descriptions
+* Optional quote blocks for relevant excerpts
+* Composable architecture for flexible citation formats
+* Accessible design with proper keyboard navigation
+* Seamless integration with AI-generated content
+* Clean visual design that doesn't disrupt reading flow
+* Smart badge display showing source hostname and count
+
+## Props
+
+### `<InlineCitation />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the root span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+### `<InlineCitationText />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+### `<InlineCitationCard />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the HoverCard component.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+### `<InlineCitationCardTrigger />`
+
+<TypeTable
+  type={{
+  sources: {
+    description: 'Array of source URLs. The length determines the number displayed in the badge.',
+    type: 'string[]',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying button element.',
+    type: 'React.ComponentProps<"button">',
+  },
+}}
+/>
+
+### `<InlineCitationCardBody />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<InlineCitationCarousel />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying Carousel component.',
+    type: 'React.ComponentProps<typeof Carousel>',
+  },
+}}
+/>
+
+### `<InlineCitationCarouselContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CarouselContent component.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<InlineCitationCarouselItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<InlineCitationCarouselHeader />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<InlineCitationCarouselIndex />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div. Children will override the default index display.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<InlineCitationCarouselPrev />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CarouselPrevious component.',
+    type: 'React.ComponentProps<typeof CarouselPrevious>',
+  },
+}}
+/>
+
+### `<InlineCitationCarouselNext />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CarouselNext component.',
+    type: 'React.ComponentProps<typeof CarouselNext>',
+  },
+}}
+/>
+
+### `<InlineCitationSource />`
+
+<TypeTable
+  type={{
+  title: {
+    description: 'The title of the source.',
+    type: 'string',
+  },
+  url: {
+    description: 'The URL of the source.',
+    type: 'string',
+  },
+  description: {
+    description: 'A brief description of the source.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<InlineCitationQuote />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying blockquote element.',
+    type: 'React.ComponentProps<"blockquote">',
+  },
+}}
+/>
+
+
+# Message
+
+The `Message` component suite provides a complete set of tools for building chat interfaces. It includes components for displaying messages from users and AI assistants, managing multiple response branches, adding action buttons, and rendering markdown content.
+
+<Preview path="message" />
+
+<Callout label={false} type="warning">
+  **Important:** After adding the component, you'll need to add the following to your `globals.css` file:
+
+  ```css
+  @source "../node_modules/streamdown/dist/index.js";
+  ```
+
+  This is **required** for the MessageResponse component to work properly. Without this import, the Streamdown styles will not be applied to your project. See [Streamdown's documentation](https://streamdown.ai/) for more details.
+</Callout>
+
+## Installation
+
+<ElementsInstaller path="message" />
+
+## Features
+
+* Displays messages from both user and AI assistant with distinct styling and automatic alignment
+* Minimalist flat design with user messages in secondary background and assistant messages full-width
+* **Response branching** with navigation controls to switch between multiple AI response versions
+* **Markdown rendering** with GFM support (tables, task lists, strikethrough), math equations, and smart streaming
+* **Action buttons** for common operations (retry, like, dislike, copy, share) with tooltips and state management
+* **File attachments** display with support for images and generic files with preview and remove functionality
+* Code blocks with syntax highlighting and copy-to-clipboard functionality
+* Keyboard accessible with proper ARIA labels
+* Responsive design that adapts to different screen sizes
+* Seamless light/dark theme integration
+
+<Callout>
+  Branching is an advanced use case you can implement to suit your needs. While the AI SDK does not provide built-in branching support, you have full flexibility to design and manage multiple response paths.
+</Callout>
+
+## Usage with AI SDK
+
+Build a simple chat UI where the user can copy or regenerate the most recent message.
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { useState } from 'react';
+import { MessageActions, MessageAction } from '@/components/ai-elements/message';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { MessageResponse } from '@/components/ai-elements/message';
+import { RefreshCcwIcon, CopyIcon } from 'lucide-react';
+import { useChat } from '@ai-sdk/react';
+import { Fragment } from 'react';
+
+const ActionsDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, regenerate } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message, messageIndex) => (
+              <Fragment key={message.id}>
+                {message.parts.map((part, i) => {
+                  switch (part.type) {
+                    case 'text':
+                      const isLastMessage =
+                        messageIndex === messages.length - 1;
+
+                      return (
+                        <Fragment key={`${message.id}-${i}`}>
+                          <Message from={message.role}>
+                            <MessageContent>
+                              <MessageResponse>{part.text}</MessageResponse>
+                            </MessageContent>
+                          </Message>
+                          {message.role === 'assistant' && isLastMessage && (
+                            <MessageActions>
+                              <MessageAction
+                                onClick={() => regenerate()}
+                                label="Retry"
+                              >
+                                <RefreshCcwIcon className="size-3" />
+                              </MessageAction>
+                              <MessageAction
+                                onClick={() =>
+                                  navigator.clipboard.writeText(part.text)
+                                }
+                                label="Copy"
+                              >
+                                <CopyIcon className="size-3" />
+                              </MessageAction>
+                            </MessageActions>
+                          )}
+                        </Fragment>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </Fragment>
+            ))}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default ActionsDemo;
+```
+
+## Props
+
+### `<Message />`
+
+<TypeTable
+  type={{
+  from: {
+    description:
+      'The role of the message sender ("user", "assistant", or "system").',
+    type: 'UIMessage["role"]',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the content div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageResponse />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The markdown content to render.',
+    type: 'string',
+  },
+  parseIncompleteMarkdown: {
+    description: 'Whether to parse and fix incomplete markdown syntax (e.g., unclosed code blocks or lists).',
+    type: 'boolean',
+    default: 'true',
+  },
+  className: {
+    description: 'CSS class names to apply to the wrapper div element.',
+    type: 'string',
+  },
+  components: {
+    description: 'Custom React components to use for rendering markdown elements (e.g., custom heading, paragraph, code block components).',
+    type: 'object',
+  },
+  allowedImagePrefixes: {
+    description: 'Array of allowed URL prefixes for images. Use ["*"] to allow all images.',
+    type: 'string[]',
+    default: '["*"]',
+  },
+  allowedLinkPrefixes: {
+    description: 'Array of allowed URL prefixes for links. Use ["*"] to allow all links.',
+    type: 'string[]',
+    default: '["*"]',
+  },
+  defaultOrigin: {
+    description: 'Default origin to use for relative URLs in links and images.',
+    type: 'string',
+  },
+  rehypePlugins: {
+    description: 'Array of rehype plugins to use for processing HTML. Includes KaTeX for math rendering by default.',
+    type: 'array',
+    default: '[rehypeKatex]',
+  },
+  remarkPlugins: {
+    description: 'Array of remark plugins to use for processing markdown. Includes GitHub Flavored Markdown and math support by default.',
+    type: 'array',
+    default: '[remarkGfm, remarkMath]',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageActions />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'HTML attributes to spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageAction />`
+
+<TypeTable
+  type={{
+  tooltip: {
+    description: 'Optional tooltip text shown on hover.',
+    type: 'string',
+  },
+  label: {
+    description:
+      'Accessible label for screen readers. Also used as fallback if tooltip is not provided.',
+    type: 'string',
+  },
+  '...props': {
+    description:
+      'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+### `<MessageBranch />`
+
+<TypeTable
+  type={{
+  defaultBranch: {
+    description: 'The index of the branch to show by default.',
+    type: 'number',
+    default: '0',
+  },
+  onBranchChange: {
+    description: 'Callback fired when the branch changes.',
+    type: '(branchIndex: number) => void',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageBranchContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageBranchSelector />`
+
+<TypeTable
+  type={{
+  from: {
+    description: 'Aligns the selector for user, assistant or system messages.',
+    type: 'UIMessage["role"]',
+  },
+  '...props': {
+    description: 'Any other props are spread to the selector container.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<MessageBranchPrevious />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+### `<MessageBranchNext />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+### `<MessageBranchPage />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying span element.',
+    type: 'React.HTMLAttributes<HTMLSpanElement>',
+  },
+}}
+/>
+
+### `<MessageAttachments />`
+
+A container component for displaying file attachments in a message. Automatically positions attachments at the end of the message with proper spacing and alignment.
+
+<TypeTable
+  type={{
+  children: {
+    description: 'MessageAttachment components to render. Returns null if no children provided.',
+    type: 'ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+**Example:**
+
+```tsx
+<MessageAttachments className="mb-2">
+  {files.map((attachment) => (
+    <MessageAttachment data={attachment} key={attachment.url} />
+  ))}
+</MessageAttachments>
+```
+
+### `<MessageAttachment />`
+
+Displays a single file attachment. Images are shown as thumbnails (96px × 96px) with rounded corners. Non-image files show a paperclip icon with the filename.
+
+<TypeTable
+  type={{
+  data: {
+    description: 'The file data to display. Must include url and mediaType.',
+    type: 'FileUIPart',
+  },
+  onRemove: {
+    description: 'Optional callback fired when the remove button is clicked. If provided, a remove button will appear on hover.',
+    type: '() => void',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+**Example:**
+
+```tsx
+<MessageAttachment
+  data={{
+    type: "file",
+    url: "https://example.com/image.jpg",
+    mediaType: "image/jpeg",
+    filename: "image.jpg"
+  }}
+  onRemove={() => console.log("Remove clicked")}
+/>
+```
+
+
+# Model Selector
+
+The `ModelSelector` component provides a searchable command palette interface for selecting AI models. It's built on top of the cmdk library and provides a keyboard-navigable interface with search functionality.
+
+<Preview path="model-selector" />
+
+## Installation
+
+<ElementsInstaller path="model-selector" />
+
+## Features
+
+* Searchable interface with keyboard navigation
+* Fuzzy search filtering across model names
+* Grouped model organization by provider
+* Keyboard shortcuts support
+* Empty state handling
+* Customizable styling with Tailwind CSS
+* Built on cmdk for excellent accessibility
+* Support for both inline and dialog modes
+* TypeScript support with proper type definitions
+
+## Props
+
+### `<ModelSelector />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying Dialog component.',
+    type: 'React.ComponentProps<typeof Dialog>',
+  },
+}}
+/>
+
+### `<ModelSelectorTrigger />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying DialogTrigger component.',
+    type: 'React.ComponentProps<typeof DialogTrigger>',
+  },
+}}
+/>
+
+### `<ModelSelectorContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying DialogContent component.',
+    type: 'React.ComponentProps<typeof DialogContent>',
+  },
+}}
+/>
+
+### `<ModelSelectorDialog />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandDialog component.',
+    type: 'React.ComponentProps<typeof CommandDialog>',
+  },
+}}
+/>
+
+### `<ModelSelectorInput />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandInput component.',
+    type: 'React.ComponentProps<typeof CommandInput>',
+  },
+}}
+/>
+
+### `<ModelSelectorList />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandList component.',
+    type: 'React.ComponentProps<typeof CommandList>',
+  },
+}}
+/>
+
+### `<ModelSelectorEmpty />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandEmpty component.',
+    type: 'React.ComponentProps<typeof CommandEmpty>',
+  },
+}}
+/>
+
+### `<ModelSelectorGroup />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandGroup component.',
+    type: 'React.ComponentProps<typeof CommandGroup>',
+  },
+}}
+/>
+
+### `<ModelSelectorItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandItem component.',
+    type: 'React.ComponentProps<typeof CommandItem>',
+  },
+}}
+/>
+
+### `<ModelSelectorShortcut />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandShortcut component.',
+    type: 'React.ComponentProps<typeof CommandShortcut>',
+  },
+}}
+/>
+
+### `<ModelSelectorSeparator />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CommandSeparator component.',
+    type: 'React.ComponentProps<typeof CommandSeparator>',
+  },
+}}
+/>
+
+### `<ModelSelectorLogo />`
+
+<TypeTable
+  type={{
+  provider: {
+    description: 'The AI provider name. Supports major providers like "openai", "anthropic", "google", "mistral", etc.',
+    type: 'string',
+    required: true,
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying img element (except src and alt which are generated).',
+    type: 'Omit<React.ComponentProps<"img">, "src" | "alt">',
+  },
+}}
+/>
+
+### `<ModelSelectorLogoGroup />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ModelSelectorName />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+
+# Plan
+
+The `Plan` component provides a flexible system for displaying AI-generated execution plans with collapsible content. Perfect for showing multi-step workflows, task breakdowns, and implementation strategies with support for streaming content and loading states.
+
+<Preview path="plan" />
+
+## Installation
+
+<ElementsInstaller path="plan" />
+
+## Features
+
+* Collapsible content with smooth animations
+* Streaming support with shimmer loading states
+* Built on shadcn/ui Card and Collapsible components
+* TypeScript support with comprehensive type definitions
+* Customizable styling with Tailwind CSS
+* Responsive design with mobile-friendly interactions
+* Keyboard navigation and accessibility support
+* Theme-aware with automatic dark mode support
+* Context-based state management for streaming
+
+## Props
+
+### `<Plan />`
+
+<TypeTable
+  type={{
+  isStreaming: {
+    description: 'Whether content is currently streaming. Enables shimmer animations on title and description.',
+    type: 'boolean',
+    default: 'false',
+  },
+  defaultOpen: {
+    description: 'Whether the plan is expanded by default.',
+    type: 'boolean',
+  },
+  '...props': {
+    description: 'Any other props are spread to the Collapsible component.',
+    type: 'React.ComponentProps<typeof Collapsible>',
+  },
+}}
+/>
+
+### `<PlanHeader />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CardHeader component.',
+    type: 'React.ComponentProps<typeof CardHeader>',
+  },
+}}
+/>
+
+### `<PlanTitle />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The title text. Displays with shimmer animation when isStreaming is true.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props (except children) are spread to the CardTitle component.',
+    type: 'Omit<React.ComponentProps<typeof CardTitle>, "children">',
+  },
+}}
+/>
+
+### `<PlanDescription />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The description text. Displays with shimmer animation when isStreaming is true.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props (except children) are spread to the CardDescription component.',
+    type: 'Omit<React.ComponentProps<typeof CardDescription>, "children">',
+  },
+}}
+/>
+
+### `<PlanTrigger />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleTrigger component. Renders as a Button with chevron icon.',
+    type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+  },
+}}
+/>
+
+### `<PlanContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CardContent component.',
+    type: 'React.ComponentProps<typeof CardContent>',
+  },
+}}
+/>
+
+### `<PlanFooter />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<PlanAction />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CardAction component.',
+    type: 'React.ComponentProps<typeof CardAction>',
+  },
+}}
+/>
+
+
+# Prompt Input
+
+The `PromptInput` component allows a user to send a message with file attachments to a large language model. It includes a textarea, file upload capabilities, a submit button, and a dropdown for selecting the model.
+
+<Preview path="prompt-input" />
+
+## Installation
+
+<ElementsInstaller path="prompt-input" />
+
+## Usage with AI SDK
+
+Build a fully functional chat app using `PromptInput`, [`Conversation`](/elements/components/conversation) with a model picker:
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  type PromptInputMessage,
+  PromptInputSelect,
+  PromptInputSelectContent,
+  PromptInputSelectItem,
+  PromptInputSelectTrigger,
+  PromptInputSelectValue,
+  PromptInputSpeechButton,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputTools,
+} from '@/components/ai-elements/prompt-input';
+import { GlobeIcon } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+
+const models = [
+  { id: 'gpt-4o', name: 'GPT-4o' },
+  { id: 'claude-opus-4-20250514', name: 'Claude 4 Opus' },
+];
+
+const InputDemo = () => {
+  const [text, setText] = useState<string>('');
+  const [model, setModel] = useState<string>(models[0].id);
+  const [useWebSearch, setUseWebSearch] = useState<boolean>(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { messages, status, sendMessage } = useChat();
+
+  const handleSubmit = (message: PromptInputMessage) => {
+    const hasText = Boolean(message.text);
+    const hasAttachments = Boolean(message.files?.length);
+
+    if (!(hasText || hasAttachments)) {
+      return;
+    }
+
+    sendMessage(
+      { 
+        text: message.text || 'Sent with attachments',
+        files: message.files 
+      },
+      {
+        body: {
+          model: model,
+          webSearch: useWebSearch,
+        },
+      },
+    );
+    setText('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <MessageResponse key={`${message.id}-${i}`}>
+                            {part.text}
+                          </MessageResponse>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+          <PromptInputHeader>
+            <PromptInputAttachments>
+              {(attachment) => <PromptInputAttachment data={attachment} />}
+            </PromptInputAttachments>
+          </PromptInputHeader>
+          <PromptInputBody>
+     
+            <PromptInputTextarea
+              onChange={(e) => setText(e.target.value)}
+              ref={textareaRef}
+              value={text}
+            />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputTools>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+              <PromptInputSpeechButton
+                onTranscriptionChange={setText}
+                textareaRef={textareaRef}
+              />
+              <PromptInputButton
+                onClick={() => setUseWebSearch(!useWebSearch)}
+                variant={useWebSearch ? 'default' : 'ghost'}
+              >
+                <GlobeIcon size={16} />
+                <span>Search</span>
+              </PromptInputButton>
+              <PromptInputSelect
+                onValueChange={(value) => {
+                  setModel(value);
+                }}
+                value={model}
+              >
+                <PromptInputSelectTrigger>
+                  <PromptInputSelectValue />
+                </PromptInputSelectTrigger>
+                <PromptInputSelectContent>
+                  {models.map((model) => (
+                    <PromptInputSelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </PromptInputSelectItem>
+                  ))}
+                </PromptInputSelectContent>
+              </PromptInputSelect>
+            </PromptInputTools>
+            <PromptInputSubmit disabled={!text && !status} status={status} />
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
+    </div>
+  );
+};
+
+export default InputDemo;
+```
+
+Add the following route to your backend:
+
+```ts title="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { 
+    model, 
+    messages, 
+    webSearch 
+  }: { 
+    messages: UIMessage[]; 
+    model: string;
+    webSearch?: boolean;
+  } = await req.json();
+
+  const result = streamText({
+    model: webSearch ? 'perplexity/sonar' : model,
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+* Auto-resizing textarea that adjusts height based on content
+* File attachment support with drag-and-drop
+* Image preview for image attachments
+* Configurable file constraints (max files, max size, accepted types)
+* Automatic submit button icons based on status
+* Support for keyboard shortcuts (Enter to submit, Shift+Enter for new line)
+* Customizable min/max height for the textarea
+* Flexible toolbar with support for custom actions and tools
+* Built-in model selection dropdown
+* Built-in native speech recognition button (Web Speech API)
+* Optional provider for lifted state management
+* Form automatically resets on submit
+* Responsive design with mobile-friendly controls
+* Clean, modern styling with customizable themes
+* Form-based submission handling
+* Hidden file input sync for native form posts
+* Global document drop support (opt-in)
+
+## Examples
+
+### Cursor style
+
+<Preview path="prompt-input-cursor" />
+
+## Props
+
+### `<PromptInput />`
+
+<TypeTable
+  type={{
+  onSubmit: {
+    description: 'Handler called when the form is submitted with message text and files.',
+    type: '(message: PromptInputMessage, event: FormEvent) => void',
+  },
+  accept: {
+    description: 'File types to accept (e.g., "image/*"). Leave undefined for any.',
+    type: 'string',
+  },
+  multiple: {
+    description: 'Whether to allow multiple file selection.',
+    type: 'boolean',
+  },
+  globalDrop: {
+    description: 'When true, accepts file drops anywhere on the document.',
+    type: 'boolean',
+  },
+  syncHiddenInput: {
+    description: 'Render a hidden input with given name for native form posts.',
+    type: 'boolean',
+  },
+  maxFiles: {
+    description: 'Maximum number of files allowed.',
+    type: 'number',
+  },
+  maxFileSize: {
+    description: 'Maximum file size in bytes.',
+    type: 'number',
+  },
+  onError: {
+    description: 'Handler for file validation errors.',
+    type: '(err: { code: "max_files" | "max_file_size" | "accept", message: string }) => void',
+  },
+  '...props': {
+    description: 'Any other props are spread to the root form element.',
+    type: 'React.HTMLAttributes<HTMLFormElement>',
+  },
+}}
+/>
+
+### `<PromptInputTextarea />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying Textarea component.',
+    type: 'React.ComponentProps<typeof Textarea>',
+  },
+}}
+/>
+
+### `<PromptInputFooter />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the toolbar div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputTools />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the tools div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputButton />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+### `<PromptInputSubmit />`
+
+<TypeTable
+  type={{
+  status: {
+    description: 'Current chat status to determine button icon (submitted, streaming, error).',
+    type: 'ChatStatus',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+### `<PromptInputSelect />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying Select component.',
+    type: 'React.ComponentProps<typeof Select>',
+  },
+}}
+/>
+
+### `<PromptInputSelectTrigger />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying SelectTrigger component.',
+    type: 'React.ComponentProps<typeof SelectTrigger>',
+  },
+}}
+/>
+
+### `<PromptInputSelectContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying SelectContent component.',
+    type: 'React.ComponentProps<typeof SelectContent>',
+  },
+}}
+/>
+
+### `<PromptInputSelectItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying SelectItem component.',
+    type: 'React.ComponentProps<typeof SelectItem>',
+  },
+}}
+/>
+
+### `<PromptInputSelectValue />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying SelectValue component.',
+    type: 'React.ComponentProps<typeof SelectValue>',
+  },
+}}
+/>
+
+### `<PromptInputBody />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the body div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputAttachments />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'Render function for each attachment.',
+    type: '(attachment: FileUIPart & { id: string }) => React.ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the attachments container.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputAttachment />`
+
+<TypeTable
+  type={{
+  data: {
+    description: 'The attachment data to display.',
+    type: 'FileUIPart & { id: string }',
+  },
+  '...props': {
+    description: 'Any other props are spread to the attachment div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputActionMenu />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying DropdownMenu component.',
+    type: 'React.ComponentProps<typeof DropdownMenu>',
+  },
+}}
+/>
+
+### `<PromptInputActionMenuTrigger />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying Button component.',
+    type: 'React.ComponentProps<typeof Button>',
+  },
+}}
+/>
+
+### `<PromptInputActionMenuContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying DropdownMenuContent component.',
+    type: 'React.ComponentProps<typeof DropdownMenuContent>',
+  },
+}}
+/>
+
+### `<PromptInputActionMenuItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying DropdownMenuItem component.',
+    type: 'React.ComponentProps<typeof DropdownMenuItem>',
+  },
+}}
+/>
+
+### `<PromptInputActionAddAttachments />`
+
+<TypeTable
+  type={{
+  label: {
+    description: 'Label for the menu item.',
+    type: 'string',
+    default: '"Add photos or files"',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying DropdownMenuItem component.',
+    type: 'React.ComponentProps<typeof DropdownMenuItem>',
+  },
+}}
+/>
+
+### `<PromptInputProvider />`
+
+<TypeTable
+  type={{
+  initialInput: {
+    description: 'Initial text input value.',
+    type: 'string',
+  },
+  children: {
+    description: 'Child components that will have access to the provider context.',
+    type: 'React.ReactNode',
+  },
+}}
+/>
+
+Optional global provider that lifts PromptInput state outside of PromptInput. When used, it allows you to access and control the input state from anywhere within the provider tree. If not used, PromptInput stays fully self-managed.
+
+### `<PromptInputSpeechButton />`
+
+<TypeTable
+  type={{
+  textareaRef: {
+    description: 'Reference to the textarea element to insert transcribed text.',
+    type: 'RefObject<HTMLTextAreaElement | null>',
+  },
+  onTranscriptionChange: {
+    description: 'Callback fired when transcription text changes.',
+    type: '(text: string) => void',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying PromptInputButton component.',
+    type: 'React.ComponentProps<typeof PromptInputButton>',
+  },
+}}
+/>
+
+Built-in button component that provides native speech recognition using the Web Speech API. The button will be disabled if speech recognition is not supported in the browser. Displays a microphone icon and pulses while actively listening.
+
+## Hooks
+
+### `usePromptInputAttachments`
+
+Access and manage file attachments within a PromptInput context.
+
+```tsx
+const attachments = usePromptInputAttachments();
+
+// Available methods:
+attachments.files // Array of current attachments
+attachments.add(files) // Add new files
+attachments.remove(id) // Remove an attachment by ID
+attachments.clear() // Clear all attachments
+attachments.openFileDialog() // Open file selection dialog
+```
+
+### `usePromptInputController`
+
+Access the full PromptInput controller from a PromptInputProvider. Only available when using the provider.
+
+```tsx
+const controller = usePromptInputController();
+
+// Available methods:
+controller.textInput.value // Current text input value
+controller.textInput.setInput(value) // Set text input value
+controller.textInput.clear() // Clear text input
+controller.attachments // Same as usePromptInputAttachments
+```
+
+### `useProviderAttachments`
+
+Access attachments context from a PromptInputProvider. Only available when using the provider.
+
+```tsx
+const attachments = useProviderAttachments();
+
+// Same interface as usePromptInputAttachments
+```
+
+### `<PromptInputHeader />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props (except align) are spread to the InputGroupAddon component.',
+    type: 'Omit<React.ComponentProps<typeof InputGroupAddon>, "align">',
+  },
+}}
+/>
+
+### `<PromptInputHoverCard />`
+
+<TypeTable
+  type={{
+  openDelay: {
+    description: 'Delay in milliseconds before opening.',
+    type: 'number',
+    default: '0',
+  },
+  closeDelay: {
+    description: 'Delay in milliseconds before closing.',
+    type: 'number',
+    default: '0',
+  },
+  '...props': {
+    description: 'Any other props are spread to the HoverCard component.',
+    type: 'React.ComponentProps<typeof HoverCard>',
+  },
+}}
+/>
+
+### `<PromptInputHoverCardTrigger />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the HoverCardTrigger component.',
+    type: 'React.ComponentProps<typeof HoverCardTrigger>',
+  },
+}}
+/>
+
+### `<PromptInputHoverCardContent />`
+
+<TypeTable
+  type={{
+  align: {
+    description: 'Alignment of the hover card content.',
+    type: '"start" | "center" | "end"',
+    default: '"start"',
+  },
+  '...props': {
+    description: 'Any other props are spread to the HoverCardContent component.',
+    type: 'React.ComponentProps<typeof HoverCardContent>',
+  },
+}}
+/>
+
+### `<PromptInputTabsList />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputTab />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputTabLabel />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the h3 element.',
+    type: 'React.HTMLAttributes<HTMLHeadingElement>',
+  },
+}}
+/>
+
+### `<PromptInputTabBody />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputTabItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<PromptInputCommand />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the Command component.',
+    type: 'React.ComponentProps<typeof Command>',
+  },
+}}
+/>
+
+### `<PromptInputCommandInput />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CommandInput component.',
+    type: 'React.ComponentProps<typeof CommandInput>',
+  },
+}}
+/>
+
+### `<PromptInputCommandList />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CommandList component.',
+    type: 'React.ComponentProps<typeof CommandList>',
+  },
+}}
+/>
+
+### `<PromptInputCommandEmpty />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CommandEmpty component.',
+    type: 'React.ComponentProps<typeof CommandEmpty>',
+  },
+}}
+/>
+
+### `<PromptInputCommandGroup />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CommandGroup component.',
+    type: 'React.ComponentProps<typeof CommandGroup>',
+  },
+}}
+/>
+
+### `<PromptInputCommandItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CommandItem component.',
+    type: 'React.ComponentProps<typeof CommandItem>',
+  },
+}}
+/>
+
+### `<PromptInputCommandSeparator />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CommandSeparator component.',
+    type: 'React.ComponentProps<typeof CommandSeparator>',
+  },
+}}
+/>
+
+
+# Queue
+
+The `Queue` component provides a flexible system for displaying lists of messages, todos, attachments, and collapsible sections. Perfect for showing AI workflow progress, pending tasks, message history, or any structured list of items in your application.
+
+<Preview path="queue" />
+
+## Installation
+
+<ElementsInstaller path="queue" />
+
+## Features
+
+* Flexible component system with composable parts
+* Collapsible sections with smooth animations
+* Support for completed/pending state indicators
+* Built-in scroll area for long lists
+* Attachment display with images and file indicators
+* Hover-revealed action buttons for queue items
+* TypeScript support with comprehensive type definitions
+* Customizable styling with Tailwind CSS
+* Responsive design with mobile-friendly interactions
+* Keyboard navigation and accessibility support
+* Theme-aware with automatic dark mode support
+
+## Examples
+
+### With PromptInput
+
+<Preview path="queue-prompt-input" />
+
+## Props
+
+### `<Queue />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<QueueSection />`
+
+<TypeTable
+  type={{
+  defaultOpen: {
+    description: 'Whether the section is open by default.',
+    type: 'boolean',
+    default: 'true',
+  },
+  '...props': {
+    description: 'Any other props are spread to the Collapsible component.',
+    type: 'React.ComponentProps<typeof Collapsible>',
+  },
+}}
+/>
+
+### `<QueueSectionTrigger />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the button element.',
+    type: 'React.ComponentProps<"button">',
+  },
+}}
+/>
+
+### `<QueueSectionLabel />`
+
+<TypeTable
+  type={{
+  label: {
+    description: 'The label text to display.',
+    type: 'string',
+  },
+  count: {
+    description: 'The count to display before the label.',
+    type: 'number',
+  },
+  icon: {
+    description: 'An optional icon to display before the count.',
+    type: 'React.ReactNode',
+  },
+  '...props': {
+    description: 'Any other props are spread to the span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+### `<QueueSectionContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleContent component.',
+    type: 'React.ComponentProps<typeof CollapsibleContent>',
+  },
+}}
+/>
+
+### `<QueueList />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the ScrollArea component.',
+    type: 'React.ComponentProps<typeof ScrollArea>',
+  },
+}}
+/>
+
+### `<QueueItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the li element.',
+    type: 'React.ComponentProps<"li">',
+  },
+}}
+/>
+
+### `<QueueItemIndicator />`
+
+<TypeTable
+  type={{
+  completed: {
+    description: 'Whether the item is completed. Affects the indicator styling.',
+    type: 'boolean',
+    default: 'false',
+  },
+  '...props': {
+    description: 'Any other props are spread to the span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+### `<QueueItemContent />`
+
+<TypeTable
+  type={{
+  completed: {
+    description: 'Whether the item is completed. Affects text styling with strikethrough and opacity.',
+    type: 'boolean',
+    default: 'false',
+  },
+  '...props': {
+    description: 'Any other props are spread to the span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+### `<QueueItemDescription />`
+
+<TypeTable
+  type={{
+  completed: {
+    description: 'Whether the item is completed. Affects text styling.',
+    type: 'boolean',
+    default: 'false',
+  },
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<QueueItemActions />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<QueueItemAction />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props (except variant and size) are spread to the Button component.',
+    type: 'Omit<React.ComponentProps<typeof Button>, "variant" | "size">',
+  },
+}}
+/>
+
+### `<QueueItemAttachment />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the div element.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<QueueItemImage />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the img element.',
+    type: 'React.ComponentProps<"img">',
+  },
+}}
+/>
+
+### `<QueueItemFile />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the span element.',
+    type: 'React.ComponentProps<"span">',
+  },
+}}
+/>
+
+
+# Reasoning
+
+The `Reasoning` component displays AI reasoning content, automatically opening during streaming and closing when finished.
+
+<Preview path="reasoning" />
+
+## Installation
+
+<ElementsInstaller path="reasoning" />
+
+## Usage with AI SDK
+
+Build a chatbot with reasoning using Deepseek R1.
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Loader } from '@/components/ai-elements/loader';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+
+const ReasoningDemo = () => {
+  const [input, setInput] = useState('');
+
+  const { messages, sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <MessageResponse key={`${message.id}-${i}`}>
+                            {part.text}
+                          </MessageResponse>
+                        );
+                      case 'reasoning':
+                        return (
+                          <Reasoning
+                            key={`${message.id}-${i}`}
+                            className="w-full"
+                            isStreaming={status === 'streaming' && i === message.parts.length - 1 && message.id === messages.at(-1)?.id}
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
+                        );
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+            {status === 'submitted' && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <PromptInput
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </PromptInput>
+      </div>
+    </div>
+  );
+};
+
+export default ReasoningDemo;
+```
+
+Add the following route to your backend:
+
+```ts title="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { model, messages }: { messages: UIMessage[]; model: string } =
+    await req.json();
+
+  const result = streamText({
+    model: 'deepseek/deepseek-r1',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+  });
+}
+```
+
+## Features
+
+* Automatically opens when streaming content and closes when finished
+* Manual toggle control for user interaction
+* Smooth animations and transitions powered by Radix UI
+* Visual streaming indicator with pulsing animation
+* Composable architecture with separate trigger and content components
+* Built with accessibility in mind including keyboard navigation
+* Responsive design that works across different screen sizes
+* Seamlessly integrates with both light and dark themes
+* Built on top of shadcn/ui Collapsible primitives
+* TypeScript support with proper type definitions
+
+## Props
+
+### `<Reasoning />`
+
+<TypeTable
+  type={{
+  isStreaming: {
+    description: 'Whether the reasoning is currently streaming (auto-opens and closes the panel).',
+    type: 'boolean',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying Collapsible component.',
+    type: 'React.ComponentProps<typeof Collapsible>',
+  },
+}}
+/>
+
+### `<ReasoningTrigger />`
+
+<TypeTable
+  type={{
+  title: {
+    description: 'Optional title to display in the trigger.',
+    type: 'string',
+    default: '"Reasoning"',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying CollapsibleTrigger component.',
+    type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+  },
+}}
+/>
+
+### `<ReasoningContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying CollapsibleContent component.',
+    type: 'React.ComponentProps<typeof CollapsibleContent>',
+  },
+}}
+/>
+
+
+# Shimmer
+
+The `Shimmer` component provides an animated shimmer effect that sweeps across text, perfect for indicating loading states, progressive reveals, or drawing attention to dynamic content in AI applications.
+
+<Preview path="shimmer" />
+
+## Installation
+
+<ElementsInstaller path="shimmer" />
+
+## Features
+
+* Smooth animated shimmer effect using CSS gradients and Framer Motion
+* Customizable animation duration and spread
+* Polymorphic component - render as any HTML element via the `as` prop
+* Automatic spread calculation based on text length
+* Theme-aware styling using CSS custom properties
+* Infinite looping animation with linear easing
+* TypeScript support with proper type definitions
+* Memoized for optimal performance
+* Responsive and accessible design
+* Uses `text-transparent` with background-clip for crisp text rendering
+
+## Examples
+
+### Different Durations
+
+<Preview path="shimmer-duration" />
+
+### Custom Elements
+
+<Preview path="shimmer-elements" />
+
+## Props
+
+### `<Shimmer />`
+
+<TypeTable
+  type={{
+  children: {
+    description: 'The text content to apply the shimmer effect to.',
+    type: 'string',
+  },
+  as: {
+    description: 'The HTML element or React component to render.',
+    type: 'ElementType',
+    default: '"p"',
+  },
+  className: {
+    description: 'Additional CSS classes to apply to the component.',
+    type: 'string',
+  },
+  duration: {
+    description: 'The duration of the shimmer animation in seconds.',
+    type: 'number',
+    default: '2',
+  },
+  spread: {
+    description: 'The spread multiplier for the shimmer gradient, multiplied by text length.',
+    type: 'number',
+    default: '2',
+  },
+}}
+/>
+
+
+# Sources
+
+The `Sources` component allows a user to view the sources or citations used to generate a response.
+
+<Preview path="sources" />
+
+## Installation
+
+<ElementsInstaller path="sources" />
+
+## Usage with AI SDK
+
+Build a simple web search agent with Perplexity Sonar.
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from '@/components/ai-elements/sources';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { useState } from 'react';
+import { DefaultChatTransport } from 'ai';
+
+const SourceDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/sources',
+    }),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-auto mb-4">
+          <Conversation>
+            <ConversationContent>
+              {messages.map((message) => (
+                <div key={message.id}>
+                  {message.role === 'assistant' && (
+                    <Sources>
+                      <SourcesTrigger
+                        count={
+                          message.parts.filter(
+                            (part) => part.type === 'source-url',
+                          ).length
+                        }
+                      />
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case 'source-url':
+                            return (
+                              <SourcesContent key={`${message.id}-${i}`}>
+                                <Source
+                                  key={`${message.id}-${i}`}
+                                  href={part.url}
+                                  title={part.url}
+                                />
+                              </SourcesContent>
+                            );
+                        }
+                      })}
+                    </Sources>
+                  )}
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent>
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case 'text':
+                            return (
+                              <MessageResponse key={`${message.id}-${i}`}>
+                                {part.text}
+                              </MessageResponse>
+                            );
+                          default:
+                            return null;
+                        }
+                      })}
+                    </MessageContent>
+                  </Message>
+                </div>
+              ))}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+        </div>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Ask a question and search the..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default SourceDemo;
+```
+
+Add the following route to your backend:
+
+```tsx title="api/chat/route.ts"
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { perplexity } from '@ai-sdk/perplexity';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'perplexity/sonar',
+    system:
+      'You are a helpful assistant. Keep your responses short (< 100 words) unless you are asked for more details. ALWAYS USE SEARCH.',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendSources: true,
+  });
+}
+```
+
+## Features
+
+* Collapsible component that allows a user to view the sources or citations used to generate a response
+* Customizable trigger and content components
+* Support for custom sources or citations
+* Responsive design with mobile-friendly controls
+* Clean, modern styling with customizable themes
+
+## Examples
+
+### Custom rendering
+
+<Preview path="sources-custom" />
+
+## Props
+
+### `<Sources />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the root div.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<SourcesTrigger />`
+
+<TypeTable
+  type={{
+  count: {
+    description: 'The number of sources to display in the trigger.',
+    type: 'number',
+  },
+  '...props': {
+    description: 'Any other props are spread to the trigger button.',
+    type: 'React.ButtonHTMLAttributes<HTMLButtonElement>',
+  },
+}}
+/>
+
+### `<SourcesContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the content container.',
+    type: 'React.HTMLAttributes<HTMLDivElement>',
+  },
+}}
+/>
+
+### `<Source />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the anchor element.',
+    type: 'React.AnchorHTMLAttributes<HTMLAnchorElement>',
+  },
+}}
+/>
+
+
+# Suggestion
+
+The `Suggestion` component displays a horizontal row of clickable suggestions for user interaction.
+
+<Preview path="suggestion" />
+
+## Installation
+
+<ElementsInstaller path="suggestion" />
+
+## Usage with AI SDK
+
+Build a simple input with suggestions users can click to send a message to the LLM.
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+
+const suggestions = [
+  'Can you explain how to play tennis?',
+  'What is the weather in Tokyo?',
+  'How do I make a really good fish taco?',
+];
+
+const SuggestionDemo = () => {
+  const [input, setInput] = useState('');
+  const { sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ text: suggestion });
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col gap-4">
+          <Suggestions>
+            {suggestions.map((suggestion) => (
+              <Suggestion
+                key={suggestion}
+                onClick={handleSuggestionClick}
+                suggestion={suggestion}
+              />
+            ))}
+          </Suggestions>
+          <Input
+            onSubmit={handleSubmit}
+            className="mt-4 w-full max-w-2xl mx-auto relative"
+          >
+            <PromptInputTextarea
+              value={input}
+              placeholder="Say something..."
+              onChange={(e) => setInput(e.currentTarget.value)}
+              className="pr-12"
+            />
+            <PromptInputSubmit
+              status={status === 'streaming' ? 'streaming' : 'ready'}
+              disabled={!input.trim()}
+              className="absolute bottom-1 right-1"
+            />
+          </Input>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SuggestionDemo;
+```
+
+## Features
+
+* Horizontal row of clickable suggestion buttons
+* Customizable styling with variant and size options
+* Flexible layout that wraps suggestions on smaller screens
+* onClick callback that emits the selected suggestion string
+* Support for both individual suggestions and suggestion lists
+* Clean, modern styling with hover effects
+* Responsive design with mobile-friendly touch targets
+* TypeScript support with proper type definitions
+
+## Examples
+
+### Usage with AI Input
+
+<Preview path="suggestion-input" />
+
+## Props
+
+### `<Suggestions />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying ScrollArea component.',
+    type: 'React.ComponentProps<typeof ScrollArea>',
+  },
+}}
+/>
+
+### `<Suggestion />`
+
+<TypeTable
+  type={{
+  suggestion: {
+    description: 'The suggestion string to display and emit on click.',
+    type: 'string',
+  },
+  onClick: {
+    description: 'Callback fired when the suggestion is clicked.',
+    type: '(suggestion: string) => void',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying shadcn/ui Button component.',
+    type: 'Omit<React.ComponentProps<typeof Button>, "onClick">',
+  },
+}}
+/>
+
+
+# Task
+
+The `Task` component provides a structured way to display task lists or workflow progress with collapsible details, status indicators, and progress tracking. It consists of a main `Task` container with `TaskTrigger` for the clickable header and `TaskContent` for the collapsible content area.
+
+<Preview path="task" />
+
+## Installation
+
+<ElementsInstaller path="task" />
+
+## Usage with AI SDK
+
+Build a mock async programming agent using [`experimental_generateObject`](/docs/reference/ai-sdk-ui/use-object).
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import {
+  Task,
+  TaskItem,
+  TaskItemFile,
+  TaskTrigger,
+  TaskContent,
+} from '@/components/ai-elements/task';
+import { Button } from '@/components/ui/button';
+import { tasksSchema } from '@/app/api/task/route';
+import {
+  SiReact,
+  SiTypescript,
+  SiJavascript,
+  SiCss,
+  SiHtml5,
+  SiJson,
+  SiMarkdown,
+} from '@icons-pack/react-simple-icons';
+
+const iconMap = {
+  react: { component: SiReact, color: '#149ECA' },
+  typescript: { component: SiTypescript, color: '#3178C6' },
+  javascript: { component: SiJavascript, color: '#F7DF1E' },
+  css: { component: SiCss, color: '#1572B6' },
+  html: { component: SiHtml5, color: '#E34F26' },
+  json: { component: SiJson, color: '#000000' },
+  markdown: { component: SiMarkdown, color: '#000000' },
+};
+
+const TaskDemo = () => {
+  const { object, submit, isLoading } = useObject({
+    api: '/api/agent',
+    schema: tasksSchema,
+  });
+
+  const handleSubmit = (taskType: string) => {
+    submit({ prompt: taskType });
+  };
+
+  const renderTaskItem = (item: any, index: number) => {
+    if (item?.type === 'file' && item.file) {
+      const iconInfo = iconMap[item.file.icon as keyof typeof iconMap];
+      if (iconInfo) {
+        const IconComponent = iconInfo.component;
+        return (
+          <span className="inline-flex items-center gap-1" key={index}>
+            {item.text}
+            <TaskItemFile>
+              <IconComponent
+                color={item.file.color || iconInfo.color}
+                className="size-4"
+              />
+              <span>{item.file.name}</span>
+            </TaskItemFile>
+          </span>
+        );
+      }
+    }
+    return item?.text || '';
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <Button
+            onClick={() => handleSubmit('React component development')}
+            disabled={isLoading}
+            variant="outline"
+          >
+            React Development
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-auto space-y-4">
+          {isLoading && !object && (
+            <div className="text-muted-foreground">Generating tasks...</div>
+          )}
+
+          {object?.tasks?.map((task: any, taskIndex: number) => (
+            <Task key={taskIndex} defaultOpen={taskIndex === 0}>
+              <TaskTrigger title={task.title || 'Loading...'} />
+              <TaskContent>
+                {task.items?.map((item: any, itemIndex: number) => (
+                  <TaskItem key={itemIndex}>
+                    {renderTaskItem(item, itemIndex)}
+                  </TaskItem>
+                ))}
+              </TaskContent>
+            </Task>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskDemo;
+```
+
+Add the following route to your backend:
+
+```ts title="app/api/agent.ts"
+import { streamObject } from 'ai';
+import { z } from 'zod';
+
+export const taskItemSchema = z.object({
+  type: z.enum(['text', 'file']),
+  text: z.string(),
+  file: z
+    .object({
+      name: z.string(),
+      icon: z.string(),
+      color: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const taskSchema = z.object({
+  title: z.string(),
+  items: z.array(taskItemSchema),
+  status: z.enum(['pending', 'in_progress', 'completed']),
+});
+
+export const tasksSchema = z.object({
+  tasks: z.array(taskSchema),
+});
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { prompt } = await req.json();
+
+  const result = streamObject({
+    model: 'openai/gpt-4o',
+    schema: tasksSchema,
+    prompt: `You are an AI assistant that generates realistic development task workflows. Generate a set of tasks that would occur during ${prompt}.
+
+    Each task should have:
+    - A descriptive title
+    - Multiple task items showing the progression
+    - Some items should be plain text, others should reference files
+    - Use realistic file names and appropriate file types
+    - Status should progress from pending to in_progress to completed
+
+    For file items, use these icon types: 'react', 'typescript', 'javascript', 'css', 'html', 'json', 'markdown'
+
+    Generate 3-4 tasks total, with 4-6 items each.`,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+## Features
+
+* Visual icons for pending, in-progress, completed, and error states
+* Expandable content for task descriptions and additional information
+* Built-in progress counter showing completed vs total tasks
+* Optional progressive reveal of tasks with customizable timing
+* Support for custom content within task items
+* Full type safety with proper TypeScript definitions
+* Keyboard navigation and screen reader support
+
+## Props
+
+### `<Task />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the root Collapsible component.',
+    type: 'React.ComponentProps<typeof Collapsible>',
+  },
+}}
+/>
+
+### `<TaskTrigger />`
+
+<TypeTable
+  type={{
+  title: {
+    description: 'The title of the task that will be displayed in the trigger.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleTrigger component.',
+    type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+  },
+}}
+/>
+
+### `<TaskContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleContent component.',
+    type: 'React.ComponentProps<typeof CollapsibleContent>',
+  },
+}}
+/>
+
+### `<TaskItem />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<TaskItemFile />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+
+# Tool
+
+The `Tool` component displays a collapsible interface for showing/hiding tool details. It is designed to take the `ToolUIPart` type from the AI SDK and display it in a collapsible interface.
+
+<Preview path="tool" />
+
+## Installation
+
+<ElementsInstaller path="tool" />
+
+## Usage in AI SDK
+
+Build a simple stateful weather app that renders the last message in a tool using [`useChat`](/docs/reference/ai-sdk-ui/use-chat).
+
+Add the following component to your frontend:
+
+```tsx title="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type ToolUIPart } from 'ai';
+import { Button } from '@/components/ui/button';
+import { MessageResponse } from '@/components/ai-elements/message';
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
+
+type WeatherToolInput = {
+  location: string;
+  units: 'celsius' | 'fahrenheit';
+};
+
+type WeatherToolOutput = {
+  location: string;
+  temperature: string;
+  conditions: string;
+  humidity: string;
+  windSpeed: string;
+  lastUpdated: string;
+};
+
+type WeatherToolUIPart = ToolUIPart<{
+  fetch_weather_data: {
+    input: WeatherToolInput;
+    output: WeatherToolOutput;
+  };
+}>;
+
+const Example = () => {
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/weather',
+    }),
+  });
+
+  const handleWeatherClick = () => {
+    sendMessage({ text: 'Get weather data for San Francisco in fahrenheit' });
+  };
+
+  const latestMessage = messages[messages.length - 1];
+  const weatherTool = latestMessage?.parts?.find(
+    (part) => part.type === 'tool-fetch_weather_data',
+  ) as WeatherToolUIPart | undefined;
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="space-y-4">
+          <Button onClick={handleWeatherClick} disabled={status !== 'ready'}>
+            Get Weather for San Francisco
+          </Button>
+
+          {weatherTool && (
+            <Tool defaultOpen={true}>
+              <ToolHeader type="tool-fetch_weather_data" state={weatherTool.state} />
+              <ToolContent>
+                <ToolInput input={weatherTool.input} />
+                <ToolOutput
+                  output={
+                    <MessageResponse>
+                      {formatWeatherResult(weatherTool.output)}
+                    </MessageResponse>
+                  }
+                  errorText={weatherTool.errorText}
+                />
+              </ToolContent>
+            </Tool>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function formatWeatherResult(result: WeatherToolOutput): string {
+  return `**Weather for ${result.location}**
+
+**Temperature:** ${result.temperature}  
+**Conditions:** ${result.conditions}  
+**Humidity:** ${result.humidity}  
+**Wind Speed:** ${result.windSpeed}  
+
+*Last updated: ${result.lastUpdated}*`;
+}
+
+export default Example;
+```
+
+Add the following route to your backend:
+
+```ts title="app/api/weather/route.tsx"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+import { z } from 'zod';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+    tools: {
+      fetch_weather_data: {
+        description: 'Fetch weather information for a specific location',
+        parameters: z.object({
+          location: z
+            .string()
+            .describe('The city or location to get weather for'),
+          units: z
+            .enum(['celsius', 'fahrenheit'])
+            .default('celsius')
+            .describe('Temperature units'),
+        }),
+        inputSchema: z.object({
+          location: z.string(),
+          units: z.enum(['celsius', 'fahrenheit']).default('celsius'),
+        }),
+        execute: async ({ location, units }) => {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          const temp =
+            units === 'celsius'
+              ? Math.floor(Math.random() * 35) + 5
+              : Math.floor(Math.random() * 63) + 41;
+
+          return {
+            location,
+            temperature: `${temp}°${units === 'celsius' ? 'C' : 'F'}`,
+            conditions: 'Sunny',
+            humidity: `12%`,
+            windSpeed: `35 ${units === 'celsius' ? 'km/h' : 'mph'}`,
+            lastUpdated: new Date().toLocaleString(),
+          };
+        },
+      },
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+* Collapsible interface for showing/hiding tool details
+* Visual status indicators with icons and badges
+* Support for multiple tool execution states (pending, running, completed, error)
+* Formatted parameter display with JSON syntax highlighting
+* Result and error handling with appropriate styling
+* Composable structure for flexible layouts
+* Accessible keyboard navigation and screen reader support
+* Consistent styling that matches your design system
+* Auto-opens completed tools by default for better UX
+
+## Examples
+
+### Input Streaming (Pending)
+
+Shows a tool in its initial state while parameters are being processed.
+
+<Preview path="tool-input-streaming" />
+
+### Input Available (Running)
+
+Shows a tool that's actively executing with its parameters.
+
+<Preview path="tool-input-available" />
+
+### Output Available (Completed)
+
+Shows a completed tool with successful results. Opens by default to show the results. In this instance, the output is a JSON object, so we can use the `CodeBlock` component to display it.
+
+<Preview path="tool-output-available" />
+
+### Output Error
+
+Shows a tool that encountered an error during execution. Opens by default to display the error.
+
+<Preview path="tool-output-error" />
+
+## Props
+
+### `<Tool />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the root Collapsible component.',
+    type: 'React.ComponentProps<typeof Collapsible>',
+  },
+}}
+/>
+
+### `<ToolHeader />`
+
+<TypeTable
+  type={{
+  type: {
+    description: 'The type/name of the tool.',
+    type: 'ToolUIPart["type"]',
+  },
+  state: {
+    description: 'The current state of the tool (input-streaming, input-available, output-available, or output-error).',
+    type: 'ToolUIPart["state"]',
+  },
+  className: {
+    description: 'Additional CSS classes to apply to the header.',
+    type: 'string',
+  },
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleTrigger.',
+    type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+  },
+}}
+/>
+
+### `<ToolContent />`
+
+<TypeTable
+  type={{
+  '...props': {
+    description: 'Any other props are spread to the CollapsibleContent.',
+    type: 'React.ComponentProps<typeof CollapsibleContent>',
+  },
+}}
+/>
+
+### `<ToolInput />`
+
+<TypeTable
+  type={{
+  input: {
+    description: 'The input parameters passed to the tool, displayed as formatted JSON.',
+    type: 'ToolUIPart["input"]',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+### `<ToolOutput />`
+
+<TypeTable
+  type={{
+  output: {
+    description: 'The output/result of the tool execution.',
+    type: 'React.ReactNode',
+  },
+  errorText: {
+    description: 'An error message if the tool execution failed.',
+    type: 'ToolUIPart["errorText"]',
+  },
+  '...props': {
+    description: 'Any other props are spread to the underlying div.',
+    type: 'React.ComponentProps<"div">',
+  },
+}}
+/>
+
+
