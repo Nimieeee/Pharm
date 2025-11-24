@@ -114,8 +114,34 @@ export default function ChatPage() {
     
     const attachedDocs = uploadingFiles.filter(f => f.status === 'complete').map(f => f.id)
     
-    // Send with streaming
-    await sendStreamingMessage(input.trim(), attachedDocs)
+    // Try streaming first, fallback to regular API
+    try {
+      await sendStreamingMessage(input.trim(), attachedDocs)
+    } catch (error) {
+      console.error('Streaming failed, using regular API:', error)
+      // Fallback to regular chatAPI
+      try {
+        const response = await chatAPI.sendMessage({
+          message: input.trim(),
+          conversation_id: conversationId,
+          mode,
+          use_rag: true,
+          metadata: attachedDocs.length > 0 ? { document_ids: attachedDocs } : {}
+        })
+        
+        // Add response to messages
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant' as const,
+          content: response.response,
+          created_at: new Date().toISOString()
+        }
+        setMessages(prev => [...prev, assistantMessage])
+      } catch (apiError) {
+        console.error('Regular API also failed:', apiError)
+        toast.error('Failed to send message')
+      }
+    }
     
     // Clear files and reset textarea
     setUploadingFiles([])

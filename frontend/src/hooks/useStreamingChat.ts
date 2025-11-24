@@ -114,7 +114,9 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
       }
 
       if (!response.ok) {
-        throw new Error('Failed to get response')
+        const errorText = await response.text()
+        console.error(`API error ${response.status}:`, errorText)
+        throw new Error(`Failed to get response: ${response.status}`)
       }
       
       // Handle non-streaming response
