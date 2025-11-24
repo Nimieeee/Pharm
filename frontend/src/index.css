@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Fira+Code:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
 
 @source "../node_modules/streamdown/dist/*.js";
 
@@ -7,46 +7,51 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Gemini Light Mode Variables */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F0F4F9;
+    --bg-tertiary: #E8EDF2;
+    --text-primary: #1F1F1F;
+    --text-secondary: #444746;
+    --text-tertiary: #5F6368;
+    --border-color: #E0E3E2;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+  }
+  
+  .dark {
+    /* Gemini Dark Mode Variables */
+    --bg-primary: #131314;
+    --bg-secondary: #1E1F20;
+    --bg-tertiary: #282A2C;
+    --text-primary: #E3E3E3;
+    --text-secondary: #C4C7C5;
+    --text-tertiary: #9AA0A6;
+    --border-color: #3C4043;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+  }
+  
   * {
-    border-color: theme('colors.slate.200');
+    border-color: var(--border-color);
   }
   
   body {
-    @apply bg-slate-50 text-slate-900;
-    font-feature-settings: "ss01" 1, "ss02" 1;
-    letter-spacing: -0.011em;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', 'Roboto', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-  
-  .dark body {
-    @apply bg-slate-950 text-slate-50;
+    overflow-x: hidden;
   }
   
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans;
-    letter-spacing: -0.025em;
-    font-weight: 600;
-  }
-  
-  /* Subtle gradient overlay for depth */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.4;
-    z-index: 0;
-    background: 
-      radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
-    pointer-events: none;
+    font-weight: 500;
   }
 }
 
@@ -175,29 +180,14 @@
   }
 }
 
-/* Custom scrollbar */
+/* Gemini-style: Hide scrollbars but keep functionality */
 ::-webkit-scrollbar {
-  width: 8px;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-slate-100;
-}
-
-.dark ::-webkit-scrollbar-track {
-  @apply bg-slate-900;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-slate-700;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-emerald-500;
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Loading spinner */
@@ -252,4 +242,98 @@
   @apply ring-2 ring-emerald-500 ring-offset-2;
 }
 
-/* Remove any primary color references */
+/* Gemini Semantic Classes */
+.bg-surface-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-surface-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-surface-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+.text-content-primary {
+  color: var(--text-primary);
+}
+
+.text-content-secondary {
+  color: var(--text-secondary);
+}
+
+.text-content-tertiary {
+  color: var(--text-tertiary);
+}
+
+.border-surface {
+  border-color: var(--border-color);
+}
+
+/* Gemini Gradient */
+.bg-gemini-gradient {
+  background: linear-gradient(135deg, #4285F4 0%, #D96570 100%);
+}
+
+.text-gemini-gradient {
+  background: linear-gradient(135deg, #4285F4 0%, #D96570 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gemini Input Pill */
+.gemini-input {
+  background-color: var(--bg-secondary);
+  border-radius: 9999px;
+  padding: 12px 20px;
+  font-size: 16px; /* Prevent iOS zoom */
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.gemini-input:focus {
+  outline: none;
+  border-color: #4285F4;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+}
+
+/* Gemini Message Bubbles */
+.message-user {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 1.5rem;
+  padding: 12px 16px;
+  max-width: 80%;
+  margin-left: auto;
+}
+
+.message-ai {
+  color: var(--text-primary);
+  max-width: 100%;
+}
+
+/* Touch-friendly buttons */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Gemini Shadows */
+.shadow-gemini {
+  box-shadow: 0 1px 3px var(--shadow-color);
+}
+
+.shadow-gemini-lg {
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* Mobile-safe bottom spacing */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}

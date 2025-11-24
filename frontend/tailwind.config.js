@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,6 +8,32 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Gemini Semantic Color System
+        gemini: {
+          // Dark Mode Colors
+          'bg-primary': '#131314',
+          'bg-secondary': '#1E1F20',
+          'bg-tertiary': '#282A2C',
+          'text-primary': '#E3E3E3',
+          'text-secondary': '#C4C7C5',
+          'text-tertiary': '#9AA0A6',
+          
+          // Light Mode Colors
+          'light-bg-primary': '#FFFFFF',
+          'light-bg-secondary': '#F0F4F9',
+          'light-bg-tertiary': '#E8EDF2',
+          'light-text-primary': '#1F1F1F',
+          'light-text-secondary': '#444746',
+          'light-text-tertiary': '#5F6368',
+          
+          // Gemini Gradient
+          'gradient-start': '#4285F4',
+          'gradient-end': '#D96570',
+          
+          // Borders
+          'border-dark': '#3C4043',
+          'border-light': '#E0E3E2',
+        },
         emerald: {
           50: '#ecfdf5',
           100: '#d1fae5',
@@ -34,8 +61,21 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
-        mono: ['Fira Code', 'monospace'],
+        sans: ['Google Sans', 'Inter', 'Roboto', 'system-ui', 'sans-serif'],
+        mono: ['Roboto Mono', 'Fira Code', 'monospace'],
+      },
+      borderRadius: {
+        'gemini': '24px',
+        'gemini-full': '9999px',
+      },
+      minHeight: {
+        'touch': '44px',
+      },
+      minWidth: {
+        'touch': '44px',
+      },
+      maxWidth: {
+        'chat': '800px',
       },
       animation: {
         'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
