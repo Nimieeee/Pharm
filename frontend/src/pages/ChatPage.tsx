@@ -370,30 +370,30 @@ export default function ChatPage() {
   return (
     <div className={cn(
       "flex h-screen overflow-hidden",
-      darkMode ? "dark bg-[#1a1a1a] text-white" : "bg-white text-neutral-900"
+      darkMode ? "dark bg-slate-950" : "bg-slate-50"
     )}>
       {sidebarOpen && window.innerWidth < 1024 && (
-        <div className="fixed inset-0 bg-black/80 z-40" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={() => setSidebarOpen(false)} />
       )}
 
       <div className={cn(
-        "flex flex-col transition-all duration-200 border-r-4 z-50",
-        darkMode ? "bg-neutral-900 border-white" : "bg-neutral-50 border-neutral-900",
+        "flex flex-col transition-all duration-300 border-r backdrop-blur-xl z-50",
+        darkMode ? "bg-slate-900/50 border-slate-800" : "bg-white/50 border-slate-200",
         sidebarOpen ? "w-72 fixed lg:relative h-full" : "w-0 border-r-0"
       )}>
         {sidebarOpen && (<>
-          <div className={cn("p-4 border-b-4 flex items-center justify-between", darkMode ? "border-white" : "border-neutral-900")}>
+          <div className={cn("p-4 border-b flex items-center justify-between", darkMode ? "border-slate-800" : "border-slate-200")}>
             <button 
               onClick={createNewConversation} 
               className="flex-1 btn-primary btn-sm mr-2"
             >
-              <Plus className="w-4 h-4 mr-2" />New
+              <Plus className="w-4 h-4 mr-2" />New Chat
             </button>
             <button 
               onClick={() => setSidebarOpen(false)} 
               className={cn(
-                "lg:hidden p-2 border-4 transition-colors",
-                darkMode ? "border-white hover:bg-white hover:text-neutral-900" : "border-neutral-900 hover:bg-neutral-900 hover:text-white"
+                "lg:hidden p-2 rounded-lg transition-colors",
+                darkMode ? "hover:bg-slate-800" : "hover:bg-slate-100"
               )}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -404,26 +404,26 @@ export default function ChatPage() {
               <div 
                 key={conv.id} 
                 className={cn(
-                  "group flex items-center gap-3 px-3 py-3 mb-2 cursor-pointer transition-all duration-200 border-4",
+                  "group flex items-center gap-3 px-3 py-2.5 mb-1.5 rounded-lg cursor-pointer transition-all duration-200",
                   conversationId === conv.id 
                     ? (darkMode 
-                        ? "bg-white text-neutral-900 border-white" 
-                        : "bg-neutral-900 text-white border-neutral-900"
+                        ? "bg-emerald-500/10 text-emerald-400" 
+                        : "bg-emerald-50 text-emerald-600"
                       )
                     : (darkMode 
-                        ? "border-neutral-700 hover:border-white" 
-                        : "border-neutral-300 hover:border-neutral-900"
+                        ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" 
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       )
                 )} 
                 onClick={() => { navigate(`/chat/${conv.id}`); if (window.innerWidth < 1024) setSidebarOpen(false) }}
               >
                 <MessageSquare className="w-4 h-4 shrink-0" />
-                <span className="flex-1 text-xs truncate font-bold uppercase tracking-wide">{conv.title}</span>
+                <span className="flex-1 text-sm truncate font-medium">{conv.title}</span>
                 <button 
                   onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }} 
-                  className="p-1 hover:scale-110 transition-transform"
+                  className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-accent-600" />
+                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
                 </button>
               </div>
             ))}

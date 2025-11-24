@@ -249,5 +249,7 @@
 
 /* Chat input focus ring */
 .chat-input:focus {
-  @apply ring-2 ring-primary-500 ring-offset-2;
+  @apply ring-2 ring-emerald-500 ring-offset-2;
 }
+
+/* Remove any primary color references */
