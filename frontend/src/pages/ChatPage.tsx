@@ -421,8 +421,8 @@ export default function ChatPage() {
         </header>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-0">
-          <div className="max-w-3xl mx-auto py-8">
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="max-w-[800px] mx-auto py-8">
             {!conversationId ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-20">
                 <MessageSquare size={64} className="mb-6" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
@@ -508,8 +508,8 @@ export default function ChatPage() {
 
         {/* Floating Input Container */}
         {conversationId && (
-          <div className="sticky bottom-0 p-4" style={{ background: 'linear-gradient(to top, var(--bg-primary) 80%, transparent)' }}>
-            <div className="max-w-3xl mx-auto">
+          <div className="sticky bottom-0 px-4 py-6" style={{ background: 'linear-gradient(to top, var(--bg-primary) 80%, transparent)' }}>
+            <div className="max-w-[800px] mx-auto">
               {/* Uploading Files */}
               {uploadingFiles.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
