@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, MessageSquare, FileText, Zap } from 'lucide-react'
+import { ArrowRight, MessageSquare, FileText, Zap, Sparkles } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
@@ -12,180 +12,164 @@ export default function HomePage() {
   return (
     <div className={cn(
       "min-h-screen relative",
-      darkMode 
-        ? "dark bg-[#1a1a1a] text-white" 
-        : "bg-white text-neutral-900"
+      darkMode ? "dark bg-slate-950" : "bg-slate-50"
     )}>
-      {/* Brutalist grid background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 50px, currentColor 50px, currentColor 51px), repeating-linear-gradient(90deg, transparent, transparent 50px, currentColor 50px, currentColor 51px)'
-        }} />
-      </div>
-
       {/* Hero Section */}
-      <section className="relative pt-16 pb-24 px-4">
+      <section className="relative pt-20 pb-32 px-4 overflow-hidden">
         <div className="max-w-6xl mx-auto">
-          {/* Header stamp */}
-          <div className="mb-12 animate-stamp">
-            <div className="inline-block">
-              <div className={cn(
-                "px-6 py-3 border-4 transform -rotate-3 font-bold uppercase tracking-widest text-sm",
-                darkMode ? "border-primary-500 text-primary-500" : "border-primary-600 text-primary-600"
-              )}>
-                Pharmaceutical AI System
-              </div>
+          {/* Logo */}
+          <div className="flex justify-center mb-12 animate-fade-in">
+            <div className="relative">
+              <img 
+                src="/PharmGPT.png" 
+                alt="PharmGPT" 
+                className="w-16 h-16 drop-shadow-lg" 
+              />
+              <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-full blur-2xl -z-10"></div>
             </div>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <h1 className={cn(
-                "text-7xl md:text-8xl font-display font-black leading-none animate-fade-in",
-                darkMode ? "text-white" : "text-neutral-900"
-              )} style={{ animationDelay: '0.1s' }}>
-                Pharm<span className="text-accent-600">GPT</span>
-              </h1>
-              
-              <div className={cn(
-                "border-l-4 pl-6 animate-fade-in",
-                darkMode ? "border-white" : "border-neutral-900"
-              )} style={{ animationDelay: '0.2s' }}>
-                <p className="text-lg md:text-xl font-sans leading-relaxed">
-                  Advanced pharmacology intelligence system. Query drug interactions, 
-                  mechanisms of action, and clinical applications with precision.
-                </p>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                {isAuthenticated ? (
+          {/* Main Content */}
+          <div className="text-center space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium dark:bg-emerald-900/30 dark:text-emerald-400">
+              <Sparkles className="w-4 h-4" />
+              AI-Powered Pharmaceutical Intelligence
+            </div>
+            
+            <h1 className={cn(
+              "text-5xl md:text-7xl font-bold tracking-tight",
+              darkMode ? "text-white" : "text-slate-900"
+            )}>
+              Pharm<span className="gradient-text">GPT</span>
+            </h1>
+            
+            <p className={cn(
+              "text-lg md:text-xl max-w-2xl mx-auto leading-relaxed",
+              darkMode ? "text-slate-300" : "text-slate-600"
+            )}>
+              Advanced AI assistant for pharmacology research. Get instant insights on drug interactions, 
+              mechanisms of action, and clinical applications.
+            </p>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              {isAuthenticated ? (
+                <Link
+                  to="/chat"
+                  className="btn-primary btn-lg group"
+                >
+                  Open Chat
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              ) : (
+                <>
                   <Link
-                    to="/chat"
+                    to="/register"
                     className="btn-primary btn-lg group"
                   >
-                    Access System
+                    Get Started
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
-                ) : (
-                  <>
-                    <Link
-                      to="/register"
-                      className="btn-primary btn-lg group"
-                    >
-                      Initialize
-                      <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                    <Link
-                      to="/login"
-                      className="btn-outline btn-lg"
-                    >
-                      Login
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              {/* Demo credentials */}
-              {!isAuthenticated && (
-                <div className={cn(
-                  "inline-block p-4 border-4 animate-fade-in",
-                  darkMode ? "border-neutral-700 bg-neutral-800" : "border-neutral-300 bg-neutral-50"
-                )} style={{ animationDelay: '0.4s' }}>
-                  <p className="text-xs font-sans uppercase tracking-wider">
-                    <span className="font-bold">Test Access:</span> admin@pharmgpt.com / admin123
-                  </p>
-                </div>
+                  <Link
+                    to="/login"
+                    className="btn-outline btn-lg"
+                  >
+                    Sign In
+                  </Link>
+                </>
               )}
             </div>
 
-            {/* Right side - Feature blocks */}
-            <div className="space-y-4">
+            {/* Demo credentials */}
+            {!isAuthenticated && (
               <div className={cn(
-                "p-6 border-4 animate-slide-in-right",
-                darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
-              )} style={{ animationDelay: '0.2s' }}>
-                <div className="label mb-3">01</div>
-                <h3 className="text-2xl font-display font-bold mb-2">Document Processing</h3>
-                <p className="font-sans text-sm">PDF, DOCX, XLSX, SDF, TXT, PPTX support with intelligent extraction</p>
-              </div>
-
-              <div className={cn(
-                "p-6 border-4 animate-slide-in-right",
-                darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
+                "inline-block px-4 py-3 rounded-xl animate-fade-in",
+                darkMode 
+                  ? "bg-slate-900/50 border border-slate-800" 
+                  : "bg-white/50 border border-slate-200"
               )} style={{ animationDelay: '0.3s' }}>
-                <div className="label mb-3">02</div>
-                <h3 className="text-2xl font-display font-bold mb-2">RAG Architecture</h3>
-                <p className="font-sans text-sm">Context-aware responses powered by retrieval-augmented generation</p>
+                <p className={cn("text-sm", darkMode ? "text-slate-400" : "text-slate-600")}>
+                  <span className="font-semibold">Demo:</span> admin@pharmgpt.com / admin123
+                </p>
               </div>
-
-              <div className={cn(
-                "p-6 border-4 animate-slide-in-right",
-                darkMode ? "border-white bg-neutral-900" : "border-neutral-900 bg-white"
-              )} style={{ animationDelay: '0.4s' }}>
-                <div className="label mb-3">03</div>
-                <h3 className="text-2xl font-display font-bold mb-2">Dual Mode Operation</h3>
-                <p className="font-sans text-sm">Fast responses or detailed analysis - optimized for your workflow</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Capabilities Grid */}
-      <section className="relative pb-24 px-4">
+      {/* Features Grid */}
+      <section className="relative pb-32 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className={cn(
-            "mb-12 pb-6 border-b-4",
-            darkMode ? "border-white" : "border-neutral-900"
-          )}>
-            <h2 className="text-4xl md:text-5xl font-display font-black">
-              System Capabilities
-            </h2>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Feature 1 */}
             <div className={cn(
-              "p-8 border-4 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 animate-fade-in",
+              "group p-8 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
               darkMode 
-                ? "border-white bg-neutral-900 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]" 
-                : "border-neutral-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                ? "bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50" 
+                : "bg-white/50 border border-slate-200 hover:border-emerald-500/50 hover:shadow-xl"
+            )} style={{ animationDelay: '0.4s' }}>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-6 h-6 text-white" />
+              </div>
+              <h3 className={cn(
+                "text-xl font-semibold mb-3",
+                darkMode ? "text-white" : "text-slate-900"
+              )}>
+                Interactive Chat
+              </h3>
+              <p className={cn(
+                "leading-relaxed",
+                darkMode ? "text-slate-400" : "text-slate-600"
+              )}>
+                Natural conversations about pharmaceutical topics with context-aware AI responses
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className={cn(
+              "group p-8 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
+              darkMode 
+                ? "bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50" 
+                : "bg-white/50 border border-slate-200 hover:border-emerald-500/50 hover:shadow-xl"
             )} style={{ animationDelay: '0.5s' }}>
-              <MessageSquare className="w-12 h-12 mb-4" />
-              <h3 className="text-2xl font-display font-bold mb-3">
-                Interactive Query
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <h3 className={cn(
+                "text-xl font-semibold mb-3",
+                darkMode ? "text-white" : "text-slate-900"
+              )}>
+                Document Analysis
               </h3>
-              <p className="font-sans text-sm leading-relaxed">
-                Natural language processing for pharmaceutical inquiries with contextual understanding
+              <p className={cn(
+                "leading-relaxed",
+                darkMode ? "text-slate-400" : "text-slate-600"
+              )}>
+                Upload research papers and clinical documents for intelligent Q&A
               </p>
             </div>
 
+            {/* Feature 3 */}
             <div className={cn(
-              "p-8 border-4 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 animate-fade-in",
+              "group p-8 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
               darkMode 
-                ? "border-white bg-neutral-900 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]" 
-                : "border-neutral-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                ? "bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50" 
+                : "bg-white/50 border border-slate-200 hover:border-emerald-500/50 hover:shadow-xl"
             )} style={{ animationDelay: '0.6s' }}>
-              <FileText className="w-12 h-12 mb-4" />
-              <h3 className="text-2xl font-display font-bold mb-3">
-                Multi-Format Ingestion
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <h3 className={cn(
+                "text-xl font-semibold mb-3",
+                darkMode ? "text-white" : "text-slate-900"
+              )}>
+                Fast & Detailed Modes
               </h3>
-              <p className="font-sans text-sm leading-relaxed">
-                Process research papers, clinical data, and molecular structures across multiple file formats
-              </p>
-            </div>
-
-            <div className={cn(
-              "p-8 border-4 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 animate-fade-in",
-              darkMode 
-                ? "border-white bg-neutral-900 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]" 
-                : "border-neutral-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-            )} style={{ animationDelay: '0.7s' }}>
-              <Zap className="w-12 h-12 mb-4" />
-              <h3 className="text-2xl font-display font-bold mb-3">
-                Adaptive Processing
-              </h3>
-              <p className="font-sans text-sm leading-relaxed">
-                Toggle between rapid response and comprehensive analysis modes based on query complexity
+              <p className={cn(
+                "leading-relaxed",
+                darkMode ? "text-slate-400" : "text-slate-600"
+              )}>
+                Choose between quick answers or comprehensive analysis for your queries
               </p>
             </div>
           </div>
