@@ -205,150 +205,143 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Collapsible on all screens */}
       <aside
         className={cn(
-          'fixed md:relative top-0 left-0 h-full z-50 transition-transform duration-300 ease-in-out',
-          'w-[280px] flex flex-col',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          'fixed top-0 left-0 h-full z-50 transition-all duration-300 ease-in-out flex flex-col',
+          sidebarOpen ? 'w-[280px]' : 'w-0'
         )}
         style={{ 
           background: 'var(--bg-secondary)', 
-          borderRight: '1px solid var(--border)' 
+          borderRight: sidebarOpen ? '1px solid var(--border)' : 'none'
         }}
       >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-2">
-            <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>PharmGPT</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-2 rounded-spa transition-spa"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <X size={20} strokeWidth={2} />
-          </button>
-        </div>
-
-        {/* New Chat Button */}
-        <div className="p-4">
-          <button
-            onClick={createNewConversation}
-            className="btn-spa btn-primary w-full"
-          >
-            <Plus size={20} strokeWidth={2} />
-            <span>New Chat</span>
-          </button>
-        </div>
-
-        {/* Mode Toggle */}
-        <div className="px-4 pb-4 flex gap-2">
-          <button
-            onClick={() => setMode('fast')}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-spa text-sm font-medium transition-spa',
-              mode === 'fast' ? 'text-primary' : 'text-secondary'
-            )}
-            style={mode === 'fast' ? { 
-              background: 'var(--bg-tertiary)', 
-              color: 'var(--text-primary)' 
-            } : { 
-              color: 'var(--text-secondary)' 
-            }}
-          >
-            <Zap size={16} strokeWidth={2} />
-            <span>Fast</span>
-          </button>
-          <button
-            onClick={() => setMode('detailed')}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-spa text-sm font-medium transition-spa',
-              mode === 'detailed' ? 'text-primary' : 'text-secondary'
-            )}
-            style={mode === 'detailed' ? { 
-              background: 'var(--bg-tertiary)', 
-              color: 'var(--text-primary)' 
-            } : { 
-              color: 'var(--text-secondary)' 
-            }}
-          >
-            <Brain size={16} strokeWidth={2} />
-            <span>Detailed</span>
-          </button>
-        </div>
-
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-2">
-          {conversations.map((conv) => (
-            <div key={conv.id} className="relative group">
-              <button
-                onClick={() => {
-                  navigate(`/chat/${conv.id}`)
-                  if (window.innerWidth < 768) setSidebarOpen(false)
-                }}
-                className={cn(
-                  'w-full text-left px-4 py-3 rounded-spa transition-spa',
-                  conversationId === conv.id ? 'active' : ''
-                )}
-                style={conversationId === conv.id ? {
-                  background: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)'
-                } : {
-                  color: 'var(--text-secondary)'
-                }}
-              >
-                <div className="font-medium text-sm truncate pr-8">{conv.title}</div>
-                {conv.last_message && (
-                  <div className="text-xs truncate mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                    {conv.last_message}
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={(e) => deleteConversation(conv.id, e)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 transition-spa"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                <Trash2 size={16} strokeWidth={2} />
-              </button>
+        <div className={cn('h-full flex flex-col', sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-2">
+              <img src="/PharmGPT.png" alt="PharmGPT" className="w-8 h-8" />
+              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>PharmGPT</span>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Theme Toggle */}
-        <div className="p-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <button
-            onClick={toggleDarkMode}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-spa transition-spa"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {darkMode ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}
-            <span className="text-sm">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
+          {/* New Chat Button */}
+          <div className="p-4">
+            <button
+              onClick={createNewConversation}
+              className="btn-spa btn-primary w-full"
+            >
+              <Plus size={20} strokeWidth={2} />
+              <span>New Chat</span>
+            </button>
+          </div>
+
+          {/* Conversations List */}
+          <div className="flex-1 overflow-y-auto px-4 space-y-2">
+            {conversations.map((conv) => (
+              <div key={conv.id} className="relative group">
+                <button
+                  onClick={() => {
+                    navigate(`/chat/${conv.id}`)
+                    if (window.innerWidth < 768) setSidebarOpen(false)
+                  }}
+                  className={cn(
+                    'w-full text-left px-4 py-3 rounded-spa transition-spa',
+                    conversationId === conv.id ? 'active' : ''
+                  )}
+                  style={conversationId === conv.id ? {
+                    background: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)'
+                  } : {
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  <div className="font-medium text-sm truncate pr-8">{conv.title}</div>
+                </button>
+                <button
+                  onClick={(e) => deleteConversation(conv.id, e)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 transition-spa"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <Trash2 size={16} strokeWidth={2} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </aside>
 
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Top Bar */}
-        <header className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-spa transition-spa"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <Menu size={24} strokeWidth={2} />
-          </button>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {currentConversation?.title || 'PharmGPT'}
-          </h1>
-          {currentConversation?.document_count > 0 && (
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              {currentConversation.document_count} docs
-            </span>
-          )}
+        {/* Top Bar with Controls */}
+        <header className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-spa transition-spa hover:bg-opacity-10"
+              style={{ color: 'var(--text-secondary)' }}
+              title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            >
+              <Menu size={20} strokeWidth={2} />
+            </button>
+            <h1 className="text-lg font-semibold hidden sm:block" style={{ color: 'var(--text-primary)' }}>
+              {currentConversation?.title || 'PharmGPT'}
+            </h1>
+            {currentConversation?.document_count > 0 && (
+              <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-tertiary)' }}>
+                {currentConversation.document_count} docs
+              </span>
+            )}
+          </div>
+
+          {/* Right Side Controls */}
+          <div className="flex items-center gap-2">
+            {/* Mode Toggle */}
+            <div className="flex gap-1 p-1 rounded-spa" style={{ background: 'var(--bg-secondary)' }}>
+              <button
+                onClick={() => setMode('fast')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-spa text-xs font-medium transition-spa',
+                )}
+                style={mode === 'fast' ? { 
+                  background: 'var(--accent)', 
+                  color: 'var(--bg-primary)' 
+                } : { 
+                  color: 'var(--text-secondary)' 
+                }}
+                title="Fast mode - Quick responses"
+              >
+                <Zap size={14} strokeWidth={2} />
+                <span className="hidden sm:inline">Fast</span>
+              </button>
+              <button
+                onClick={() => setMode('detailed')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-spa text-xs font-medium transition-spa',
+                )}
+                style={mode === 'detailed' ? { 
+                  background: 'var(--accent)', 
+                  color: 'var(--bg-primary)' 
+                } : { 
+                  color: 'var(--text-secondary)' 
+                }}
+                title="Detailed mode - Comprehensive responses"
+              >
+                <Brain size={14} strokeWidth={2} />
+                <span className="hidden sm:inline">Detailed</span>
+              </button>
+            </div>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-spa transition-spa"
+              style={{ color: 'var(--text-secondary)' }}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}
+            </button>
+          </div>
         </header>
 
         {/* Messages Container */}
