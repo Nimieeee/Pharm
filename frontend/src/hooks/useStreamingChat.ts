@@ -55,7 +55,7 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
         },
         body: JSON.stringify({
           message: content.trim(),
@@ -143,7 +143,7 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
       const response = await fetch('/api/v1/ai/documents/upload', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
         },
         body: formData,
       })
