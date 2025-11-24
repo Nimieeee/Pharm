@@ -70,7 +70,7 @@ export default function ChatPage() {
 
   const createNewConversation = async () => {
     try {
-      const newConv = await chatAPI.createConversation({ title: 'New Conversation' })
+      const newConv = await chatAPI.createConversation('New Conversation')
       setConversations([newConv, ...conversations])
       navigate(`/chat/${newConv.id}`)
       if (window.innerWidth < 768) setSidebarOpen(false)
@@ -131,15 +131,30 @@ export default function ChatPage() {
     setIsLoading(true)
     
     try {
-      const response = await chatAPI.sendMessage(conversationId, {
+      const response = await chatAPI.sendMessage({
         message: messageText,
+        conversation_id: conversationId,
         mode: mode,
-        document_ids: attachedDocs.map(f => f.id)
+        use_rag: true,
+        metadata: attachedDocs.length > 0 ? { document_ids: attachedDocs.map(f => f.id) } : {}
       })
+      
+      // Create assistant message from response
+      const assistantMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: response.response,
+        created_at: new Date().toISOString(),
+        metadata: {
+          mode: response.mode,
+          context_used: response.context_used
+        }
+      }
       
       // Replace loading message with actual response
       setMessages(prev => prev.map(m => 
-        m.id === loadingMessage.id ? response : m
+        m.id === loadingMessage.id ? assistantMessage : m
       ))
       loadConversations()
     } catch (error) {
@@ -169,15 +184,7 @@ export default function ChatPage() {
       setUploadingFiles(prev => [...prev, uploadingFile])
       
       try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('conversation_id', conversationId)
-        
-        const result = await chatAPI.uploadDocument(formData, (progress) => {
-          setUploadingFiles(prev => prev.map(f => 
-            f.id === uploadingFile.id ? { ...f, progress } : f
-          ))
-        })
+        const result = await chatAPI.uploadDocument(conversationId, file)
         
         setUploadingFiles(prev => prev.map(f => 
           f.id === uploadingFile.id 
@@ -499,9 +506,9 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Input Container */}
+        {/* Floating Input Container */}
         {conversationId && (
-          <div className="p-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="sticky bottom-0 p-4" style={{ background: 'linear-gradient(to top, var(--bg-primary) 80%, transparent)' }}>
             <div className="max-w-3xl mx-auto">
               {/* Uploading Files */}
               {uploadingFiles.length > 0 && (
@@ -509,22 +516,22 @@ export default function ChatPage() {
                   {uploadingFiles.map(file => (
                     <div
                       key={file.id}
-                      className="flex items-center gap-2 px-3 py-2 text-xs rounded-spa"
+                      className="flex items-center gap-2 px-3 py-2 text-xs rounded-full"
                       style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
                     >
                       <div
-                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        className="w-4 h-4 rounded-full flex items-center justify-center"
                         style={{
                           background: file.status === 'complete' ? 'var(--success)' :
                                      file.status === 'error' ? '#ef4444' : 'var(--accent)'
                         }}
                       >
                         {file.status === 'complete' ? (
-                          <Check size={12} style={{ color: 'var(--bg-primary)' }} strokeWidth={2} />
+                          <Check size={10} style={{ color: 'white' }} strokeWidth={2} />
                         ) : file.status === 'error' ? (
-                          <X size={12} style={{ color: 'var(--bg-primary)' }} strokeWidth={2} />
+                          <X size={10} style={{ color: 'white' }} strokeWidth={2} />
                         ) : (
-                          <Loader2 size={12} style={{ color: 'var(--bg-primary)' }} strokeWidth={2} className="animate-spin" />
+                          <Loader2 size={10} style={{ color: 'white' }} strokeWidth={2} className="animate-spin" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -535,16 +542,20 @@ export default function ChatPage() {
                         className="p-1"
                         style={{ color: 'var(--text-tertiary)' }}
                       >
-                        <X size={14} strokeWidth={2} />
+                        <X size={12} strokeWidth={2} />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Input Area */}
-              <div className="flex items-end gap-2 p-3 rounded-spa" 
-                   style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+              {/* Pill-shaped Floating Input */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full shadow-lg" 
+                   style={{ 
+                     background: 'var(--bg-secondary)', 
+                     border: '1px solid var(--border)',
+                     maxWidth: '100%'
+                   }}>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -556,10 +567,11 @@ export default function ChatPage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFiles.some(f => f.status === 'uploading')}
-                  className="p-2 rounded-spa transition-spa"
-                  style={{ color: 'var(--text-secondary)', minWidth: '44px', minHeight: '44px' }}
+                  className="p-2 rounded-full transition-all hover:bg-opacity-10"
+                  style={{ color: 'var(--text-secondary)' }}
+                  title="Attach file"
                 >
-                  <Paperclip size={20} strokeWidth={2} />
+                  <Paperclip size={18} strokeWidth={2} />
                 </button>
 
                 <textarea
@@ -568,36 +580,35 @@ export default function ChatPage() {
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Message PharmGPT..."
-                  className="flex-1 bg-transparent border-none outline-none resize-none text-base py-2 max-h-[200px]"
+                  className="flex-1 bg-transparent border-none outline-none resize-none text-sm py-2"
                   rows={1}
                   style={{ 
-                    minHeight: '24px', 
-                    fontSize: '16px',
+                    minHeight: '20px',
+                    maxHeight: '120px',
+                    fontSize: '14px',
                     color: 'var(--text-primary)'
                   }}
+                  disabled={isLoading}
                 />
 
                 <button
                   onClick={sendMessage}
-                  disabled={!inputMessage.trim()}
-                  className={cn(
-                    'p-2 rounded-spa transition-spa',
-                    inputMessage.trim() ? '' : 'opacity-40 cursor-not-allowed'
-                  )}
+                  disabled={!inputMessage.trim() || isLoading}
+                  className="p-2 rounded-full transition-all"
                   style={{ 
-                    background: inputMessage.trim() ? 'var(--accent)' : 'transparent',
-                    color: inputMessage.trim() ? 'var(--bg-primary)' : 'var(--text-tertiary)',
-                    minWidth: '44px',
-                    minHeight: '44px'
+                    background: inputMessage.trim() && !isLoading ? 'var(--accent)' : 'transparent',
+                    color: inputMessage.trim() && !isLoading ? 'white' : 'var(--text-tertiary)',
+                    opacity: inputMessage.trim() && !isLoading ? 1 : 0.4
                   }}
+                  title="Send message"
                 >
-                  <Send size={20} strokeWidth={2} />
+                  {isLoading ? (
+                    <Loader2 size={18} strokeWidth={2} className="animate-spin" />
+                  ) : (
+                    <Send size={18} strokeWidth={2} />
+                  )}
                 </button>
               </div>
-              
-              <p className="text-xs text-center mt-3" style={{ color: 'var(--text-tertiary)' }}>
-                PharmGPT can make mistakes. Check important info.
-              </p>
             </div>
           </div>
         )}
