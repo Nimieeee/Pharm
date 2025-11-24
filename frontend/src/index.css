@@ -110,7 +110,7 @@
   }
   
   .card-header {
-    @apply flex flex-col space-y-1.5 p-6 border-b-3 border-neutral-900;
+    @apply flex flex-col space-y-1.5 p-6 border-b-4 border-neutral-900;
   }
   
   .dark .card-header {
@@ -122,7 +122,7 @@
   }
   
   .card-footer {
-    @apply flex items-center p-6 border-t-3 border-neutral-900;
+    @apply flex items-center p-6 border-t-4 border-neutral-900;
   }
   
   .dark .card-footer {
@@ -181,7 +181,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-neutral-200 border-l-3 border-neutral-900;
+  @apply bg-neutral-200 border-l-4 border-neutral-900;
 }
 
 .dark ::-webkit-scrollbar-track {
