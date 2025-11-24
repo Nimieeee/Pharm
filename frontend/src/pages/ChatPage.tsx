@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Send, Plus, MessageSquare, Trash2, Paperclip, Menu, X, Zap, Brain, Sun, Moon, Check, Loader2 } from 'lucide-react'
+import { Send, Plus, MessageSquare, Trash2, Paperclip, Menu, X, Zap, Brain, Sun, Moon, Check, Loader2, User, LogOut, Home } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { chatAPI, Conversation, Message, ConversationWithMessages } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -18,6 +19,7 @@ export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId?: string }>()
   const navigate = useNavigate()
   const { darkMode, toggleDarkMode } = useTheme()
+  const { user, logout } = useAuth()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -30,6 +32,7 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768)
   const [mode, setMode] = useState<'fast' | 'detailed'>('fast')
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   useEffect(() => { loadConversations() }, [])
   useEffect(() => { if (conversationId) loadConversation(conversationId) }, [conversationId])
@@ -94,7 +97,7 @@ export default function ChatPage() {
   }
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !conversationId) return
+    if (!inputMessage.trim() || !conversationId || isLoading) return
     
     const messageText = inputMessage.trim()
     const attachedDocs = uploadingFiles.filter(f => f.status === 'complete')
@@ -110,10 +113,22 @@ export default function ChatPage() {
         : undefined
     }
     
-    setMessages([...messages, userMessage])
+    // Update UI immediately
+    setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     setUploadingFiles([])
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    
+    // Add loading message
+    const loadingMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      conversation_id: conversationId,
+      role: 'assistant',
+      content: '',
+      created_at: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, loadingMessage])
+    setIsLoading(true)
     
     try {
       const response = await chatAPI.sendMessage(conversationId, {
@@ -122,13 +137,20 @@ export default function ChatPage() {
         document_ids: attachedDocs.map(f => f.id)
       })
       
-      setMessages(prev => [...prev, response])
+      // Replace loading message with actual response
+      setMessages(prev => prev.map(m => 
+        m.id === loadingMessage.id ? response : m
+      ))
       loadConversations()
     } catch (error) {
       console.error('Send message error:', error)
       toast.error('Failed to send message')
-      // Remove the user message if sending failed
-      setMessages(prev => prev.filter(m => m.id !== userMessage.id))
+      // Remove both user and loading messages on error
+      setMessages(prev => prev.filter(m => 
+        m.id !== userMessage.id && m.id !== loadingMessage.id
+      ))
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -246,7 +268,7 @@ export default function ChatPage() {
                     if (window.innerWidth < 768) setSidebarOpen(false)
                   }}
                   className={cn(
-                    'w-full text-left px-4 py-3 rounded-spa transition-spa',
+                    'w-full text-left px-4 py-3 rounded-lg transition-all',
                     conversationId === conv.id ? 'active' : ''
                   )}
                   style={conversationId === conv.id ? {
@@ -260,13 +282,60 @@ export default function ChatPage() {
                 </button>
                 <button
                   onClick={(e) => deleteConversation(conv.id, e)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 transition-spa"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 transition-all"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   <Trash2 size={16} strokeWidth={2} />
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* User Menu at Bottom */}
+          <div className="p-4" style={{ borderTop: '1px solid var(--border)' }}>
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-opacity-50"
+                style={{ color: 'var(--text-secondary)', background: userMenuOpen ? 'var(--bg-tertiary)' : 'transparent' }}
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'var(--accent)' }}>
+                  <User size={16} style={{ color: 'white' }} strokeWidth={2} />
+                </div>
+                <span className="text-sm font-medium flex-1 truncate">{user?.first_name || user?.email || 'User'}</span>
+              </button>
+
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg py-2 z-50"
+                       style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+                    <button
+                      onClick={() => {
+                        navigate('/')
+                        setUserMenuOpen(false)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-all"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      <Home size={16} strokeWidth={2} />
+                      <span>Home</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout()
+                        navigate('/login')
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-all"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      <LogOut size={16} strokeWidth={2} />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </aside>

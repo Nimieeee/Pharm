@@ -60,9 +60,9 @@ export default {
         '128': '32rem',
       },
       borderRadius: {
-        'spa': '0.75rem',      // 12px - Standard
-        'spa-lg': '1rem',      // 16px - Cards
-        'spa-xl': '1.25rem',   // 20px - Large surfaces
+        'spa': '0.5rem',       // 8px - Standard (ChatGPT-like)
+        'spa-lg': '0.75rem',   // 12px - Cards
+        'spa-xl': '1rem',      // 16px - Large surfaces
       },
       boxShadow: {
         'spa-sm': '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
