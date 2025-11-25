@@ -194,10 +194,9 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
 
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('conversation_id', conversationId)
 
     try {
-      const response = await fetch('/api/v1/ai/documents/upload', {
+      const response = await fetch(`/api/v1/ai/documents/upload?conversation_id=${conversationId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
@@ -206,6 +205,8 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Upload error:', errorText)
         throw new Error('Upload failed')
       }
 
