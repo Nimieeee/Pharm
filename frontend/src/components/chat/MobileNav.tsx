@@ -21,7 +21,7 @@ export default function MobileNav() {
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.3, duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
-      className="md:hidden fixed bottom-8 left-4 right-4 z-50 max-w-[600px] mx-auto"
+      className="md:hidden fixed bottom-24 left-4 right-4 z-40 max-w-[600px] mx-auto"
     >
       <div className="flex items-center justify-center gap-1 px-4 py-3 rounded-full bg-[rgba(var(--surface-rgb),0.85)] backdrop-blur-xl border border-[rgba(0,0,0,0.08)] dark:border-[rgba(255,255,255,0.1)] shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12)]">
         {navItems.map((item) => {

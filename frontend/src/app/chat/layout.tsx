@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import ChatSidebar from '@/components/chat/ChatSidebar';
-import MobileNav from '@/components/chat/MobileNav';
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -16,9 +15,6 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-1 flex flex-col overflow-hidden">
         {children}
       </main>
-
-      {/* Mobile Navigation */}
-      <MobileNav />
     </div>
   );
 }
