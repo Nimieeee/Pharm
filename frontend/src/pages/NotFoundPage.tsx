@@ -7,10 +7,7 @@ export default function NotFoundPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-md w-full text-center animate-fade-in">
         <div className="mb-8">
-          <h1 className="text-9xl font-semibold mb-4 text-gradient" 
-              style={{ 
-                fontFamily: "'Cormorant Garamond', Georgia, serif"
-              }}>
+          <h1 className="text-9xl font-semibold mb-4 text-gradient">
             404
           </h1>
           <h2 className="text-2xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>

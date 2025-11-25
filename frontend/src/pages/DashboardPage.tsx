@@ -14,8 +14,7 @@ export default function DashboardPage() {
           <div className="mb-12 animate-fade-in">
             <h1 className="text-3xl md:text-4xl font-semibold mb-3" 
                 style={{ 
-                  color: 'var(--text-primary)',
-                  fontFamily: "'Cormorant Garamond', Georgia, serif"
+                  color: 'var(--text-primary)'
                 }}>
               Welcome back, {user?.first_name || 'User'}
             </h1>

@@ -10,8 +10,7 @@ export default function SupportPage() {
           <div className="text-center mb-16 animate-fade-in">
             <h1 className="text-4xl md:text-5xl font-semibold mb-4" 
                 style={{ 
-                  color: 'var(--text-primary)',
-                  fontFamily: "'Cormorant Garamond', Georgia, serif"
+                  color: 'var(--text-primary)'
                 }}>
               Get Support
             </h1>

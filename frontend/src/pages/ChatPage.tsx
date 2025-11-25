@@ -430,8 +430,7 @@ export default function ChatPage() {
                 <MessageSquare size={64} className="mb-6" style={{ color: 'var(--text-tertiary)' }} strokeWidth={2} />
                 <h2 className="text-2xl md:text-3xl font-semibold mb-3" 
                     style={{ 
-                      color: 'var(--text-primary)',
-                      fontFamily: "'Cormorant Garamond', Georgia, serif"
+                      color: 'var(--text-primary)'
                     }}>
                   Start a conversation
                 </h2>

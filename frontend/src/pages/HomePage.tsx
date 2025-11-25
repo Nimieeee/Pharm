@@ -26,10 +26,9 @@ export default function HomePage() {
             
             {/* Headline - Second */}
             <div className="space-y-6 animate-fade-in-delay">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold text-balance" 
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-balance" 
                   style={{ 
-                    color: 'var(--text-primary)',
-                    fontFamily: "'Cormorant Garamond', Georgia, serif"
+                    color: 'var(--text-primary)'
                   }}>
                 Pharmaceutical Intelligence,
                 <br />
