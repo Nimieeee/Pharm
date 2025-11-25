@@ -196,7 +196,8 @@ export function useStreamingChat({ conversationId, mode, onNewMessage }: UseStre
     formData.append('file', file)
 
     try {
-      const response = await fetch(`/api/v1/ai/documents/upload?conversation_id=${conversationId}`, {
+      // Use the chat endpoint for document upload
+      const response = await fetch(`/api/v1/chat/conversations/${conversationId}/documents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('pharmgpt_token')}`
