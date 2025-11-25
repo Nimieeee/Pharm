@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import { useChat } from '@/hooks/useChat';
@@ -31,7 +32,7 @@ function ChatContent() {
       <header className="h-16 px-6 flex items-center justify-between border-b border-[var(--border)] glass-strong">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">P</span>
+            <Sparkles size={16} strokeWidth={1.5} className="text-white" />
           </div>
           <div>
             <h1 className="font-semibold text-[var(--text-primary)]">PharmGPT</h1>
@@ -39,7 +40,11 @@ function ChatContent() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+          {isLoading ? (
+            <Loader2 size={14} strokeWidth={1.5} className="text-amber-500 animate-spin" />
+          ) : (
+            <CheckCircle2 size={14} strokeWidth={1.5} className="text-emerald-500" />
+          )}
           <span className="text-xs text-[var(--text-secondary)]">
             {isLoading ? 'Thinking...' : 'Ready'}
           </span>
@@ -47,13 +52,13 @@ function ChatContent() {
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-32 md:pb-8">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 ? (
             <EmptyState onSuggestionClick={sendMessage} />
           ) : (
             <AnimatePresence mode="popLayout">
-              {messages.map((msg, i) => (
+              {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -73,7 +78,7 @@ function ChatContent() {
               className="flex items-center gap-3 py-4"
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <span className="text-white text-sm font-bold">P</span>
+                <Sparkles size={16} strokeWidth={1.5} className="text-white" />
               </div>
               <div className="flex gap-1">
                 <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -108,7 +113,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
       className="text-center py-16"
     >
       <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
-        <span className="text-white text-2xl font-bold">P</span>
+        <Sparkles size={28} strokeWidth={1.5} className="text-white" />
       </div>
       <h2 className="text-section-header text-[var(--text-primary)] mb-3">
         How can I help you today?
@@ -138,7 +143,7 @@ export default function ChatPage() {
   return (
     <Suspense fallback={
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full" />
+        <Loader2 size={32} strokeWidth={1.5} className="text-indigo-500 animate-spin" />
       </div>
     }>
       <ChatContent />

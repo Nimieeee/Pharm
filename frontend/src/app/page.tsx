@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { motion } from 'framer-motion';
+import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText } from 'lucide-react';
 
 const container = {
   hidden: { opacity: 0 },
@@ -18,6 +19,13 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.2, 0.8, 0.2, 1] } }
 };
 
+const features = [
+  { icon: Dna, title: 'Drug Research', desc: 'Analyze compounds and interactions' },
+  { icon: BarChart3, title: 'Clinical Data', desc: 'Process trial results and studies' },
+  { icon: Microscope, title: 'Molecular Analysis', desc: 'Understand chemical structures' },
+  { icon: FileText, title: 'Document RAG', desc: 'Query your research documents' },
+];
+
 export default function HomePage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
@@ -29,13 +37,6 @@ export default function HomePage() {
       router.push(`/chat?q=${encodeURIComponent(query)}`);
     }
   };
-
-  const features = [
-    { icon: '🧬', title: 'Drug Research', desc: 'Analyze compounds and interactions' },
-    { icon: '📊', title: 'Clinical Data', desc: 'Process trial results and studies' },
-    { icon: '🔬', title: 'Molecular Analysis', desc: 'Understand chemical structures' },
-    { icon: '📄', title: 'Document RAG', desc: 'Query your research documents' },
-  ];
 
   return (
     <div className="min-h-screen bg-atmospheric">
@@ -54,7 +55,11 @@ export default function HomePage() {
               onClick={toggleTheme}
               className="w-10 h-10 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press transition-all hover:scale-105"
             >
-              {theme === 'light' ? '🌙' : '☀️'}
+              {theme === 'light' ? (
+                <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+              ) : (
+                <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+              )}
             </button>
             <button
               onClick={() => router.push('/chat')}
@@ -106,9 +111,7 @@ export default function HomePage() {
                 type="submit"
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-[var(--text-primary)] text-[var(--background)] flex items-center justify-center btn-press transition-all hover:opacity-90"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+                <ArrowRight size={20} strokeWidth={1.5} />
               </button>
             </div>
           </motion.form>
@@ -118,15 +121,15 @@ export default function HomePage() {
             variants={item}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
-            {features.map((feature, i) => (
+            {features.map((feature) => (
               <motion.div
                 key={feature.title}
                 variants={item}
                 className="card-swiss border border-[var(--border)] cursor-pointer group"
                 onClick={() => router.push('/chat')}
               >
-                <div className="text-3xl mb-4 icon-hover transition-transform duration-300 inline-block">
-                  {feature.icon}
+                <div className="mb-4 text-[var(--text-secondary)] group-hover:text-indigo-500 transition-colors">
+                  <feature.icon size={32} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-section-header text-[var(--text-primary)] mb-2">
                   {feature.title}

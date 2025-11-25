@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { User, Sparkles } from 'lucide-react';
 
 export interface Message {
   id: string;
@@ -25,11 +26,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           : 'bg-gradient-to-br from-indigo-500 to-purple-600'
       }`}>
         {isUser ? (
-          <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
+          <User size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
         ) : (
-          <span className="text-white text-sm font-bold">P</span>
+          <Sparkles size={16} strokeWidth={1.5} className="text-white" />
         )}
       </div>
 

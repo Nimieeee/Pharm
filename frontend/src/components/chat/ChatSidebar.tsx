@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
+import { ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings } from 'lucide-react';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -54,9 +55,7 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                   onClick={onToggle}
                   className="w-8 h-8 rounded-lg bg-[var(--surface-highlight)] flex items-center justify-center hover:bg-[var(--border)] transition-colors btn-press"
                 >
-                  <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
+                  <ChevronsLeft size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
                 </button>
               </div>
 
@@ -65,9 +64,7 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                 onClick={() => router.push('/chat')}
                 className="w-full py-3 px-4 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all mb-6"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+                <Plus size={16} strokeWidth={1.5} />
                 New Chat
               </button>
 
@@ -102,13 +99,17 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                   onClick={toggleTheme}
                   className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
                 >
-                  <span className="text-lg">{theme === 'light' ? '🌙' : '☀️'}</span>
+                  {theme === 'light' ? (
+                    <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                  ) : (
+                    <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                  )}
                   <span className="text-sm text-[var(--text-primary)]">
                     {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                   </span>
                 </button>
                 <button className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3">
-                  <span className="text-lg">⚙️</span>
+                  <Settings size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
                   <span className="text-sm text-[var(--text-primary)]">Settings</span>
                 </button>
               </div>
@@ -123,9 +124,7 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
           onClick={onToggle}
           className="hidden md:flex fixed left-4 top-4 z-50 w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors btn-press shadow-lg"
         >
-          <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-          </svg>
+          <ChevronsRight size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
         </button>
       )}
     </>
