@@ -1,34 +1,25 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import Navbar from '@/components/Navbar'
-import Sidebar from '@/components/Sidebar'
-import Footer from '@/components/Footer'
+import './globals.css';
+import { ThemeProvider } from '@/lib/theme-context';
 
-const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'PharmGPT - AI-Powered Pharmaceutical Intelligence',
-  description: 'Advanced pharmaceutical research and analysis powered by AI',
-}
+export const metadata = {
+  title: 'PharmGPT - AI-Powered Pharmaceutical Assistant',
+  description: 'Intelligent pharmaceutical research assistant powered by AI',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <div className="min-h-screen bg-background text-foreground">
-          <Navbar />
-          <Sidebar />
-          <main className="relative">
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <ThemeProvider>
+          <div className="min-h-screen bg-[var(--background)] transition-colors duration-300">
             {children}
-          </main>
-          <Footer />
-        </div>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

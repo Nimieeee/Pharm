@@ -1,105 +1,147 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
-import ChatSidebar from '@/components/chat/ChatSidebar'
-import ChatHeader from '@/components/chat/ChatHeader'
-import ChatMessages from '@/components/chat/ChatMessages'
-import ChatInput from '@/components/chat/ChatInput'
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import ChatMessage from '@/components/chat/ChatMessage';
+import ChatInput from '@/components/chat/ChatInput';
+import { useChat } from '@/hooks/useChat';
 
-export interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
+function ChatContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { messages, isLoading, sendMessage } = useChat();
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  useEffect(() => {
+    if (initialQuery && !hasInitialized) {
+      sendMessage(initialQuery);
+      setHasInitialized(true);
+    }
+  }, [initialQuery, hasInitialized, sendMessage]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  return (
+    <div className="flex-1 flex flex-col h-full">
+      {/* Chat Header */}
+      <header className="h-16 px-6 flex items-center justify-between border-b border-[var(--border)] glass-strong">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white text-sm font-bold">P</span>
+          </div>
+          <div>
+            <h1 className="font-semibold text-[var(--text-primary)]">PharmGPT</h1>
+            <p className="text-xs text-[var(--text-secondary)]">AI Research Assistant</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+          <span className="text-xs text-[var(--text-secondary)]">
+            {isLoading ? 'Thinking...' : 'Ready'}
+          </span>
+        </div>
+      </header>
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        <div className="max-w-3xl mx-auto">
+          {messages.length === 0 ? (
+            <EmptyState onSuggestionClick={sendMessage} />
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {messages.map((msg, i) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
+                >
+                  <ChatMessage message={msg} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-3 py-4"
+            >
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white text-sm font-bold">P</span>
+              </div>
+              <div className="flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </motion.div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <ChatInput onSend={sendMessage} isLoading={isLoading} />
+    </div>
+  );
+}
+
+function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) => void }) {
+  const suggestions = [
+    'What are the common drug interactions with Warfarin?',
+    'Explain the mechanism of action of SSRIs',
+    'Summarize recent clinical trials for mRNA vaccines',
+    'What are the pharmacokinetics of Metformin?',
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="text-center py-16"
+    >
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
+        <span className="text-white text-2xl font-bold">P</span>
+      </div>
+      <h2 className="text-section-header text-[var(--text-primary)] mb-3">
+        How can I help you today?
+      </h2>
+      <p className="text-body mb-8 max-w-md mx-auto">
+        Ask me about drug interactions, clinical research, molecular structures, or upload documents for analysis.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
+        {suggestions.map((suggestion, i) => (
+          <motion.button
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 * i, duration: 0.4 }}
+            onClick={() => onSuggestionClick(suggestion)}
+            className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-left text-sm text-[var(--text-primary)] hover:border-indigo-500/50 hover:shadow-lg transition-all btn-press"
+          >
+            {suggestion}
+          </motion.button>
+        ))}
+      </div>
+    </motion.div>
+  );
 }
 
 export default function ChatPage() {
-  const searchParams = useSearchParams()
-  const initialQuery = searchParams.get('q')
-  
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
-  useEffect(() => {
-    if (initialQuery) {
-      handleSendMessage(initialQuery)
-    }
-  }, [initialQuery])
-
-  const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          conversation_history: messages,
-        }),
-      })
-
-      const data = await response.json()
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response || 'I apologize, but I encountered an error processing your request.',
-        timestamp: new Date(),
-      }
-
-      setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
-      console.error('Error:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <ChatSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <ChatHeader onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-
-        {/* Messages */}
-        <ChatMessages messages={messages} isLoading={isLoading} />
-
-        {/* Input */}
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSend={handleSendMessage}
-          isLoading={isLoading}
-        />
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full" />
       </div>
-    </div>
-  )
+    }>
+      <ChatContent />
+    </Suspense>
+  );
 }

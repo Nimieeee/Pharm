@@ -1,10 +1,35 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=general-sans@400,500,600,700&f[]=sentient@400,500,600,700&f[]=clash-display@400,500,600,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
+  /* Light Theme - Spa Day */
+  --background: #FAFAFA;
+  --surface: #FFFFFF;
+  --surface-rgb: 255, 255, 255;
+  --surface-highlight: #F4F4F5;
+  --border: #E4E4E7;
+  --text-primary: #18181B;
+  --text-secondary: #71717A;
+  --accent-gradient: linear-gradient(135deg, #E0E7FF 0%, #FAE8FF 100%);
+  --shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.05);
+  --gradient-color: rgba(224, 231, 255, 0.5);
+}
+
+.dark {
+  /* Dark Theme - Obsidian Night */
+  --background: #09090B;
+  --surface: #18181B;
+  --surface-rgb: 24, 24, 27;
+  --surface-highlight: #27272A;
+  --border: #27272A;
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --accent-gradient: linear-gradient(135deg, #312E81 0%, #4C1D95 100%);
+  --shadow: 0 0 0 1px #27272A, 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+  --gradient-color: rgba(49, 46, 129, 0.3);
 }
 
 * {
@@ -13,42 +38,150 @@
   margin: 0;
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  color: var(--foreground);
+  font-family: 'Satoshi', 'General Sans', sans-serif;
   background: var(--background);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Typography Classes */
+.text-hero {
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+.text-section-header {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
-/* Custom scrollbar */
+.text-body {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Atmospheric Background Gradient */
+.bg-atmospheric {
+  background: radial-gradient(circle at 50% 0%, var(--gradient-color) 0%, transparent 60%);
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(var(--surface-rgb), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(var(--surface-rgb), 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Card Styles */
+.card-swiss {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 32px;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card-swiss:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+/* Button Interactions */
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Icon Hover */
+.icon-hover:hover {
+  transform: rotate(15deg);
+}
+
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 4px;
+  background: var(--border);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
+  background: var(--text-secondary);
+}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Mobile Responsive Typography */
+@media (max-width: 768px) {
+  .text-hero {
+    font-size: 2.8rem;
+  }
+  
+  .text-section-header {
+    font-size: 1.2rem;
+  }
+}
+
+/* Selection */
+::selection {
+  background: rgba(224, 231, 255, 0.5);
+}
+
+.dark ::selection {
+  background: rgba(49, 46, 129, 0.5);
 }

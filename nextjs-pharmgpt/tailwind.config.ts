@@ -1,4 +1,4 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
@@ -6,33 +6,52 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Satoshi', 'General Sans', 'sans-serif'],
+        serif: ['Sentient', 'Clash Display', 'serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
       colors: {
-        background: '#212121',
-        foreground: '#ffffff',
-        card: '#2f2f2f',
-        'card-hover': '#3a3a3a',
-        border: '#3a3a3a',
-        accent: '#10a37f',
-        'accent-hover': '#0d8c6c',
+        background: 'var(--background)',
+        surface: 'var(--surface)',
+        'surface-highlight': 'var(--surface-highlight)',
+        border: 'var(--border)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+      },
+      borderRadius: {
+        '2xl': '24px',
+        '3xl': '32px',
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+      },
+      maxWidth: {
+        'content': '1200px',
+      },
+      boxShadow: {
+        'swiss': '0 20px 40px -12px rgba(0, 0, 0, 0.05)',
+        'swiss-hover': '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
+        'swiss-dark': '0 0 0 1px #27272A, 0 20px 40px -12px rgba(0, 0, 0, 0.5)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.5s ease-in',
-        'slide-up': 'slideUp 0.5s ease-out',
+        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+        'bounce-slow': 'bounce 1.5s infinite',
       },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
+      transitionTimingFunction: {
+        'swiss': 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+      },
+      backdropBlur: {
+        'xs': '4px',
       },
     },
   },
   plugins: [],
-}
-export default config
+};
+
+export default config;
