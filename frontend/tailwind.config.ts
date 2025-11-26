@@ -15,17 +15,27 @@ const config: Config = {
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
+        // Semantic Layered System
+        background: 'var(--background)',
+        surface: {
+          DEFAULT: 'var(--surface)',
+          hover: 'var(--surface-hover)',
+          highlight: 'var(--surface-highlight)',
+        },
+        border: 'var(--border)',
+        foreground: {
+          DEFAULT: 'var(--foreground)',
+          muted: 'var(--foreground-muted)',
+        },
+        
+        // Legacy aliases (backward compatibility)
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'surface-highlight': 'var(--surface-highlight)',
+        
         // Premium Scientific Journal palette
         canvas: '#FDFCF8',
         ink: '#1A1A1A',
-        
-        // Legacy theme variables (for backward compatibility)
-        background: 'var(--background)',
-        surface: 'var(--surface)',
-        'surface-highlight': 'var(--surface-highlight)',
-        border: 'var(--border)',
-        'text-primary': 'var(--text-primary)',
-        'text-secondary': 'var(--text-secondary)',
       },
       borderRadius: {
         '2xl': '24px',

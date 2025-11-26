@@ -35,62 +35,62 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-md mx-4 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
+        className="w-full max-w-md mx-4 p-6 rounded-2xl bg-surface border border-border shadow-xl"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-serif font-medium text-[var(--text-primary)]">Settings</h2>
+          <h2 className="text-lg font-serif font-medium text-foreground">Settings</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-[var(--surface-highlight)] flex items-center justify-center hover:bg-[var(--border)] transition-colors"
+            className="w-8 h-8 rounded-lg bg-surface-highlight flex items-center justify-center hover:bg-surface-hover transition-colors"
           >
-            <X size={16} className="text-[var(--text-secondary)]" />
+            <X size={16} className="text-foreground-muted" />
           </button>
         </div>
         
         <div className="space-y-4">
           {/* Account Info */}
-          <div className="p-4 rounded-xl bg-[var(--surface-highlight)]">
-            <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">Account</p>
-            <p className="text-sm text-[var(--text-primary)]">{user?.email || 'Not signed in'}</p>
+          <div className="p-4 rounded-xl bg-surface-highlight">
+            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Account</p>
+            <p className="text-sm text-foreground">{user?.email || 'Not signed in'}</p>
             {user?.first_name && (
-              <p className="text-xs text-[var(--text-secondary)] mt-1">{user.first_name} {user.last_name}</p>
+              <p className="text-xs text-foreground-muted mt-1">{user.first_name} {user.last_name}</p>
             )}
           </div>
           
           {/* Theme Toggle */}
-          <div className="p-4 rounded-xl bg-[var(--surface-highlight)] flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-surface-highlight flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">Theme</p>
-              <p className="text-xs text-[var(--text-secondary)]">{theme === 'light' ? 'Light mode' : 'Dark mode'}</p>
+              <p className="text-sm font-medium text-foreground">Theme</p>
+              <p className="text-xs text-foreground-muted">{theme === 'light' ? 'Light mode' : 'Dark mode'}</p>
             </div>
             <button
               onClick={toggleTheme}
-              className="w-10 h-10 rounded-xl bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--border)] transition-colors"
+              className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center hover:bg-surface-hover transition-colors"
             >
               {theme === 'light' ? (
-                <Moon size={18} className="text-[var(--text-secondary)]" />
+                <Moon size={18} className="text-foreground-muted" />
               ) : (
-                <Sun size={18} className="text-[var(--text-secondary)]" />
+                <Sun size={18} className="text-foreground-muted" />
               )}
             </button>
           </div>
           
           {/* App Info */}
-          <div className="p-4 rounded-xl bg-[var(--surface-highlight)]">
-            <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">About</p>
-            <p className="text-sm text-[var(--text-primary)]">PharmGPT v1.0</p>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">AI-Powered Pharmaceutical Research Assistant</p>
+          <div className="p-4 rounded-xl bg-surface-highlight">
+            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">About</p>
+            <p className="text-sm text-foreground">PharmGPT v1.0</p>
+            <p className="text-xs text-foreground-muted mt-1">AI-Powered Pharmaceutical Research Assistant</p>
           </div>
         </div>
         
         <button
           onClick={onClose}
-          className="w-full mt-6 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm hover:opacity-90 transition-opacity"
+          className="w-full mt-6 py-3 rounded-xl bg-foreground text-background font-medium text-sm hover:opacity-90 transition-opacity"
         >
           Done
         </button>
@@ -178,7 +178,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className="hidden md:flex flex-col h-full border-r border-[var(--border)] bg-[var(--surface)] overflow-hidden"
+            className="hidden md:flex flex-col h-full border-r border-border bg-surface overflow-hidden"
           >
             <div className="p-4 flex flex-col h-full">
               {/* Header */}
@@ -190,20 +190,20 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">P</span>
                   </div>
-                  <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
+                  <span className="font-serif font-medium text-foreground">PharmGPT</span>
                 </button>
                 <button
                   onClick={onToggle}
-                  className="w-8 h-8 rounded-lg bg-[var(--surface-highlight)] flex items-center justify-center hover:bg-[var(--border)] transition-colors btn-press"
+                  className="w-8 h-8 rounded-lg bg-surface-highlight flex items-center justify-center hover:bg-surface-hover transition-colors btn-press"
                 >
-                  <ChevronsLeft size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                  <ChevronsLeft size={16} strokeWidth={1.5} className="text-foreground-muted" />
                 </button>
               </div>
 
               {/* New Chat Button */}
               <button
                 onClick={() => router.push('/chat')}
-                className="w-full py-3 px-4 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all mb-6"
+                className="w-full py-3 px-4 rounded-xl bg-foreground text-background font-medium text-sm flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all mb-6"
               >
                 <Plus size={16} strokeWidth={1.5} />
                 New Chat
@@ -211,14 +211,14 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
 
               {/* Chat History */}
               <div className="flex-1 overflow-y-auto">
-                <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2">
+                <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-3 px-2">
                   Recent Chats
                 </p>
                 <div className="space-y-1">
                   {isLoadingHistory ? (
-                    <p className="text-sm text-[var(--text-secondary)] px-2">Loading...</p>
+                    <p className="text-sm text-foreground-muted px-2">Loading...</p>
                   ) : chatHistory.length === 0 ? (
-                    <p className="text-sm text-[var(--text-secondary)] px-2">Chat history will appear here</p>
+                    <p className="text-sm text-foreground-muted px-2">Chat history will appear here</p>
                   ) : (
                     chatHistory.map((chat, i) => (
                       <motion.button
@@ -227,12 +227,12 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
                         onClick={() => handleSelectConversation(chat.id)}
-                        className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors group"
+                        className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors group"
                       >
-                        <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">
+                        <p className="text-sm text-foreground truncate group-hover:text-[var(--accent)] transition-colors">
                           {chat.title}
                         </p>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                        <p className="text-xs text-foreground-muted mt-0.5">
                           {chat.date}
                         </p>
                       </motion.button>
@@ -242,33 +242,33 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
               </div>
 
               {/* Footer Actions */}
-              <div className="pt-4 border-t border-[var(--border)] space-y-2">
+              <div className="pt-4 border-t border-border space-y-2">
                 <button
                   onClick={() => router.push('/workbench')}
-                  className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
                   <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Data Workbench</span>
+                  <span className="text-sm text-foreground">Data Workbench</span>
                 </button>
                 <button
                   onClick={toggleTheme}
-                  className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
                   {theme === 'light' ? (
-                    <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                    <Moon size={20} strokeWidth={1.5} className="text-foreground-muted" />
                   ) : (
-                    <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                    <Sun size={20} strokeWidth={1.5} className="text-foreground-muted" />
                   )}
-                  <span className="text-sm text-[var(--text-primary)]">
+                  <span className="text-sm text-foreground">
                     {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                   </span>
                 </button>
                 <button 
                   onClick={() => setShowSettings(true)}
-                  className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
-                  <Settings size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                  <span className="text-sm text-[var(--text-primary)]">Settings</span>
+                  <Settings size={20} strokeWidth={1.5} className="text-foreground-muted" />
+                  <span className="text-sm text-foreground">Settings</span>
                 </button>
                 {token && (
                   <button 
@@ -289,9 +289,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors btn-press shadow-lg"
+          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-surface border border-border items-center justify-center hover:bg-surface-hover transition-colors btn-press shadow-lg"
         >
-          <ChevronsRight size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+          <ChevronsRight size={16} strokeWidth={1.5} className="text-foreground-muted" />
         </button>
       )}
 
