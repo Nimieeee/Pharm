@@ -43,54 +43,54 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-atmospheric">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-[var(--border)]">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border">
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">P</span>
             </div>
-            <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
+            <span className="font-serif font-medium text-foreground">PharmGPT</span>
           </div>
           
           <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
-              className="w-10 h-10 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press transition-all hover:scale-105"
+              className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
             >
               {theme === 'light' ? (
-                <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                <Moon size={20} strokeWidth={1.5} className="text-foreground-muted" />
               ) : (
-                <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                <Sun size={20} strokeWidth={1.5} className="text-foreground-muted" />
               )}
             </button>
             {user ? (
               <>
                 <button
                   onClick={() => router.push('/chat')}
-                  className="px-5 py-2.5 rounded-full bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm btn-press transition-all hover:opacity-90"
+                  className="px-5 py-2.5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90"
                 >
                   Open Chat
                 </button>
                 <button
                   onClick={logout}
-                  className="w-10 h-10 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press transition-all hover:scale-105"
+                  className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
                   title="Sign out"
                 >
-                  <LogOut size={18} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                  <LogOut size={18} strokeWidth={1.5} className="text-foreground-muted" />
                 </button>
               </>
             ) : (
               <>
                 <button
                   onClick={() => router.push('/login')}
-                  className="px-4 py-2.5 rounded-full bg-[var(--surface-highlight)] text-[var(--text-primary)] font-medium text-sm btn-press transition-all hover:bg-[var(--border)] flex items-center gap-2"
+                  className="px-4 py-2.5 rounded-full bg-surface-highlight text-foreground font-medium text-sm btn-press transition-all hover:bg-surface-hover flex items-center gap-2"
                 >
                   <LogIn size={16} strokeWidth={1.5} />
                   Sign In
                 </button>
                 <button
                   onClick={() => router.push('/register')}
-                  className="px-5 py-2.5 rounded-full bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm btn-press transition-all hover:opacity-90"
+                  className="px-5 py-2.5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90"
                 >
                   Get Started
                 </button>
@@ -109,14 +109,14 @@ export default function HomePage() {
       >
         <div className="max-w-[1200px] mx-auto">
           <motion.div variants={item} className="text-center mb-16">
-            <h1 className="text-hero font-serif text-[var(--text-primary)] mb-6">
+            <h1 className="text-hero font-serif text-foreground mb-6">
               Your AI Research
               <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-violet-500">
                 Companion
               </span>
             </h1>
-            <p className="text-body max-w-xl mx-auto text-lg">
+            <p className="text-foreground-muted max-w-xl mx-auto text-lg">
               Accelerate pharmaceutical research with intelligent document analysis, 
               drug interaction insights, and clinical data processing.
             </p>
@@ -134,11 +134,11 @@ export default function HomePage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ask about drug interactions, compounds, clinical trials..."
-                className="w-full h-16 px-6 pr-14 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-lg"
+                className="w-full h-16 px-6 pr-14 rounded-2xl bg-surface border border-border text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-lg"
               />
               <button
                 type="submit"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-[var(--text-primary)] text-[var(--background)] flex items-center justify-center btn-press transition-all hover:opacity-90"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center btn-press transition-all hover:opacity-90"
               >
                 <ArrowRight size={20} strokeWidth={1.5} />
               </button>
@@ -154,16 +154,16 @@ export default function HomePage() {
               <motion.div
                 key={feature.title}
                 variants={item}
-                className="card-swiss border border-[var(--border)] cursor-pointer group"
+                className="card-swiss border border-border cursor-pointer group"
                 onClick={() => router.push('/chat')}
               >
-                <div className="mb-4 text-[var(--text-secondary)] group-hover:text-indigo-500 transition-colors">
+                <div className="mb-4 text-foreground-muted group-hover:text-indigo-500 transition-colors">
                   <feature.icon size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-section-header font-serif text-[var(--text-primary)] mb-2">
+                <h3 className="text-section-header font-serif text-foreground mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-body text-sm">
+                <p className="text-foreground-muted text-sm">
                   {feature.desc}
                 </p>
               </motion.div>
@@ -173,9 +173,9 @@ export default function HomePage() {
       </motion.main>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-[var(--border)]">
+      <footer className="py-8 border-t border-border">
         <div className="max-w-[1200px] mx-auto px-6 text-center">
-          <p className="text-body text-sm">
+          <p className="text-foreground-muted text-sm">
             © 2025 PharmGPT. Built for pharmaceutical research excellence.
           </p>
         </div>

@@ -35,6 +35,9 @@
   --accent: #6366f1;
   --accent-light: #818cf8;
   
+  /* Gradient color for atmospheric background */
+  --gradient-color: rgba(99, 102, 241, 0.08);
+  
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -69,6 +72,9 @@
   /* Accent colors */
   --accent: #818cf8;
   --accent-light: #a5b4fc;
+  
+  /* Gradient color for atmospheric background */
+  --gradient-color: rgba(129, 140, 248, 0.06);
   
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -129,7 +135,8 @@ h1, h2, h3, .heading {
 
 /* Atmospheric Background Gradient */
 .bg-atmospheric {
-  background: radial-gradient(circle at 50% 0%, var(--gradient-color) 0%, transparent 60%);
+  background-color: var(--background);
+  background-image: radial-gradient(circle at 50% 0%, var(--gradient-color) 0%, transparent 60%);
 }
 
 /* Glassmorphism */
@@ -157,6 +164,10 @@ h1, h2, h3, .heading {
 .card-swiss:hover {
   transform: translateY(-4px);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .card-swiss:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
 }
 
 /* Button Interactions */
