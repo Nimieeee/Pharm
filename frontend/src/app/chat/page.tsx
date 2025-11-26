@@ -2,13 +2,19 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import nextDynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
-import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
+
+// Dynamically import ChatMessage to avoid SSR issues with Streamdown
+const ChatMessage = nextDynamic(() => import('@/components/chat/ChatMessage'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-20 bg-[var(--surface-highlight)] rounded-xl" />
+});
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -200,6 +206,9 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
     </motion.div>
   );
 }
+
+// Force dynamic rendering to avoid static generation issues with Streamdown
+export const dynamic = 'force-dynamic';
 
 export default function ChatPage() {
   return (
