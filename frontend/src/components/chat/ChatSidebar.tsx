@@ -15,6 +15,7 @@ interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onSelectConversation?: (id: string) => void;
+  onNewChat?: () => void;
 }
 
 interface ChatHistory {
@@ -99,7 +100,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   );
 }
 
-export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: ChatSidebarProps) {
+export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat }: ChatSidebarProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
@@ -202,7 +203,10 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
 
               {/* New Chat Button */}
               <button
-                onClick={() => router.push('/chat')}
+                onClick={() => {
+                  onNewChat?.();
+                  router.push('/chat');
+                }}
                 className="w-full py-3 px-4 rounded-xl bg-foreground text-background font-medium text-sm flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all mb-6"
               >
                 <Plus size={16} strokeWidth={1.5} />

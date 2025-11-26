@@ -5,6 +5,7 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './node_modules/streamdown/dist/*.js',
   ],
   darkMode: 'class',
   theme: {
@@ -33,9 +34,9 @@ const config: Config = {
         'text-secondary': 'var(--text-secondary)',
         'surface-highlight': 'var(--surface-highlight)',
         
-        // Premium Scientific Journal palette
-        canvas: '#FDFCF8',
-        ink: '#1A1A1A',
+        // Premium Scientific Journal palette (now theme-aware)
+        canvas: 'var(--background)',
+        ink: 'var(--foreground)',
       },
       borderRadius: {
         '2xl': '24px',

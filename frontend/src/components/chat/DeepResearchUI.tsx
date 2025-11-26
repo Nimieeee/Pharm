@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, ChevronUp, Globe, FileText, ExternalLink } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Globe, FileText, ExternalLink, BookOpen } from 'lucide-react';
+import { Streamdown } from 'streamdown';
 
 // ============================================================================
 // TYPES
@@ -13,6 +14,10 @@ interface Source {
   url: string;
   favicon?: string;
   source?: string;
+  authors?: string;
+  year?: string;
+  journal?: string;
+  doi?: string;
 }
 
 interface DeepResearchState {
@@ -23,6 +28,7 @@ interface DeepResearchState {
   isComplete: boolean;
   planOverview?: string;
   steps?: Array<{ id: number; topic: string; source: string }>;
+  report?: string;
 }
 
 interface DeepResearchUIProps {
@@ -66,25 +72,21 @@ function AnimatedCounter({ value }: { value: number }) {
 function GradientSpinner({ progress, isComplete }: { progress: number; isComplete: boolean }) {
   return (
     <div className="relative flex items-center justify-center">
-      {/* The Gradient Ring */}
       <div 
-        className={`h-20 w-20 rounded-full p-[3px] ${isComplete ? '' : 'animate-spin-slow'}`}
+        className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full p-[3px] ${isComplete ? '' : 'animate-spin-slow'}`}
         style={{ 
           background: isComplete 
             ? 'conic-gradient(from 0deg, #22c55e, #10b981, #22c55e)'
             : 'conic-gradient(from 0deg, #6366f1, #8b5cf6, #a855f7, #6366f1)' 
         }}
       >
-        {/* The Inner Mask (creates the ring effect) */}
         <div className="h-full w-full rounded-full bg-[var(--surface)] flex items-center justify-center">
-          {/* Progress percentage inside */}
-          <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">
+          <span className="text-base sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">
             <AnimatedCounter value={progress} />%
           </span>
         </div>
       </div>
       
-      {/* Glow effect */}
       <div 
         className="absolute inset-0 rounded-full blur-xl opacity-20 dark:opacity-30"
         style={{ 
@@ -98,14 +100,45 @@ function GradientSpinner({ progress, isComplete }: { progress: number; isComplet
 }
 
 // ============================================================================
+// SHIMMER LOADING COMPONENT
+// ============================================================================
+
+function ShimmerText({ text }: { text: string }) {
+  return (
+    <span className="relative inline-block">
+      <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%] animate-shimmer">
+        {text}
+      </span>
+    </span>
+  );
+}
+
+// ============================================================================
+// APA CITATION FORMATTER
+// ============================================================================
+
+function formatAPACitation(source: Source, index: number): string {
+  // APA 7th Edition format:
+  // Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. Journal Name, Volume(Issue), Pages. DOI
+  
+  const authors = source.authors || 'Unknown Author';
+  const year = source.year || 'n.d.';
+  const title = source.title || 'Untitled';
+  const journal = source.journal || source.source || '';
+  const doi = source.doi ? `https://doi.org/${source.doi}` : source.url;
+  
+  return `[${index + 1}] ${authors} (${year}). ${title}. ${journal ? `*${journal}*. ` : ''}${doi}`;
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function DeepResearchUI({ state }: DeepResearchUIProps) {
-  const [logsExpanded, setLogsExpanded] = useState(true);
+  const [logsExpanded, setLogsExpanded] = useState(false);
+  const [sourcesExpanded, setSourcesExpanded] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
-  // Auto-scroll logs
   useEffect(() => {
     if (logsEndRef.current && logsExpanded) {
       logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -122,34 +155,35 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
       {/* ================================================================== */}
       {/* HEADER - Spinner + Status */}
       {/* ================================================================== */}
-      <div className="p-6 border-b border-[var(--border)]">
-        <div className="flex items-center gap-5">
+      <div className="p-4 sm:p-6 border-b border-[var(--border)]">
+        <div className="flex items-center gap-4 sm:gap-5">
           <GradientSpinner progress={state.progress} isComplete={state.isComplete} />
           
           <div className="flex-1 min-w-0">
-            {/* Status Text with Shimmer */}
             <motion.h3 
               key={state.status}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className={`text-lg font-semibold ${
+              className={`text-base sm:text-lg font-semibold ${
                 state.isComplete 
                   ? 'text-emerald-500' 
-                  : 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%] animate-shimmer'
+                  : ''
               }`}
             >
-              {state.isComplete ? '✓ Research Complete' : state.status}
+              {state.isComplete ? (
+                '✓ Research Complete'
+              ) : (
+                <ShimmerText text={state.status} />
+              )}
             </motion.h3>
             
-            {/* Plan Overview */}
             {state.planOverview && (
-              <p className="text-sm text-[var(--text-secondary)] mt-1 line-clamp-2">
+              <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1 line-clamp-2">
                 {state.planOverview}
               </p>
             )}
             
-            {/* Progress Bar */}
-            <div className="mt-3 h-1.5 bg-[var(--surface-highlight)] rounded-full overflow-hidden">
+            <div className="mt-2 sm:mt-3 h-1.5 bg-[var(--surface-highlight)] rounded-full overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
                 style={{
@@ -170,11 +204,11 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
       {/* RESEARCH STEPS */}
       {/* ================================================================== */}
       {state.steps && state.steps.length > 0 && (
-        <div className="px-6 py-4 border-b border-[var(--border)]">
-          <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
+          <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2 sm:mb-3">
             Research Topics
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             <AnimatePresence>
               {state.steps.map((step, i) => (
                 <motion.div
@@ -182,13 +216,13 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-highlight)] border border-[var(--border)]"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--surface-highlight)] border border-[var(--border)]"
                 >
-                  <span className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-[10px] font-bold flex items-center justify-center text-white">
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-[8px] sm:text-[10px] font-bold flex items-center justify-center text-white">
                     {step.id}
                   </span>
-                  <span className="text-xs text-[var(--text-primary)]">{step.topic}</span>
-                  <span className="text-[10px] text-[var(--text-secondary)] px-1.5 py-0.5 rounded bg-[var(--border)]">
+                  <span className="text-[10px] sm:text-xs text-[var(--text-primary)] max-w-[120px] sm:max-w-none truncate">{step.topic}</span>
+                  <span className="hidden sm:inline text-[10px] text-[var(--text-secondary)] px-1.5 py-0.5 rounded bg-[var(--border)]">
                     {step.source}
                   </span>
                 </motion.div>
@@ -199,15 +233,15 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
       )}
 
       {/* ================================================================== */}
-      {/* ACTIVITY LOG (Thoughts Accordion) */}
+      {/* ACTIVITY LOG (Collapsible) */}
       {/* ================================================================== */}
       <div className="border-b border-[var(--border)]">
         <button
           onClick={() => setLogsExpanded(!logsExpanded)}
-          className="w-full px-6 py-3 flex items-center justify-between hover:bg-[var(--surface-highlight)] transition-colors"
+          className="w-full px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between hover:bg-[var(--surface-highlight)] transition-colors"
         >
-          <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-            <FileText size={14} />
+          <span className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+            <FileText size={12} className="sm:w-[14px] sm:h-[14px]" />
             Activity Log
             {state.logs.length > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-[var(--surface-highlight)] text-[var(--text-secondary)] text-[10px]">
@@ -216,9 +250,9 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
             )}
           </span>
           {logsExpanded ? (
-            <ChevronUp size={16} className="text-[var(--text-secondary)]" />
+            <ChevronUp size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
           ) : (
-            <ChevronDown size={16} className="text-[var(--text-secondary)]" />
+            <ChevronDown size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
           )}
         </button>
         
@@ -231,7 +265,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="px-6 pb-4 max-h-32 overflow-y-auto scrollbar-hide">
+              <div className="px-4 sm:px-6 pb-3 sm:pb-4 max-h-32 overflow-y-auto scrollbar-hide">
                 <div className="space-y-1">
                   <AnimatePresence>
                     {state.logs.map((log, i) => (
@@ -243,7 +277,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
                         className="flex items-start gap-2"
                       >
                         <span className="text-[var(--text-secondary)] text-xs mt-0.5">›</span>
-                        <span className="font-mono text-xs text-[var(--text-secondary)] leading-relaxed">
+                        <span className="font-mono text-[10px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">
                           {log}
                         </span>
                       </motion.div>
@@ -253,7 +287,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
                 </div>
                 
                 {state.logs.length === 0 && (
-                  <p className="font-mono text-xs text-[var(--text-secondary)] italic opacity-60">
+                  <p className="font-mono text-[10px] sm:text-xs text-[var(--text-secondary)] italic opacity-60">
                     Waiting for activity...
                   </p>
                 )}
@@ -264,60 +298,102 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
       </div>
 
       {/* ================================================================== */}
-      {/* SOURCES CAROUSEL */}
+      {/* SOURCES / REFERENCES (APA Style) */}
       {/* ================================================================== */}
       {state.sources.length > 0 && (
-        <div className="p-4">
-          <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
-            <Globe size={14} />
-            Sources Found
-            <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] text-[10px]">
-              {state.sources.length}
+        <div className="border-b border-[var(--border)]">
+          <button
+            onClick={() => setSourcesExpanded(!sourcesExpanded)}
+            className="w-full px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between hover:bg-[var(--surface-highlight)] transition-colors"
+          >
+            <span className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+              <BookOpen size={12} className="sm:w-[14px] sm:h-[14px]" />
+              References
+              <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] text-[10px]">
+                {state.sources.length}
+              </span>
             </span>
-          </p>
+            {sourcesExpanded ? (
+              <ChevronUp size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
+            ) : (
+              <ChevronDown size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
+            )}
+          </button>
           
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            <AnimatePresence>
-              {state.sources.map((source, i) => (
-                <motion.a
-                  key={source.url || i}
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="group min-w-[200px] max-w-[200px] p-3 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all hover:scale-[1.02]"
-                >
-                  {/* Source Header */}
-                  <div className="flex items-center gap-2 mb-2">
-                    {source.favicon ? (
-                      <img 
-                        src={source.favicon} 
-                        alt="" 
-                        className="w-4 h-4 rounded-full"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                        <Globe size={10} className="text-white" />
-                      </div>
-                    )}
-                    <span className="text-[10px] text-[var(--text-secondary)] truncate flex-1">
-                      {source.source || (source.url ? new URL(source.url).hostname : 'Source')}
-                    </span>
-                    <ExternalLink size={10} className="text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
+          <AnimatePresence>
+            {sourcesExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 sm:px-6 pb-3 sm:pb-4 max-h-48 overflow-y-auto scrollbar-hide">
+                  <div className="space-y-2">
+                    {state.sources.map((source, i) => (
+                      <motion.a
+                        key={source.url || i}
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="block p-2 sm:p-3 rounded-lg bg-[var(--surface-highlight)] hover:bg-[var(--border)] transition-colors group"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] sm:text-xs font-medium text-[var(--accent)] flex-shrink-0">
+                            [{i + 1}]
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] sm:text-xs text-[var(--text-primary)] leading-relaxed">
+                              {source.authors && <span>{source.authors} </span>}
+                              {source.year && <span>({source.year}). </span>}
+                              <span className="font-medium">{source.title}</span>
+                              {source.journal && <span className="italic">. {source.journal}</span>}
+                            </p>
+                            <p className="text-[10px] text-[var(--accent)] mt-1 truncate group-hover:underline flex items-center gap-1">
+                              {source.doi ? `doi:${source.doi}` : source.url}
+                              <ExternalLink size={10} className="flex-shrink-0" />
+                            </p>
+                          </div>
+                        </div>
+                      </motion.a>
+                    ))}
                   </div>
-                  
-                  {/* Source Title */}
-                  <p className="text-xs font-medium text-[var(--text-primary)] line-clamp-2 leading-tight group-hover:text-[var(--accent)] transition-colors">
-                    {source.title}
-                  </p>
-                </motion.a>
-              ))}
-            </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* REPORT OUTPUT (Using Streamdown) */}
+      {/* ================================================================== */}
+      {state.report && (
+        <div className="p-4 sm:p-6">
+          <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Sparkles size={12} className="sm:w-[14px] sm:h-[14px]" />
+            Research Report
+          </p>
+          <div className="text-sm text-[var(--text-primary)]">
+            <Streamdown 
+              isAnimating={!state.isComplete}
+              className="streamdown-content"
+              controls={{
+                table: true,
+                code: true,
+                mermaid: {
+                  download: true,
+                  copy: true,
+                  fullscreen: true,
+                }
+              }}
+            >
+              {state.report}
+            </Streamdown>
           </div>
         </div>
       )}
@@ -325,21 +401,21 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
       {/* ================================================================== */}
       {/* COMPLETION MESSAGE */}
       {/* ================================================================== */}
-      {state.isComplete && (
+      {state.isComplete && !state.report && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 py-4 bg-gradient-to-r from-emerald-500/10 to-indigo-500/10 border-t border-emerald-500/20"
+          className="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-emerald-500/10 to-indigo-500/10 border-t border-emerald-500/20"
         >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              <Sparkles size={16} className="text-emerald-500" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <Sparkles size={14} className="sm:w-4 sm:h-4 text-emerald-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-emerald-500">
+              <p className="text-xs sm:text-sm font-medium text-emerald-500">
                 Research synthesis complete
               </p>
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-[10px] sm:text-xs text-[var(--text-secondary)]">
                 {state.sources.length} sources analyzed • Report ready
               </p>
             </div>

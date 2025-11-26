@@ -56,7 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${sohne.variable} ${gtSuper.variable}`}>
-      <body className="font-sans bg-canvas text-ink antialiased">
+      <body className="font-sans bg-[var(--background)] text-[var(--foreground)] antialiased">
         <AuthProvider>
           <ThemeProvider>
             <div className="min-h-screen transition-colors duration-300">

@@ -18,7 +18,16 @@ interface DeepResearchProgress {
   steps?: Array<{ id: number; topic: string; source: string }>;
   count?: number;
   report?: string;
-  citations?: Array<{ id: number; title: string; url: string; source: string }>;
+  citations?: Array<{ 
+    id: number; 
+    title: string; 
+    url: string; 
+    source: string;
+    authors?: string;
+    year?: string;
+    journal?: string;
+    doi?: string;
+  }>;
 }
 
 export function useChat() {
@@ -397,50 +406,63 @@ export function useChat() {
       setMessages(prev => [...prev, uploadingMessage]);
 
       try {
+        console.log(`📤 Uploading file: ${file.name} to conversation: ${currentConversationId}`);
+        
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
+        const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`;
+        console.log(`📤 Upload URL: ${uploadUrl}`);
+
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        console.log(`📤 Upload response status: ${response.status}`);
 
         // Remove uploading message
         setMessages(prev => prev.filter(m => m.id !== uploadingMessage.id));
 
         if (response.ok) {
           const result = await response.json();
+          console.log(`✅ Upload success:`, result);
           const successMessage: Message = {
             id: `upload-success-${Date.now()}-${i}`,
             role: 'assistant',
-            content: `✅ **${file.name}** uploaded successfully!\n\n${result.chunk_count} text chunks extracted and indexed. You can now ask questions about this document.`,
+            content: `✅ **${file.name}** uploaded successfully!\n\n${result.chunk_count || 0} text chunks extracted and indexed. You can now ask questions about this document.`,
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, successMessage]);
         } else {
-          const errorData = await response.json();
+          let errorDetail = 'Unknown error';
+          try {
+            const errorData = await response.json();
+            errorDetail = errorData.detail || JSON.stringify(errorData);
+          } catch {
+            errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+          }
+          console.error(`❌ Upload failed:`, errorDetail);
           const errorMessage: Message = {
             id: `upload-error-${Date.now()}-${i}`,
             role: 'assistant',
-            content: `❌ Failed to upload **${file.name}**: ${errorData.detail || 'Unknown error'}`,
+            content: `❌ Failed to upload **${file.name}**: ${errorDetail}`,
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, errorMessage]);
         }
       } catch (error: any) {
+        console.error(`❌ Upload exception:`, error);
         // Remove uploading message
         setMessages(prev => prev.filter(m => m.id !== uploadingMessage.id));
         
         const errorMessage: Message = {
           id: `upload-error-${Date.now()}-${i}`,
           role: 'assistant',
-          content: `❌ Failed to upload **${file.name}**: ${error.message || 'Network error'}`,
+          content: `❌ Failed to upload **${file.name}**: ${error.message || 'Network error. Check console for details.'}`,
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMessage]);

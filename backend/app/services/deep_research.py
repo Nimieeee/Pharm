@@ -451,6 +451,14 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                             raw_content=r.get("abstract", ""),
                             data_limitation="Abstract Only" if not r.get("full_text") else None
                         )
+                        # Store PubMed metadata for APA citations
+                        finding._pubmed_data = {
+                            "authors": r.get("authors", ""),
+                            "year": r.get("year", ""),
+                            "journal": r.get("journal", ""),
+                            "doi": r.get("doi", ""),
+                            "pmid": r.get("pmid", "")
+                        }
                         step.findings.append(finding)
                         state.findings.append(finding)
                 else:
@@ -530,13 +538,23 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                     finding.key_finding = review.get("key_finding", "")
                     finding.data_limitation = review.get("data_limitation", "")
                     
-                    # Create citation
+                    # Create citation with full metadata
+                    # Try to find the original PubMed data for author/year info
+                    pubmed_data = None
+                    for f in state.findings:
+                        if f.title == finding.title and hasattr(f, '_pubmed_data'):
+                            pubmed_data = f._pubmed_data
+                            break
+                    
                     citation = Citation(
                         id=citation_id,
                         title=finding.title,
-                        authors="",  # Would need to extract from PubMed data
-                        source=finding.source,
+                        authors=pubmed_data.get("authors", "") if pubmed_data else "",
+                        source=pubmed_data.get("journal", finding.source) if pubmed_data else finding.source,
                         url=finding.url,
+                        doi=pubmed_data.get("doi", "") if pubmed_data else None,
+                        pmid=pubmed_data.get("pmid", "") if pubmed_data else None,
+                        year=pubmed_data.get("year", "") if pubmed_data else None,
                         data_limitation=finding.data_limitation
                     )
                     state.citations.append(citation)
@@ -555,63 +573,78 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
     
     async def _node_writer(self, state: ResearchState) -> ResearchState:
         """
-        Synthesize findings into a professional research report
+        Synthesize findings into a professional research report with APA 7th edition citations
         """
         state.status = "writing"
         state.progress_log.append(f"[{datetime.now().isoformat()}] Synthesizing final report...")
         
-        # Prepare validated findings
+        # Prepare validated findings with full metadata
         findings_text = ""
         for i, citation in enumerate(state.citations[:20]):
             finding = next((f for f in state.findings if f.title == citation.title), None)
             if finding:
                 findings_text += f"\n[{citation.id}] {citation.title}\n"
+                findings_text += f"   Authors: {citation.authors or 'Unknown'}\n"
+                findings_text += f"   Year: {citation.year or 'n.d.'}\n"
                 findings_text += f"   Source: {citation.source} | URL: {citation.url}\n"
+                if citation.doi:
+                    findings_text += f"   DOI: {citation.doi}\n"
                 findings_text += f"   Study Type: {finding.study_type or 'N/A'}\n"
                 findings_text += f"   Key Finding: {finding.key_finding}\n"
                 if finding.data_limitation:
                     findings_text += f"   Limitation: {finding.data_limitation}\n"
         
-        # Prepare references
+        # Prepare APA 7th edition references
         references_text = ""
         for citation in state.citations[:20]:
-            references_text += f"[{citation.id}] {citation.title}. {citation.source}. {citation.url}\n"
+            # APA 7th format: Author, A. A., & Author, B. B. (Year). Title. Journal. DOI/URL
+            authors = citation.authors if citation.authors else "Unknown Author"
+            year = citation.year if citation.year else "n.d."
+            doi_url = f"https://doi.org/{citation.doi}" if citation.doi else citation.url
+            references_text += f"[{citation.id}] {authors} ({year}). {citation.title}. *{citation.source}*. {doi_url}\n"
         
-        system_prompt = """You are the Senior Medical Writer for PharmGPT. Your goal is to synthesize the gathered research into a professional, "Nature Reviews"-style report.
+        system_prompt = """You are the Senior Medical Writer for PharmGPT. Synthesize the research into a professional report following Nature Reviews style with APA 7th edition citations.
 
 **Writing Guidelines:**
+
 1. **Structure:**
-   - **Executive Summary:** High-level answer (TL;DR).
-   - **Detailed Analysis:** Group findings by theme (e.g., Efficacy, Safety, Mechanism).
-   - **Methodology Note:** Briefly state that this report is based on public web/PubMed data.
-   - **References:** A formatted list at the end.
+   - **Executive Summary:** High-level answer (2-3 sentences).
+   - **Detailed Analysis:** Group findings by theme (Mechanism, Efficacy, Safety, Clinical Evidence).
+   - **Methodology Note:** State this report is based on PubMed/web data with limitations noted.
+   - **References:** APA 7th edition formatted list.
 
-2. **Citation Rules (Strict):**
-   - You must use inline citations `[1]` corresponding to the reference list.
-   - **DO NOT HALLUCINATE.** Only cite the papers provided in the Validated Findings input.
-   - If a specific detail was missing because the finding was marked `[Abstract Only]`, state: "Exact values were not detailed in the available abstract [X]."
+2. **Inline Citation Style (APA 7th):**
+   - Use narrative citations: "Smith et al. (2020) demonstrated that..."
+   - Use parenthetical citations: "...showed significant efficacy (Jones & Lee, 2019)."
+   - For direct findings: "Drug X reduced tumor volume by 40% (Chen et al., 2021)."
+   - Multiple sources: "(Smith, 2020; Jones, 2019)"
+   - **CRITICAL:** Only cite papers from the Validated Findings. DO NOT HALLUCINATE citations.
 
-3. **Tone:**
-   - Objective, clinical, and precise.
-   - Distinctly separate *preclinical* results (mice/cells) from *clinical* results (humans). Do not conflate them.
+3. **Data Limitations:**
+   - If marked `[Abstract Only]`, state: "Specific values were not available in the abstract (Author, Year)."
+   - Clearly distinguish preclinical (in vitro/in vivo) from clinical (human) data.
 
-4. **Reference Format:**
-   [1] Title. Source. URL
+4. **Tone:**
+   - Objective, clinical, precise.
+   - Use hedging language appropriately: "suggests", "indicates", "may".
+
+5. **Reference List Format (APA 7th):**
+   Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. *Journal Name*, Volume(Issue), Pages. https://doi.org/xxxxx
 
 **Output:**
-Return the final Markdown report with proper structure and citations."""
+Return a well-structured Markdown report with proper APA inline citations and a References section."""
 
         user_prompt = f"""Research Question: {state.research_question}
 
 Plan Overview: {state.plan_overview}
 
-Validated Findings:
+Validated Findings (use these for citations):
 {findings_text}
 
-Available References:
+Reference Data (APA format):
 {references_text}
 
-Please synthesize a comprehensive research report."""
+Synthesize a comprehensive research report with proper APA 7th edition citations."""
 
         response = await self._call_llm(system_prompt, user_prompt, json_mode=False)
         
@@ -739,13 +772,22 @@ Please synthesize a comprehensive research report."""
             
             state = await self._node_writer(state)
             
-            # Final report
+            # Final report with full APA citation data
             yield json.dumps({
                 "type": "complete",
                 "status": "complete",
                 "report": state.final_report,
                 "citations": [
-                    {"id": c.id, "title": c.title, "url": c.url, "source": c.source}
+                    {
+                        "id": c.id, 
+                        "title": c.title, 
+                        "url": c.url, 
+                        "source": c.source,
+                        "authors": c.authors or "",
+                        "year": c.year or "",
+                        "journal": c.source if c.source != "Web" else "",
+                        "doi": c.doi or ""
+                    }
                     for c in state.citations
                 ],
                 "progress": 100

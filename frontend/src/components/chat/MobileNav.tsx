@@ -17,7 +17,12 @@ interface ChatHistory {
   date: string;
 }
 
-export default function MobileNav() {
+interface MobileNavProps {
+  onSelectConversation?: (id: string) => void;
+  onNewChat?: () => void;
+}
+
+export default function MobileNav({ onSelectConversation, onNewChat }: MobileNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -131,7 +136,11 @@ export default function MobileNav() {
 
                 {/* New Chat Button */}
                 <button
-                  onClick={() => { setIsOpen(false); router.push('/chat'); }}
+                  onClick={() => { 
+                    onNewChat?.();
+                    setIsOpen(false); 
+                    router.push('/chat'); 
+                  }}
                   className="w-full py-3 px-4 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm flex items-center justify-center gap-2 mb-6"
                 >
                   <Plus size={16} strokeWidth={1.5} />
@@ -150,7 +159,10 @@ export default function MobileNav() {
                       chatHistory.map((chat) => (
                         <button
                           key={chat.id}
-                          onClick={() => setIsOpen(false)}
+                          onClick={() => {
+                            onSelectConversation?.(chat.id);
+                            setIsOpen(false);
+                          }}
                           className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors"
                         >
                           <p className="text-sm text-[var(--text-primary)] truncate">{chat.title}</p>

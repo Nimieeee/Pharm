@@ -7,14 +7,14 @@ import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
-import { useChat } from '@/hooks/useChat';
+import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isUploading, sendMessage, uploadFiles, deepResearchProgress } = useChat();
+  const { messages, isLoading, isUploading, sendMessage, uploadFiles, deepResearchProgress } = useChatContext();
   const { sidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
 
@@ -76,7 +76,7 @@ function ChatContent() {
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 pb-36 md:pb-44">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 pb-32 sm:pb-36 md:pb-44">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 ? (
             <EmptyState onSuggestionClick={(msg) => handleSend(msg, 'detailed')} />
@@ -112,17 +112,23 @@ function ChatContent() {
                   sources: deepResearchProgress.citations?.map(c => ({
                     title: c.title,
                     url: c.url,
-                    source: c.source
+                    source: c.source,
+                    authors: c.authors,
+                    year: c.year,
+                    journal: c.journal,
+                    doi: c.doi
                   })) || [],
                   isComplete: deepResearchProgress.type === 'complete',
                   planOverview: deepResearchProgress.plan_overview,
-                  steps: deepResearchProgress.steps
+                  steps: deepResearchProgress.steps,
+                  report: deepResearchProgress.report
                 }}
               />
             </div>
           )}
           
-          {isLoading && !deepResearchProgress && (
+          {/* Only show loading indicator if there's no assistant message being streamed */}
+          {isLoading && !deepResearchProgress && (messages.length === 0 || messages[messages.length - 1]?.role !== 'assistant') && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -177,7 +183,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
       <p className="text-[var(--text-secondary)] mb-8 max-w-md mx-auto text-sm md:text-base">
         Ask about drug interactions, research writing, or upload documents for analysis.
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto px-2 sm:px-4">
         {suggestions.map((suggestion, i) => (
           <motion.button
             key={i}
@@ -185,7 +191,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * i, duration: 0.3 }}
             onClick={() => onSuggestionClick(suggestion)}
-            className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-left text-sm text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--surface-highlight)] transition-all"
+            className="p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-left text-xs sm:text-sm text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--surface-highlight)] transition-all"
           >
             {suggestion}
           </motion.button>

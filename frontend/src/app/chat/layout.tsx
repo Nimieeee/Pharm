@@ -4,20 +4,38 @@ import { useState } from 'react';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import MobileNav from '@/components/chat/MobileNav';
 import { SidebarContext } from '@/contexts/SidebarContext';
+import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
 
-export default function ChatLayout({ children }: { children: React.ReactNode }) {
+function ChatLayoutInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { selectConversation, clearMessages } = useChatContext();
+
+  const handleSelectConversation = (id: string) => {
+    selectConversation(id);
+  };
+
+  const handleNewChat = () => {
+    clearMessages();
+  };
 
   return (
     <SidebarContext.Provider value={{ sidebarOpen }}>
       <div className="h-screen flex bg-[var(--background)]">
         {/* Desktop Sidebar - Hidden on mobile */}
         <div className="hidden md:block">
-          <ChatSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+          <ChatSidebar 
+            isOpen={sidebarOpen} 
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+            onSelectConversation={handleSelectConversation}
+            onNewChat={handleNewChat}
+          />
         </div>
         
         {/* Mobile Navigation */}
-        <MobileNav />
+        <MobileNav 
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+        />
         
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -25,5 +43,13 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         </main>
       </div>
     </SidebarContext.Provider>
+  );
+}
+
+export default function ChatLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ChatProvider>
+      <ChatLayoutInner>{children}</ChatLayoutInner>
+    </ChatProvider>
   );
 }

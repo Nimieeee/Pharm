@@ -128,7 +128,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                           type="button"
                           onClick={() => { setMode(m.id); setShowModes(false); }}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                            mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'hover:bg-[var(--surface-highlight)]'
+                            mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]'
                           }`}
                         >
                           <Icon size={18} strokeWidth={1.5} />
@@ -245,7 +245,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                       type="button"
                       onClick={() => { setMode(m.id); setShowModes(false); }}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                        mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'hover:bg-[var(--surface-highlight)]'
+                        mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]'
                       }`}
                     >
                       <Icon size={18} strokeWidth={1.5} />
