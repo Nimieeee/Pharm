@@ -301,10 +301,10 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
   return (
     <div className={`flex gap-4 py-6 ${isUser ? 'flex-row-reverse' : ''}`}>
       {/* Avatar */}
-      <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${
+      <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center shadow-lg ${
         isUser 
           ? 'bg-[var(--surface-highlight)]' 
-          : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+          : 'bg-gradient-to-br from-cyan-500 to-violet-500'
       }`}>
         {isUser ? (
           <User size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
@@ -318,7 +318,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
         <div className={`inline-block rounded-2xl ${
           isUser 
             ? 'bg-[var(--text-primary)] text-[var(--background)] rounded-tr-md p-4' 
-            : 'bg-[var(--surface)] border border-[var(--border)] rounded-tl-md p-4'
+            : 'bg-[var(--glass-surface)] backdrop-blur-md border border-[var(--glass-border)] rounded-tl-md p-4'
         }`}>
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">

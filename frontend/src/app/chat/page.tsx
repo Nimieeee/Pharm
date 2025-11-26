@@ -9,6 +9,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChat } from '@/hooks/useChat';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { LiquidBackground, RefractiveCard, GlassBadge } from '@/components/ui/LiquidGlass';
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -34,21 +35,24 @@ function ChatContent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full relative">
-      {/* Mobile Header */}
-      <header className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-center bg-[rgba(var(--surface-rgb),0.8)] backdrop-blur-md border-b border-[var(--border)]">
+    <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+      {/* Liquid Glass Background */}
+      <LiquidBackground />
+      
+      {/* Mobile Header - Glass Effect */}
+      <header className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-center bg-[var(--glass-surface)] backdrop-blur-md border-b border-[var(--glass-border)]">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center">
             <Sparkles size={14} strokeWidth={1.5} className="text-white" />
           </div>
           <span className="font-semibold text-sm text-[var(--text-primary)]">PharmGPT</span>
         </div>
       </header>
 
-      {/* Desktop Header */}
-      <header className={`hidden md:flex h-16 px-6 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>
+      {/* Desktop Header - Glass Effect */}
+      <header className={`hidden md:flex h-16 px-6 items-center justify-between border-b border-[var(--glass-border)] bg-[var(--glass-surface)] backdrop-blur-xl transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center shadow-lg">
             <Sparkles size={16} strokeWidth={1.5} className="text-white" />
           </div>
           <div>
@@ -56,16 +60,19 @@ function ChatContent() {
             <p className="text-xs text-[var(--text-secondary)]">AI Research Assistant</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <GlassBadge variant={isLoading ? 'warning' : 'success'}>
           {isLoading ? (
-            <Loader2 size={14} strokeWidth={1.5} className="text-amber-500 animate-spin" />
+            <>
+              <Loader2 size={12} strokeWidth={1.5} className="animate-spin mr-1" />
+              Thinking...
+            </>
           ) : (
-            <CheckCircle2 size={14} strokeWidth={1.5} className="text-emerald-500" />
+            <>
+              <CheckCircle2 size={12} strokeWidth={1.5} className="mr-1" />
+              Ready
+            </>
           )}
-          <span className="text-xs text-[var(--text-secondary)]">
-            {isLoading ? 'Thinking...' : 'Ready'}
-          </span>
-        </div>
+        </GlassBadge>
       </header>
 
       {/* Messages Area */}
@@ -160,7 +167,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
       transition={{ duration: 0.6 }}
       className="text-center py-12 md:py-16"
     >
-      <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
+      <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-cyan-500/25">
         <Sparkles size={24} strokeWidth={1.5} className="text-white" />
       </div>
       <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)] mb-3">
@@ -177,7 +184,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * i, duration: 0.4 }}
             onClick={() => onSuggestionClick(suggestion)}
-            className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-left text-sm text-[var(--text-primary)] hover:border-indigo-500/50 hover:shadow-lg transition-all btn-press"
+            className="p-4 rounded-2xl bg-[var(--glass-surface)] border border-[var(--glass-border)] backdrop-blur-md text-left text-sm text-[var(--text-primary)] hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all btn-press"
           >
             {suggestion}
           </motion.button>
