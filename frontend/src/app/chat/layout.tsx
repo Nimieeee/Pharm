@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ChatSidebar from '@/components/chat/ChatSidebar';
+import MobileNav from '@/components/chat/MobileNav';
 import { SidebarContext } from '@/contexts/SidebarContext';
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,9 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         <div className="hidden md:block">
           <ChatSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
         </div>
+        
+        {/* Mobile Navigation */}
+        <MobileNav />
         
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">

@@ -2,10 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Paperclip, ArrowRight, Loader2, Zap, BookOpen, FlaskConical, Search } from 'lucide-react';
+import { Paperclip, ArrowRight, Loader2, Zap, BookOpen, Search } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
 
-type Mode = 'fast' | 'detailed' | 'research' | 'deep_research';
+type Mode = 'fast' | 'detailed' | 'deep_research';
 
 interface ChatInputProps {
   onSend: (message: string, mode: Mode) => void;
@@ -17,7 +17,6 @@ interface ChatInputProps {
 const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
   { id: 'fast', label: 'Fast', icon: Zap, desc: 'Quick answers' },
   { id: 'detailed', label: 'Detailed', icon: BookOpen, desc: 'Comprehensive' },
-  { id: 'research', label: 'Research', icon: FlaskConical, desc: 'Academic writing' },
   { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
 ];
 
@@ -267,7 +266,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               placeholder="Ask anything..."
               disabled={isLoading}
               rows={1}
-              className="w-full py-3 pl-[4.5rem] pr-14 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm rounded-full"
+              className="w-full py-3 pl-[5.5rem] pr-14 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm rounded-full"
               style={{ minHeight: '48px', maxHeight: '48px' }}
             />
 

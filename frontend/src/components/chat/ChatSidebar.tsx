@@ -1,14 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
-import { ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X } from 'lucide-react';
+
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'https://pharmgpt-backend.onrender.com'
+  : 'http://localhost:8000';
 
 interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  onSelectConversation?: (id: string) => void;
 }
 
 interface ChatHistory {
@@ -17,15 +23,150 @@ interface ChatHistory {
   date: string;
 }
 
-export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-md mx-4 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Settings</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-[var(--surface-highlight)] flex items-center justify-center hover:bg-[var(--border)] transition-colors"
+          >
+            <X size={16} className="text-[var(--text-secondary)]" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Account Info */}
+          <div className="p-4 rounded-xl bg-[var(--surface-highlight)]">
+            <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">Account</p>
+            <p className="text-sm text-[var(--text-primary)]">{user?.email || 'Not signed in'}</p>
+            {user?.first_name && (
+              <p className="text-xs text-[var(--text-secondary)] mt-1">{user.first_name} {user.last_name}</p>
+            )}
+          </div>
+          
+          {/* Theme Toggle */}
+          <div className="p-4 rounded-xl bg-[var(--surface-highlight)] flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Theme</p>
+              <p className="text-xs text-[var(--text-secondary)]">{theme === 'light' ? 'Light mode' : 'Dark mode'}</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 rounded-xl bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--border)] transition-colors"
+            >
+              {theme === 'light' ? (
+                <Moon size={18} className="text-[var(--text-secondary)]" />
+              ) : (
+                <Sun size={18} className="text-[var(--text-secondary)]" />
+              )}
+            </button>
+          </div>
+          
+          {/* App Info */}
+          <div className="p-4 rounded-xl bg-[var(--surface-highlight)]">
+            <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">About</p>
+            <p className="text-sm text-[var(--text-primary)]">PharmGPT v1.0</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">AI-Powered Pharmaceutical Research Assistant</p>
+          </div>
+        </div>
+        
+        <button
+          onClick={onClose}
+          className="w-full mt-6 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm hover:opacity-90 transition-opacity"
+        >
+          Done
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: ChatSidebarProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const [chatHistory] = useState<ChatHistory[]>([
-    { id: '1', title: 'Warfarin drug interactions', date: 'Today' },
-    { id: '2', title: 'SSRI mechanism analysis', date: 'Today' },
-    { id: '3', title: 'Clinical trial summary', date: 'Yesterday' },
-    { id: '4', title: 'Metformin pharmacokinetics', date: 'Yesterday' },
-  ]);
+  const { user, token, logout } = useAuth();
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Fetch conversation history when user is logged in
+  useEffect(() => {
+    if (token) {
+      fetchConversationHistory();
+    } else {
+      setChatHistory([]);
+    }
+  }, [token]);
+
+  const fetchConversationHistory = async () => {
+    if (!token) return;
+    
+    setIsLoadingHistory(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const conversations = await response.json();
+        const formattedHistory = conversations.map((conv: any) => {
+          const date = new Date(conv.created_at);
+          const today = new Date();
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          
+          let dateStr = 'Older';
+          if (date.toDateString() === today.toDateString()) {
+            dateStr = 'Today';
+          } else if (date.toDateString() === yesterday.toDateString()) {
+            dateStr = 'Yesterday';
+          }
+          
+          return {
+            id: conv.id,
+            title: conv.title || 'Untitled Chat',
+            date: dateStr,
+          };
+        });
+        setChatHistory(formattedHistory);
+      }
+    } catch (error) {
+      console.error('Failed to fetch conversation history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    logout();
+    router.push('/login');
+  };
+
+  const handleSelectConversation = (id: string) => {
+    if (onSelectConversation) {
+      onSelectConversation(id);
+    }
+  };
 
   return (
     <>
@@ -74,22 +215,29 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                   Recent Chats
                 </p>
                 <div className="space-y-1">
-                  {chatHistory.map((chat, i) => (
-                    <motion.button
-                      key={chat.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors group"
-                    >
-                      <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-indigo-500 transition-colors">
-                        {chat.title}
-                      </p>
-                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                        {chat.date}
-                      </p>
-                    </motion.button>
-                  ))}
+                  {isLoadingHistory ? (
+                    <p className="text-sm text-[var(--text-secondary)] px-2">Loading...</p>
+                  ) : chatHistory.length === 0 ? (
+                    <p className="text-sm text-[var(--text-secondary)] px-2">Chat history will appear here</p>
+                  ) : (
+                    chatHistory.map((chat, i) => (
+                      <motion.button
+                        key={chat.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        onClick={() => handleSelectConversation(chat.id)}
+                        className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors group"
+                      >
+                        <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-indigo-500 transition-colors">
+                          {chat.title}
+                        </p>
+                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                          {chat.date}
+                        </p>
+                      </motion.button>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -115,10 +263,22 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                     {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                   </span>
                 </button>
-                <button className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3">
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
+                >
                   <Settings size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
                   <span className="text-sm text-[var(--text-primary)]">Settings</span>
                 </button>
+                {token && (
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full p-3 rounded-xl text-left hover:bg-red-500/10 transition-colors flex items-center gap-3"
+                  >
+                    <LogOut size={20} strokeWidth={1.5} className="text-red-500" />
+                    <span className="text-sm text-red-500">Sign Out</span>
+                  </button>
+                )}
               </div>
             </div>
           </motion.aside>
@@ -134,6 +294,9 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
           <ChevronsRight size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
         </button>
       )}
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </>
   );
 }

@@ -7,7 +7,7 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
   ? 'https://pharmgpt-backend.onrender.com'
   : 'http://localhost:8000';
 
-type Mode = 'fast' | 'detailed' | 'research' | 'deep_research';
+type Mode = 'fast' | 'detailed' | 'deep_research';
 
 interface DeepResearchProgress {
   type: string;
@@ -28,12 +28,37 @@ export function useChat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
 
-  useEffect(() => {
+  // Load conversation messages when conversationId changes
+  const loadConversation = useCallback(async (convId: string) => {
     const token = localStorage.getItem('token');
-    if (token && !conversationId) {
-      createConversation(token);
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const loadedMessages: Message[] = data.map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+        }));
+        setMessages(loadedMessages);
+        setConversationId(convId);
+      }
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
     }
-  }, [conversationId]);
+  }, []);
+
+  const selectConversation = useCallback((convId: string) => {
+    loadConversation(convId);
+  }, [loadConversation]);
 
   const createConversation = async (token: string) => {
     try {
@@ -367,5 +392,6 @@ export function useChat() {
     uploadFiles,
     conversationId,
     deepResearchProgress,
+    selectConversation,
   };
 }

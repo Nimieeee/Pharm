@@ -3,23 +3,20 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, CheckCircle2, Loader2, PanelLeft, Plus, X } from 'lucide-react';
+import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChat } from '@/hooks/useChat';
-import { useTheme } from '@/lib/theme-context';
 import { useSidebar } from '@/contexts/SidebarContext';
 
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isUploading, sendMessage, clearMessages, uploadFiles, deepResearchProgress } = useChat();
-  const { theme, toggleTheme } = useTheme();
+  const { messages, isLoading, isUploading, sendMessage, uploadFiles, deepResearchProgress } = useChat();
   const { sidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   useEffect(() => {
     if (initialQuery && !hasInitialized) {
@@ -32,105 +29,21 @@ function ChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (message: string, mode: 'fast' | 'detailed' | 'research' | 'deep_research') => {
+  const handleSend = (message: string, mode: 'fast' | 'detailed' | 'deep_research') => {
     sendMessage(message, mode);
   };
 
   return (
     <div className="flex-1 flex flex-col h-full relative">
       {/* Mobile Header */}
-      <header className="md:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between bg-[rgba(var(--surface-rgb),0.8)] backdrop-blur-md border-b border-[var(--border)]">
-        <button
-          onClick={() => setShowMobileSidebar(true)}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors btn-press"
-        >
-          <PanelLeft size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-        </button>
-        
+      <header className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-center bg-[rgba(var(--surface-rgb),0.8)] backdrop-blur-md border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
             <Sparkles size={14} strokeWidth={1.5} className="text-white" />
           </div>
           <span className="font-semibold text-sm text-[var(--text-primary)]">PharmGPT</span>
         </div>
-
-        <button
-          onClick={clearMessages}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors btn-press"
-        >
-          <Plus size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-        </button>
       </header>
-
-      {/* Mobile Sidebar Sheet */}
-      <AnimatePresence>
-        {showMobileSidebar && (
-          <>
-            {/* Backdrop - higher z-index to cover chat input */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowMobileSidebar(false)}
-              className="md:hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
-            />
-            
-            {/* Sheet - higher z-index to stay above backdrop and chat input */}
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 z-[70] w-[280px] bg-[var(--surface)] border-r border-[var(--border)] p-4 flex flex-col"
-            >
-              {/* Sheet Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                    <Sparkles size={16} strokeWidth={1.5} className="text-white" />
-                  </div>
-                  <span className="font-semibold text-[var(--text-primary)]">PharmGPT</span>
-                </div>
-                <button
-                  onClick={() => setShowMobileSidebar(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
-                >
-                  <X size={18} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                </button>
-              </div>
-
-              {/* New Chat */}
-              <button
-                onClick={() => { clearMessages(); setShowMobileSidebar(false); }}
-                className="w-full py-3 px-4 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm flex items-center justify-center gap-2 btn-press mb-6"
-              >
-                <Plus size={16} strokeWidth={1.5} />
-                New Chat
-              </button>
-
-              {/* Chat History Placeholder */}
-              <div className="flex-1 overflow-y-auto">
-                <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2">
-                  Recent Chats
-                </p>
-                <p className="text-sm text-[var(--text-secondary)] px-2">
-                  Chat history will appear here
-                </p>
-              </div>
-
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="w-full p-3 rounded-xl hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3 mt-4 border-t border-[var(--border)] pt-4"
-              >
-                <span className="text-[var(--text-secondary)]">
-                  {theme === 'light' ? 'Dark' : 'Light'} Mode
-                </span>
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Desktop Header */}
       <header className={`hidden md:flex h-16 px-6 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>

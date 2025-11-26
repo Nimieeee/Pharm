@@ -10,11 +10,16 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Satoshi', 'General Sans', 'sans-serif'],
-        serif: ['Sentient', 'Clash Display', 'serif'],
+        sans: ['var(--font-sohne)', 'sans-serif'],
+        serif: ['var(--font-gt-super)', 'serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
+        // Premium Scientific Journal palette
+        canvas: '#FDFCF8',
+        ink: '#1A1A1A',
+        
+        // Legacy theme variables (for backward compatibility)
         background: 'var(--background)',
         surface: 'var(--surface)',
         'surface-highlight': 'var(--surface-highlight)',
