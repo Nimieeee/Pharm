@@ -9,7 +9,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChat } from '@/hooks/useChat';
 import { useTheme } from '@/lib/theme-context';
-import { useSidebar } from '@/app/chat/layout';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 function ChatContent() {
   const searchParams = useSearchParams();

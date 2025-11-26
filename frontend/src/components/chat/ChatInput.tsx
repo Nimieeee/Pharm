@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Paperclip, ArrowRight, Loader2, Zap, BookOpen, FlaskConical, Search } from 'lucide-react';
-import { useSidebar } from '@/app/chat/layout';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 type Mode = 'fast' | 'detailed' | 'research' | 'deep_research';
 
