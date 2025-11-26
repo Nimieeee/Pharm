@@ -76,20 +76,20 @@ function parseMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
-    // Headers
+    // Headers - Using serif font for scientific journal aesthetic
     if (line.startsWith('# ')) {
       flushList();
-      elements.push(<h1 key={`h1-${i}`} className="text-xl font-bold text-[var(--text-primary)] mt-6 mb-3">{parseInline(line.slice(2))}</h1>);
+      elements.push(<h1 key={`h1-${i}`} className="text-xl font-serif font-medium text-[var(--text-primary)] mt-6 mb-3">{parseInline(line.slice(2))}</h1>);
       continue;
     }
     if (line.startsWith('## ')) {
       flushList();
-      elements.push(<h2 key={`h2-${i}`} className="text-lg font-semibold text-[var(--text-primary)] mt-5 mb-2">{parseInline(line.slice(3))}</h2>);
+      elements.push(<h2 key={`h2-${i}`} className="text-lg font-serif font-medium text-[var(--text-primary)] mt-5 mb-2">{parseInline(line.slice(3))}</h2>);
       continue;
     }
     if (line.startsWith('### ')) {
       flushList();
-      elements.push(<h3 key={`h3-${i}`} className="text-base font-semibold text-[var(--text-primary)] mt-4 mb-2">{parseInline(line.slice(4))}</h3>);
+      elements.push(<h3 key={`h3-${i}`} className="text-base font-serif font-medium text-[var(--text-primary)] mt-4 mb-2">{parseInline(line.slice(4))}</h3>);
       continue;
     }
 

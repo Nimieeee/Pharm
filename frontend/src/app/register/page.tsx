@@ -45,7 +45,7 @@ export default function RegisterPage() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
             <span className="text-white text-2xl font-bold">P</span>
           </div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Create account</h1>
+          <h1 className="text-2xl font-serif font-medium text-[var(--text-primary)]">Create account</h1>
           <p className="text-[var(--text-secondary)] mt-2">Get started with PharmGPT</p>
         </div>
 

@@ -76,15 +76,15 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
 
   return (
     <>
-      {/* Gradient Fade Mask - Desktop (adjusts with sidebar) */}
+      {/* Gradient Fade Mask - Desktop */}
       <div 
-        className="hidden md:block fixed bottom-0 right-0 h-32 pointer-events-none z-40 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/40 to-transparent transition-all duration-300"
+        className="hidden md:block fixed bottom-0 right-0 h-28 pointer-events-none z-40 bg-gradient-to-t from-[var(--background)] to-transparent transition-all duration-300"
         style={{ left: sidebarOpen ? '280px' : '0' }}
       />
 
-      {/* Desktop Floating Capsule - centered in chat area (accounting for sidebar) */}
+      {/* Desktop Floating Capsule */}
       <div 
-        className="hidden md:block fixed bottom-8 z-50 w-[60%] min-w-[500px] max-w-[700px] transition-all duration-300"
+        className="hidden md:block fixed bottom-6 z-50 w-[60%] min-w-[500px] max-w-[700px] transition-all duration-300"
         style={{
           left: sidebarOpen ? 'calc(140px + 50%)' : '50%',
           transform: 'translateX(-50%)'
@@ -92,11 +92,11 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
       >
         <form onSubmit={handleSubmit}>
           <div
-            className={`relative rounded-full border transition-all ${
+            className={`relative rounded-2xl border transition-all ${
               isDragging 
-                ? 'border-indigo-500 bg-indigo-500/5' 
-                : 'border-[rgba(var(--border-rgb),0.5)] dark:border-[rgba(255,255,255,0.1)]'
-            } bg-[rgba(var(--surface-rgb),0.75)] backdrop-blur-2xl backdrop-saturate-[180%] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.1)]`}
+                ? 'border-[var(--accent)] bg-[var(--accent)]/5' 
+                : 'border-[var(--border)]'
+            } bg-[var(--surface)] shadow-lg`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
@@ -109,7 +109,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                   onClick={() => setShowModes(!showModes)}
                   className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--surface-highlight)] hover:bg-[var(--border)] transition-colors btn-press"
                 >
-                  <ModeIcon size={16} strokeWidth={1.5} className="text-indigo-500" />
+                  <ModeIcon size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
                   <span className="text-xs font-medium text-[var(--text-primary)]">{currentMode.label}</span>
                 </button>
                 
@@ -128,7 +128,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                           type="button"
                           onClick={() => { setMode(m.id); setShowModes(false); }}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                            mode === m.id ? 'bg-indigo-500/10 text-indigo-500' : 'hover:bg-[var(--surface-highlight)]'
+                            mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'hover:bg-[var(--surface-highlight)]'
                           }`}
                         >
                           <Icon size={18} strokeWidth={1.5} />
@@ -158,12 +158,12 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                 disabled={isUploading}
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors btn-press ${
                   isUploading 
-                    ? 'bg-indigo-500/20 cursor-not-allowed' 
+                    ? 'bg-[var(--accent)]/20 cursor-not-allowed' 
                     : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
                 }`}
               >
                 {isUploading ? (
-                  <Loader2 size={16} strokeWidth={1.5} className="text-indigo-500 animate-spin" />
+                  <Loader2 size={16} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
                 ) : (
                   <Paperclip size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
                 )}
@@ -188,9 +188,9 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               type="submit"
               disabled={!message.trim() || isLoading}
               whileTap={{ scale: 0.95 }}
-              className={`absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              className={`absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                 message.trim() && !isLoading
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
               }`}
             >
@@ -204,13 +204,13 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
         </form>
       </div>
 
-      {/* Mobile Floating Capsule - z-40 to stay below mobile sidebar overlay */}
-      <div className="md:hidden fixed bottom-8 left-4 right-4 z-40 max-w-[600px] mx-auto">
+      {/* Mobile Floating Capsule */}
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 max-w-[600px] mx-auto">
         {/* Gradient Fade - Mobile */}
-        <div className="fixed bottom-0 left-0 right-0 h-28 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/40 to-transparent" />
+        <div className="fixed bottom-0 left-0 right-0 h-24 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] to-transparent" />
         
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-full border border-[rgba(0,0,0,0.08)] dark:border-[rgba(255,255,255,0.1)] bg-[rgba(var(--surface-rgb),0.85)] backdrop-blur-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12)]">
+          <div className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg">
             {/* Mode + Attach */}
             <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               <button
@@ -218,7 +218,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                 onClick={() => setShowModes(!showModes)}
                 className="w-8 h-8 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press"
               >
-                <ModeIcon size={14} strokeWidth={1.5} className="text-indigo-500" />
+                <ModeIcon size={14} strokeWidth={1.5} className="text-[var(--accent)]" />
               </button>
               {/* File Upload - Mobile */}
               <button
@@ -245,7 +245,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                       type="button"
                       onClick={() => { setMode(m.id); setShowModes(false); }}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                        mode === m.id ? 'bg-indigo-500/10 text-indigo-500' : 'hover:bg-[var(--surface-highlight)]'
+                        mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'hover:bg-[var(--surface-highlight)]'
                       }`}
                     >
                       <Icon size={18} strokeWidth={1.5} />
@@ -274,9 +274,9 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               type="submit"
               disabled={!message.trim() || isLoading}
               whileTap={{ scale: 0.95 }}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                 message.trim() && !isLoading
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
               }`}
             >

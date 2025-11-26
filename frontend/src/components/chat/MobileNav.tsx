@@ -119,7 +119,7 @@ export default function MobileNav() {
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                       <span className="text-white text-sm font-bold">P</span>
                     </div>
-                    <span className="font-semibold text-[var(--text-primary)]">PharmGPT</span>
+                    <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}
@@ -167,7 +167,7 @@ export default function MobileNav() {
                     onClick={() => { setIsOpen(false); router.push('/workbench'); }}
                     className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
                   >
-                    <BarChart3 size={20} strokeWidth={1.5} className="text-indigo-500" />
+                    <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
                     <span className="text-sm text-[var(--text-primary)]">Data Workbench</span>
                   </button>
                   <button

@@ -49,7 +49,7 @@ export default function HomePage() {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">P</span>
             </div>
-            <span className="font-semibold text-[var(--text-primary)]">PharmGPT</span>
+            <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
           </div>
           
           <div className="flex items-center gap-3">
@@ -109,10 +109,10 @@ export default function HomePage() {
       >
         <div className="max-w-[1200px] mx-auto">
           <motion.div variants={item} className="text-center mb-16">
-            <h1 className="text-hero text-[var(--text-primary)] mb-6">
+            <h1 className="text-hero font-serif text-[var(--text-primary)] mb-6">
               Your AI Research
               <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-violet-500">
                 Companion
               </span>
             </h1>
@@ -160,7 +160,7 @@ export default function HomePage() {
                 <div className="mb-4 text-[var(--text-secondary)] group-hover:text-indigo-500 transition-colors">
                   <feature.icon size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-section-header text-[var(--text-primary)] mb-2">
+                <h3 className="text-section-header font-serif text-[var(--text-primary)] mb-2">
                   {feature.title}
                 </h3>
                 <p className="text-body text-sm">

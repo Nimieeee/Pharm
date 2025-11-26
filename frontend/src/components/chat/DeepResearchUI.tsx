@@ -271,7 +271,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
           <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
             <Globe size={14} />
             Sources Found
-            <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-500 text-[10px]">
+            <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] text-[10px]">
               {state.sources.length}
             </span>
           </p>
@@ -287,7 +287,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
                   initial={{ opacity: 0, scale: 0.8, x: 20 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="group min-w-[200px] max-w-[200px] p-3 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:border-indigo-500/50 transition-all hover:scale-[1.02]"
+                  className="group min-w-[200px] max-w-[200px] p-3 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all hover:scale-[1.02]"
                 >
                   {/* Source Header */}
                   <div className="flex items-center gap-2 mb-2">
@@ -308,11 +308,11 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
                     <span className="text-[10px] text-[var(--text-secondary)] truncate flex-1">
                       {source.source || (source.url ? new URL(source.url).hostname : 'Source')}
                     </span>
-                    <ExternalLink size={10} className="text-[var(--text-secondary)] group-hover:text-indigo-500 transition-colors" />
+                    <ExternalLink size={10} className="text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
                   </div>
                   
                   {/* Source Title */}
-                  <p className="text-xs font-medium text-[var(--text-primary)] line-clamp-2 leading-tight group-hover:text-indigo-500 transition-colors">
+                  <p className="text-xs font-medium text-[var(--text-primary)] line-clamp-2 leading-tight group-hover:text-[var(--accent)] transition-colors">
                     {source.title}
                   </p>
                 </motion.a>

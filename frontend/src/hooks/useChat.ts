@@ -221,40 +221,107 @@ export function useChat() {
         return;
       }
 
-      // Regular chat mode
-      const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: content.trim(),
-          conversation_id: currentConversationId,
-          mode: mode,
-          use_rag: true,
-        }),
-      });
+      // Regular chat mode - try streaming first, fallback to non-streaming
+      const assistantMessageId = (Date.now() + 1).toString();
+      let useStreaming = true;
+      
+      try {
+        const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: content.trim(),
+            conversation_id: currentConversationId,
+            mode: mode,
+            use_rag: true,
+          }),
+        });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          throw new Error('Session expired. Please sign in again.');
+        if (streamResponse.ok && streamResponse.body) {
+          // Add empty assistant message that we'll update
+          const assistantMessage: Message = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+
+          // Process SSE stream
+          const reader = streamResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let fullContent = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') continue;
+                
+                fullContent += data;
+                // Update the message content in real-time
+                setMessages(prev => prev.map(msg => 
+                  msg.id === assistantMessageId 
+                    ? { ...msg, content: fullContent }
+                    : msg
+                ));
+              }
+            }
+          }
+          return; // Successfully streamed
+        } else {
+          useStreaming = false;
         }
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to get response');
+      } catch (streamError) {
+        console.log('Streaming not available, falling back to regular chat');
+        useStreaming = false;
       }
 
-      const data = await response.json();
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response || data.message || 'I apologize, but I encountered an issue processing your request.',
-        timestamp: new Date(),
-      };
+      // Fallback to non-streaming
+      if (!useStreaming) {
+        const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: content.trim(),
+            conversation_id: currentConversationId,
+            mode: mode,
+            use_rag: true,
+          }),
+        });
 
-      setMessages(prev => [...prev, assistantMessage]);
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem('token');
+            throw new Error('Session expired. Please sign in again.');
+          }
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to get response');
+        }
+
+        const data = await response.json();
+        
+        const assistantMessage: Message = {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: data.response || data.message || 'I apologize, but I encountered an issue processing your request.',
+          timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+      }
     } catch (error: any) {
       console.error('Chat error:', error);
       

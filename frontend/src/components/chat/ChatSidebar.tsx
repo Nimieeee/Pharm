@@ -43,7 +43,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         className="w-full max-w-md mx-4 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Settings</h2>
+          <h2 className="text-lg font-serif font-medium text-[var(--text-primary)]">Settings</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg bg-[var(--surface-highlight)] flex items-center justify-center hover:bg-[var(--border)] transition-colors"
@@ -190,7 +190,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">P</span>
                   </div>
-                  <span className="font-semibold text-[var(--text-primary)]">PharmGPT</span>
+                  <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
                 </button>
                 <button
                   onClick={onToggle}
@@ -229,7 +229,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
                         onClick={() => handleSelectConversation(chat.id)}
                         className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors group"
                       >
-                        <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-indigo-500 transition-colors">
+                        <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">
                           {chat.title}
                         </p>
                         <p className="text-xs text-[var(--text-secondary)] mt-0.5">
@@ -247,7 +247,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation }: 
                   onClick={() => router.push('/workbench')}
                   className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
                 >
-                  <BarChart3 size={20} strokeWidth={1.5} className="text-indigo-500" />
+                  <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
                   <span className="text-sm text-[var(--text-primary)]">Data Workbench</span>
                 </button>
                 <button

@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useRouter } from 'next/navigation';
-import { LiquidBackground, RefractiveCard, GlassBadge } from '@/components/ui/LiquidGlass';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? 'https://pharmgpt-backend.onrender.com'
@@ -217,23 +216,20 @@ export default function DataWorkbench() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 relative overflow-hidden">
-      {/* Liquid Glass Background */}
-      <LiquidBackground />
-      
-      <div className="max-w-7xl mx-auto relative z-10">
+    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header with Theme Toggle */}
         <div className="mb-8 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <button
                 onClick={() => router.push('/chat')}
-                className="p-2 rounded-xl bg-[var(--glass-surface)] border border-[var(--glass-border)] backdrop-blur-md hover:bg-[var(--surface-highlight)] transition-colors"
+                className="p-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors"
               >
                 <ArrowLeft size={18} className="text-[var(--text-secondary)]" />
               </button>
-              <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center shadow-lg">
+              <h1 className="text-2xl md:text-3xl font-serif font-medium text-[var(--text-primary)] flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                   <BarChart3 size={20} className="text-white" />
                 </div>
                 Data Analysis Workbench
@@ -247,7 +243,7 @@ export default function DataWorkbench() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-3 rounded-xl bg-[var(--glass-surface)] border border-[var(--glass-border)] backdrop-blur-md hover:bg-[var(--surface-highlight)] transition-colors"
+            className="p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors"
           >
             {theme === 'light' ? (
               <Moon size={20} className="text-[var(--text-secondary)]" />
@@ -263,9 +259,9 @@ export default function DataWorkbench() {
           {/* ============================================================ */}
           <div className="space-y-6">
             {/* Data Upload */}
-            <RefractiveCard className="p-6">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                <Upload size={20} className="text-cyan-500" />
+            <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
+              <h2 className="text-lg font-serif font-medium text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                <Upload size={20} className="text-[var(--accent)]" />
                 Data Upload
               </h2>
               
@@ -322,13 +318,13 @@ export default function DataWorkbench() {
 
               {/* Data Preview */}
               {preview && (
-                <div className="mt-4 p-4 bg-[var(--glass-surface)] backdrop-blur-sm rounded-xl border border-[var(--glass-border)]">
+                <div className="mt-4 p-4 bg-[var(--surface-highlight)] rounded-xl border border-[var(--border)]">
                   <p className="text-sm font-medium text-[var(--text-primary)]">
                     {preview.rows} rows × {preview.columns.length} columns
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {preview.columns.slice(0, 6).map(col => (
-                      <GlassBadge key={col}>{col}</GlassBadge>
+                      <span key={col} className="px-2 py-1 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-full text-[var(--text-primary)]">{col}</span>
                     ))}
                     {preview.columns.length > 6 && (
                       <span className="px-2 py-1 text-xs text-[var(--text-secondary)]">
@@ -338,10 +334,10 @@ export default function DataWorkbench() {
                   </div>
                 </div>
               )}
-            </RefractiveCard>
+            </div>
 
             {/* Style Configuration */}
-            <RefractiveCard className="p-6">
+            <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
               <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
                 <Palette size={20} className="text-violet-500" />
                 Visualization Style
@@ -425,7 +421,7 @@ export default function DataWorkbench() {
                   )}
                 </div>
               </div>
-            </RefractiveCard>
+            </div>
 
             {/* Analyze Button */}
             <motion.button
@@ -463,9 +459,9 @@ export default function DataWorkbench() {
           {/* ============================================================ */}
           {/* RIGHT PANEL - Results */}
           {/* ============================================================ */}
-          <RefractiveCard className="overflow-hidden">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden">
             {/* Tabs */}
-            <div className="flex border-b border-[var(--glass-border)]">
+            <div className="flex border-b border-[var(--border)]">
               {[
                 { id: 'visualization', label: 'Visualization', icon: BarChart3 },
                 { id: 'analysis', label: 'Analysis', icon: FileText },
@@ -476,7 +472,7 @@ export default function DataWorkbench() {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
                     activeTab === tab.id
-                      ? 'text-cyan-500 border-b-2 border-cyan-500 bg-cyan-500/5'
+                      ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -601,7 +597,7 @@ export default function DataWorkbench() {
                 )}
               </AnimatePresence>
             </div>
-          </RefractiveCard>
+          </div>
         </div>
       </div>
     </div>
