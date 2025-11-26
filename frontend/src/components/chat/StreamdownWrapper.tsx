@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface StreamdownWrapperProps {
   children: string;
@@ -8,35 +9,55 @@ interface StreamdownWrapperProps {
   className?: string;
 }
 
-// This component only renders Streamdown on the client side
+// Fallback component for SSR and loading states
+function MarkdownFallback({ children, isAnimating }: { children: string; isAnimating?: boolean }) {
+  return (
+    <div className="whitespace-pre-wrap">
+      {children}
+      {isAnimating && (
+        <span className="inline-block w-2 h-4 bg-[var(--accent)] animate-pulse ml-1" />
+      )}
+    </div>
+  );
+}
+
 export default function StreamdownWrapper({ children, isAnimating, className }: StreamdownWrapperProps) {
-  const [StreamdownComponent, setStreamdownComponent] = useState<React.ComponentType<any> | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [StreamdownComp, setStreamdownComp] = useState<React.ComponentType<any> | null>(null);
 
   useEffect(() => {
-    setIsClient(true);
-    // Dynamically import Streamdown only on client
-    import('streamdown').then((mod) => {
-      setStreamdownComponent(() => mod.Streamdown);
-    }).catch((err) => {
-      console.error('Failed to load Streamdown:', err);
-    });
+    setMounted(true);
+    
+    // Only import on client side after mount
+    let cancelled = false;
+    
+    import('streamdown')
+      .then((mod) => {
+        if (!cancelled) {
+          setStreamdownComp(() => mod.Streamdown);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load Streamdown:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Show loading state or plain text during SSR/loading
-  if (!isClient || !StreamdownComponent) {
+  // During SSR or before mount, show fallback
+  if (!mounted || !StreamdownComp) {
     return (
       <div className={className}>
-        <div className="whitespace-pre-wrap">{children}</div>
-        {isAnimating && (
-          <span className="inline-block w-2 h-4 bg-[var(--accent)] animate-pulse ml-1" />
-        )}
+        <MarkdownFallback isAnimating={isAnimating}>{children}</MarkdownFallback>
       </div>
     );
   }
 
+  // Client-side with Streamdown loaded
   return (
-    <StreamdownComponent
+    <StreamdownComp
       isAnimating={isAnimating}
       className={className}
       controls={{
@@ -59,6 +80,6 @@ export default function StreamdownWrapper({ children, isAnimating, className }: 
       }}
     >
       {children}
-    </StreamdownComponent>
+    </StreamdownComp>
   );
 }
