@@ -14,6 +14,7 @@ from app.core.security import get_current_user
 from app.services.ai import AIService
 from app.services.chat import ChatService
 from app.services.enhanced_rag import EnhancedRAGService
+from app.services.deep_research import DeepResearchService
 from app.models.user import User
 from app.models.conversation import MessageCreate
 from app.models.document import DocumentUploadResponse, DocumentSearchRequest, DocumentSearchResponse
@@ -57,6 +58,11 @@ def get_chat_service(db: Client = Depends(get_db)) -> ChatService:
 def get_rag_service(db: Client = Depends(get_db)) -> EnhancedRAGService:
     """Get enhanced RAG service"""
     return EnhancedRAGService(db)
+
+
+def get_deep_research_service(db: Client = Depends(get_db)) -> DeepResearchService:
+    """Get deep research service"""
+    return DeepResearchService(db)
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -668,4 +674,226 @@ async def delete_conversation_documents(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete documents: {str(e)}"
+        )
+
+
+
+# ============================================================================
+# DEEP RESEARCH ENDPOINTS
+# ============================================================================
+
+class DeepResearchRequest(BaseModel):
+    """Deep research request model"""
+    question: str
+    conversation_id: UUID
+
+
+class DeepResearchResponse(BaseModel):
+    """Deep research response model"""
+    status: str
+    report: str
+    citations: List[Dict[str, Any]]
+    plan_overview: str
+    steps_completed: int
+    findings_count: int
+
+
+@router.post("/deep-research", response_model=DeepResearchResponse)
+async def deep_research(
+    request: DeepResearchRequest,
+    current_user: User = Depends(get_current_user),
+    research_service: DeepResearchService = Depends(get_deep_research_service),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Execute deep research on a biomedical question
+    
+    This endpoint performs an autonomous multi-step research workflow:
+    1. **Planning**: Breaks down the query into sub-topics using PICO/MoA framework
+    2. **Researching**: Searches PubMed and web for relevant literature
+    3. **Reviewing**: Filters and classifies findings by study type
+    4. **Writing**: Synthesizes a comprehensive research report with citations
+    
+    - **question**: The biomedical research question
+    - **conversation_id**: Conversation to associate the research with
+    """
+    try:
+        logger.info(f"🔬 Deep Research initiated by user {current_user.id}")
+        logger.info(f"📝 Question: {request.question[:100]}...")
+        
+        # Security validation
+        try:
+            security_guard.validate_transaction(request.question)
+        except SecurityViolationException as e:
+            logger.warning(f"🚨 Security violation in deep research: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.to_dict()
+            )
+        
+        # Validate conversation
+        conversation = await chat_service.get_conversation(
+            request.conversation_id, current_user
+        )
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+        
+        # Add user message
+        user_message = MessageCreate(
+            conversation_id=request.conversation_id,
+            role="user",
+            content=f"[Deep Research] {request.question}",
+            metadata={"mode": "deep_research"}
+        )
+        await chat_service.add_message(user_message, current_user)
+        
+        # Execute deep research
+        state = await research_service.run_research(
+            question=request.question,
+            user_id=current_user.id
+        )
+        
+        # Add research report as assistant message
+        if state.final_report:
+            assistant_message = MessageCreate(
+                conversation_id=request.conversation_id,
+                role="assistant",
+                content=state.final_report,
+                metadata={
+                    "mode": "deep_research",
+                    "citations_count": len(state.citations),
+                    "steps_completed": len([s for s in state.steps if s.status == "completed"])
+                }
+            )
+            await chat_service.add_message(assistant_message, current_user)
+        
+        logger.info(f"✅ Deep Research completed: {len(state.citations)} citations, {len(state.final_report)} chars")
+        
+        return DeepResearchResponse(
+            status=state.status,
+            report=state.final_report,
+            citations=[
+                {"id": c.id, "title": c.title, "url": c.url, "source": c.source}
+                for c in state.citations
+            ],
+            plan_overview=state.plan_overview,
+            steps_completed=len([s for s in state.steps if s.status == "completed"]),
+            findings_count=len(state.findings)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Deep Research error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Deep research failed: {str(e)}"
+        )
+
+
+@router.post("/deep-research/stream")
+async def deep_research_stream(
+    request: DeepResearchRequest,
+    current_user: User = Depends(get_current_user),
+    research_service: DeepResearchService = Depends(get_deep_research_service),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Execute deep research with streaming progress updates
+    
+    Returns Server-Sent Events (SSE) stream with progress updates:
+    - status: Current workflow stage
+    - plan: Research plan with sub-topics
+    - findings: Number of sources found
+    - citations: Validated citations
+    - complete: Final report
+    
+    - **question**: The biomedical research question
+    - **conversation_id**: Conversation to associate the research with
+    """
+    try:
+        # Security validation
+        try:
+            security_guard.validate_transaction(request.question)
+        except SecurityViolationException as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.to_dict()
+            )
+        
+        # Validate conversation
+        conversation = await chat_service.get_conversation(
+            request.conversation_id, current_user
+        )
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+        
+        # Add user message
+        user_message = MessageCreate(
+            conversation_id=request.conversation_id,
+            role="user",
+            content=f"[Deep Research] {request.question}",
+            metadata={"mode": "deep_research"}
+        )
+        await chat_service.add_message(user_message, current_user)
+        
+        async def generate_stream():
+            final_report = ""
+            citations_count = 0
+            
+            async for update in research_service.run_research_streaming(
+                question=request.question,
+                user_id=current_user.id
+            ):
+                yield f"data: {update}\n\n"
+                
+                # Track final report for saving
+                try:
+                    import json
+                    data = json.loads(update.strip())
+                    if data.get("type") == "complete":
+                        final_report = data.get("report", "")
+                        citations_count = len(data.get("citations", []))
+                except:
+                    pass
+            
+            # Save final report to conversation
+            if final_report:
+                assistant_message = MessageCreate(
+                    conversation_id=request.conversation_id,
+                    role="assistant",
+                    content=final_report,
+                    metadata={
+                        "mode": "deep_research",
+                        "citations_count": citations_count,
+                        "streaming": True
+                    }
+                )
+                await chat_service.add_message(assistant_message, current_user)
+            
+            yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Deep Research streaming error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Deep research streaming failed: {str(e)}"
         )

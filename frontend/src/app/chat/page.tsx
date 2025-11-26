@@ -6,15 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, CheckCircle2, Loader2, PanelLeft, Plus, X } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
+import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChat } from '@/hooks/useChat';
 import { useTheme } from '@/lib/theme-context';
+import { useSidebar } from '@/app/chat/layout';
 
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, sendMessage, clearMessages } = useChat();
+  const { messages, isLoading, isUploading, sendMessage, clearMessages, uploadFiles, deepResearchProgress } = useChat();
   const { theme, toggleTheme } = useTheme();
+  const { sidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
@@ -29,7 +32,7 @@ function ChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (message: string, mode: 'fast' | 'detailed' | 'research') => {
+  const handleSend = (message: string, mode: 'fast' | 'detailed' | 'research' | 'deep_research') => {
     sendMessage(message, mode);
   };
 
@@ -63,22 +66,22 @@ function ChatContent() {
       <AnimatePresence>
         {showMobileSidebar && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop - higher z-index to cover chat input */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMobileSidebar(false)}
-              className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
             />
             
-            {/* Sheet */}
+            {/* Sheet - higher z-index to stay above backdrop and chat input */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-[var(--surface)] border-r border-[var(--border)] p-4 flex flex-col"
+              className="md:hidden fixed left-0 top-0 bottom-0 z-[70] w-[280px] bg-[var(--surface)] border-r border-[var(--border)] p-4 flex flex-col"
             >
               {/* Sheet Header */}
               <div className="flex items-center justify-between mb-6">
@@ -130,7 +133,7 @@ function ChatContent() {
       </AnimatePresence>
 
       {/* Desktop Header */}
-      <header className="hidden md:flex h-16 px-6 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)]">
+      <header className={`hidden md:flex h-16 px-6 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
             <Sparkles size={16} strokeWidth={1.5} className="text-white" />
@@ -159,7 +162,7 @@ function ChatContent() {
             <EmptyState onSuggestionClick={(msg) => handleSend(msg, 'detailed')} />
           ) : (
             <AnimatePresence mode="popLayout">
-              {messages.map((msg) => (
+              {messages.map((msg, index) => (
                 <motion.div
                   key={msg.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -167,12 +170,38 @@ function ChatContent() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
                 >
-                  <ChatMessage message={msg} />
+                  <ChatMessage 
+                    message={msg} 
+                    isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
+                  />
                 </motion.div>
               ))}
             </AnimatePresence>
           )}
-          {isLoading && (
+          {/* Deep Research Progress - Gemini-style UI */}
+          {deepResearchProgress && (
+            <div className="mb-4">
+              <DeepResearchUI 
+                state={{
+                  status: deepResearchProgress.message || deepResearchProgress.status || 'Processing...',
+                  progress: deepResearchProgress.progress || 0,
+                  logs: deepResearchProgress.plan_overview 
+                    ? [`Strategy: ${deepResearchProgress.plan_overview}`]
+                    : [],
+                  sources: deepResearchProgress.citations?.map(c => ({
+                    title: c.title,
+                    url: c.url,
+                    source: c.source
+                  })) || [],
+                  isComplete: deepResearchProgress.type === 'complete',
+                  planOverview: deepResearchProgress.plan_overview,
+                  steps: deepResearchProgress.steps
+                }}
+              />
+            </div>
+          )}
+          
+          {isLoading && !deepResearchProgress && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -193,7 +222,12 @@ function ChatContent() {
       </div>
 
       {/* Input */}
-      <ChatInput onSend={handleSend} isLoading={isLoading} />
+      <ChatInput 
+        onSend={handleSend} 
+        onFileUpload={uploadFiles}
+        isLoading={isLoading} 
+        isUploading={isUploading}
+      />
     </div>
   );
 }
@@ -203,7 +237,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
     'What are the common drug interactions with Warfarin?',
     'Explain the mechanism of action of SSRIs',
     'Help me write a research manuscript introduction',
-    'Generate a lab protocol for drug extraction',
+    'Deep research: What is the current evidence for pembrolizumab in NSCLC?',
   ];
 
   return (

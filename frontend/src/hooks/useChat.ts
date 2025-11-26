@@ -7,12 +7,26 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
   ? 'https://pharmgpt-backend.onrender.com'
   : 'http://localhost:8000';
 
-type Mode = 'fast' | 'detailed' | 'research';
+type Mode = 'fast' | 'detailed' | 'research' | 'deep_research';
+
+interface DeepResearchProgress {
+  type: string;
+  status?: string;
+  message?: string;
+  progress?: number;
+  plan_overview?: string;
+  steps?: Array<{ id: number; topic: string; source: string }>;
+  count?: number;
+  report?: string;
+  citations?: Array<{ id: number; title: string; url: string; source: string }>;
+}
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -23,7 +37,7 @@ export function useChat() {
 
   const createConversation = async (token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/conversations`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,7 +85,7 @@ export function useChat() {
 
       let currentConversationId = conversationId;
       if (!currentConversationId) {
-        const convResponse = await fetch(`${API_BASE_URL}/api/v1/conversations`, {
+        const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -89,6 +103,100 @@ export function useChat() {
         }
       }
 
+      // Handle Deep Research mode differently - use streaming endpoint
+      if (mode === 'deep_research') {
+        // Initialize accumulated state for the UI
+        let accumulatedState: DeepResearchProgress = {
+          type: 'status',
+          status: 'initializing',
+          message: 'Starting deep research...',
+          progress: 0,
+          steps: [],
+          citations: [],
+          plan_overview: ''
+        };
+        
+        setDeepResearchProgress(accumulatedState);
+        
+        const response = await fetch(`${API_BASE_URL}/api/v1/ai/deep-research/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            question: content.trim(),
+            conversation_id: currentConversationId,
+          }),
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem('token');
+            throw new Error('Session expired. Please sign in again.');
+          }
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to start deep research');
+        }
+
+        // Process SSE stream
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let finalReport = '';
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const progress = JSON.parse(data) as DeepResearchProgress;
+                  
+                  // Accumulate state for better UI experience
+                  accumulatedState = {
+                    ...accumulatedState,
+                    ...progress,
+                    // Preserve accumulated data
+                    steps: progress.steps || accumulatedState.steps,
+                    citations: progress.citations || accumulatedState.citations,
+                    plan_overview: progress.plan_overview || accumulatedState.plan_overview,
+                  };
+                  
+                  setDeepResearchProgress({ ...accumulatedState });
+                  
+                  if (progress.type === 'complete' && progress.report) {
+                    finalReport = progress.report;
+                  }
+                } catch (e) {
+                  // Ignore parse errors for partial chunks
+                }
+              }
+            }
+          }
+        }
+
+        setDeepResearchProgress(null);
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: finalReport || 'Deep research completed but no report was generated.',
+          timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        return;
+      }
+
+      // Regular chat mode
       const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
         method: 'POST',
         headers: {
@@ -143,11 +251,121 @@ export function useChat() {
     setConversationId(null);
   }, []);
 
+  const uploadFiles = useCallback(async (files: FileList) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      const authMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'Please sign in to upload files.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, authMessage]);
+      return;
+    }
+
+    // Ensure we have a conversation
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      try {
+        const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title: 'Document Analysis' }),
+        });
+
+        if (convResponse.ok) {
+          const convData = await convResponse.json();
+          currentConversationId = convData.id;
+          setConversationId(convData.id);
+        } else {
+          throw new Error('Failed to create conversation');
+        }
+      } catch (error) {
+        console.error('Failed to create conversation:', error);
+        return;
+      }
+    }
+
+    setIsUploading(true);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Add upload status message
+      const uploadingMessage: Message = {
+        id: `upload-${Date.now()}-${i}`,
+        role: 'assistant',
+        content: `📤 Uploading ${file.name}...`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, uploadingMessage]);
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        // Remove uploading message
+        setMessages(prev => prev.filter(m => m.id !== uploadingMessage.id));
+
+        if (response.ok) {
+          const result = await response.json();
+          const successMessage: Message = {
+            id: `upload-success-${Date.now()}-${i}`,
+            role: 'assistant',
+            content: `✅ **${file.name}** uploaded successfully!\n\n${result.chunk_count} text chunks extracted and indexed. You can now ask questions about this document.`,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, successMessage]);
+        } else {
+          const errorData = await response.json();
+          const errorMessage: Message = {
+            id: `upload-error-${Date.now()}-${i}`,
+            role: 'assistant',
+            content: `❌ Failed to upload **${file.name}**: ${errorData.detail || 'Unknown error'}`,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        }
+      } catch (error: any) {
+        // Remove uploading message
+        setMessages(prev => prev.filter(m => m.id !== uploadingMessage.id));
+        
+        const errorMessage: Message = {
+          id: `upload-error-${Date.now()}-${i}`,
+          role: 'assistant',
+          content: `❌ Failed to upload **${file.name}**: ${error.message || 'Network error'}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    }
+
+    setIsUploading(false);
+  }, [conversationId]);
+
   return {
     messages,
     isLoading,
+    isUploading,
     sendMessage,
     clearMessages,
+    uploadFiles,
     conversationId,
+    deepResearchProgress,
   };
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
-import { ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3 } from 'lucide-react';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -96,6 +96,13 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
               {/* Footer Actions */}
               <div className="pt-4 border-t border-[var(--border)] space-y-2">
                 <button
+                  onClick={() => router.push('/workbench')}
+                  className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
+                >
+                  <BarChart3 size={20} strokeWidth={1.5} className="text-indigo-500" />
+                  <span className="text-sm text-[var(--text-primary)]">Data Workbench</span>
+                </button>
+                <button
                   onClick={toggleTheme}
                   className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
                 >
@@ -118,11 +125,11 @@ export default function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
         )}
       </AnimatePresence>
 
-      {/* Collapsed Toggle Button */}
+      {/* Collapsed Toggle Button - positioned in header area, left side */}
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="hidden md:flex fixed left-4 top-4 z-50 w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors btn-press shadow-lg"
+          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors btn-press shadow-lg"
         >
           <ChevronsRight size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
         </button>

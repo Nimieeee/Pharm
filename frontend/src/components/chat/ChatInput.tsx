@@ -2,28 +2,51 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Paperclip, ArrowRight, Loader2, Zap, BookOpen, FlaskConical } from 'lucide-react';
+import { Paperclip, ArrowRight, Loader2, Zap, BookOpen, FlaskConical, Search } from 'lucide-react';
+import { useSidebar } from '@/app/chat/layout';
 
-type Mode = 'fast' | 'detailed' | 'research';
+type Mode = 'fast' | 'detailed' | 'research' | 'deep_research';
 
 interface ChatInputProps {
   onSend: (message: string, mode: Mode) => void;
+  onFileUpload?: (files: FileList) => void;
   isLoading: boolean;
+  isUploading?: boolean;
 }
 
 const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
   { id: 'fast', label: 'Fast', icon: Zap, desc: 'Quick answers' },
   { id: 'detailed', label: 'Detailed', icon: BookOpen, desc: 'Comprehensive' },
   { id: 'research', label: 'Research', icon: FlaskConical, desc: 'Academic writing' },
+  { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
 ];
 
-export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
+export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading = false }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<Mode>('detailed');
   const [showModes, setShowModes] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Get sidebar state to adjust input position
+  const { sidebarOpen } = useSidebar();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0 && onFileUpload) {
+      onFileUpload(e.target.files);
+      // Reset input so same file can be selected again
+      e.target.value = '';
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && onFileUpload) {
+      onFileUpload(e.dataTransfer.files);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +77,20 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
 
   return (
     <>
-      {/* Gradient Fade Mask - Desktop */}
-      <div className="hidden md:block fixed bottom-0 left-0 right-0 h-32 pointer-events-none z-40 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/40 to-transparent" />
+      {/* Gradient Fade Mask - Desktop (adjusts with sidebar) */}
+      <div 
+        className="hidden md:block fixed bottom-0 right-0 h-32 pointer-events-none z-40 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/40 to-transparent transition-all duration-300"
+        style={{ left: sidebarOpen ? '280px' : '0' }}
+      />
 
-      {/* Desktop Floating Capsule */}
-      <div className="hidden md:block fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[60%] min-w-[600px] max-w-[800px]">
+      {/* Desktop Floating Capsule - centered in chat area (accounting for sidebar) */}
+      <div 
+        className="hidden md:block fixed bottom-8 z-50 w-[60%] min-w-[500px] max-w-[700px] transition-all duration-300"
+        style={{
+          left: sidebarOpen ? 'calc(140px + 50%)' : '50%',
+          transform: 'translateX(-50%)'
+        }}
+      >
         <form onSubmit={handleSubmit}>
           <div
             className={`relative rounded-full border transition-all ${
@@ -68,7 +100,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
             } bg-[rgba(var(--surface-rgb),0.75)] backdrop-blur-2xl backdrop-saturate-[180%] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.1)]`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}
+            onDrop={handleDrop}
           >
             {/* Mode Selector */}
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -113,13 +145,29 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
               </div>
 
               {/* File Upload */}
-              <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.csv,.xlsx" multiple />
+              <input 
+                ref={fileInputRef} 
+                type="file" 
+                className="hidden" 
+                accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx,.sdf,.mol,.png,.jpg,.jpeg,.gif,.bmp,.webp" 
+                multiple 
+                onChange={handleFileChange}
+              />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-9 h-9 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center hover:bg-[var(--border)] transition-colors btn-press"
+                disabled={isUploading}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors btn-press ${
+                  isUploading 
+                    ? 'bg-indigo-500/20 cursor-not-allowed' 
+                    : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
+                }`}
               >
-                <Paperclip size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                {isUploading ? (
+                  <Loader2 size={16} strokeWidth={1.5} className="text-indigo-500 animate-spin" />
+                ) : (
+                  <Paperclip size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                )}
               </button>
             </div>
 
@@ -157,8 +205,8 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
         </form>
       </div>
 
-      {/* Mobile Floating Capsule */}
-      <div className="md:hidden fixed bottom-8 left-4 right-4 z-50 max-w-[600px] mx-auto">
+      {/* Mobile Floating Capsule - z-40 to stay below mobile sidebar overlay */}
+      <div className="md:hidden fixed bottom-8 left-4 right-4 z-40 max-w-[600px] mx-auto">
         {/* Gradient Fade - Mobile */}
         <div className="fixed bottom-0 left-0 right-0 h-28 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/40 to-transparent" />
         
@@ -169,9 +217,17 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
               <button
                 type="button"
                 onClick={() => setShowModes(!showModes)}
-                className="w-9 h-9 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press"
+                className="w-8 h-8 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press"
               >
-                <ModeIcon size={16} strokeWidth={1.5} className="text-indigo-500" />
+                <ModeIcon size={14} strokeWidth={1.5} className="text-indigo-500" />
+              </button>
+              {/* File Upload - Mobile */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-8 h-8 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press"
+              >
+                <Paperclip size={14} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
               </button>
             </div>
 
@@ -211,7 +267,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
               placeholder="Ask anything..."
               disabled={isLoading}
               rows={1}
-              className="w-full py-3 pl-14 pr-14 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm rounded-full"
+              className="w-full py-3 pl-[4.5rem] pr-14 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm rounded-full"
               style={{ minHeight: '48px', maxHeight: '48px' }}
             />
 
