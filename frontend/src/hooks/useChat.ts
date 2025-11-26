@@ -7,12 +7,13 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
   ? 'https://pharmgpt-backend.onrender.com'
   : 'http://localhost:8000';
 
+type Mode = 'fast' | 'detailed' | 'research';
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
-  // Create a new conversation when component mounts
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token && !conversationId) {
@@ -28,9 +29,7 @@ export function useChat() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title: 'New Chat',
-        }),
+        body: JSON.stringify({ title: 'New Chat' }),
       });
 
       if (response.ok) {
@@ -42,7 +41,7 @@ export function useChat() {
     }
   };
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed') => {
     if (!content.trim() || isLoading) return;
 
     const token = localStorage.getItem('token');
@@ -58,12 +57,11 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      // If no token, show auth required message
       if (!token) {
         const authMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: 'Please sign in to use PharmGPT. Click the button below or go to /login to authenticate.',
+          content: 'Please sign in to use PharmGPT. Go to /login to authenticate.',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, authMessage]);
@@ -71,7 +69,6 @@ export function useChat() {
         return;
       }
 
-      // Create conversation if needed
       let currentConversationId = conversationId;
       if (!currentConversationId) {
         const convResponse = await fetch(`${API_BASE_URL}/api/v1/conversations`, {
@@ -101,7 +98,7 @@ export function useChat() {
         body: JSON.stringify({
           message: content.trim(),
           conversation_id: currentConversationId,
-          mode: 'detailed',
+          mode: mode,
           use_rag: true,
         }),
       });

@@ -8,8 +8,10 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="h-screen flex bg-[var(--background)]">
-      {/* Desktop Sidebar */}
-      <ChatSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      {/* Desktop Sidebar - Hidden on mobile */}
+      <div className="hidden md:block">
+        <ChatSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      </div>
       
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
