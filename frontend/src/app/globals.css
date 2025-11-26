@@ -18,6 +18,13 @@
   --accent-gradient: linear-gradient(135deg, #E0E7FF 0%, #FAE8FF 100%);
   --shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.05);
   --gradient-color: rgba(224, 231, 255, 0.5);
+  
+  /* Liquid Glass - Light Mode (Frosted Ice) */
+  --liquid-blob-1: #22d3ee; /* Cyan */
+  --liquid-blob-2: #a78bfa; /* Violet */
+  --liquid-blob-3: #fcd34d; /* Amber */
+  --glass-surface: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.6);
 }
 
 .dark {
@@ -34,6 +41,13 @@
   --accent-gradient: linear-gradient(135deg, #312E81 0%, #4C1D95 100%);
   --shadow: 0 0 0 1px #27272A, 0 20px 40px -12px rgba(0, 0, 0, 0.5);
   --gradient-color: rgba(49, 46, 129, 0.3);
+  
+  /* Liquid Glass - Dark Mode (Smoked Quartz) */
+  --liquid-blob-1: #0e7490; /* Deep Cyan */
+  --liquid-blob-2: #6d28d9; /* Deep Violet */
+  --liquid-blob-3: #b45309; /* Deep Amber */
+  --glass-surface: rgba(24, 24, 27, 0.6); /* Zinc-900 */
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -240,4 +254,71 @@ body {
 
 .dark ::selection {
   background: rgba(49, 46, 129, 0.5);
+}
+
+/* Liquid Glass Animations */
+@keyframes blob-drift {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate(30px, -50px) rotate(90deg) scale(1.1);
+  }
+  50% {
+    transform: translate(-20px, 20px) rotate(180deg) scale(0.95);
+  }
+  75% {
+    transform: translate(50px, 30px) rotate(270deg) scale(1.05);
+  }
+}
+
+@keyframes blob-drift-slow {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    transform: translate(-40px, 30px) rotate(120deg) scale(1.08);
+  }
+  66% {
+    transform: translate(20px, -40px) rotate(240deg) scale(0.92);
+  }
+}
+
+@keyframes blob-drift-reverse {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(-30px, -30px) rotate(-180deg) scale(1.1);
+  }
+}
+
+.animate-blob-drift {
+  animation: blob-drift 20s ease-in-out infinite;
+}
+
+.animate-blob-drift-slow {
+  animation: blob-drift-slow 25s ease-in-out infinite;
+}
+
+.animate-blob-drift-reverse {
+  animation: blob-drift-reverse 18s ease-in-out infinite;
+}
+
+/* Mobile: Slower animations for battery */
+@media (max-width: 768px) {
+  .animate-blob-drift {
+    animation-duration: 30s;
+  }
+  .animate-blob-drift-slow {
+    animation-duration: 35s;
+  }
+  .animate-blob-drift-reverse {
+    animation-duration: 28s;
+  }
+}
+
+/* Noise texture overlay */
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
