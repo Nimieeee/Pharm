@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ChevronDown, ChevronUp, Globe, FileText, ExternalLink, BookOpen } from 'lucide-react';
-import { Streamdown } from 'streamdown';
+import StreamdownWrapper from './StreamdownWrapper';
 
 // ============================================================================
 // TYPES
@@ -379,21 +379,12 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
             Research Report
           </p>
           <div className="text-sm text-[var(--text-primary)]">
-            <Streamdown 
+            <StreamdownWrapper 
               isAnimating={!state.isComplete}
               className="streamdown-content"
-              controls={{
-                table: true,
-                code: true,
-                mermaid: {
-                  download: true,
-                  copy: true,
-                  fullscreen: true,
-                }
-              }}
             >
               {state.report}
-            </Streamdown>
+            </StreamdownWrapper>
           </div>
         </div>
       )}
