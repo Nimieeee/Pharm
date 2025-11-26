@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
+import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
-import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText } from 'lucide-react';
+import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut } from 'lucide-react';
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,6 +30,7 @@ const features = [
 export default function HomePage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const [query, setQuery] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,7 +52,7 @@ export default function HomePage() {
             <span className="font-semibold text-[var(--text-primary)]">PharmGPT</span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
               className="w-10 h-10 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press transition-all hover:scale-105"
@@ -61,12 +63,39 @@ export default function HomePage() {
                 <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
               )}
             </button>
-            <button
-              onClick={() => router.push('/chat')}
-              className="px-5 py-2.5 rounded-full bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm btn-press transition-all hover:opacity-90"
-            >
-              Open Chat
-            </button>
+            {user ? (
+              <>
+                <button
+                  onClick={() => router.push('/chat')}
+                  className="px-5 py-2.5 rounded-full bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm btn-press transition-all hover:opacity-90"
+                >
+                  Open Chat
+                </button>
+                <button
+                  onClick={logout}
+                  className="w-10 h-10 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center btn-press transition-all hover:scale-105"
+                  title="Sign out"
+                >
+                  <LogOut size={18} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push('/login')}
+                  className="px-4 py-2.5 rounded-full bg-[var(--surface-highlight)] text-[var(--text-primary)] font-medium text-sm btn-press transition-all hover:bg-[var(--border)] flex items-center gap-2"
+                >
+                  <LogIn size={16} strokeWidth={1.5} />
+                  Sign In
+                </button>
+                <button
+                  onClick={() => router.push('/register')}
+                  className="px-5 py-2.5 rounded-full bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm btn-press transition-all hover:opacity-90"
+                >
+                  Get Started
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>

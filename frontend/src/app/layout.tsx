@@ -1,5 +1,6 @@
 import './globals.css';
 import { ThemeProvider } from '@/lib/theme-context';
+import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata = {
   title: 'PharmGPT - AI-Powered Pharmaceutical Assistant',
@@ -14,11 +15,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider>
-          <div className="min-h-screen bg-[var(--background)] transition-colors duration-300">
-            {children}
-          </div>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <div className="min-h-screen bg-[var(--background)] transition-colors duration-300">
+              {children}
+            </div>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );
