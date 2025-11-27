@@ -350,8 +350,6 @@ class DeepResearchService:
         state.status = "planning"
         state.progress_log.append(f"[{datetime.now().isoformat()}] Starting research planning...")
         
-        system_prompt = """You are the Lead Research Investigator for PharmGPT. Your goal is to break down complex biomedical queries into a structured research plan.
-
         state.progress_log.append(f"[{datetime.now().isoformat()}] Analyzing research topic: {state.research_question}")
         
         system_prompt = """You are a Principal Investigator planning a systematic review.
@@ -653,10 +651,8 @@ Synthesize a comprehensive research report."""
         return state
     
     async def run_research_streaming(self, question: str, user_id: UUID):
-        """
-        Execute deep research with streaming progress updates
-        Yields JSON progress updates
-        """
+        # Execute deep research with streaming progress updates
+        # Yields JSON progress updates
         state = ResearchState(research_question=question)
         
         yield json.dumps({
