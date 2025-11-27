@@ -9,6 +9,7 @@ import httpx
 import json
 import logging
 import time
+import threading
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from cachetools import TTLCache
@@ -43,10 +44,11 @@ class MistralEmbeddingsService:
             "api_calls": 0,
             "total_requests": 0
         }
-        # Rate limiting: Mistral free tier - 1 request per second
+        # Rate limiting: Mistral free tier - conservative approach
         self.last_api_call_time = 0
-        self.min_time_between_calls = 1.0  # 1 second to match Mistral limit
+        self.min_time_between_calls = 1.5  # 1.5 seconds to be safe
         self.max_batch_size = 16  # Mistral supports up to 16 texts per request
+        self.rate_limit_lock = threading.Lock()  # Thread-safe rate limiting
         
         # Check API key
         if self.mistral_api_key:
@@ -110,13 +112,17 @@ class MistralEmbeddingsService:
         
         for attempt in range(max_retries):
             try:
-                # Rate limiting: Wait if needed to respect 1 request per second limit
-                current_time = time.time()
-                time_since_last_call = current_time - self.last_api_call_time
-                if time_since_last_call < self.min_time_between_calls:
-                    wait_time = self.min_time_between_calls - time_since_last_call
-                    logger.debug(f"⏱️  Rate limiting: waiting {wait_time:.2f}s")
-                    await asyncio.sleep(wait_time)
+                # Thread-safe rate limiting
+                with self.rate_limit_lock:
+                    current_time = time.time()
+                    time_since_last_call = current_time - self.last_api_call_time
+                    if time_since_last_call < self.min_time_between_calls:
+                        wait_time = self.min_time_between_calls - time_since_last_call
+                        logger.debug(f"⏱️  Rate limiting: waiting {wait_time:.2f}s")
+                        await asyncio.sleep(wait_time)
+                    
+                    # Update last call time immediately after waiting
+                    self.last_api_call_time = time.time()
                 
                 self.cache_stats["api_calls"] += 1
                 start_time = time.time()
@@ -138,9 +144,6 @@ class MistralEmbeddingsService:
                         json=payload,
                         timeout=30.0
                     )
-                    
-                    # Update last call time
-                    self.last_api_call_time = time.time()
                     
                     if response.status_code == 200:
                         result = response.json()
@@ -278,12 +281,16 @@ class MistralEmbeddingsService:
         
         for attempt in range(max_retries):
             try:
-                # Rate limiting
-                current_time = time.time()
-                time_since_last_call = current_time - self.last_api_call_time
-                if time_since_last_call < self.min_time_between_calls:
-                    wait_time = self.min_time_between_calls - time_since_last_call
-                    await asyncio.sleep(wait_time)
+                # Thread-safe rate limiting
+                with self.rate_limit_lock:
+                    current_time = time.time()
+                    time_since_last_call = current_time - self.last_api_call_time
+                    if time_since_last_call < self.min_time_between_calls:
+                        wait_time = self.min_time_between_calls - time_since_last_call
+                        await asyncio.sleep(wait_time)
+                    
+                    # Update last call time immediately after waiting
+                    self.last_api_call_time = time.time()
                 
                 self.cache_stats["api_calls"] += 1
                 start_time = time.time()
