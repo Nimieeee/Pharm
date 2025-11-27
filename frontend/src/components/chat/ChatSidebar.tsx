@@ -542,6 +542,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     <span className="text-sm text-red-500">Sign Out</span>
                   </button>
                 )}
+
+                {/* Signature */}
+                <div className="pt-4 pb-2 text-center">
+                  <p className="text-[10px] tracking-[0.2em] text-muted-foreground/40 font-bold uppercase">
+                    PharmGPT
+                  </p>
+                </div>
               </div>
             </div>
           </motion.aside>

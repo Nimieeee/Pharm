@@ -65,57 +65,42 @@ function ChatContent() {
 
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)]">
-      {/* Mobile Header - ChatGPT Style with Glassmorphism */}
-      <header className="md:hidden sticky top-0 z-30 h-16 px-4 flex items-center justify-between bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]/10">
-        {/* Left: Hamburger Menu */}
-        <button
-          onClick={() => openMobileNav()}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
-        >
-          <Menu size={20} strokeWidth={1.5} className="text-[var(--text-primary)]" />
-        </button>
-
-        {/* Center: Model Selector (Simplified) */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-base font-medium text-[var(--text-primary)]">PharmGPT</span>
-        </div>
-
-        {/* Right: New Chat */}
-        <button
-          onClick={handleNewChat}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
-          title="New chat"
-        >
-          <Edit3 size={20} strokeWidth={1.5} className="text-[var(--text-primary)]" />
-        </button>
-      </header>
-
-      {/* Desktop Header - Minimalist */}
-      <header className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]/10 z-40 items-center justify-between px-6 transition-all duration-300">
-        <div className="flex items-center gap-4">
+      {/* Floating Header Controls */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none p-4 flex items-start justify-between">
+        {/* Left: Sidebar Trigger (Ghost) */}
+        <div className="pointer-events-auto">
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-[var(--surface-highlight)] rounded-lg text-[var(--text-secondary)] transition-colors"
+              className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm"
             >
-              <Menu size={20} />
+              <Menu size={24} strokeWidth={1.5} />
             </button>
           )}
-          <h1 className="text-lg font-semibold text-[var(--text-primary)] tracking-tight">
-            PharmGPT <span className="text-[var(--text-secondary)] font-normal">v2.0</span>
-          </h1>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Context Menu Trigger */}
-          <button className="p-2 hover:bg-[var(--surface-highlight)] rounded-lg text-[var(--text-secondary)] transition-colors">
-            <MoreHorizontal size={20} />
+        {/* Center: Model Selector (Glass Pill) */}
+        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 top-4">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg transition-all hover:scale-105 cursor-pointer">
+            <span className="text-sm font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
+            <span className="text-xs text-[var(--text-secondary)] opacity-70">v2.0</span>
+            <ChevronDown size={14} className="text-[var(--text-secondary)] opacity-50" />
+          </div>
+        </div>
+
+        {/* Right: Mobile New Chat (Visible only on mobile) */}
+        <div className="pointer-events-auto md:hidden">
+          <button
+            onClick={handleNewChat}
+            className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm"
+          >
+            <Edit3 size={24} strokeWidth={1.5} />
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 pb-32 sm:pb-36 md:pb-44">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 ? (
             <EmptyState
@@ -216,8 +201,12 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
       transition={{ duration: 0.5 }}
       className="text-center py-12 md:py-16"
     >
-      <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
-        <Sparkles size={24} strokeWidth={1.5} className="text-white" />
+      <div className="mb-8 relative flex justify-center">
+        <img
+          src="/PharmGPT.png"
+          alt="PharmGPT"
+          className="w-[120px] opacity-[0.05] dark:opacity-[0.08] pointer-events-none select-none grayscale"
+        />
       </div>
       <h2 className="text-xl md:text-2xl font-serif font-medium text-[var(--text-primary)] mb-3">
         How can I help you today?
