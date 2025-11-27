@@ -51,7 +51,15 @@ function ChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (message: string, selectedMode: Mode) => {
+  // Reset mode when conversation changes
+  useEffect(() => {
+    setMode('fast');
+  }, [conversationId]);
+
+  const handleSend = (message: string, selectedMode: Mode = mode) => {
+    if (selectedMode !== mode) {
+      setMode(selectedMode);
+    }
     sendMessage(message, selectedMode);
   };
 
@@ -83,49 +91,37 @@ function ChatContent() {
       </header>
 
       {/* Desktop Header with Glassmorphism */}
-      <header className={`hidden md:flex h-[72px] px-6 items-center justify-between border-b border-[var(--border)]/10 bg-[var(--background)]/80 backdrop-blur-md transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>
+      <header className={`hidden md:flex h-[72px] px-6 items-center justify-between border-b border-[var(--border)]/10 bg-[var(--background)]/80 backdrop-blur-md transition-all duration-300 ${!sidebarOpen ? 'pl-4' : ''}`}>
         <div className="flex items-center gap-3 h-full">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <Sparkles size={16} strokeWidth={1.5} className="text-white" />
-          </div>
-          <div>
-            <h1 className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</h1>
-            <p className="text-xs text-[var(--text-secondary)]">AI Research Assistant</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 h-full">
-          {/* Delete Conversation Button */}
-          {conversationId && messages.length > 0 && (
+          {!sidebarOpen && (
             <button
-              onClick={deleteConversation}
-              disabled={isDeleting}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-              title="Delete conversation"
+              onClick={() => document.dispatchEvent(new CustomEvent('toggle-sidebar'))} // Assuming we can trigger it this way or need to expose context method
+              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors text-[var(--text-secondary)]"
             >
-              {isDeleting ? (
-                <Loader2 size={12} strokeWidth={1.5} className="animate-spin" />
-              ) : (
-                <Trash2 size={12} strokeWidth={1.5} />
-              )}
-              Delete
+              <Menu size={20} strokeWidth={1.5} />
             </button>
           )}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isLoading
-              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-            }`}>
-            {isLoading ? (
-              <>
-                <Loader2 size={12} strokeWidth={1.5} className="animate-spin" />
-                Thinking...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={12} strokeWidth={1.5} />
-                Ready
-              </>
-            )}
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif font-medium text-[var(--text-primary)] text-lg">PharmGPT</h1>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium border border-emerald-500/20">
+              v2.0
+            </span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 h-full">
+          {/* Model/Status Indicator - Minimal */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
+            <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+            <span className="text-xs font-medium text-[var(--text-secondary)]">
+              {isLoading ? 'Thinking...' : 'Mistral Large'}
+            </span>
+          </div>
+
+          {/* More Actions */}
+          <button className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors text-[var(--text-secondary)]">
+            <Sparkles size={18} strokeWidth={1.5} />
+          </button>
         </div>
       </header>
 
@@ -216,12 +212,12 @@ function ChatContent() {
   );
 }
 
-function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string) => void, currentMode: Mode }) {
+function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string, mode?: Mode) => void, currentMode: Mode }) {
   const suggestions = [
-    'What are the common drug interactions with Warfarin?',
-    'Explain the mechanism of action of SSRIs',
-    'Help me write a research manuscript introduction',
-    'Deep research: Current evidence for pembrolizumab in NSCLC',
+    { text: 'What are the common drug interactions with Warfarin?', mode: 'detailed' as Mode },
+    { text: 'Explain the mechanism of action of SSRIs', mode: 'detailed' as Mode },
+    { text: 'Help me write a research manuscript introduction', mode: 'detailed' as Mode },
+    { text: 'Deep research: Current evidence for pembrolizumab in NSCLC', mode: 'deep_research' as Mode },
   ];
 
   return (
@@ -249,10 +245,10 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * i, duration: 0.3 }}
-            onClick={() => onSuggestionClick(suggestion)}
+            onClick={() => onSuggestionClick(suggestion.text, suggestion.mode)}
             className="p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-left text-xs sm:text-sm text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--surface-highlight)] transition-all"
           >
-            {suggestion}
+            {suggestion.text}
           </motion.button>
         ))}
       </div>

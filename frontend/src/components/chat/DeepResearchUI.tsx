@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, ChevronUp, Globe, FileText, ExternalLink, BookOpen } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Globe, FileText, ExternalLink, BookOpen, Loader2 } from 'lucide-react';
 import StreamdownWrapper from './StreamdownWrapper';
 
 // ============================================================================
@@ -41,27 +41,27 @@ interface DeepResearchUIProps {
 
 function AnimatedCounter({ value }: { value: number }) {
   const [displayValue, setDisplayValue] = useState(value);
-  
+
   useEffect(() => {
     const duration = 500;
     const startValue = displayValue;
     const diff = value - startValue;
     const startTime = Date.now();
-    
+
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplayValue(Math.round(startValue + diff * eased));
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate);
       }
     };
-    
+
     requestAnimationFrame(animate);
   }, [value]);
-  
+
   return <span>{displayValue}</span>;
 }
 
@@ -72,12 +72,12 @@ function AnimatedCounter({ value }: { value: number }) {
 function GradientSpinner({ progress, isComplete }: { progress: number; isComplete: boolean }) {
   return (
     <div className="relative flex items-center justify-center">
-      <div 
+      <div
         className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full p-[3px] ${isComplete ? '' : 'animate-spin-slow'}`}
-        style={{ 
-          background: isComplete 
+        style={{
+          background: isComplete
             ? 'conic-gradient(from 0deg, #22c55e, #10b981, #22c55e)'
-            : 'conic-gradient(from 0deg, #6366f1, #8b5cf6, #a855f7, #6366f1)' 
+            : 'conic-gradient(from 0deg, #6366f1, #8b5cf6, #a855f7, #6366f1)'
         }}
       >
         <div className="h-full w-full rounded-full bg-[var(--surface)] flex items-center justify-center">
@@ -86,13 +86,13 @@ function GradientSpinner({ progress, isComplete }: { progress: number; isComplet
           </span>
         </div>
       </div>
-      
-      <div 
+
+      <div
         className="absolute inset-0 rounded-full blur-xl opacity-20 dark:opacity-30"
-        style={{ 
-          background: isComplete 
+        style={{
+          background: isComplete
             ? 'radial-gradient(circle, #22c55e 0%, transparent 70%)'
-            : 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' 
+            : 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)'
         }}
       />
     </div>
@@ -120,13 +120,13 @@ function ShimmerText({ text }: { text: string }) {
 function formatAPACitation(source: Source, index: number): string {
   // APA 7th Edition format:
   // Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. Journal Name, Volume(Issue), Pages. DOI
-  
+
   const authors = source.authors || 'Unknown Author';
   const year = source.year || 'n.d.';
   const title = source.title || 'Untitled';
   const journal = source.journal || source.source || '';
   const doi = source.doi ? `https://doi.org/${source.doi}` : source.url;
-  
+
   return `[${index + 1}] ${authors} (${year}). ${title}. ${journal ? `*${journal}*. ` : ''}${doi}`;
 }
 
@@ -138,7 +138,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
   const [logsExpanded, setLogsExpanded] = useState(false);
   const [sourcesExpanded, setSourcesExpanded] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     if (logsEndRef.current && logsExpanded) {
       logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -155,49 +155,56 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
       {/* ================================================================== */}
       {/* HEADER - Spinner + Status */}
       {/* ================================================================== */}
-      <div className="p-4 sm:p-6 border-b border-[var(--border)]">
-        <div className="flex items-center gap-4 sm:gap-5">
-          <GradientSpinner progress={state.progress} isComplete={state.isComplete} />
-          
-          <div className="flex-1 min-w-0">
-            <motion.h3 
-              key={state.status}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`text-base sm:text-lg font-semibold ${
-                state.isComplete 
-                  ? 'text-emerald-500' 
-                  : ''
-              }`}
-            >
+      {/* ================================================================== */}
+      {/* HEADER - Collapsible Accordion Status */}
+      {/* ================================================================== */}
+      <div className="border-b border-[var(--border)]">
+        <button
+          onClick={() => setLogsExpanded(!logsExpanded)}
+          className={`w-full text-left transition-all duration-300 ${state.isComplete ? 'bg-[var(--surface)]' : 'bg-secondary/30'
+            }`}
+        >
+          <div className={`flex items-center gap-4 p-4 ${state.isComplete ? '' : 'border-l-2 border-primary pl-4 py-2'}`}>
+            {/* Icon / Status Indicator */}
+            <div className="flex-shrink-0">
               {state.isComplete ? (
-                '✓ Research Complete'
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Sparkles size={14} className="text-emerald-500" />
+                </div>
               ) : (
-                <ShimmerText text={state.status} />
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-primary" size={18} />
+                </div>
               )}
-            </motion.h3>
-            
-            {state.planOverview && (
-              <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1 line-clamp-2">
-                {state.planOverview}
-              </p>
-            )}
-            
-            <div className="mt-2 sm:mt-3 h-1.5 bg-[var(--surface-highlight)] rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{
-                  background: state.isComplete 
-                    ? 'linear-gradient(90deg, #22c55e, #10b981)'
-                    : 'linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)'
-                }}
-                initial={{ width: 0 }}
-                animate={{ width: `${state.progress}%` }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-              />
+            </div>
+
+            {/* Text Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h3 className={`text-sm font-medium ${state.isComplete ? 'text-[var(--text-secondary)] opacity-70' : 'text-[var(--text-primary)] font-bold'}`}>
+                  {state.isComplete ? 'Research Complete' : state.status || 'Initializing Research Agent...'}
+                </h3>
+                {state.isComplete ? (
+                  <ChevronDown size={16} className="text-[var(--text-secondary)]" />
+                ) : (
+                  <span className="text-xs text-primary animate-pulse">Processing...</span>
+                )}
+              </div>
+
+              {/* Progress Bar (Only when active) */}
+              {!state.isComplete && (
+                <div className="mt-2 h-1 w-full bg-[var(--surface-highlight)] rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-primary rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${state.progress}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* ================================================================== */}
@@ -255,7 +262,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
             <ChevronDown size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
           )}
         </button>
-        
+
         <AnimatePresence>
           {logsExpanded && (
             <motion.div
@@ -285,7 +292,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
                   </AnimatePresence>
                   <div ref={logsEndRef} />
                 </div>
-                
+
                 {state.logs.length === 0 && (
                   <p className="font-mono text-[10px] sm:text-xs text-[var(--text-secondary)] italic opacity-60">
                     Waiting for activity...
@@ -319,7 +326,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
               <ChevronDown size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
             )}
           </button>
-          
+
           <AnimatePresence>
             {sourcesExpanded && (
               <motion.div
@@ -379,7 +386,7 @@ export default function DeepResearchUI({ state }: DeepResearchUIProps) {
             Research Report
           </p>
           <div className="text-sm text-[var(--text-primary)]">
-            <StreamdownWrapper 
+            <StreamdownWrapper
               isAnimating={!state.isComplete}
               className="streamdown-content"
             >

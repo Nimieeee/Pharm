@@ -130,12 +130,13 @@ async def analyze_data(
 @router.post("/preview")
 async def preview_data(
     data_file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    sheet_name: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    workbench_service: DataWorkbenchService = Depends(get_workbench_service)
 ):
     """
-    Get a preview of uploaded data without full analysis.
-    
-    Returns column names, data types, and sample rows.
+    Get a preview of uploaded data with intelligent extraction and cleaning.
+    Supports CSV, Excel, JSON, PDF, and DOCX.
     """
     temp_path = None
     
@@ -144,7 +145,7 @@ async def preview_data(
         import numpy as np
         
         # Validate file type
-        allowed_extensions = {'.csv', '.xlsx', '.xls', '.json', '.tsv'}
+        allowed_extensions = {'.csv', '.xlsx', '.xls', '.json', '.tsv', '.pdf', '.docx', '.doc'}
         file_ext = os.path.splitext(data_file.filename or "")[1].lower()
         
         if file_ext not in allowed_extensions:
@@ -159,47 +160,76 @@ async def preview_data(
         
         with open(temp_path, 'wb') as f:
             f.write(content)
+            
+        df = None
+        sheets = []
         
-        # Load data
-        if file_ext == '.csv':
-            df = pd.read_csv(temp_path, nrows=100)
-        elif file_ext in ['.xlsx', '.xls']:
-            df = pd.read_excel(temp_path, nrows=100)
+        # Handle Excel Multi-Sheet
+        if file_ext in ['.xlsx', '.xls']:
+            xl = pd.ExcelFile(temp_path)
+            sheets = xl.sheet_names
+            
+            if len(sheets) > 1 and not sheet_name:
+                return JSONResponse(
+                    status_code=status.HTTP_409_CONFLICT,
+                    content={
+                        "type": "multiple_sheets",
+                        "message": "Multiple sheets found. Please select one.",
+                        "sheets": sheets
+                    }
+                )
+            
+            target_sheet = sheet_name if sheet_name in sheets else sheets[0]
+            df = pd.read_excel(temp_path, sheet_name=target_sheet)
+            df = await workbench_service._smart_clean_dataframe(df)
+            
+        # Handle PDF
+        elif file_ext == '.pdf':
+            df = workbench_service._extract_pdf_table(temp_path)
+            if df is not None:
+                df = await workbench_service._smart_clean_dataframe(df)
+                
+        # Handle DOCX
+        elif file_ext in ['.docx', '.doc']:
+            df = workbench_service._extract_docx_table(temp_path)
+            if df is not None:
+                df = await workbench_service._smart_clean_dataframe(df)
+                
+        # Handle CSV/JSON
         elif file_ext == '.json':
             df = pd.read_json(temp_path)
-            df = df.head(100)
-        elif file_ext == '.tsv':
-            df = pd.read_csv(temp_path, sep='\t', nrows=100)
         else:
-            df = pd.read_csv(temp_path, nrows=100)
+            try:
+                df = pd.read_csv(temp_path)
+            except:
+                df = pd.read_csv(temp_path, sep='\t')
+            df = await workbench_service._smart_clean_dataframe(df)
+            
+        if df is None or df.empty:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No structured table data found in document."
+            )
+            
+        # Sanitize DataFrame for JSON serialization
+        df_clean = df.replace({np.nan: None, np.inf: None, -np.inf: None})
         
-        return {
-            "filename": data_file.filename,
-            "rows": len(df),
-            "columns": list(df.columns),
-            "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "sample": df.head(10).to_dict(orient='records'),
-            "numeric_columns": df.select_dtypes(include=['number']).columns.tolist(),
-            "categorical_columns": df.select_dtypes(include=['object', 'category']).columns.tolist()
-        }
-        
-        # Replace NaN and Inf with None for JSON compliance
-        # This must be done on the dictionary or the dataframe before converting to dict
-        # Re-processing the response dictionary to handle NaNs in sample data
         response_data = {
             "filename": data_file.filename,
             "rows": len(df),
             "columns": list(df.columns),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "sample": df.head(10).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records'),
+            "sample": df_clean.head(10).to_dict(orient='records'),
             "numeric_columns": df.select_dtypes(include=['number']).columns.tolist(),
-            "categorical_columns": df.select_dtypes(include=['object', 'category']).columns.tolist()
+            "categorical_columns": df.select_dtypes(include=['object', 'category']).columns.tolist(),
+            "sheets": sheets if sheets else None
         }
         return response_data
         
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Preview error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Preview failed: {str(e)}"

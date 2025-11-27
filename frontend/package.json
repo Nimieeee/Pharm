@@ -11,6 +11,7 @@
   "dependencies": {
     "@langchain/core": "^0.2.0",
     "@langchain/mistralai": "^0.0.27",
+    "@radix-ui/react-popover": "^1.1.15",
     "framer-motion": "^10.16.16",
     "lucide-react": "^0.294.0",
     "mermaid": "^11.12.1",

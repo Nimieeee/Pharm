@@ -762,11 +762,12 @@ h1, h2, h3, .heading {
 
 .markdown-content th {
   font-weight: 600;
-  background: var(--surface-highlight);
+  background-color: var(--surface-highlight);
+  color: var(--text-primary);
 }
 
 .markdown-content tr:hover {
-  background: var(--surface-highlight);
+  background-color: rgba(var(--surface-rgb), 0.5);
 }
 
 /* Blockquote styling */

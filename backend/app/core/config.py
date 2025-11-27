@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # AI Model settings
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
     
     # Embedding settings - Using Mistral embeddings only
     EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "mistral")  # "sentence-transformers" or "mistral"

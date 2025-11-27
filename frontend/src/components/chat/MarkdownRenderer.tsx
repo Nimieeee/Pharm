@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
-import { 
+import {
   Copy, Check, Download, ExternalLink, Maximize2, X,
   FileCode, Table as TableIcon, Image as ImageIcon
 } from 'lucide-react';
@@ -49,17 +49,17 @@ function ActionButton({ onClick, disabled, icon, successIcon, title, showSuccess
 }
 
 // Interactive overlay wrapper
-function InteractiveOverlay({ 
-  children, 
+function InteractiveOverlay({
+  children,
   position = 'top-right',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
+  disabled = false
+}: {
+  children: React.ReactNode;
   position?: 'top-right' | 'bottom-right';
   disabled?: boolean;
 }) {
-  const positionClasses = position === 'top-right' 
-    ? 'top-2 right-2' 
+  const positionClasses = position === 'top-right'
+    ? 'top-2 right-2'
     : 'bottom-2 right-2';
 
   return (
@@ -75,13 +75,13 @@ function InteractiveOverlay({
 }
 
 // Code Block with enhanced features
-function EnhancedCodeBlock({ 
-  children, 
-  className, 
-  isAnimating 
-}: { 
-  children: string; 
-  className?: string; 
+function EnhancedCodeBlock({
+  children,
+  className,
+  isAnimating
+}: {
+  children: string;
+  className?: string;
   isAnimating?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
@@ -89,7 +89,7 @@ function EnhancedCodeBlock({
   const [mermaidSvg, setMermaidSvg] = useState<string>('');
   const [showFullscreen, setShowFullscreen] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
-  
+
   const language = className?.replace('language-', '') || '';
   const code = String(children).replace(/\n$/, '');
 
@@ -98,7 +98,7 @@ function EnhancedCodeBlock({
     if (language === 'mermaid' && code) {
       setIsMermaid(true);
       import('mermaid').then((mermaid) => {
-        mermaid.default.initialize({ 
+        mermaid.default.initialize({
           startOnLoad: false,
           theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default'
         });
@@ -147,7 +147,7 @@ function EnhancedCodeBlock({
           <div className="flex items-center justify-between px-4 py-2 bg-[var(--surface-highlight)] border-b border-[var(--border)]">
             <span className="text-xs font-medium text-[var(--text-secondary)]">Mermaid Diagram</span>
           </div>
-          <div 
+          <div
             ref={mermaidRef}
             className="p-4 overflow-auto flex justify-center"
             dangerouslySetInnerHTML={{ __html: mermaidSvg }}
@@ -236,17 +236,17 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
     if (!tableRef.current) return { headers: [] as string[], rows: [] as string[][] };
     const headers: string[] = [];
     const rows: string[][] = [];
-    
+
     const headerCells = tableRef.current.querySelectorAll('thead th');
     headerCells.forEach(cell => headers.push(cell.textContent || ''));
-    
+
     const bodyRows = tableRef.current.querySelectorAll('tbody tr');
     bodyRows.forEach(row => {
       const rowData: string[] = [];
       row.querySelectorAll('td').forEach(cell => rowData.push(cell.textContent || ''));
       rows.push(rowData);
     });
-    
+
     return { headers, rows };
   }, []);
 
@@ -356,14 +356,14 @@ function EnhancedImage({ src, alt, isAnimating }: { src?: string; alt?: string; 
       const blob = await response.blob();
       const ext = blob.type.split('/')[1] || 'png';
       const filename = alt ? `${alt.replace(/[^a-z0-9]/gi, '_')}.${ext}` : `image.${ext}`;
-      
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      
+
       setDownloaded(true);
       setTimeout(() => setDownloaded(false), 2000);
     } catch (error) {
@@ -373,9 +373,9 @@ function EnhancedImage({ src, alt, isAnimating }: { src?: string; alt?: string; 
 
   return (
     <div className="my-4 relative group inline-block">
-      <img 
-        src={src} 
-        alt={alt || 'Image'} 
+      <img
+        src={src}
+        alt={alt || 'Image'}
         className="max-w-full h-auto rounded-xl border border-[var(--border)]"
       />
       <InteractiveOverlay position="bottom-right" disabled={isAnimating}>
@@ -394,10 +394,10 @@ function EnhancedImage({ src, alt, isAnimating }: { src?: string; alt?: string; 
 
 
 // Main Markdown Renderer Component - Memoized for performance
-const MarkdownRenderer = memo(function MarkdownRenderer({ 
-  content, 
-  isAnimating = false, 
-  className = '' 
+const MarkdownRenderer = memo(function MarkdownRenderer({
+  content,
+  isAnimating = false,
+  className = ''
 }: MarkdownRendererProps) {
   // Clean content from any leaked JSON logs
   const cleanContent = content
@@ -464,10 +464,10 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
 
           // Links
           a: ({ href, children }) => (
-            <a 
-              href={href} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[var(--accent)] hover:underline inline-flex items-center gap-1"
             >
               {children}
@@ -493,28 +493,34 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
           },
           pre: ({ children }) => <>{children}</>,
 
-          // Tables with interactive features
+          // Tables with interactive features - Enforce styling
           table: ({ children }) => (
             <EnhancedTable isAnimating={isAnimating}>
               {children}
             </EnhancedTable>
           ),
           thead: ({ children }) => (
-            <thead className="bg-[var(--surface-highlight)]">{children}</thead>
+            <thead className="bg-[var(--surface-highlight)] text-[var(--text-primary)]">
+              {children}
+            </thead>
           ),
-          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tbody: ({ children }) => (
+            <tbody className="bg-[var(--surface)]">
+              {children}
+            </tbody>
+          ),
           tr: ({ children }) => (
-            <tr className="hover:bg-[var(--surface-highlight)] transition-colors border-b border-[var(--border)]">
+            <tr className="border-b border-[var(--border)] hover:bg-[var(--surface-highlight)]/50 transition-colors">
               {children}
             </tr>
           ),
           th: ({ children }) => (
-            <th className="px-4 py-3 text-left font-semibold text-[var(--text-primary)] border-b border-[var(--border)]">
+            <th className="px-4 py-3 text-left font-semibold text-[var(--text-primary)] border border-[var(--border)] bg-[var(--surface-highlight)] whitespace-nowrap">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-4 py-3 text-[var(--text-primary)] border-b border-[var(--border)]">
+            <td className="px-4 py-3 text-[var(--text-primary)] border border-[var(--border)] align-top">
               {children}
             </td>
           ),
@@ -535,7 +541,7 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
       >
         {cleanContent}
       </ReactMarkdown>
-      
+
       {/* Streaming cursor */}
       {isAnimating && (
         <span className="inline-block w-2 h-5 bg-[var(--accent)] animate-pulse ml-0.5 align-middle" />

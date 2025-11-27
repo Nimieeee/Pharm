@@ -5,8 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
-import { 
-  Menu, X, Plus, Moon, Sun, Settings, LogOut, BarChart3, 
+import {
+  Menu, X, Plus, Moon, Sun, Settings, LogOut, BarChart3,
   Search, Image, FolderKanban, MessageSquare, ChevronRight,
   Sparkles
 } from 'lucide-react';
@@ -48,14 +48,14 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
 
   const fetchConversationHistory = async () => {
     if (!token) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
         const conversations = await response.json();
         const formattedHistory = conversations.map((conv: any) => {
@@ -63,14 +63,14 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
           const today = new Date();
           const yesterday = new Date(today);
           yesterday.setDate(yesterday.getDate() - 1);
-          
+
           let dateStr = 'Older';
           if (date.toDateString() === today.toDateString()) {
             dateStr = 'Today';
           } else if (date.toDateString() === yesterday.toDateString()) {
             dateStr = 'Yesterday';
           }
-          
+
           return {
             id: conv.id,
             title: conv.title || 'Untitled Chat',
@@ -92,7 +92,7 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
 
   const handleDeleteChat = async (chatId: string) => {
     if (!token) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${chatId}`, {
         method: 'DELETE',
@@ -100,7 +100,7 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
         setChatHistory(prev => prev.filter(c => c.id !== chatId));
         onDeleteConversation?.(chatId);
@@ -111,7 +111,7 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
   };
 
   // Filter chats based on search
-  const filteredChats = chatHistory.filter(chat => 
+  const filteredChats = chatHistory.filter(chat =>
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -133,16 +133,16 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-[99] bg-black/50 backdrop-blur-sm"
             />
-            
+
             {/* Drawer - Slide from Left */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[85vw] max-w-[320px] bg-[var(--surface)] flex flex-col"
+              className="md:hidden fixed left-0 top-0 bottom-0 z-[100] w-[85vw] max-w-[320px] bg-[var(--surface)] flex flex-col"
             >
               {/* Header with Search */}
               <div className="p-4 border-b border-[var(--border)]">
@@ -163,7 +163,7 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
                     <X size={16} className="text-[var(--text-secondary)]" />
                   </button>
                 </div>
-                
+
                 {/* Search Bar - Rounded Pill */}
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
@@ -303,7 +303,7 @@ function MobileNavTrigger({ onOpen }: { onOpen: () => void }) {
       delete (window as any).__openMobileNav;
     };
   }, [onOpen]);
-  
+
   return null;
 }
 

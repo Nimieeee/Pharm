@@ -412,14 +412,9 @@ export function useChat() {
   const uploadFiles = useCallback(async (files: FileList) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      const authMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: 'Please sign in to upload files.',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, authMessage]);
-      return;
+      // If not logged in, we can't upload. 
+      // In a real app, we might want to trigger a login modal or return an error.
+      return [{ fileName: 'General', status: 'error', error: 'Please sign in to upload files.' }];
     }
 
     // Ensure we have a conversation
@@ -444,17 +439,15 @@ export function useChat() {
         }
       } catch (error) {
         console.error('Failed to create conversation:', error);
-        return;
+        return [{ fileName: 'General', status: 'error', error: 'Failed to create conversation' }];
       }
     }
 
     setIsUploading(true);
+    const results: { fileName: string; status: 'success' | 'error'; error?: string }[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-
-      // Uploading status is handled by UI state (ChatInput spinner)
-      // We don't add a message here anymore to avoid "plumbing" logs
 
       try {
         console.log(`📤 Uploading file: ${file.name} to conversation: ${currentConversationId}`);
@@ -463,7 +456,6 @@ export function useChat() {
         formData.append('file', file);
 
         const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`;
-        console.log(`📤 Upload URL: ${uploadUrl}`);
 
         const response = await fetch(uploadUrl, {
           method: 'POST',
@@ -473,20 +465,9 @@ export function useChat() {
           body: formData,
         });
 
-        console.log(`📤 Upload response status: ${response.status}`);
-
         if (response.ok) {
-          const result = await response.json();
-          console.log(`✅ Upload success:`, result);
-
-          // Simple success message
-          const successMessage: Message = {
-            id: `upload-success-${Date.now()}-${i}`,
-            role: 'assistant',
-            content: `✅ **${file.name}**: Document Ready.`,
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, successMessage]);
+          console.log(`✅ Upload success: ${file.name}`);
+          results.push({ fileName: file.name, status: 'success' });
         } else {
           let errorDetail = 'Unknown error';
           try {
@@ -496,28 +477,16 @@ export function useChat() {
             errorDetail = `HTTP ${response.status}: ${response.statusText}`;
           }
           console.error(`❌ Upload failed:`, errorDetail);
-          const errorMessage: Message = {
-            id: `upload-error-${Date.now()}-${i}`,
-            role: 'assistant',
-            content: `❌ Failed to upload **${file.name}**: ${errorDetail}`,
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, errorMessage]);
+          results.push({ fileName: file.name, status: 'error', error: errorDetail });
         }
       } catch (error: any) {
         console.error(`❌ Upload exception:`, error);
-
-        const errorMessage: Message = {
-          id: `upload-error-${Date.now()}-${i}`,
-          role: 'assistant',
-          content: `❌ Failed to upload **${file.name}**: ${error.message || 'Network error. Check console for details.'}`,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, errorMessage]);
+        results.push({ fileName: file.name, status: 'error', error: error.message || 'Network error' });
       }
     }
 
     setIsUploading(false);
+    return results;
   }, [conversationId]);
 
   return {

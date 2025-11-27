@@ -244,26 +244,125 @@ Generate Python visualization code for this data. Choose appropriate chart types
         return state
     
     async def _get_data_preview(self, file_path: str) -> str:
-        """Get a preview of the data file."""
+        """Get a preview of the data file with intelligent extraction."""
         try:
             import pandas as pd
+            import numpy as np
             
-            if file_path.endswith('.csv'):
-                df = pd.read_csv(file_path, nrows=5)
+            df = None
+            
+            # Handle different file types
+            if file_path.endswith('.pdf'):
+                df = self._extract_pdf_table(file_path)
+            elif file_path.endswith(('.docx', '.doc')):
+                df = self._extract_docx_table(file_path)
             elif file_path.endswith(('.xlsx', '.xls')):
-                df = pd.read_excel(file_path, nrows=5)
+                # Smart Excel loading (handle headers)
+                df = pd.read_excel(file_path)
+                df = await self._smart_clean_dataframe(df)
             elif file_path.endswith('.json'):
                 df = pd.read_json(file_path)
-                df = df.head(5)
             else:
-                df = pd.read_csv(file_path, nrows=5)
+                # CSV/TSV
+                try:
+                    df = pd.read_csv(file_path)
+                except:
+                    df = pd.read_csv(file_path, sep='\t')
+                df = await self._smart_clean_dataframe(df)
             
-            preview = f"Columns: {list(df.columns)}\n"
-            preview += f"Data types: {df.dtypes.to_dict()}\n"
-            preview += f"Sample rows:\n{df.to_string()}"
+            if df is None or df.empty:
+                return "No structured data found in file."
+                
+            # Limit rows for preview
+            df_preview = df.head(10)
+            
+            preview = f"Columns: {list(df_preview.columns)}\n"
+            preview += f"Data types: {df_preview.dtypes.to_dict()}\n"
+            preview += f"Sample rows:\n{df_preview.to_string()}"
             return preview
         except Exception as e:
             return f"Error reading file: {e}"
+
+    def _extract_pdf_table(self, file_path: str):
+        """Extract tables from PDF using pdfplumber."""
+        import pdfplumber
+        import pandas as pd
+        
+        all_rows = []
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        # Filter out empty rows
+                        if any(row):
+                            all_rows.append(row)
+        
+        if not all_rows:
+            return None
+            
+        # Basic heuristic: Assume first row is header if it looks like strings
+        headers = all_rows[0]
+        data = all_rows[1:]
+        return pd.DataFrame(data, columns=headers)
+
+    def _extract_docx_table(self, file_path: str):
+        """Extract tables from DOCX using python-docx."""
+        from docx import Document
+        import pandas as pd
+        
+        doc = Document(file_path)
+        all_rows = []
+        
+        for table in doc.tables:
+            for row in table.rows:
+                row_data = [cell.text.strip() for cell in row.cells]
+                if any(row_data):
+                    all_rows.append(row_data)
+        
+        if not all_rows:
+            return None
+            
+        headers = all_rows[0]
+        data = all_rows[1:]
+        return pd.DataFrame(data, columns=headers)
+
+    async def _smart_clean_dataframe(self, df):
+        """Use LLM to identify headers and clean data if heuristic fails."""
+        # Simple heuristic: if columns are "Unnamed", try to find real header
+        if any("Unnamed" in str(c) for c in df.columns):
+            # Convert to string for LLM analysis
+            preview_str = df.head(10).to_string()
+            
+            system_prompt = """You are a Data Cleaning Expert.
+Identify the correct header row index (0-based) for this dataset.
+Also identify which columns contain numeric data that might be formatted as strings (e.g. "$5,000").
+Return JSON: {"header_index": int, "numeric_columns": ["col_name1", "col_name2"]}"""
+
+            response = await self._call_llm(system_prompt, f"Data Preview:\n{preview_str}", json_mode=True)
+            
+            try:
+                result = json.loads(response)
+                header_idx = result.get("header_index", 0)
+                
+                # Reload with correct header
+                if header_idx > 0:
+                    new_header = df.iloc[header_idx]
+                    df = df[header_idx + 1:]
+                    df.columns = new_header
+                    df = df.reset_index(drop=True)
+                
+                # Clean numeric columns
+                for col in result.get("numeric_columns", []):
+                    if col in df.columns:
+                        # Remove currency symbols, commas, etc.
+                        df[col] = df[col].astype(str).str.replace(r'[$,%]', '', regex=True)
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                        
+            except Exception as e:
+                print(f"Smart cleaning failed: {e}")
+                
+        return df
     
     # ========================================================================
     # NODE C: THE EXECUTOR (Bridge to Python)

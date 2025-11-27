@@ -2,12 +2,12 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Upload, 
-  Image as ImageIcon, 
-  BarChart3, 
-  FileText, 
-  Table, 
+import {
+  Upload,
+  Image as ImageIcon,
+  BarChart3,
+  FileText,
+  Table,
   Download,
   Loader2,
   Sparkles,
@@ -95,17 +95,22 @@ const PRESET_STYLES: StylePreset[] = [
 export default function DataWorkbench() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-  
+
   // State
   const [dataFile, setDataFile] = useState<File | null>(null);
   const [styleImage, setStyleImage] = useState<File | null>(null);
   const [styleDescription, setStyleDescription] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [preview, setPreview] = useState<DataPreview | null>(null);
   const [activeTab, setActiveTab] = useState<'visualization' | 'analysis' | 'data'>('visualization');
   const [error, setError] = useState<string | null>(null);
+
+  // Sheet Selection
+  const [availableSheets, setAvailableSheets] = useState<string[]>([]);
+  const [showSheetSelector, setShowSheetSelector] = useState(false);
 
   // File handlers
   const handleDataDrop = useCallback((e: React.DragEvent) => {
@@ -133,12 +138,19 @@ export default function DataWorkbench() {
     }
   }, []);
 
-  const loadPreview = async (file: File) => {
+  const loadPreview = async (file: File, sheetName?: string) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
+    setIsPreviewLoading(true);
+    setPreview(null);
+    setError(null);
+
     const formData = new FormData();
     formData.append('data_file', file);
+    if (sheetName) {
+      formData.append('sheet_name', sheetName);
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/workbench/preview`, {
@@ -147,12 +159,35 @@ export default function DataWorkbench() {
         body: formData
       });
 
+      if (response.status === 409) {
+        const data = await response.json();
+        if (data.type === 'multiple_sheets') {
+          setAvailableSheets(data.sheets);
+          setShowSheetSelector(true);
+          setIsPreviewLoading(false);
+          return;
+        }
+      }
+
       if (response.ok) {
         const data = await response.json();
         setPreview(data);
+        setShowSheetSelector(false);
+      } else {
+        const err = await response.json();
+        setError(err.detail || 'Failed to load preview');
       }
     } catch (err) {
       console.error('Preview failed:', err);
+      setError('Network error loading preview');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleSheetSelect = (sheet: string) => {
+    if (dataFile) {
+      loadPreview(dataFile, sheet);
     }
   };
 
@@ -171,15 +206,15 @@ export default function DataWorkbench() {
 
     const formData = new FormData();
     formData.append('data_file', dataFile);
-    
+
     if (styleImage) {
       formData.append('style_image', styleImage);
     }
-    
-    const finalStyleDesc = selectedPreset 
+
+    const finalStyleDesc = selectedPreset
       ? `Use ${PRESET_STYLES.find(s => s.id === selectedPreset)?.name} style`
       : styleDescription;
-    
+
     if (finalStyleDesc) {
       formData.append('style_description', finalStyleDesc);
     }
@@ -208,7 +243,7 @@ export default function DataWorkbench() {
 
   const downloadImage = () => {
     if (!result?.image) return;
-    
+
     const link = document.createElement('a');
     link.href = `data:image/png;base64,${result.image}`;
     link.download = `${dataFile?.name || 'chart'}_visualization.png`;
@@ -217,6 +252,42 @@ export default function DataWorkbench() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8">
+      {/* Sheet Selector Modal */}
+      <AnimatePresence>
+        {showSheetSelector && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-xl max-w-md w-full mx-4"
+            >
+              <h3 className="text-lg font-medium text-[var(--text-primary)] mb-4">Select a Sheet</h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {availableSheets.map(sheet => (
+                  <button
+                    key={sheet}
+                    onClick={() => handleSheetSelect(sheet)}
+                    className="w-full text-left px-4 py-3 rounded-xl hover:bg-[var(--surface-highlight)] transition-colors text-[var(--text-primary)] border border-transparent hover:border-[var(--border)]"
+                  >
+                    {sheet}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  setShowSheetSelector(false);
+                  setDataFile(null);
+                }}
+                className="mt-4 w-full py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto">
         {/* Header with Theme Toggle */}
         <div className="mb-8 flex items-start justify-between">
@@ -239,7 +310,7 @@ export default function DataWorkbench() {
               Upload data, customize visualization style, and get AI-powered analysis
             </p>
           </div>
-          
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -264,17 +335,22 @@ export default function DataWorkbench() {
                 <Upload size={20} className="text-[var(--accent)]" />
                 Data Upload
               </h2>
-              
+
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDataDrop}
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                  dataFile 
-                    ? 'border-emerald-500 bg-emerald-500/5' 
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dataFile
+                    ? 'border-emerald-500 bg-emerald-500/5'
                     : 'border-[var(--border)] hover:border-indigo-500/50'
-                }`}
+                  }`}
               >
-                {dataFile ? (
+                {isPreviewLoading ? (
+                  <div className="flex flex-col items-center justify-center py-4">
+                    <Loader2 className="animate-spin text-indigo-500 mb-2" size={32} />
+                    <p className="text-[var(--text-primary)] font-medium">Scanning document...</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Extracting tables and cleaning data</p>
+                  </div>
+                ) : dataFile ? (
                   <div className="flex items-center justify-center gap-3">
                     <CheckCircle2 className="text-emerald-500" size={24} />
                     <div className="text-left">
@@ -297,11 +373,11 @@ export default function DataWorkbench() {
                       Drop your data file here
                     </p>
                     <p className="text-sm text-[var(--text-secondary)] mt-1">
-                      CSV, Excel, JSON supported
+                      CSV, Excel, PDF, DOCX, JSON supported
                     </p>
                     <input
                       type="file"
-                      accept=".csv,.xlsx,.xls,.json,.tsv"
+                      accept=".csv,.xlsx,.xls,.json,.tsv,.pdf,.docx,.doc"
                       onChange={handleDataSelect}
                       className="hidden"
                       id="data-upload"
@@ -355,11 +431,10 @@ export default function DataWorkbench() {
                         setStyleImage(null);
                         setStyleDescription('');
                       }}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        selectedPreset === style.id
+                      className={`p-3 rounded-xl border text-left transition-all ${selectedPreset === style.id
                           ? 'border-indigo-500 bg-indigo-500/10'
                           : 'border-[var(--border)] hover:border-indigo-500/50'
-                      }`}
+                        }`}
                     >
                       <div className="flex gap-1 mb-2">
                         {style.preview_colors.map((color, i) => (
@@ -428,11 +503,10 @@ export default function DataWorkbench() {
               onClick={handleAnalyze}
               disabled={!dataFile || isAnalyzing}
               whileTap={{ scale: 0.98 }}
-              className={`w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-3 transition-all shadow-lg ${
-                dataFile && !isAnalyzing
+              className={`w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-3 transition-all shadow-lg ${dataFile && !isAnalyzing
                   ? 'bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 shadow-cyan-500/25'
                   : 'bg-[var(--border)] cursor-not-allowed shadow-none'
-              }`}
+                }`}
             >
               {isAnalyzing ? (
                 <>
@@ -470,11 +544,10 @@ export default function DataWorkbench() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
+                  className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${activeTab === tab.id
                       ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
+                    }`}
                 >
                   <tab.icon size={16} />
                   {tab.label}
@@ -527,9 +600,9 @@ export default function DataWorkbench() {
                     className="prose prose-sm dark:prose-invert max-w-none"
                   >
                     {result?.analysis ? (
-                      <div 
+                      <div
                         className="text-[var(--text-primary)]"
-                        dangerouslySetInnerHTML={{ 
+                        dangerouslySetInnerHTML={{
                           __html: result.analysis
                             .replace(/^### /gm, '<h3>')
                             .replace(/^## /gm, '<h2>')
@@ -562,7 +635,7 @@ export default function DataWorkbench() {
                           <thead>
                             <tr className="border-b border-[var(--border)]">
                               {preview.columns.map(col => (
-                                <th 
+                                <th
                                   key={col}
                                   className="px-3 py-2 text-left font-medium text-[var(--text-primary)]"
                                 >
@@ -575,7 +648,7 @@ export default function DataWorkbench() {
                             {preview.sample.map((row, i) => (
                               <tr key={i} className="border-b border-[var(--border)]">
                                 {preview.columns.map(col => (
-                                  <td 
+                                  <td
                                     key={col}
                                     className="px-3 py-2 text-[var(--text-secondary)]"
                                   >

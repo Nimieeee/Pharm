@@ -55,12 +55,31 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
   // NO bubble, NO avatar, NO background, NO card
   // Full width, clean article appearance
   // ============================================
+  // Strip markdown code block wrappers if present (Deep Research fix)
+  const cleanContent = (content: string) => {
+    if (!content) return '';
+    let cleaned = content;
+    // Remove starting ```markdown or ```
+    if (cleaned.startsWith('```markdown')) {
+      cleaned = cleaned.slice(11);
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.slice(3);
+    }
+    // Remove ending ```
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.slice(0, -3);
+    }
+    return cleaned.trim();
+  };
+
+  const displayContent = cleanContent(message.content);
+
   return (
     <article className="py-5 sm:py-6 w-full">
       {/* AI Response - Editorial style, transparent background */}
       <div className="text-[var(--text-primary)] leading-relaxed w-full">
         <MarkdownRenderer
-          content={message.content}
+          content={displayContent}
           isAnimating={isStreaming}
           className="markdown-content w-full"
         />

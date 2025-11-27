@@ -352,33 +352,25 @@ class DeepResearchService:
         
         system_prompt = """You are the Lead Research Investigator for PharmGPT. Your goal is to break down complex biomedical queries into a structured research plan.
 
-**Context:**
-The user is asking a question related to drug discovery, pharmacology, or clinical medicine. You must structure the investigation to cover all necessary scientific angles.
-
-**Instructions:**
-1. Analyze the User's Query
-2. Deconstruct it using the PICO framework (Population, Intervention, Comparison, Outcome) if applicable, or a Target/MoA/ADMET framework if it is a discovery query.
-3. Generate a list of 3-5 distinct "Research Steps" (Sub-topics) that must be investigated to answer the query fully.
-4. For each step, identify the best data source:
-   - "PubMed" for biological mechanisms, clinical trials, and animal studies.
-   - "Web" for latest news, commercial drug pipeline status, or FDA approvals.
-
-**Output Format (JSON):**
-{
-  "plan_overview": "A 1-sentence summary of the strategy.",
-  "steps": [
-    {
-      "id": 1,
-      "topic": "Mechanism of Action in TME",
-      "keywords": ["PD-1 blockade", "tumor microenvironment", "exhaustion"],
-      "source_preference": "PubMed"
-    }
-  ]
-}"""
-
-        user_prompt = f"Research Question: {state.research_question}"
+        state.progress_log.append(f"[{datetime.now().isoformat()}] Analyzing research topic: {state.research_question}")
         
-        response = await self._call_llm(system_prompt, user_prompt, json_mode=True)
+        system_prompt = """You are a Principal Investigator planning a systematic review.
+Break this research topic into 4 distinct, comprehensive sub-topics covering:
+1. Mechanisms of Action / Pathophysiology
+2. Clinical Efficacy & Key Trials
+3. Safety Profile & Side Effects
+4. Current Guidelines & Recommendations
+
+Return a JSON object:
+{
+    "plan_overview": "Brief strategy description",
+    "steps": [
+        {"id": 1, "topic": "Specific sub-topic 1", "keywords": ["k1", "k2"], "source_preference": "PubMed"},
+        ...
+    ]
+}"""
+        
+        response = await self._call_llm(system_prompt, f"Research Topic: {state.research_question}", json_mode=True)
         
         try:
             plan = json.loads(response)
@@ -386,31 +378,27 @@ The user is asking a question related to drug discovery, pharmacology, or clinic
             
             for step_data in plan.get("steps", []):
                 step = ResearchStep(
-                    id=step_data.get("id", len(state.steps) + 1),
-                    topic=step_data.get("topic", ""),
+                    id=step_data.get("id"),
+                    topic=step_data.get("topic"),
                     keywords=step_data.get("keywords", []),
                     source_preference=step_data.get("source_preference", "PubMed")
                 )
                 state.steps.append(step)
+                
+            state.progress_log.append(f"[{datetime.now().isoformat()}] Plan created with {len(state.steps)} steps")
             
-            state.progress_log.append(f"[{datetime.now().isoformat()}] Plan created with {len(state.steps)} research steps")
+        except json.JSONDecodeError:
+            state.error_message = "Failed to generate research plan"
+            state.status = "error"
             
-        except json.JSONDecodeError as e:
-            state.error_message = f"Failed to parse research plan: {e}"
-            state.progress_log.append(f"[{datetime.now().isoformat()}] ERROR: {state.error_message}")
-        
         return state
-    
-    # ========================================================================
-    # NODE B: THE RESEARCHER (The Looper)
-    # ========================================================================
-    
+
     async def _node_researcher(self, state: ResearchState) -> ResearchState:
         """
-        Execute searches for each sub-topic using PubMed and Web tools
+        Execute searches for each sub-topic using PubMed AND Web tools in parallel.
         """
         state.status = "researching"
-        state.progress_log.append(f"[{datetime.now().isoformat()}] Starting literature search...")
+        state.progress_log.append(f"[{datetime.now().isoformat()}] Starting multi-source literature search...")
         
         for step in state.steps:
             if step.status == "completed":
@@ -424,7 +412,7 @@ The user is asking a question related to drug discovery, pharmacology, or clinic
 Topic: {step.topic}
 Keywords: {', '.join(step.keywords)}
 
-Generate 2 search queries optimized for {step.source_preference}. Use Boolean operators (AND, OR) and scientific terminology.
+Generate 2 search queries.
 Return as JSON: {{"queries": ["query1", "query2"]}}"""
 
             query_response = await self._call_llm(
@@ -440,41 +428,49 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                 queries = [" ".join(step.keywords)]
             
             # Execute searches
+            step_findings_count = 0
+            
             for query in queries:
-                if step.source_preference == "PubMed":
-                    results = await self.tools.search_pubmed(query, max_results=5)
-                    for r in results:
-                        finding = Finding(
-                            title=r.get("title", ""),
-                            url=r.get("url", ""),
-                            source="PubMed",
-                            raw_content=r.get("abstract", ""),
-                            data_limitation="Abstract Only" if not r.get("full_text") else None
-                        )
-                        # Store PubMed metadata for APA citations
-                        finding._pubmed_data = {
-                            "authors": r.get("authors", ""),
-                            "year": r.get("year", ""),
-                            "journal": r.get("journal", ""),
-                            "doi": r.get("doi", ""),
-                            "pmid": r.get("pmid", "")
-                        }
-                        step.findings.append(finding)
-                        state.findings.append(finding)
-                else:
-                    results = await self.tools.search_web(query, max_results=3)
-                    for r in results:
-                        finding = Finding(
-                            title=r.get("title", ""),
-                            url=r.get("url", ""),
-                            source="Web",
-                            raw_content=r.get("snippet", "")
-                        )
-                        step.findings.append(finding)
-                        state.findings.append(finding)
+                # Parallel Search: PubMed AND Web
+                pubmed_task = self.tools.search_pubmed(query, max_results=3)
+                web_task = self.tools.search_web(query, max_results=3)
+                
+                results_pubmed, results_web = await asyncio.gather(pubmed_task, web_task)
+                
+                # Process PubMed Results
+                for r in results_pubmed:
+                    finding = Finding(
+                        title=r.get("title", ""),
+                        url=r.get("url", ""),
+                        source="PubMed",
+                        raw_content=r.get("abstract", ""),
+                        data_limitation="Abstract Only" if not r.get("full_text") else None
+                    )
+                    finding._pubmed_data = {
+                        "authors": r.get("authors", ""),
+                        "year": r.get("year", ""),
+                        "journal": r.get("journal", ""),
+                        "doi": r.get("doi", ""),
+                        "pmid": r.get("pmid", "")
+                    }
+                    step.findings.append(finding)
+                    state.findings.append(finding)
+                    step_findings_count += 1
+                
+                # Process Web Results
+                for r in results_web:
+                    finding = Finding(
+                        title=r.get("title", ""),
+                        url=r.get("url", ""),
+                        source="Web",
+                        raw_content=r.get("snippet", "")
+                    )
+                    step.findings.append(finding)
+                    state.findings.append(finding)
+                    step_findings_count += 1
             
             step.status = "completed"
-            state.progress_log.append(f"[{datetime.now().isoformat()}] Found {len(step.findings)} sources for: {step.topic}")
+            state.progress_log.append(f"[{datetime.now().isoformat()}] Found {step_findings_count} sources for: {step.topic}")
             
             # Rate limiting
             await asyncio.sleep(0.5)
@@ -482,88 +478,87 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
         state.iteration_count += 1
         return state
     
-    # ========================================================================
-    # NODE C: THE REVIEWER (Quality Control)
-    # ========================================================================
-    
     async def _node_reviewer(self, state: ResearchState) -> ResearchState:
         """
-        Filter and classify findings for quality and relevance
+        Review findings and decide if more research is needed (Recursive Loop).
         """
         state.status = "reviewing"
         state.progress_log.append(f"[{datetime.now().isoformat()}] Reviewing {len(state.findings)} findings...")
         
+        if not state.findings:
+            state.progress_log.append(f"[{datetime.now().isoformat()}] Warning: No findings to review.")
+            return state
+        
         # Prepare findings for review
         findings_text = ""
-        for i, f in enumerate(state.findings[:30]):  # Limit to 30 for context window
-            findings_text += f"\n[{i+1}] Title: {f.title}\nSource: {f.source}\nContent: {f.raw_content[:500]}...\n"
+        for i, f in enumerate(state.findings[-30:]):  # Review last 30 findings
+            findings_text += f"\n[{i+1}] Title: {f.title}\nSource: {f.source}\nContent: {f.raw_content[:300]}...\n"
         
-        system_prompt = """You are the Scientific Reviewer for PharmGPT. You have received raw search results. Your job is to filter them for quality and relevance.
+        # Check for sufficiency
+        system_prompt = """You are a Senior Editor. Analyze the gathered research.
+Is it sufficient to write a comprehensive, academic-grade report on the user's topic?
+If 'YES', proceed.
+If 'NO', generate 2 new specific search queries to fill the gaps.
 
-**Instructions:**
-1. **Relevance Filter:** Discard results that are irrelevant or from non-reputable sources.
-2. **Study Classification:** For each valid result, classify the study type:
-   - *In Silico* (Docking/AI)
-   - *In Vitro* (Cell lines)
-   - *In Vivo* (Animal models)
-   - *Clinical* (Human trials - Phase I/II/III)
-   - *Review* (Literature review)
-3. **Key Finding Extraction:** Extract the core Result/Conclusion from the text.
+Return JSON:
+{
+    "sufficient": boolean,
+    "missing_info": "Description of what is missing",
+    "new_queries": ["query1", "query2"] (only if sufficient is false)
+}"""
 
-**Output Format (JSON Array):**
-[
-  {
-    "index": 1,
-    "relevant": true,
-    "study_type": "In Vivo (Murine)",
-    "key_finding": "Compound X reduced tumor volume by 40% (p<0.05).",
-    "data_limitation": "Abstract Only; specific dosage not listed."
-  }
-]"""
-
-        user_prompt = f"Research Question: {state.research_question}\n\nRaw Findings:\n{findings_text}"
+        user_prompt = f"Research Question: {state.research_question}\n\nFindings Summary:\n{findings_text}"
         
         response = await self._call_llm(system_prompt, user_prompt, json_mode=True)
         
         try:
-            reviews = json.loads(response)
+            review = json.loads(response)
             
-            # Update findings with review data
-            citation_id = 1
-            for review in reviews:
-                idx = review.get("index", 0) - 1
-                if 0 <= idx < len(state.findings) and review.get("relevant", False):
-                    finding = state.findings[idx]
-                    finding.study_type = review.get("study_type", "")
-                    finding.key_finding = review.get("key_finding", "")
-                    finding.data_limitation = review.get("data_limitation", "")
-                    
-                    # Create citation with full metadata
-                    # Try to find the original PubMed data for author/year info
-                    pubmed_data = None
-                    for f in state.findings:
-                        if f.title == finding.title and hasattr(f, '_pubmed_data'):
-                            pubmed_data = f._pubmed_data
-                            break
-                    
-                    citation = Citation(
-                        id=citation_id,
-                        title=finding.title,
-                        authors=pubmed_data.get("authors", "") if pubmed_data else "",
-                        source=pubmed_data.get("journal", finding.source) if pubmed_data else finding.source,
-                        url=finding.url,
-                        doi=pubmed_data.get("doi", "") if pubmed_data else None,
-                        pmid=pubmed_data.get("pmid", "") if pubmed_data else None,
-                        year=pubmed_data.get("year", "") if pubmed_data else None,
-                        data_limitation=finding.data_limitation
+            if not review.get("sufficient", True) and state.iteration_count < self.max_iterations:
+                state.progress_log.append(f"[{datetime.now().isoformat()}] Gaps detected: {review.get('missing_info')}. Recursion triggered.")
+                
+                # Add new steps for recursion
+                new_queries = review.get("new_queries", [])
+                for i, query in enumerate(new_queries):
+                    new_step = ResearchStep(
+                        id=len(state.steps) + 1,
+                        topic=f"Gap Fill: {query}",
+                        keywords=query.split(),
+                        source_preference="Web" # Default to web for gap filling
                     )
-                    state.citations.append(citation)
-                    citation_id += 1
+                    state.steps.append(new_step)
+                
+                # Reset status to trigger researcher again
+                # Note: In a real graph, we'd route back. Here we simulate by appending steps and letting the loop continue if we were looping.
+                # Since we are in a linear flow, we need to explicitly call researcher again or handle this in the main loop.
+                # For this implementation, we will recursively call _node_researcher immediately for the new steps.
+                await self._node_researcher(state)
             
-            state.progress_log.append(f"[{datetime.now().isoformat()}] Validated {len(state.citations)} citations")
+            else:
+                state.progress_log.append(f"[{datetime.now().isoformat()}] Research sufficient. Proceeding to writing.")
+                
+                # Process citations for the writer
+                citation_id = 1
+                for f in state.findings:
+                     # Deduplicate based on title
+                    if not any(c.title == f.title for c in state.citations):
+                        pubmed_data = getattr(f, '_pubmed_data', None)
+                        citation = Citation(
+                            id=citation_id,
+                            title=f.title,
+                            authors=pubmed_data.get("authors", "") if pubmed_data else "",
+                            source=pubmed_data.get("journal", f.source) if pubmed_data else f.source,
+                            url=f.url,
+                            doi=pubmed_data.get("doi", "") if pubmed_data else None,
+                            pmid=pubmed_data.get("pmid", "") if pubmed_data else None,
+                            year=pubmed_data.get("year", "") if pubmed_data else None,
+                            data_limitation=f.data_limitation
+                        )
+                        state.citations.append(citation)
+                        citation_id += 1
             
-        except json.JSONDecodeError as e:
-            state.progress_log.append(f"[{datetime.now().isoformat()}] Review parsing error: {e}")
+        except json.JSONDecodeError:
+            state.progress_log.append(f"[{datetime.now().isoformat()}] Review parsing error. Proceeding.")
         
         return state
 
@@ -573,78 +568,45 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
     
     async def _node_writer(self, state: ResearchState) -> ResearchState:
         """
-        Synthesize findings into a professional research report with APA 7th edition citations
+        Synthesize findings into a professional research report.
         """
         state.status = "writing"
-        state.progress_log.append(f"[{datetime.now().isoformat()}] Synthesizing final report...")
+        state.progress_log.append(f"[{datetime.now().isoformat()}] Drafting final manuscript...")
         
-        # Prepare validated findings with full metadata
+        # Handle empty results
+        if not state.citations and not state.findings:
+            state.final_report = f"# Research Report: {state.research_question}\n\nNo significant data found."
+            state.status = "complete"
+            return state
+
+        # Prepare validated findings
         findings_text = ""
-        for i, citation in enumerate(state.citations[:20]):
+        for i, citation in enumerate(state.citations[:40]): # Increase context
             finding = next((f for f in state.findings if f.title == citation.title), None)
             if finding:
                 findings_text += f"\n[{citation.id}] {citation.title}\n"
-                findings_text += f"   Authors: {citation.authors or 'Unknown'}\n"
-                findings_text += f"   Year: {citation.year or 'n.d.'}\n"
-                findings_text += f"   Source: {citation.source} | URL: {citation.url}\n"
-                if citation.doi:
-                    findings_text += f"   DOI: {citation.doi}\n"
-                findings_text += f"   Study Type: {finding.study_type or 'N/A'}\n"
-                findings_text += f"   Key Finding: {finding.key_finding}\n"
-                if finding.data_limitation:
-                    findings_text += f"   Limitation: {finding.data_limitation}\n"
+                findings_text += f"   Source: {citation.source} | Year: {citation.year or 'n.d.'}\n"
+                findings_text += f"   Key Content: {finding.raw_content[:500]}\n"
         
-        # Prepare APA 7th edition references
-        references_text = ""
-        for citation in state.citations[:20]:
-            # APA 7th format: Author, A. A., & Author, B. B. (Year). Title. Journal. DOI/URL
-            authors = citation.authors if citation.authors else "Unknown Author"
-            year = citation.year if citation.year else "n.d."
-            doi_url = f"https://doi.org/{citation.doi}" if citation.doi else citation.url
-            references_text += f"[{citation.id}] {authors} ({year}). {citation.title}. *{citation.source}*. {doi_url}\n"
-        
-        system_prompt = """You are the Senior Medical Writer for PharmGPT. Synthesize the research into a professional report following Nature Reviews style with APA 7th edition citations.
+        system_prompt = """You are writing a formal medical manuscript. Use the provided research context.
+Format:
+# Title
+## Abstract
+## 1. Introduction (Background & Pathophysiology)
+## 2. Mechanism of Action (Molecular details)
+## 3. Clinical Evidence (Cite specific trials mentioned in context)
+## 4. Safety Profile
+## 5. Conclusion
+## References
 
-**Writing Guidelines:**
-
-1. **Structure:**
-   - **Executive Summary:** High-level answer (2-3 sentences).
-   - **Detailed Analysis:** Group findings by theme (Mechanism, Efficacy, Safety, Clinical Evidence).
-   - **Methodology Note:** State this report is based on PubMed/web data with limitations noted.
-   - **References:** APA 7th edition formatted list.
-
-2. **Inline Citation Style (APA 7th):**
-   - Use narrative citations: "Smith et al. (2020) demonstrated that..."
-   - Use parenthetical citations: "...showed significant efficacy (Jones & Lee, 2019)."
-   - For direct findings: "Drug X reduced tumor volume by 40% (Chen et al., 2021)."
-   - Multiple sources: "(Smith, 2020; Jones, 2019)"
-   - **CRITICAL:** Only cite papers from the Validated Findings. DO NOT HALLUCINATE citations.
-
-3. **Data Limitations:**
-   - If marked `[Abstract Only]`, state: "Specific values were not available in the abstract (Author, Year)."
-   - Clearly distinguish preclinical (in vitro/in vivo) from clinical (human) data.
-
-4. **Tone:**
-   - Objective, clinical, precise.
-   - Use hedging language appropriately: "suggests", "indicates", "may".
-
-5. **Reference List Format (APA 7th):**
-   Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. *Journal Name*, Volume(Issue), Pages. https://doi.org/xxxxx
-
-**Output:**
-Return a well-structured Markdown report with proper APA inline citations and a References section."""
+Constraint: The output must be Raw Markdown. Do NOT use code blocks. Do NOT be concise. Be exhaustive. Write at least 1500 words if possible."""
 
         user_prompt = f"""Research Question: {state.research_question}
 
-Plan Overview: {state.plan_overview}
-
-Validated Findings (use these for citations):
+Research Context (Use these sources):
 {findings_text}
 
-Reference Data (APA format):
-{references_text}
-
-Synthesize a comprehensive research report with proper APA 7th edition citations."""
+Synthesize a comprehensive research report."""
 
         response = await self._call_llm(system_prompt, user_prompt, json_mode=False)
         
