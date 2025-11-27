@@ -65,37 +65,31 @@ function ChatContent() {
 
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)] transition-all duration-300 ease-in-out">
-      {/* Floating Header Layer - Anchored to Main Content, Not Screen */}
+      {/* Floating Header Layer - Absolute Positioning for Pixel-Perfect Centering */}
       <div className="absolute top-0 left-0 w-full h-16 z-50 pointer-events-none px-4">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center h-full gap-2">
-          {/* Left Column: Sidebar Trigger */}
-          <div className="flex items-center justify-start pointer-events-auto">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className={`p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm ${sidebarOpen ? 'hidden md:hidden' : 'flex'}`}
-            >
-              <Menu size={24} strokeWidth={1.5} />
-            </button>
-          </div>
+        {/* Sidebar Trigger - Always visible on mobile, hidden when sidebar open on desktop */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className={`absolute top-3 left-4 z-50 p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm pointer-events-auto ${sidebarOpen ? 'hidden md:hidden' : 'block'}`}
+        >
+          <Menu size={24} strokeWidth={1.5} />
+        </button>
 
-          {/* Center Column: PharmGPT Pill - Now centered relative to chat area */}
-          <div className="flex items-center justify-center pointer-events-none">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/10 shadow-lg select-none whitespace-nowrap pointer-events-auto">
-              <span className="text-xs font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
-              <span className="text-[10px] text-[var(--text-secondary)] opacity-70">v2.0</span>
-            </div>
-          </div>
-
-          {/* Right Column: New Chat (Mobile Only) */}
-          <div className="flex items-center justify-end pointer-events-auto md:hidden">
-            <button
-              onClick={handleNewChat}
-              className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm"
-            >
-              <Edit3 size={24} strokeWidth={1.5} />
-            </button>
+        {/* PharmGPT Pill - Absolutely centered (pixel-perfect) */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/10 shadow-lg select-none whitespace-nowrap pointer-events-auto">
+            <span className="text-xs font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
+            <span className="text-[10px] text-[var(--text-secondary)] opacity-70">v2.0</span>
           </div>
         </div>
+
+        {/* New Chat Button - Mobile only, absolute right */}
+        <button
+          onClick={handleNewChat}
+          className="md:hidden absolute top-3 right-4 z-50 p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm pointer-events-auto"
+        >
+          <Edit3 size={24} strokeWidth={1.5} />
+        </button>
       </div>
 
       {/* Messages Area - Scrollable */}
