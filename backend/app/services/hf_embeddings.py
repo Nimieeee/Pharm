@@ -43,9 +43,9 @@ class MistralEmbeddingsService:
             "api_calls": 0,
             "total_requests": 0
         }
-        # Rate limiting: Mistral free tier allows 1 request per second
+        # Rate limiting: Mistral free tier - be conservative
         self.last_api_call_time = 0
-        self.min_time_between_calls = 1.1  # 1.1 seconds to be safe
+        self.min_time_between_calls = 2.0  # 2 seconds to avoid rate limits
         
         # Check API key
         if self.mistral_api_key:
@@ -274,8 +274,8 @@ class MistralEmbeddingsService:
         
         logger.info(f"Generating embeddings for {len(texts)} texts")
         
-        # Process texts concurrently
-        semaphore = asyncio.Semaphore(10)  # Limit concurrent operations
+        # Process texts with strict rate limiting
+        semaphore = asyncio.Semaphore(3)  # Limit to 3 concurrent operations to respect rate limits
         
         async def process_text(text: str) -> Optional[List[float]]:
             async with semaphore:
