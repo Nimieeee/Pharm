@@ -36,6 +36,7 @@ export function useChat() {
   const [isUploading, setIsUploading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load conversation messages when conversationId changes
   const loadConversation = useCallback(async (convId: string) => {
@@ -263,19 +264,31 @@ export function useChat() {
           const reader = streamResponse.body.getReader();
           const decoder = new TextDecoder();
           let fullContent = '';
+          let buffer = '';
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            
+            // Process complete lines from buffer
+            const lines = buffer.split('\n');
+            // Keep the last potentially incomplete line in buffer
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
               if (line.startsWith('data: ')) {
-                const data = line.slice(6).trim();
-                if (data === '[DONE]') continue;
+                const data = line.slice(6);
+                if (data.trim() === '[DONE]') continue;
                 
+                // Skip any JSON log messages that might have leaked into the stream
+                if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
+                if (data.trim().startsWith('{') && data.includes('"level"')) continue;
+                
+                // The data is the actual text content, not JSON
+                // Add it directly to the content
                 fullContent += data;
                 // Update the message content in real-time
                 setMessages(prev => prev.map(msg => 
@@ -284,6 +297,19 @@ export function useChat() {
                     : msg
                 ));
               }
+            }
+          }
+          
+          // Process any remaining buffer
+          if (buffer.startsWith('data: ')) {
+            const data = buffer.slice(6);
+            if (data.trim() !== '[DONE]') {
+              fullContent += data;
+              setMessages(prev => prev.map(msg => 
+                msg.id === assistantMessageId 
+                  ? { ...msg, content: fullContent }
+                  : msg
+              ));
             }
           }
           return; // Successfully streamed
@@ -351,6 +377,33 @@ export function useChat() {
     setMessages([]);
     setConversationId(null);
   }, []);
+
+  const deleteConversation = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !conversationId) return false;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setMessages([]);
+        setConversationId(null);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [conversationId]);
 
   const uploadFiles = useCallback(async (files: FileList) => {
     const token = localStorage.getItem('token');
@@ -476,8 +529,10 @@ export function useChat() {
     messages,
     isLoading,
     isUploading,
+    isDeleting,
     sendMessage,
     clearMessages,
+    deleteConversation,
     uploadFiles,
     conversationId,
     deepResearchProgress,

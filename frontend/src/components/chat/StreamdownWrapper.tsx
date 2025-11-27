@@ -38,8 +38,11 @@ function CodeBlock({ children, className }: { children: string; className?: stri
 }
 
 export default function StreamdownWrapper({ children, isAnimating, className }: StreamdownWrapperProps) {
+  // Filter out any JSON log messages that might have leaked into the content
+  const cleanContent = children.replace(/\{"timestamp":[^}]+\}/g, '').trim();
+  
   return (
-    <div className={className}>
+    <div className={`${className} whitespace-pre-wrap break-words`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -99,4 +102,13 @@ export default function StreamdownWrapper({ children, isAnimating, className }: 
       {isAnimating && <span className="inline-block w-2 h-4 bg-[var(--accent)] animate-pulse ml-1" />}
     </div>
   );
+}
+
+// Export a utility to clean streaming content
+export function cleanStreamContent(content: string): string {
+  // Remove any JSON log messages that might have leaked into the stream
+  return content
+    .replace(/\{"timestamp":[^}]+\}/g, '')
+    .replace(/\{"level":[^}]+\}/g, '')
+    .trim();
 }
