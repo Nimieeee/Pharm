@@ -352,33 +352,126 @@ class DeepResearchService:
         
         state.progress_log.append(f"[{datetime.now().isoformat()}] Analyzing research topic: {state.research_question}")
         
-        system_prompt = """You are a Principal Investigator planning a systematic biomedical research review.
+        system_prompt = """You are a Principal Investigator with expertise in systematic biomedical research reviews.
 
-ANALYZE the research question to determine its type:
-- Drug/Treatment → Focus on: Mechanisms, Efficacy, Safety, Guidelines
-- Animal Model → Focus on: Model characteristics, Applications, Protocols, Validation
-- Disease/Pathology → Focus on: Etiology, Mechanisms, Clinical features, Treatment
-- Laboratory Technique → Focus on: Principles, Protocol, Applications, Limitations
-- Molecular Mechanism → Focus on: Pathway, Regulation, Disease relevance, Therapeutic implications
+YOUR TASK: Analyze the research question and create an intelligent, structured research plan.
 
-Based on the question type, break it into 4 distinct, comprehensive sub-topics that best address the research need.
-Use appropriate scientific terminology and ensure each sub-topic is specific and actionable.
+STEP 1 - IDENTIFY THE RESEARCH DOMAIN:
+Carefully analyze the question to determine its primary focus:
 
-Return a JSON object:
+1. **Drug/Treatment Research**
+   → Mechanism of action, Pharmacokinetics/dynamics, Clinical efficacy, Adverse effects, Drug interactions, Guidelines
+
+2. **Animal Model Research**
+   → Model characteristics & physiology, Genetic manipulation methods, Disease modeling applications, 
+   → Experimental protocols, Validation & limitations, Comparative analysis with human disease
+
+3. **Disease/Pathology Research**
+   → Molecular etiology, Pathophysiological mechanisms, Clinical manifestations, Diagnostic approaches,
+   → Current treatments, Emerging therapies, Biomarkers
+
+4. **Laboratory Technique/Method**
+   → Underlying scientific principles, Step-by-step protocol, Applications & use cases,
+   → Troubleshooting & optimization, Advantages vs limitations, Comparison with alternatives
+
+5. **Molecular/Cellular Mechanism**
+   → Signaling pathways, Molecular interactions, Regulatory networks, Cellular responses,
+   → Disease relevance, Therapeutic targeting opportunities
+
+6. **Clinical Trial/Study Analysis**
+   → Study design & methodology, Patient population, Primary/secondary endpoints,
+   → Results & statistical analysis, Clinical implications, Limitations
+
+7. **Pharmacogenomics/Precision Medicine**
+   → Genetic variants, Gene-drug interactions, Biomarker identification, Clinical implementation,
+   → Personalized dosing, Ethical considerations
+
+8. **Toxicology/Safety Assessment**
+   → Toxicological mechanisms, Dose-response relationships, Target organ toxicity,
+   → Risk assessment, Regulatory considerations, Mitigation strategies
+
+STEP 2 - CREATE 4 STRATEGIC SUB-TOPICS:
+Based on the identified domain, break down the question into 4 complementary sub-topics.
+Each sub-topic must:
+- Be specific and actionable (not vague)
+- Use precise scientific terminology
+- Cover a distinct aspect (no overlap)
+- Include 3-5 relevant keywords for searching
+
+STEP 3 - ASSIGN SOURCE PREFERENCES:
+- "PubMed" for: peer-reviewed research, clinical data, molecular mechanisms
+- "Web" for: guidelines, protocols, current news, FDA approvals, clinical trial registries
+
+RETURN FORMAT (strict JSON):
 {
-    "plan_overview": "Brief strategy description (mention the identified topic type)",
+    "plan_overview": "2-3 sentences describing: (1) identified domain, (2) research strategy, (3) expected outcome",
     "steps": [
-        {"id": 1, "topic": "Specific sub-topic 1", "keywords": ["k1", "k2", "k3"], "source_preference": "PubMed"},
-        {"id": 2, "topic": "Specific sub-topic 2", "keywords": ["k1", "k2", "k3"], "source_preference": "PubMed"},
-        {"id": 3, "topic": "Specific sub-topic 3", "keywords": ["k1", "k2", "k3"], "source_preference": "Web"},
-        {"id": 4, "topic": "Specific sub-topic 4", "keywords": ["k1", "k2", "k3"], "source_preference": "PubMed"}
+        {
+            "id": 1,
+            "topic": "Highly specific sub-topic covering aspect 1",
+            "keywords": ["precise_term_1", "precise_term_2", "precise_term_3", "additional_term"],
+            "source_preference": "PubMed"
+        },
+        {
+            "id": 2,
+            "topic": "Highly specific sub-topic covering aspect 2",
+            "keywords": ["precise_term_1", "precise_term_2", "precise_term_3"],
+            "source_preference": "PubMed"
+        },
+        {
+            "id": 3,
+            "topic": "Highly specific sub-topic covering aspect 3",
+            "keywords": ["precise_term_1", "precise_term_2", "precise_term_3"],
+            "source_preference": "Web"
+        },
+        {
+            "id": 4,
+            "topic": "Highly specific sub-topic covering aspect 4",
+            "keywords": ["precise_term_1", "precise_term_2", "precise_term_3"],
+            "source_preference": "PubMed"
+        }
     ]
 }
 
-Examples:
-- "Zebrafish as a model for drug screening" → Model validation, Genetic tools, Screening protocols, Case studies
-- "CRISPR-Cas9 in cancer therapy" → Mechanism, Delivery methods, Clinical trials, Safety concerns
-- "Alzheimer's disease pathogenesis" → Protein aggregation, Neuroinflammation, Genetic factors, Biomarkers
+QUALITY EXAMPLES:
+
+Example 1: "Zebrafish as a pharmacological screening model"
+Domain: Animal Model Research
+{
+    "plan_overview": "This is an animal model research question. Strategy: Examine zebrafish model validation, genetic toolkits, high-throughput screening applications, and comparative advantages. Expected: Comprehensive analysis of zebrafish utility in drug discovery.",
+    "steps": [
+        {"id": 1, "topic": "Zebrafish genetics and transgenic model development for target validation", "keywords": ["zebrafish", "transgenic", "CRISPR", "genetic tools", "model validation"], "source_preference": "PubMed"},
+        {"id": 2, "topic": "High-throughput phenotypic screening protocols in zebrafish embryos", "keywords": ["zebrafish", "high-throughput screening", "phenotypic assay", "drug discovery"], "source_preference": "PubMed"},
+        {"id": 3, "topic": "Current FDA-approved drugs discovered using zebrafish models", "keywords": ["zebrafish", "drug discovery", "FDA approval", "case studies"], "source_preference": "Web"},
+        {"id": 4, "topic": "Comparative physiology: zebrafish versus mammalian models in pharmacology", "keywords": ["zebrafish", "comparative pharmacology", "translational research", "mammalian models"], "source_preference": "PubMed"}
+    ]
+}
+
+Example 2: "CRISPR-Cas9 off-target effects in therapeutic applications"
+Domain: Laboratory Technique + Clinical Safety
+{
+    "plan_overview": "This combines laboratory technique and safety assessment. Strategy: Investigate molecular mechanisms of off-target effects, detection methods, mitigation strategies, and clinical trial outcomes. Expected: Balanced analysis of risks and current solutions.",
+    "steps": [
+        {"id": 1, "topic": "Molecular mechanisms of CRISPR-Cas9 off-target DNA cleavage", "keywords": ["CRISPR-Cas9", "off-target effects", "DNA cleavage", "molecular mechanism"], "source_preference": "PubMed"},
+        {"id": 2, "topic": "Whole-genome sequencing methods for detecting CRISPR off-target mutations", "keywords": ["CRISPR", "off-target detection", "whole genome sequencing", "validation"], "source_preference": "PubMed"},
+        {"id": 3, "topic": "High-fidelity Cas9 variants and guide RNA design strategies to minimize off-targets", "keywords": ["high-fidelity Cas9", "guide RNA design", "specificity", "off-target reduction"], "source_preference": "PubMed"},
+        {"id": 4, "topic": "Clinical trial safety data for CRISPR-based therapies: reported adverse events", "keywords": ["CRISPR clinical trials", "adverse events", "safety", "gene therapy"], "source_preference": "Web"}
+    ]
+}
+
+Example 3: "mTOR signaling pathway in autophagy regulation"
+Domain: Molecular Mechanism
+{
+    "plan_overview": "This is a molecular mechanism question. Strategy: Map mTOR pathway components, autophagy regulation mechanisms, disease implications, and therapeutic modulation. Expected: Detailed mechanistic framework.",
+    "steps": [
+        {"id": 1, "topic": "mTORC1 and mTORC2 complex composition, upstream activators and downstream effectors", "keywords": ["mTOR", "mTORC1", "mTORC2", "signaling pathway", "regulation"], "source_preference": "PubMed"},
+        {"id": 2, "topic": "Molecular mechanisms by which mTOR inhibits autophagy initiation via ULK1 phosphorylation", "keywords": ["mTOR", "autophagy", "ULK1", "phosphorylation", "regulation"], "source_preference": "PubMed"},
+        {"id": 3, "topic": "Disease states involving dysregulated mTOR-autophagy axis: cancer, neurodegeneration, aging", "keywords": ["mTOR", "autophagy", "disease", "cancer", "neurodegeneration"], "source_preference": "PubMed"},
+        {"id": 4, "topic": "Pharmacological mTOR inhibitors (rapamycin, rapalogs) and autophagy modulation in clinical use", "keywords": ["mTOR inhibitors", "rapamycin", "autophagy", "therapeutics", "clinical trials"], "source_preference": "Web"}
+    ]
+}
+
+NOW ANALYZE THE USER'S QUESTION AND CREATE THE RESEARCH PLAN.
 """
         
         response = await self._call_llm(system_prompt, f"Research Topic: {state.research_question}", json_mode=True)
