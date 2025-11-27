@@ -495,7 +495,7 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
             findings_text += f"\n[{i+1}] Title: {f.title}\nSource: {f.source}\nContent: {f.raw_content[:300]}...\n"
         
         # Check for sufficiency
-        system_prompt = """You are a Senior Editor. Analyze the gathered research.
+        system_prompt = """You are a Senior Editor (AI). Analyze the gathered research.
 Is it sufficient to write a comprehensive, academic-grade report on the user's topic?
 If 'YES', proceed.
 If 'NO', generate 2 new specific search queries to fill the gaps.
