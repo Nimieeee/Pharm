@@ -64,9 +64,9 @@ function ChatContent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)]">
-      {/* Floating Header Controls - 3-Column Grid for Mobile */}
-      <div className="fixed top-0 left-0 right-0 h-16 z-40 pointer-events-none px-4">
+    <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)] transition-all duration-300 ease-in-out">
+      {/* Floating Header Layer - Anchored to Main Content, Not Screen */}
+      <div className="absolute top-0 left-0 w-full h-16 z-50 pointer-events-none px-4">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center h-full gap-2">
           {/* Left Column: Sidebar Trigger */}
           <div className="flex items-center justify-start pointer-events-auto">
@@ -78,14 +78,9 @@ function ChatContent() {
             </button>
           </div>
 
-          {/* Center Column: PharmGPT Pill */}
+          {/* Center Column: PharmGPT Pill - Now centered relative to chat area */}
           <div className="flex items-center justify-center pointer-events-none">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/10 shadow-lg select-none whitespace-nowrap transition-all duration-300"
-              style={{
-                marginLeft: sidebarOpen ? '140px' : '0',
-              }}
-            >
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/10 shadow-lg select-none whitespace-nowrap pointer-events-auto">
               <span className="text-xs font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
               <span className="text-[10px] text-[var(--text-secondary)] opacity-70">v2.0</span>
             </div>
@@ -103,7 +98,7 @@ function ChatContent() {
         </div>
       </div>
 
-      {/* Messages Area */}
+      {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 ? (
@@ -177,7 +172,7 @@ function ChatContent() {
         </div>
       </div>
 
-      {/* Input */}
+      {/* Input Area */}
       <ChatInput
         onSend={handleSend}
         onFileUpload={uploadFiles}
