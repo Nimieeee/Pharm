@@ -1,4 +1,4 @@
--- Create conversations table
+-- Ensure conversations table exists
 CREATE TABLE IF NOT EXISTS conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -9,28 +9,48 @@ CREATE TABLE IF NOT EXISTS conversations (
     is_archived BOOLEAN DEFAULT FALSE
 );
 
--- Create messages table
+-- Ensure messages table exists
 CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    role TEXT NOT NULL, -- 'user' or 'assistant'
+    role TEXT NOT NULL,
     content TEXT NOT NULL,
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Add indexes
+-- Add columns if they don't exist (in case table existed but columns didn't)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'conversations' AND column_name = 'is_pinned') THEN
+        ALTER TABLE conversations ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'conversations' AND column_name = 'is_archived') THEN
+        ALTER TABLE conversations ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;
+    END IF;
+END $$;
+
+-- Add indexes (IF NOT EXISTS is supported by Postgres)
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 
--- Enable Row Level Security (RLS)
+-- Enable RLS
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Create policies
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view their own conversations" ON conversations;
+DROP POLICY IF EXISTS "Users can insert their own conversations" ON conversations;
+DROP POLICY IF EXISTS "Users can update their own conversations" ON conversations;
+DROP POLICY IF EXISTS "Users can delete their own conversations" ON conversations;
+DROP POLICY IF EXISTS "Users can view messages in their conversations" ON messages;
+DROP POLICY IF EXISTS "Users can insert messages in their conversations" ON messages;
+
+-- Recreate policies
 CREATE POLICY "Users can view their own conversations"
     ON conversations FOR SELECT
     USING (auth.uid() = user_id);
