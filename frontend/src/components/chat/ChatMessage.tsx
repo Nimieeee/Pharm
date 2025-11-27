@@ -62,10 +62,35 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
           </div>
         )}
 
-        {/* 3. Action Row (Footer) - Optional, can be added if needed, currently just timestamp */}
-        <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mt-0.5 text-right px-1">
-          {formatTime(message.timestamp)}
-        </p>
+        {/* 3. Action Row (Copy/Edit/Delete) */}
+        <div className="flex items-center gap-2 mt-1">
+          <button
+            onClick={handleCopy}
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors"
+            title="Copy message"
+          >
+            {copied ? (
+              <Check size={14} strokeWidth={1.5} className="text-emerald-500" />
+            ) : (
+              <Copy size={14} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+            )}
+          </button>
+          <button
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors"
+            title="Edit message"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg>
+          </button>
+          <button
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors"
+            title="Delete message"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+          </button>
+          <span className="text-[10px] sm:text-xs text-[var(--text-secondary)] ml-auto">
+            {formatTime(message.timestamp)}
+          </span>
+        </div>
       </div>
     );
   }
