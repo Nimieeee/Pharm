@@ -8,7 +8,7 @@ import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
 
 function ChatLayoutInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { selectConversation, clearMessages } = useChatContext();
+  const { selectConversation, clearMessages, conversationId } = useChatContext();
 
   const handleSelectConversation = (id: string) => {
     selectConversation(id);
@@ -16,6 +16,13 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
 
   const handleNewChat = () => {
     clearMessages();
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    // If the deleted conversation is the current one, clear messages
+    if (id === conversationId) {
+      clearMessages();
+    }
   };
 
   return (
@@ -35,6 +42,7 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
         <MobileNav 
           onSelectConversation={handleSelectConversation}
           onNewChat={handleNewChat}
+          onDeleteConversation={handleDeleteConversation}
         />
         
         {/* Main Content */}

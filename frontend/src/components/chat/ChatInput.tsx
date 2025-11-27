@@ -2,7 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Paperclip, ArrowRight, Loader2, Zap, BookOpen, Search, Send } from 'lucide-react';
+import { 
+  Plus, Loader2, Zap, BookOpen, Search, Send, 
+  Mic, Headphones, Paperclip 
+} from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
 
 type Mode = 'fast' | 'detailed' | 'deep_research';
@@ -24,19 +27,19 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<Mode>('detailed');
   const [showModes, setShowModes] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Get sidebar state to adjust input position
   const { sidebarOpen } = useSidebar();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && onFileUpload) {
       onFileUpload(e.target.files);
-      // Reset input so same file can be selected again
       e.target.value = '';
     }
+    setShowAttachMenu(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -76,6 +79,16 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
 
   return (
     <>
+      {/* Hidden file input */}
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        className="hidden" 
+        accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx,.sdf,.mol,.png,.jpg,.jpeg,.gif,.bmp,.webp" 
+        multiple 
+        onChange={handleFileChange}
+      />
+
       {/* Gradient Fade Mask - Desktop */}
       <div 
         className="hidden md:block fixed bottom-0 right-0 h-28 pointer-events-none z-40 bg-gradient-to-t from-[var(--background)] to-transparent transition-all duration-300"
@@ -101,33 +114,48 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
           >
-            {/* Left Actions: Mode + File Upload */}
-            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {/* Mode Selector */}
+            {/* Left: Plus Button (Attach Menu) */}
+            <div className="absolute left-2 top-1/2 -translate-y-1/2">
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowModes(!showModes)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[var(--surface-highlight)] hover:bg-[var(--border)] transition-colors btn-press"
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
+                  disabled={isUploading}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    isUploading 
+                      ? 'bg-[var(--accent)]/20 cursor-not-allowed' 
+                      : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
+                  }`}
                 >
-                  <ModeIcon size={14} strokeWidth={1.5} className="text-[var(--accent)]" />
-                  <span className="text-xs font-medium text-[var(--text-primary)]">{currentMode.label}</span>
+                  {isUploading ? (
+                    <Loader2 size={18} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
+                  ) : (
+                    <Plus size={20} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                  )}
                 </button>
-                
-                {/* Mode Dropdown */}
-                {showModes && (
+
+                {/* Attach Menu Dropdown */}
+                {showAttachMenu && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute bottom-full left-0 mb-2 w-52 p-2 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
+                    className="absolute bottom-full left-0 mb-2 w-56 p-2 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
                   >
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)] transition-colors"
+                    >
+                      <Paperclip size={18} strokeWidth={1.5} />
+                      <span className="text-sm font-medium">Upload File</span>
+                    </button>
                     {modes.map((m) => {
                       const Icon = m.icon;
                       return (
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => { setMode(m.id); setShowModes(false); }}
+                          onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
                             mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]'
                           }`}
@@ -143,151 +171,175 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                   </motion.div>
                 )}
               </div>
-
-              {/* File Upload */}
-              <input 
-                ref={fileInputRef} 
-                type="file" 
-                className="hidden" 
-                accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx,.sdf,.mol,.png,.jpg,.jpeg,.gif,.bmp,.webp" 
-                multiple 
-                onChange={handleFileChange}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                title="Upload files"
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors btn-press ${
-                  isUploading 
-                    ? 'bg-[var(--accent)]/20 cursor-not-allowed' 
-                    : 'hover:bg-[var(--surface-highlight)]'
-                }`}
-              >
-                {isUploading ? (
-                  <Loader2 size={16} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
-                ) : (
-                  <Paperclip size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                )}
-              </button>
             </div>
 
-            {/* Textarea */}
+            {/* Center: Text Input */}
             <textarea
               ref={textareaRef}
               value={message}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about pharmaceutical research..."
+              placeholder="Message..."
               disabled={isLoading}
               rows={1}
-              className="w-full py-4 pl-36 pr-14 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm"
+              className="w-full py-4 pl-16 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm"
               style={{ minHeight: '56px', maxHeight: '120px' }}
             />
 
-            {/* Send Button */}
-            <motion.button
-              type="submit"
-              disabled={!message.trim() || isLoading}
-              whileTap={{ scale: 0.95 }}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                message.trim() && !isLoading
-                  ? 'bg-[var(--text-primary)] text-[var(--background)]'
-                  : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
-              }`}
-            >
-              {isLoading ? (
-                <Loader2 size={18} strokeWidth={1.5} className="animate-spin" />
-              ) : (
-                <Send size={16} strokeWidth={2} />
-              )}
-            </motion.button>
+            {/* Right: Voice Icon + Send */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {/* Divider */}
+              <div className="w-px h-6 bg-[var(--border)] mr-1" />
+              
+              {/* Voice/Headphones Icon */}
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
+                title="Voice mode (coming soon)"
+              >
+                <Headphones size={18} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+              </button>
+
+              {/* Send Button */}
+              <motion.button
+                type="submit"
+                disabled={!message.trim() || isLoading}
+                whileTap={{ scale: 0.95 }}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                  message.trim() && !isLoading
+                    ? 'bg-[var(--text-primary)] text-[var(--background)]'
+                    : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
+                }`}
+              >
+                {isLoading ? (
+                  <Loader2 size={18} strokeWidth={1.5} className="animate-spin" />
+                ) : (
+                  <Send size={16} strokeWidth={2} />
+                )}
+              </motion.button>
+            </div>
           </div>
         </form>
       </div>
 
-      {/* Mobile Floating Capsule */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 max-w-[600px] mx-auto">
+      {/* Mobile Floating Capsule - ChatGPT Style */}
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
         {/* Gradient Fade - Mobile */}
         <div className="fixed bottom-0 left-0 right-0 h-24 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] to-transparent" />
         
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-full border-2 border-[var(--border)] bg-[var(--surface)] shadow-xl">
-            {/* Mode + Attach */}
-            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => setShowModes(!showModes)}
-                className="w-8 h-8 rounded-full hover:bg-[var(--surface-highlight)] flex items-center justify-center btn-press"
-              >
-                <ModeIcon size={14} strokeWidth={1.5} className="text-[var(--accent)]" />
-              </button>
-              {/* File Upload - Mobile */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-8 h-8 rounded-full hover:bg-[var(--surface-highlight)] flex items-center justify-center btn-press"
-              >
-                <Paperclip size={14} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-              </button>
+          <div className={`relative rounded-full border-2 transition-all ${
+            isDragging 
+              ? 'border-[var(--accent)] bg-[var(--accent)]/5' 
+              : 'border-[var(--border)]'
+          } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-xl`}>
+            {/* Left: Plus Button */}
+            <div className="absolute left-1.5 top-1/2 -translate-y-1/2">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
+                  disabled={isUploading}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                    isUploading 
+                      ? 'bg-[var(--accent)]/20 cursor-not-allowed' 
+                      : 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]'
+                  }`}
+                >
+                  {isUploading ? (
+                    <Loader2 size={16} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
+                  ) : (
+                    <Plus size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                  )}
+                </button>
+
+                {/* Mobile Attach Menu */}
+                {showAttachMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute bottom-full left-0 mb-2 w-56 p-2 rounded-2xl bg-[var(--surface)] dark:bg-[#1E1E1E] border border-[var(--border)] shadow-xl"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)] transition-colors"
+                    >
+                      <Paperclip size={18} strokeWidth={1.5} />
+                      <span className="text-sm font-medium">Upload File</span>
+                    </button>
+                    {modes.map((m) => {
+                      const Icon = m.icon;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                            mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]'
+                          }`}
+                        >
+                          <Icon size={18} strokeWidth={1.5} />
+                          <div className="text-left">
+                            <p className="text-sm font-medium">{m.label}</p>
+                            <p className="text-xs text-[var(--text-secondary)]">{m.desc}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </div>
             </div>
 
-            {/* Mobile Mode Dropdown */}
-            {showModes && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
-              >
-                {modes.map((m) => {
-                  const Icon = m.icon;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => { setMode(m.id); setShowModes(false); }}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                        mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]'
-                      }`}
-                    >
-                      <Icon size={18} strokeWidth={1.5} />
-                      <div className="text-left">
-                        <p className="text-sm font-medium">{m.label}</p>
-                        <p className="text-xs text-[var(--text-secondary)]">{m.desc}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-
-            <textarea
+            {/* Center: Text Input */}
+            <input
+              type="text"
               value={message}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder="Message..."
               disabled={isLoading}
-              rows={1}
-              className="w-full py-3 pl-[4.5rem] pr-12 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm"
-              style={{ minHeight: '48px', maxHeight: '48px' }}
+              className="w-full py-3 pl-14 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm"
             />
 
-            <motion.button
-              type="submit"
-              disabled={!message.trim() || isLoading}
-              whileTap={{ scale: 0.95 }}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                message.trim() && !isLoading
-                  ? 'bg-[var(--text-primary)] text-[var(--background)]'
-                  : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
-              }`}
-            >
-              {isLoading ? (
-                <Loader2 size={16} strokeWidth={1.5} className="animate-spin" />
-              ) : (
-                <Send size={14} strokeWidth={2} />
-              )}
-            </motion.button>
+            {/* Right: Divider + Voice + Send */}
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              {/* Divider */}
+              <div className="w-px h-5 bg-[var(--border)] mr-1" />
+              
+              {/* Voice Icon */}
+              <button
+                type="button"
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                title="Voice mode"
+              >
+                <Headphones size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+              </button>
+
+              {/* Send Button */}
+              <motion.button
+                type="submit"
+                disabled={!message.trim() || isLoading}
+                whileTap={{ scale: 0.95 }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  message.trim() && !isLoading
+                    ? 'bg-[var(--text-primary)] text-[var(--background)]'
+                    : 'bg-transparent text-[var(--text-secondary)]'
+                }`}
+              >
+                {isLoading ? (
+                  <Loader2 size={16} strokeWidth={1.5} className="animate-spin" />
+                ) : (
+                  <Send size={14} strokeWidth={2} />
+                )}
+              </motion.button>
+            </div>
           </div>
         </form>
       </div>

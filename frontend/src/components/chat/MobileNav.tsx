@@ -5,7 +5,12 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
-import { Menu, X, Plus, Moon, Sun, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { 
+  Menu, X, Plus, Moon, Sun, Settings, LogOut, BarChart3, 
+  Search, Image, FolderKanban, MessageSquare, ChevronRight,
+  Sparkles
+} from 'lucide-react';
+import LongPressMenu, { useChatContextMenu } from './LongPressMenu';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? 'https://pharmgpt-backend.onrender.com'
@@ -20,15 +25,17 @@ interface ChatHistory {
 interface MobileNavProps {
   onSelectConversation?: (id: string) => void;
   onNewChat?: () => void;
+  onDeleteConversation?: (id: string) => void;
 }
 
-export default function MobileNav({ onSelectConversation, onNewChat }: MobileNavProps) {
+export default function MobileNav({ onSelectConversation, onNewChat, onDeleteConversation }: MobileNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch conversation history when user is logged in
   useEffect(() => {
@@ -83,16 +90,39 @@ export default function MobileNav({ onSelectConversation, onNewChat }: MobileNav
     router.push('/login');
   };
 
+  const handleDeleteChat = async (chatId: string) => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${chatId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        setChatHistory(prev => prev.filter(c => c.id !== chatId));
+        onDeleteConversation?.(chatId);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
+
+  // Filter chats based on search
+  const filteredChats = chatHistory.filter(chat => 
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Navigation items
+  const navItems = [
+    { id: 'chat', label: 'New Chat', icon: MessageSquare, onClick: () => { onNewChat?.(); setIsOpen(false); router.push('/chat'); } },
+    { id: 'workbench', label: 'Data Workbench', icon: BarChart3, onClick: () => { setIsOpen(false); router.push('/workbench'); } },
+  ];
+
   return (
     <>
-      {/* Mobile Menu Button - Top Left */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center shadow-lg"
-      >
-        <Menu size={20} strokeWidth={1.5} className="text-[var(--text-primary)]" />
-      </button>
-
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isOpen && (
@@ -106,114 +136,178 @@ export default function MobileNav({ onSelectConversation, onNewChat }: MobileNav
               className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             />
             
-            {/* Sidebar */}
+            {/* Drawer - Slide from Left */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[85%] max-w-[320px] bg-[var(--surface)] border-r border-[var(--border)] flex flex-col"
+              className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[85vw] max-w-[320px] bg-[var(--surface)] flex flex-col"
             >
-              <div className="p-4 flex flex-col h-full">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+              {/* Header with Search */}
+              <div className="p-4 border-b border-[var(--border)]">
+                <div className="flex items-center justify-between mb-4">
                   <button
                     onClick={() => { setIsOpen(false); router.push('/'); }}
                     className="flex items-center gap-2"
                   >
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">P</span>
+                      <Sparkles size={16} className="text-white" />
                     </div>
                     <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="w-8 h-8 rounded-lg bg-[var(--surface-highlight)] flex items-center justify-center"
+                    className="w-8 h-8 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center"
                   >
                     <X size={16} className="text-[var(--text-secondary)]" />
                   </button>
                 </div>
+                
+                {/* Search Bar - Rounded Pill */}
+                <div className="relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search chats..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-full bg-[var(--surface-highlight)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+                  />
+                </div>
+              </div>
 
-                {/* New Chat Button */}
-                <button
-                  onClick={() => { 
-                    onNewChat?.();
-                    setIsOpen(false); 
-                    router.push('/chat'); 
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium text-sm flex items-center justify-center gap-2 mb-6"
-                >
-                  <Plus size={16} strokeWidth={1.5} />
-                  New Chat
-                </button>
+              {/* Navigation Items */}
+              <div className="p-4 space-y-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={item.onClick}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface-highlight)] transition-colors"
+                    >
+                      <Icon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                      <span className="text-sm font-medium text-[var(--text-primary)]">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-                {/* Chat History */}
-                <div className="flex-1 overflow-y-auto">
-                  <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2">
-                    Recent Chats
-                  </p>
-                  <div className="space-y-1">
-                    {chatHistory.length === 0 ? (
-                      <p className="text-sm text-[var(--text-secondary)] px-2">Chat history will appear here</p>
-                    ) : (
-                      chatHistory.map((chat) => (
+              {/* Chat History */}
+              <div className="flex-1 overflow-y-auto px-4">
+                <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2">
+                  Recent Chats
+                </p>
+                <div className="space-y-1">
+                  {filteredChats.length === 0 ? (
+                    <p className="text-sm text-[var(--text-secondary)] px-2">
+                      {searchQuery ? 'No chats found' : 'Chat history will appear here'}
+                    </p>
+                  ) : (
+                    filteredChats.map((chat) => (
+                      <LongPressMenu
+                        key={chat.id}
+                        items={useChatContextMenu(
+                          undefined,
+                          undefined,
+                          undefined,
+                          () => handleDeleteChat(chat.id)
+                        )}
+                      >
                         <button
-                          key={chat.id}
                           onClick={() => {
                             onSelectConversation?.(chat.id);
                             setIsOpen(false);
                           }}
-                          className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors"
+                          className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors group"
                         >
-                          <p className="text-sm text-[var(--text-primary)] truncate">{chat.title}</p>
+                          <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--accent)]">
+                            {chat.title}
+                          </p>
                           <p className="text-xs text-[var(--text-secondary)] mt-0.5">{chat.date}</p>
                         </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="pt-4 border-t border-[var(--border)] space-y-2">
-                  <button
-                    onClick={() => { setIsOpen(false); router.push('/workbench'); }}
-                    className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
-                  >
-                    <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
-                    <span className="text-sm text-[var(--text-primary)]">Data Workbench</span>
-                  </button>
-                  <button
-                    onClick={toggleTheme}
-                    className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3"
-                  >
-                    {theme === 'light' ? (
-                      <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                    ) : (
-                      <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                    )}
-                    <span className="text-sm text-[var(--text-primary)]">
-                      {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                    </span>
-                  </button>
-                  <button className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3">
-                    <Settings size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                    <span className="text-sm text-[var(--text-primary)]">Settings</span>
-                  </button>
-                  {token && (
-                    <button 
-                      onClick={handleSignOut}
-                      className="w-full p-3 rounded-xl text-left hover:bg-red-500/10 transition-colors flex items-center gap-3"
-                    >
-                      <LogOut size={20} strokeWidth={1.5} className="text-red-500" />
-                      <span className="text-sm text-red-500">Sign Out</span>
-                    </button>
+                      </LongPressMenu>
+                    ))
                   )}
                 </div>
+              </div>
+
+              {/* Footer - User Profile */}
+              <div className="p-4 border-t border-[var(--border)]">
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface-highlight)] transition-colors mb-2"
+                >
+                  {theme === 'light' ? (
+                    <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                  ) : (
+                    <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
+                  )}
+                  <span className="text-sm text-[var(--text-primary)]">
+                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                  </span>
+                </button>
+
+                {/* User Profile Row */}
+                {user ? (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-highlight)]">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-medium">
+                        {user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                        {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.email}
+                      </p>
+                      <p className="text-xs text-[var(--text-secondary)] truncate">{user.email}</p>
+                    </div>
+                    {/* Settings / Sign Out */}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-8 h-8 rounded-full hover:bg-[var(--surface)] flex items-center justify-center transition-colors"
+                    >
+                      <LogOut size={16} className="text-[var(--text-secondary)]" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setIsOpen(false); router.push('/login'); }}
+                    className="w-full p-3 rounded-xl bg-[var(--text-primary)] text-[var(--background)] text-sm font-medium"
+                  >
+                    Sign In
+                  </button>
+                )}
               </div>
             </motion.aside>
           </>
         )}
       </AnimatePresence>
+
+      {/* Export the toggle function for external use */}
+      <MobileNavTrigger onOpen={() => setIsOpen(true)} />
     </>
   );
+}
+
+// Separate component to expose the trigger
+function MobileNavTrigger({ onOpen }: { onOpen: () => void }) {
+  // Store the onOpen function in a global context or use a ref
+  useEffect(() => {
+    (window as any).__openMobileNav = onOpen;
+    return () => {
+      delete (window as any).__openMobileNav;
+    };
+  }, [onOpen]);
+  
+  return null;
+}
+
+// Helper to open mobile nav from outside
+export function openMobileNav() {
+  (window as any).__openMobileNav?.();
 }

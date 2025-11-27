@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
+import { Sparkles, CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown } from 'lucide-react';
+import { openMobileNav } from '@/components/chat/MobileNav';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
@@ -35,29 +36,39 @@ function ChatContent() {
 
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)]">
-      {/* Mobile Header */}
-      <header className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-between bg-[var(--surface)] border-b border-[var(--border)]">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <Sparkles size={14} strokeWidth={1.5} className="text-white" />
-          </div>
-          <span className="font-semibold text-sm text-[var(--text-primary)]">PharmGPT</span>
-        </div>
-        {/* Delete button for mobile */}
-        {conversationId && messages.length > 0 && (
-          <button
-            onClick={deleteConversation}
-            disabled={isDeleting}
-            className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-            title="Delete conversation"
-          >
-            {isDeleting ? (
-              <Loader2 size={16} strokeWidth={1.5} className="animate-spin" />
-            ) : (
-              <Trash2 size={16} strokeWidth={1.5} />
-            )}
-          </button>
-        )}
+      {/* Mobile Header - ChatGPT Style */}
+      <header className="md:hidden sticky top-0 z-30 h-14 px-3 flex items-center justify-between bg-[var(--surface)] border-b border-[var(--border)]">
+        {/* Left: Hamburger Menu */}
+        <button
+          onClick={() => openMobileNav()}
+          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
+        >
+          <Menu size={20} strokeWidth={1.5} className="text-[var(--text-primary)]" />
+        </button>
+
+        {/* Center: Model Selector */}
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[var(--surface-highlight)] transition-colors">
+          <span className="text-sm font-medium text-[var(--text-primary)]">PharmGPT</span>
+          <ChevronDown size={14} strokeWidth={2} className="text-[var(--text-secondary)]" />
+        </button>
+
+        {/* Right: New Chat / Edit */}
+        <button
+          onClick={() => {
+            // Clear current conversation and start new
+            if (conversationId && messages.length > 0) {
+              deleteConversation();
+            }
+          }}
+          disabled={isDeleting || (!conversationId && messages.length === 0)}
+          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
+        >
+          {isDeleting ? (
+            <Loader2 size={18} strokeWidth={1.5} className="animate-spin text-[var(--text-primary)]" />
+          ) : (
+            <Edit3 size={18} strokeWidth={1.5} className="text-[var(--text-primary)]" />
+          )}
+        </button>
       </header>
 
       {/* Desktop Header */}
