@@ -25,7 +25,7 @@ const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
 
 export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading = false }: ChatInputProps) {
   const [message, setMessage] = useState('');
-  const [mode, setMode] = useState<Mode>('detailed');
+  const [mode, setMode] = useState<Mode>('fast'); // Default to fast mode
   const [showModes, setShowModes] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -173,6 +173,22 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               </div>
             </div>
 
+            {/* Mode Indicator Chip */}
+            <div className="absolute left-14 top-1/2 -translate-y-1/2">
+              <button
+                type="button"
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                  mode === 'fast' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                  mode === 'detailed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                  'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                }`}
+              >
+                <ModeIcon size={12} strokeWidth={1.5} />
+                <span>{currentMode.label}</span>
+              </button>
+            </div>
+
             {/* Center: Text Input */}
             <textarea
               ref={textareaRef}
@@ -182,7 +198,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               placeholder="Message..."
               disabled={isLoading}
               rows={1}
-              className="w-full py-4 pl-16 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm"
+              className="w-full py-4 pl-32 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-sm"
               style={{ minHeight: '56px', maxHeight: '120px' }}
             />
 
@@ -292,6 +308,21 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               </div>
             </div>
 
+            {/* Mode Indicator - Mobile */}
+            <div className="absolute left-12 top-1/2 -translate-y-1/2">
+              <button
+                type="button"
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                  mode === 'fast' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                  mode === 'detailed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                  'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                }`}
+              >
+                <ModeIcon size={10} strokeWidth={1.5} />
+              </button>
+            </div>
+
             {/* Center: Text Input */}
             <input
               type="text"
@@ -305,7 +336,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
               }}
               placeholder="Message..."
               disabled={isLoading}
-              className="w-full py-3 pl-14 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm"
+              className="w-full py-3 pl-20 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm"
             />
 
             {/* Right: Divider + Voice + Send */}

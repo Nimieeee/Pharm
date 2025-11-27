@@ -376,6 +376,10 @@ export function useChat() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    // Clear from localStorage as well
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('currentConversationId');
+    }
   }, []);
 
   const deleteConversation = useCallback(async () => {

@@ -15,16 +15,36 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, conversationId } = useChatContext();
+  const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation } = useChatContext();
   const { sidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  // Restore conversation from localStorage on mount
+  useEffect(() => {
+    const savedConversationId = localStorage.getItem('currentConversationId');
+    if (savedConversationId && !conversationId && !initialQuery) {
+      selectConversation(savedConversationId);
+    }
+  }, []);
+
+  // Save current conversation ID to localStorage
+  useEffect(() => {
+    if (conversationId) {
+      localStorage.setItem('currentConversationId', conversationId);
+    }
+  }, [conversationId]);
+
   useEffect(() => {
     if (initialQuery && !hasInitialized) {
-      sendMessage(initialQuery, 'detailed');
+      sendMessage(initialQuery, 'fast'); // Default to fast mode
       setHasInitialized(true);
     }
   }, [initialQuery, hasInitialized, sendMessage]);
+
+  const handleNewChat = () => {
+    localStorage.removeItem('currentConversationId');
+    clearMessages();
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,22 +72,13 @@ function ChatContent() {
           <ChevronDown size={14} strokeWidth={2} className="text-[var(--text-secondary)]" />
         </button>
 
-        {/* Right: New Chat / Edit */}
+        {/* Right: New Chat */}
         <button
-          onClick={() => {
-            // Clear current conversation and start new
-            if (conversationId && messages.length > 0) {
-              deleteConversation();
-            }
-          }}
-          disabled={isDeleting || (!conversationId && messages.length === 0)}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
+          onClick={handleNewChat}
+          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
+          title="New chat"
         >
-          {isDeleting ? (
-            <Loader2 size={18} strokeWidth={1.5} className="animate-spin text-[var(--text-primary)]" />
-          ) : (
-            <Edit3 size={18} strokeWidth={1.5} className="text-[var(--text-primary)]" />
-          )}
+          <Edit3 size={18} strokeWidth={1.5} className="text-[var(--text-primary)]" />
         </button>
       </header>
 
@@ -123,7 +134,7 @@ function ChatContent() {
       <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 pb-32 sm:pb-36 md:pb-44">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 ? (
-            <EmptyState onSuggestionClick={(msg) => handleSend(msg, 'detailed')} />
+            <EmptyState onSuggestionClick={(msg) => handleSend(msg, 'fast')} />
           ) : (
             <AnimatePresence mode="popLayout">
               {messages.map((msg, index) => (
