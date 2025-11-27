@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Check, RefreshCw, ExternalLink } from 'lucide-react';
+import { Copy, Check, RefreshCw, ExternalLink, FileText } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 
 export interface Message {
@@ -10,6 +10,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   citations?: Array<{ id: number; title: string; url: string }>;
+  attachments?: Array<{ name: string; size: string; type: string }>;
 }
 
 interface ChatMessageProps {
@@ -29,23 +30,42 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
   };
 
   // ============================================
-  // USER MESSAGE - Bubble Style, Right Aligned
+  // USER MESSAGE - Stacked Layout (Attachments Top)
   // ============================================
   if (isUser) {
     return (
-      <div className="flex justify-end py-3 sm:py-4">
-        <div className="max-w-[85%]">
-          {/* User Bubble - Muted background, rounded */}
-          <div className="bg-[var(--surface-highlight)] text-[var(--text-primary)] rounded-2xl px-4 py-2">
+      <div className="flex flex-col items-end gap-2 mb-4 py-3 sm:py-4">
+        {/* 1. Attachment Cards (Rendered OUTSIDE the bubble) */}
+        {message.attachments?.map((file, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-3 p-2.5 bg-white dark:bg-card border border-[var(--border-subtle)] rounded-xl shadow-sm w-fit min-w-[200px] max-w-xs"
+          >
+            {/* Icon Box */}
+            <div className="w-10 h-10 rounded-lg bg-slate-500/10 flex items-center justify-center text-slate-600 dark:text-slate-300">
+              <FileText size={20} />
+            </div>
+            {/* File Info */}
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-sm font-medium truncate">{file.name}</span>
+              <span className="text-xs text-muted-foreground">{file.size}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* 2. The Text Bubble */}
+        {message.content && (
+          <div className="max-w-[85%] bg-[var(--surface-highlight)] text-[var(--text-primary)] rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm">
             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
               {message.content}
             </p>
           </div>
-          {/* Timestamp */}
-          <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mt-1.5 text-right px-1">
-            {formatTime(message.timestamp)}
-          </p>
-        </div>
+        )}
+
+        {/* 3. Action Row (Footer) - Optional, can be added if needed, currently just timestamp */}
+        <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mt-0.5 text-right px-1">
+          {formatTime(message.timestamp)}
+        </p>
       </div>
     );
   }

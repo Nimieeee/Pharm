@@ -24,6 +24,7 @@ langchain-core>=0.1.28,<0.2.0
 langchain-text-splitters>=0.0.1,<0.1.0
 # Document processing
 pypdf==3.17.4
+pdfplumber==0.10.3
 PyPDF2==3.0.1
 docx2txt==0.8
 unstructured==0.10.30  # For PowerPoint and other document types

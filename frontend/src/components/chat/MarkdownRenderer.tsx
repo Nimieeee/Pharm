@@ -393,20 +393,79 @@ function EnhancedImage({ src, alt, isAnimating }: { src?: string; alt?: string; 
 }
 
 
+// Utility to fix incomplete markdown during streaming
+function repairIncompleteMarkdown(content: string): string {
+  let repaired = content;
+
+  // Fix unclosed bold (**)
+  const boldCount = (repaired.match(/\*\*/g) || []).length;
+  if (boldCount % 2 !== 0) {
+    repaired += '**';
+  }
+
+  // Fix unclosed code blocks (```)
+  const codeBlockMatches = repaired.match(/```/g) || [];
+  if (codeBlockMatches.length % 2 !== 0) {
+    repaired += '\n```';
+  }
+
+  // Fix unclosed inline code (`) - check total backticks
+  const backtickCount = (repaired.match(/`/g) || []).length;
+  if (backtickCount % 2 !== 0) {
+    repaired += '`';
+  }
+
+  // Fix unclosed LaTeX ($$)
+  const latexCount = (repaired.match(/\$\$/g) || []).length;
+  if (latexCount % 2 !== 0) {
+    repaired += '$$';
+  }
+
+  return repaired;
+}
+
 // Main Markdown Renderer Component - Memoized for performance
 const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
   isAnimating = false,
-  className = ''
-}: MarkdownRendererProps) {
-  // Clean content from any leaked JSON logs
-  const cleanContent = content
+  className = '',
+  mode = 'normal'
+}: MarkdownRendererProps & { mode?: 'normal' | 'deep_research' | 'fast' }) {
+
+  // 1. Clean content from logs
+  let displayContent = content
     .replace(/\{"timestamp":[^}]+\}/g, '')
     .replace(/\{"level":[^}]+\}/g, '')
     .trim();
 
+  // 2. Repair incomplete markdown if animating
+  if (isAnimating) {
+    displayContent = repairIncompleteMarkdown(displayContent);
+  }
+
+  // 3. Deep Research specific handling
+  const isDeepResearch = mode === 'deep_research';
+
+  // Force Prose for Deep Research
+  const finalClassName = isDeepResearch
+    ? "prose prose-lg dark:prose-invert max-w-none"
+    : `markdown-content ${className}`;
+
+  // Strip code block wrappers for Deep Research
+  if (isDeepResearch) {
+    if (displayContent.startsWith('```markdown')) {
+      displayContent = displayContent.slice(11);
+    } else if (displayContent.startsWith('```')) {
+      displayContent = displayContent.slice(3);
+    }
+    if (displayContent.endsWith('```')) {
+      displayContent = displayContent.slice(0, -3);
+    }
+    displayContent = displayContent.trim();
+  }
+
   return (
-    <div className={`markdown-content ${className}`}>
+    <div className={finalClassName}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
         rehypePlugins={[rehypeKatex]}
@@ -539,7 +598,7 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
           del: ({ children }) => <del className="line-through text-[var(--text-secondary)]">{children}</del>,
         }}
       >
-        {cleanContent}
+        {displayContent}
       </ReactMarkdown>
 
       {/* Streaming cursor */}
@@ -549,12 +608,16 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison for memoization
-  // Only re-render if content changed or animation state changed
-  if (prevProps.isAnimating !== nextProps.isAnimating) return false;
-  if (prevProps.content !== nextProps.content) return false;
-  if (prevProps.className !== nextProps.className) return false;
-  return true;
+  // Strict Memoization
+  // Only re-render if the content string has actually changed
+  // OR if the 'isAnimating' status has changed.
+  // OR if 'mode' has changed.
+  return (
+    prevProps.content === nextProps.content &&
+    prevProps.isAnimating === nextProps.isAnimating &&
+    prevProps.mode === nextProps.mode &&
+    prevProps.className === nextProps.className
+  );
 });
 
 export default MarkdownRenderer;

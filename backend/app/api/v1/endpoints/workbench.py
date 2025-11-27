@@ -65,7 +65,7 @@ async def analyze_data(
         logger.info(f"📄 File: {data_file.filename}")
         
         # Validate file type
-        allowed_extensions = {'.csv', '.xlsx', '.xls', '.json', '.tsv'}
+        allowed_extensions = {'.csv', '.xlsx', '.xls', '.json', '.tsv', '.pdf', '.docx', '.doc'}
         file_ext = os.path.splitext(data_file.filename or "")[1].lower()
         
         if file_ext not in allowed_extensions:

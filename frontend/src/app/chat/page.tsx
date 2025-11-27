@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles } from 'lucide-react';
+import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
 import { openMobileNav } from '@/components/chat/MobileNav';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput, { Mode } from '@/components/chat/ChatInput';
@@ -16,7 +16,7 @@ function ChatContent() {
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation } = useChatContext();
-  const { sidebarOpen } = useSidebar();
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
 
@@ -90,37 +90,26 @@ function ChatContent() {
         </button>
       </header>
 
-      {/* Desktop Header with Glassmorphism */}
-      <header className={`hidden md:flex h-[72px] px-6 items-center justify-between border-b border-[var(--border)]/10 bg-[var(--background)]/80 backdrop-blur-md transition-all duration-300 ${!sidebarOpen ? 'pl-4' : ''}`}>
-        <div className="flex items-center gap-3 h-full">
+      {/* Desktop Header - Minimalist */}
+      <header className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]/10 z-40 items-center justify-between px-6 transition-all duration-300">
+        <div className="flex items-center gap-4">
           {!sidebarOpen && (
             <button
-              onClick={() => document.dispatchEvent(new CustomEvent('toggle-sidebar'))} // Assuming we can trigger it this way or need to expose context method
-              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors text-[var(--text-secondary)]"
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-[var(--surface-highlight)] rounded-lg text-[var(--text-secondary)] transition-colors"
             >
-              <Menu size={20} strokeWidth={1.5} />
+              <Menu size={20} />
             </button>
           )}
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif font-medium text-[var(--text-primary)] text-lg">PharmGPT</h1>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium border border-emerald-500/20">
-              v2.0
-            </span>
-          </div>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)] tracking-tight">
+            PharmGPT <span className="text-[var(--text-secondary)] font-normal">v2.0</span>
+          </h1>
         </div>
 
-        <div className="flex items-center gap-2 h-full">
-          {/* Model/Status Indicator - Minimal */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
-            <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-            <span className="text-xs font-medium text-[var(--text-secondary)]">
-              {isLoading ? 'Thinking...' : 'Mistral Large'}
-            </span>
-          </div>
-
-          {/* More Actions */}
-          <button className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors text-[var(--text-secondary)]">
-            <Sparkles size={18} strokeWidth={1.5} />
+        <div className="flex items-center gap-2">
+          {/* Context Menu Trigger */}
+          <button className="p-2 hover:bg-[var(--surface-highlight)] rounded-lg text-[var(--text-secondary)] transition-colors">
+            <MoreHorizontal size={20} />
           </button>
         </div>
       </header>

@@ -26,25 +26,25 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarContext.Provider value={{ sidebarOpen }}>
+    <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen }}>
       <div className="h-screen flex bg-[var(--background)]">
         {/* Desktop Sidebar - Hidden on mobile */}
         <div className="hidden md:block">
-          <ChatSidebar 
-            isOpen={sidebarOpen} 
+          <ChatSidebar
+            isOpen={sidebarOpen}
             onToggle={() => setSidebarOpen(!sidebarOpen)}
             onSelectConversation={handleSelectConversation}
             onNewChat={handleNewChat}
           />
         </div>
-        
+
         {/* Mobile Navigation */}
-        <MobileNav 
+        <MobileNav
           onSelectConversation={handleSelectConversation}
           onNewChat={handleNewChat}
           onDeleteConversation={handleDeleteConversation}
         />
-        
+
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {children}

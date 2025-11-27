@@ -23,8 +23,10 @@ interface ChatSidebarProps {
 interface ChatHistory {
   id: string;
   title: string;
-  date: string; // Used for display date string in old logic, now we use created_at for grouping
+  date: string;
   created_at: string;
+  is_pinned?: boolean;
+  is_archived?: boolean;
 }
 
 interface SettingsModalProps {
@@ -126,6 +128,8 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const [showSettings, setShowSettings] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
 
   // Fetch conversation history when user is logged in
   useEffect(() => {
@@ -145,8 +149,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
     checkActiveChat();
     window.addEventListener('storage', checkActiveChat);
-    // Also poll/check periodically or on route change if needed, 
-    // but for now we'll rely on parent updates or manual checks
     const interval = setInterval(checkActiveChat, 1000);
 
     return () => {
@@ -172,7 +174,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
           id: conv.id,
           title: conv.title || 'Untitled Chat',
           date: new Date(conv.created_at).toLocaleDateString(),
-          created_at: conv.created_at
+          created_at: conv.created_at,
+          is_pinned: conv.is_pinned,
+          is_archived: conv.is_archived
         }));
         setChatHistory(formattedHistory);
       }
@@ -195,15 +199,108 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     }
   };
 
-  // Group chats by category
-  const groupedChats = chatHistory.reduce((acc, chat) => {
+  // Actions
+  const handlePin = async (id: string, currentPinned: boolean) => {
+    setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: !currentPinned } : c));
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_pinned: !currentPinned })
+      });
+    } catch (error) {
+      setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: currentPinned } : c));
+    }
+  };
+
+  const handleArchive = async (id: string, currentArchived: boolean) => {
+    setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: !currentArchived } : c));
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_archived: !currentArchived })
+      });
+    } catch (error) {
+      setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: currentArchived } : c));
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this chat?')) return;
+
+    const prevHistory = [...chatHistory];
+    setChatHistory(prev => prev.filter(c => c.id !== id));
+
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (activeChatId === id) {
+        onNewChat?.();
+        router.push('/chat');
+      }
+    } catch (error) {
+      setChatHistory(prevHistory);
+    }
+  };
+
+  const handleClone = async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}/clone`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        fetchConversationHistory(); // Refresh list
+        const newChat = await response.json();
+        onSelectConversation?.(newChat.id);
+      }
+    } catch (error) {
+      console.error('Failed to clone chat:', error);
+    }
+  };
+
+  const handleRename = async (id: string) => {
+    if (!editTitle.trim()) return;
+
+    const prevHistory = [...chatHistory];
+    setChatHistory(prev => prev.map(c => c.id === id ? { ...c, title: editTitle } : c));
+    setEditingId(null);
+
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: editTitle })
+      });
+    } catch (error) {
+      setChatHistory(prevHistory);
+    }
+  };
+
+  const handleDownload = (chat: ChatHistory) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chat));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `${chat.title.replace(/[^a-z0-9]/gi, '_')}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  // Group chats
+  const pinnedChats = chatHistory.filter(c => c.is_pinned && !c.is_archived);
+  const unpinnedChats = chatHistory.filter(c => !c.is_pinned && !c.is_archived);
+
+  const groupedChats = unpinnedChats.reduce((acc, chat) => {
     const category = getRelativeDateCategory(chat.created_at);
     if (!acc[category]) acc[category] = [];
     acc[category].push(chat);
     return acc;
   }, {} as Record<string, ChatHistory[]>);
 
-  // Order of categories
   const categoryOrder = ['Today', 'Yesterday', 'Previous 7 Days', 'Previous 30 Days'];
   const sortedCategories = Object.keys(groupedChats).sort((a, b) => {
     const indexA = categoryOrder.indexOf(a);
@@ -211,8 +308,109 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-    return 0; // Keep other months as they appear (or sort alphabetically if needed)
+    return 0;
   });
+
+  const renderChatItem = (chat: ChatHistory) => {
+    const isActive = activeChatId === chat.id;
+    const isEditing = editingId === chat.id;
+
+    return (
+      <div key={chat.id} className="group relative">
+        <div
+          className={`w-full flex items-center justify-between p-2 pl-3 pr-2 rounded-md text-sm transition-colors h-9 ${isActive
+            ? 'bg-[var(--surface-highlight)] text-foreground'
+            : 'text-foreground/80 hover:bg-[var(--surface-highlight)]/50'
+            }`}
+        >
+          {isEditing ? (
+            <input
+              autoFocus
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={() => handleRename(chat.id)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename(chat.id)}
+              className="flex-1 bg-transparent border-none outline-none text-sm"
+            />
+          ) : (
+            <button
+              className="flex-1 text-left truncate"
+              onClick={() => handleSelectConversation(chat.id)}
+            >
+              {chat.title}
+            </button>
+          )}
+
+          {/* Context Menu Trigger */}
+          <RadixPopover.Root>
+            <RadixPopover.Trigger asChild>
+              <div
+                role="button"
+                tabIndex={0}
+                className={`p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  } transition-opacity`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal size={14} className="text-foreground-muted" />
+              </div>
+            </RadixPopover.Trigger>
+            <RadixPopover.Portal>
+              <RadixPopover.Content
+                className="z-[100] w-[200px] rounded-xl border border-border bg-background shadow-2xl p-1 animate-in fade-in zoom-in-95 duration-200"
+                sideOffset={5}
+                align="end"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    onClick={() => handlePin(chat.id, !!chat.is_pinned)}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    <Pin size={14} className="text-foreground-muted" />
+                    {chat.is_pinned ? 'Unpin' : 'Pin'}
+                  </button>
+                  <button
+                    onClick={() => { setEditingId(chat.id); setEditTitle(chat.title); }}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    <Pencil size={14} className="text-foreground-muted" />
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => handleClone(chat.id)}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    <Copy size={14} className="text-foreground-muted" />
+                    Clone
+                  </button>
+                  <button
+                    onClick={() => handleArchive(chat.id, !!chat.is_archived)}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    <Archive size={14} className="text-foreground-muted" />
+                    Archive
+                  </button>
+                  <button
+                    onClick={() => handleDownload(chat)}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    <Download size={14} className="text-foreground-muted" />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => handleDelete(chat.id)}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              </RadixPopover.Content>
+            </RadixPopover.Portal>
+          </RadixPopover.Root>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -227,9 +425,8 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             className="hidden md:flex flex-col h-full border-r border-border bg-surface overflow-hidden"
           >
             <div className="p-4 flex flex-col h-full">
-              {/* Header Area - Vertical Stack */}
+              {/* Header Area */}
               <div className="flex flex-col gap-4 mb-2">
-                {/* Row 1: Logo and Toggle */}
                 <div className="flex items-center justify-between h-12 px-1">
                   <button
                     onClick={() => router.push('/')}
@@ -248,7 +445,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   </button>
                 </div>
 
-                {/* Row 2: New Chat Button */}
                 <button
                   onClick={() => {
                     onNewChat?.();
@@ -261,7 +457,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   New Chat
                 </button>
 
-                {/* Row 3: Search Bar */}
                 <div className="relative">
                   <input
                     type="text"
@@ -281,90 +476,31 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                 ) : chatHistory.length === 0 ? (
                   <p className="text-sm text-foreground-muted px-2">Chat history will appear here</p>
                 ) : (
-                  sortedCategories.map((category) => (
-                    <div key={category} className="mb-6">
-                      <p className="text-xs font-medium text-foreground-muted px-3 py-2 mb-1">
-                        {category}
-                      </p>
-                      <div className="space-y-1">
-                        {groupedChats[category].map((chat) => {
-                          const isActive = activeChatId === chat.id;
-                          return (
-                            <div key={chat.id} className="group relative">
-                              <button
-                                onClick={() => handleSelectConversation(chat.id)}
-                                className={`w-full flex items-center justify-between p-2 pl-3 pr-2 rounded-md text-sm transition-colors h-9 ${isActive
-                                  ? 'bg-[var(--surface-highlight)] text-foreground'
-                                  : 'text-foreground/80 hover:bg-[var(--surface-highlight)]/50'
-                                  }`}
-                              >
-                                <span className="truncate flex-1 text-left">{chat.title}</span>
-
-                                {/* Context Menu Trigger */}
-                                <RadixPopover.Root>
-                                  <RadixPopover.Trigger asChild>
-                                    <div
-                                      role="button"
-                                      tabIndex={0}
-                                      className={`p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                        } transition-opacity`}
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <MoreHorizontal size={14} className="text-foreground-muted" />
-                                    </div>
-                                  </RadixPopover.Trigger>
-                                  <RadixPopover.Portal>
-                                    <RadixPopover.Content
-                                      className="z-[100] w-[200px] rounded-xl border border-border bg-background shadow-2xl p-1 animate-in fade-in zoom-in-95 duration-200"
-                                      sideOffset={5}
-                                      align="end"
-                                    >
-                                      <div className="flex flex-col gap-0.5">
-                                        {[
-                                          { icon: Pin, label: 'Pin' },
-                                          { icon: Pencil, label: 'Rename' },
-                                          { icon: Copy, label: 'Clone' },
-                                          { icon: Archive, label: 'Archive' },
-                                          { icon: Share2, label: 'Share' },
-                                          { icon: Download, label: 'Download' },
-                                        ].map((item) => (
-                                          <button
-                                            key={item.label}
-                                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
-                                          >
-                                            <item.icon size={14} className="text-foreground-muted" />
-                                            {item.label}
-                                          </button>
-                                        ))}
-
-                                        <button
-                                          className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
-                                        >
-                                          <Trash2 size={14} />
-                                          Delete
-                                        </button>
-                                      </div>
-
-                                      {/* Tags Footer */}
-                                      <div className="h-px bg-border my-1" />
-                                      <div className="px-2 py-1.5 flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded-full bg-[var(--surface-highlight)] text-[10px] font-medium text-foreground-muted border border-border">
-                                          General
-                                        </span>
-                                        <button className="w-5 h-5 rounded-full border border-dashed border-foreground-muted flex items-center justify-center hover:border-foreground transition-colors">
-                                          <Plus size={10} className="text-foreground-muted" />
-                                        </button>
-                                      </div>
-                                    </RadixPopover.Content>
-                                  </RadixPopover.Portal>
-                                </RadixPopover.Root>
-                              </button>
-                            </div>
-                          );
-                        })}
+                  <>
+                    {/* Pinned Chats */}
+                    {pinnedChats.length > 0 && (
+                      <div className="mb-6">
+                        <p className="text-xs font-medium text-foreground-muted px-3 py-2 mb-1 flex items-center gap-1">
+                          <Pin size={10} /> Pinned
+                        </p>
+                        <div className="space-y-1">
+                          {pinnedChats.map(renderChatItem)}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )}
+
+                    {/* Recent Chats */}
+                    {sortedCategories.map((category) => (
+                      <div key={category} className="mb-6">
+                        <p className="text-xs font-medium text-foreground-muted px-3 py-2 mb-1">
+                          {category}
+                        </p>
+                        <div className="space-y-1">
+                          {groupedChats[category].map(renderChatItem)}
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
 
@@ -412,7 +548,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         )}
       </AnimatePresence>
 
-      {/* Collapsed Toggle Button - positioned in header area, left side */}
+      {/* Collapsed Toggle Button */}
       {!isOpen && (
         <button
           onClick={onToggle}
@@ -422,7 +558,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         </button>
       )}
 
-      {/* Settings Modal */}
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </>
   );
