@@ -159,6 +159,43 @@ class ChatService:
         except Exception as e:
             raise Exception(f"Failed to update conversation: {str(e)}")
     
+    async def clone_conversation(
+        self, 
+        conversation_id: UUID, 
+        user: User
+    ) -> Optional[Conversation]:
+        """Clone a conversation and its messages"""
+        try:
+            # Get original conversation
+            original = await self.get_conversation(conversation_id, user)
+            if not original:
+                return None
+            
+            # Create new conversation
+            new_title = f"{original.title} (Copy)"
+            new_conv_data = ConversationCreate(title=new_title)
+            new_conv = await self.create_conversation(new_conv_data, user)
+            
+            # Get original messages
+            messages = await self.get_conversation_messages(conversation_id, user)
+            
+            # Clone messages
+            for msg in messages:
+                msg_dict = {
+                    "conversation_id": str(new_conv.id),
+                    "user_id": str(user.id),
+                    "role": msg.role,
+                    "content": msg.content,
+                    "metadata": msg.metadata or {}
+                }
+                self.db.table("messages").insert(msg_dict).execute()
+            
+            # Return new conversation with updated stats
+            return await self.get_conversation(new_conv.id, user)
+            
+        except Exception as e:
+            raise Exception(f"Failed to clone conversation: {str(e)}")
+
     async def delete_conversation(
         self, 
         conversation_id: UUID, 

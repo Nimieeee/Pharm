@@ -21,6 +21,8 @@ class ConversationCreate(ConversationBase):
 class ConversationUpdate(BaseModel):
     """Conversation update model"""
     title: Optional[str] = None
+    is_pinned: Optional[bool] = None
+    is_archived: Optional[bool] = None
 
 
 class ConversationInDB(ConversationBase):
@@ -29,6 +31,8 @@ class ConversationInDB(ConversationBase):
     user_id: UUID
     created_at: datetime
     updated_at: datetime
+    is_pinned: bool = False
+    is_archived: bool = False
     
     class Config:
         orm_mode = True
@@ -40,6 +44,8 @@ class Conversation(ConversationBase):
     user_id: UUID
     created_at: datetime
     updated_at: datetime
+    is_pinned: bool = False
+    is_archived: bool = False
     message_count: int = 0
     document_count: int = 0
     last_activity: Optional[datetime] = None

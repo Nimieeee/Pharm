@@ -280,14 +280,25 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     }
   };
 
-  const handleDownload = (chat: ChatHistory) => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chat));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${chat.title.replace(/[^a-z0-9]/gi, '_')}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+  const handleDownload = async (chat: ChatHistory) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${chat.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const fullChat = await response.json();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullChat, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${chat.title.replace(/[^a-z0-9]/gi, '_')}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+      }
+    } catch (error) {
+      console.error('Failed to download chat:', error);
+    }
   };
 
   // Group chats

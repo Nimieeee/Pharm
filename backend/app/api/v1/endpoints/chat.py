@@ -104,17 +104,15 @@ async def get_conversation(
         )
 
 
-@router.put("/conversations/{conversation_id}", response_model=Conversation)
-async def update_conversation(
+@router.patch("/conversations/{conversation_id}", response_model=Conversation)
+async def patch_conversation(
     conversation_id: UUID,
     conversation_data: ConversationUpdate,
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service)
 ):
     """
-    Update a conversation
-    
-    - **title**: New conversation title
+    Partially update a conversation (title, pin, archive)
     """
     try:
         conversation = await chat_service.update_conversation(
@@ -135,6 +133,19 @@ async def update_conversation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update conversation: {str(e)}"
         )
+
+
+@router.put("/conversations/{conversation_id}", response_model=Conversation)
+async def update_conversation(
+    conversation_id: UUID,
+    conversation_data: ConversationUpdate,
+    current_user: User = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Update a conversation
+    """
+    return await patch_conversation(conversation_id, conversation_data, current_user, chat_service)
 
 
 @router.delete("/conversations/{conversation_id}")
@@ -164,6 +175,34 @@ async def delete_conversation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete conversation: {str(e)}"
+        )
+
+
+@router.post("/conversations/{conversation_id}/clone", response_model=Conversation)
+async def clone_conversation(
+    conversation_id: UUID,
+    current_user: User = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Clone a conversation
+    """
+    try:
+        conversation = await chat_service.clone_conversation(conversation_id, current_user)
+        
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+        
+        return conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to clone conversation: {str(e)}"
         )
 
 
