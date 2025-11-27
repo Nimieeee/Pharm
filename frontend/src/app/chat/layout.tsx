@@ -28,17 +28,15 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen }}>
       <div className="h-screen flex bg-[var(--background)]">
-        {/* Desktop Sidebar - Hidden on mobile */}
-        <div className="hidden md:block">
-          <ChatSidebar
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
-            onSelectConversation={handleSelectConversation}
-            onNewChat={handleNewChat}
-          />
-        </div>
+        {/* Sidebar - Overlay on mobile, fixed on desktop */}
+        <ChatSidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+        />
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - Legacy, can be removed if not needed */}
         <MobileNav
           onSelectConversation={handleSelectConversation}
           onNewChat={handleNewChat}
