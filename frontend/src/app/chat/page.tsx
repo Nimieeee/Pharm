@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles } from 'lucide-react';
 import { openMobileNav } from '@/components/chat/MobileNav';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
@@ -182,20 +182,18 @@ function ChatContent() {
             </div>
           )}
           
-          {/* Only show loading indicator if there's no assistant message being streamed */}
+          {/* Loading indicator - minimal, no avatar */}
           {isLoading && !deepResearchProgress && (messages.length === 0 || messages[messages.length - 1]?.role !== 'assistant') && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-3 py-4"
+              className="py-4"
             >
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Sparkles size={14} strokeWidth={1.5} className="text-white" />
-              </div>
-              <div className="flex gap-1">
-                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="text-xs text-[var(--text-secondary)] ml-2">Thinking...</span>
               </div>
             </motion.div>
           )}
