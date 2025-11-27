@@ -66,35 +66,34 @@ function ChatContent() {
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)]">
       {/* Floating Header Controls */}
-      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none p-4 flex items-start justify-between">
+      {/* Floating Header Controls */}
+      <div className="fixed top-0 left-0 right-0 h-14 z-40 pointer-events-none">
         {/* Left: Sidebar Trigger (Ghost) */}
-        <div className="pointer-events-auto">
-          {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm"
-            >
-              <Menu size={24} strokeWidth={1.5} />
-            </button>
-          )}
+        <div className="pointer-events-auto absolute top-3 left-4 z-50">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className={`p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm ${sidebarOpen ? 'hidden md:hidden' : 'flex'}`}
+          >
+            <Menu size={24} strokeWidth={1.5} />
+          </button>
         </div>
 
         {/* Center: Model Selector (Glass Pill) */}
         <div
-          className="pointer-events-auto absolute top-4 transition-all duration-300"
+          className="pointer-events-auto absolute top-3 left-1/2 -translate-x-1/2 transition-all duration-300 z-40"
           style={{
             left: sidebarOpen ? 'calc(140px + 50%)' : '50%',
             transform: 'translateX(-50%)'
           }}
         >
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg select-none">
-            <span className="text-sm font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg select-none max-w-[200px] truncate">
+            <span className="text-sm font-medium text-[var(--text-primary)] tracking-tight truncate">PharmGPT</span>
             <span className="text-xs text-[var(--text-secondary)] opacity-70">v2.0</span>
           </div>
         </div>
 
         {/* Right: Mobile New Chat (Visible only on mobile) */}
-        <div className="pointer-events-auto md:hidden">
+        <div className="pointer-events-auto md:hidden absolute top-3 right-4 z-50">
           <button
             onClick={handleNewChat}
             className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm"

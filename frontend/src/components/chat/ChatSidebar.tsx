@@ -422,7 +422,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onToggle}
-            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[90]"
           />
         )}
       </AnimatePresence>
@@ -435,7 +435,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className="fixed md:relative z-50 md:z-0 h-full w-[280px] border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none"
+            className="fixed md:relative z-[100] md:z-0 h-full w-[280px] border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none"
           >
             <div className="p-4 flex flex-col h-full">
               {/* Header Area */}
