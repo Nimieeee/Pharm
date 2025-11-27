@@ -39,15 +39,15 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
         {message.attachments?.map((file, index) => (
           <div
             key={index}
-            className="flex items-center gap-3 p-3 bg-white dark:bg-card border border-border/60 rounded-xl shadow-sm hover:shadow-md transition-shadow w-fit min-w-[220px] max-w-[280px]"
+            className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow w-fit min-w-[220px] max-w-[280px]"
           >
-            {/* Icon Box - Purple/Slate solid background */}
-            <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0">
+            {/* Icon Box - Theme aware primary color */}
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0">
               <FileText size={20} strokeWidth={2} />
             </div>
             {/* File Info */}
             <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-              <span className="text-sm font-medium text-foreground truncate">{file.name}</span>
+              <span className="text-sm font-medium text-card-foreground truncate">{file.name}</span>
               <span className="text-xs text-muted-foreground">{file.size}</span>
             </div>
           </div>
