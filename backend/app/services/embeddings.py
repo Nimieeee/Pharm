@@ -18,7 +18,7 @@ if EMBEDDING_PROVIDER == "sentence-transformers" or EMBEDDING_PROVIDER == "local
 else:
     # Default to Mistral embeddings
     logger.info("🚀 Using Mistral embeddings (1024 dimensions)")
-    from app.services.hf_embeddings import MistralEmbeddingsService, get_mistral_embeddings_service
+    from app.services.mistral_embeddings import MistralEmbeddingsService, get_mistral_embeddings_service
     embeddings_service = get_mistral_embeddings_service()
     EmbeddingsService = MistralEmbeddingsService
 
