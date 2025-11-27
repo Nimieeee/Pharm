@@ -352,21 +352,34 @@ class DeepResearchService:
         
         state.progress_log.append(f"[{datetime.now().isoformat()}] Analyzing research topic: {state.research_question}")
         
-        system_prompt = """You are a Principal Investigator planning a systematic review.
-Break this research topic into 4 distinct, comprehensive sub-topics covering:
-1. Mechanisms of Action / Pathophysiology
-2. Clinical Efficacy & Key Trials
-3. Safety Profile & Side Effects
-4. Current Guidelines & Recommendations
+        system_prompt = """You are a Principal Investigator planning a systematic biomedical research review.
+
+ANALYZE the research question to determine its type:
+- Drug/Treatment → Focus on: Mechanisms, Efficacy, Safety, Guidelines
+- Animal Model → Focus on: Model characteristics, Applications, Protocols, Validation
+- Disease/Pathology → Focus on: Etiology, Mechanisms, Clinical features, Treatment
+- Laboratory Technique → Focus on: Principles, Protocol, Applications, Limitations
+- Molecular Mechanism → Focus on: Pathway, Regulation, Disease relevance, Therapeutic implications
+
+Based on the question type, break it into 4 distinct, comprehensive sub-topics that best address the research need.
+Use appropriate scientific terminology and ensure each sub-topic is specific and actionable.
 
 Return a JSON object:
 {
-    "plan_overview": "Brief strategy description",
+    "plan_overview": "Brief strategy description (mention the identified topic type)",
     "steps": [
-        {"id": 1, "topic": "Specific sub-topic 1", "keywords": ["k1", "k2"], "source_preference": "PubMed"},
-        ...
+        {"id": 1, "topic": "Specific sub-topic 1", "keywords": ["k1", "k2", "k3"], "source_preference": "PubMed"},
+        {"id": 2, "topic": "Specific sub-topic 2", "keywords": ["k1", "k2", "k3"], "source_preference": "PubMed"},
+        {"id": 3, "topic": "Specific sub-topic 3", "keywords": ["k1", "k2", "k3"], "source_preference": "Web"},
+        {"id": 4, "topic": "Specific sub-topic 4", "keywords": ["k1", "k2", "k3"], "source_preference": "PubMed"}
     ]
-}"""
+}
+
+Examples:
+- "Zebrafish as a model for drug screening" → Model validation, Genetic tools, Screening protocols, Case studies
+- "CRISPR-Cas9 in cancer therapy" → Mechanism, Delivery methods, Clinical trials, Safety concerns
+- "Alzheimer's disease pathogenesis" → Protein aggregation, Neuroinflammation, Genetic factors, Biomarkers
+"""
         
         response = await self._call_llm(system_prompt, f"Research Topic: {state.research_question}", json_mode=True)
         
