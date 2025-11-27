@@ -220,10 +220,36 @@ export function useChat() {
 
         setDeepResearchProgress(null);
 
+        // Re-fetch conversation to ensure we have the latest saved report
+        let savedReport = finalReport;
+        if (currentConversationId) {
+          try {
+            const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/messages`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+
+            if (messagesResponse.ok) {
+              const messagesData = await messagesResponse.json();
+              // Find the most recent assistant message (should be the deep research report)
+              const latestAssistantMsg = messagesData
+                .filter((msg: any) => msg.role === 'assistant')
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+              if (latestAssistantMsg?.content) {
+                savedReport = latestAssistantMsg.content;
+              }
+            }
+          } catch (refetchError) {
+            console.error('Failed to re-fetch conversation:', refetchError);
+          }
+        }
+
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: finalReport || 'Deep research completed but no report was generated.',
+          content: savedReport || 'Deep research completed but no report was generated. Please try again.',
           timestamp: new Date(),
         };
 
@@ -310,6 +336,35 @@ export function useChat() {
                   ? { ...msg, content: fullContent }
                   : msg
               ));
+            }
+          }
+
+          // After streaming completes, re-fetch the message to ensure we have the final formatted version
+          if (currentConversationId) {
+            try {
+              const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/messages`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+
+              if (messagesResponse.ok) {
+                const messagesData = await messagesResponse.json();
+                const latestAssistantMsg = messagesData
+                  .filter((msg: any) => msg.role === 'assistant')
+                  .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+                if (latestAssistantMsg?.content && latestAssistantMsg.content !== fullContent) {
+                  // Update with the saved version if it's different (e.g., better formatted)
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: latestAssistantMsg.content }
+                      : msg
+                  ));
+                }
+              }
+            } catch (refetchError) {
+              console.error('Failed to re-fetch message:', refetchError);
             }
           }
           return; // Successfully streamed
