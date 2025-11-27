@@ -20,14 +20,6 @@ function ChatContent() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
 
-  // Restore conversation from localStorage on mount
-  useEffect(() => {
-    const savedConversationId = localStorage.getItem('currentConversationId');
-    if (savedConversationId && !conversationId && !initialQuery) {
-      selectConversation(savedConversationId);
-    }
-  }, []);
-
   // Save current conversation ID to localStorage
   useEffect(() => {
     if (conversationId) {
