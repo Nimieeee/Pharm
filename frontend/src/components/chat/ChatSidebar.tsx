@@ -414,15 +414,28 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onToggle}
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
       <AnimatePresence mode="wait">
         {isOpen && (
           <motion.aside
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
+            initial={{ x: -280, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -280, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className="hidden md:flex flex-col h-full border-r border-border bg-surface overflow-hidden"
+            className="fixed md:relative z-50 md:z-0 h-full w-[280px] border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none"
           >
             <div className="p-4 flex flex-col h-full">
               {/* Header Area */}
@@ -556,10 +569,11 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
       </AnimatePresence>
 
       {/* Collapsed Toggle Button */}
+      {/* Collapsed Toggle Button */}
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-surface border border-border items-center justify-center hover:bg-surface-hover transition-colors btn-press shadow-lg"
+          className="fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center hover:bg-surface-hover transition-colors btn-press shadow-lg"
         >
           <ChevronsRight size={16} strokeWidth={1.5} className="text-foreground-muted" />
         </button>

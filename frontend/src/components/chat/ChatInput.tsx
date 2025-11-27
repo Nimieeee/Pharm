@@ -290,7 +290,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                           initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
-                          className="absolute bottom-full left-0 mb-4 w-56 p-2 rounded-3xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl z-[50] overflow-hidden"
+                          className="absolute bottom-full left-0 mb-4 w-56 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
                         >
                           <button
                             type="button"
@@ -439,7 +439,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                           initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
-                          className="absolute bottom-full left-0 mb-4 w-64 p-2 rounded-3xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl z-[50] overflow-hidden"
+                          className="absolute bottom-full left-0 mb-4 w-64 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
                         >
                           <button
                             type="button"

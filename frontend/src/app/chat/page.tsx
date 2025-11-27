@@ -80,11 +80,16 @@ function ChatContent() {
         </div>
 
         {/* Center: Model Selector (Glass Pill) */}
-        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 top-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg transition-all hover:scale-105 cursor-pointer">
+        <div
+          className="pointer-events-auto absolute top-4 transition-all duration-300"
+          style={{
+            left: sidebarOpen ? 'calc(140px + 50%)' : '50%',
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg select-none">
             <span className="text-sm font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
             <span className="text-xs text-[var(--text-secondary)] opacity-70">v2.0</span>
-            <ChevronDown size={14} className="text-[var(--text-secondary)] opacity-50" />
           </div>
         </div>
 

@@ -495,17 +495,18 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
             findings_text += f"\n[{i+1}] Title: {f.title}\nSource: {f.source}\nContent: {f.raw_content[:300]}...\n"
         
         # Check for sufficiency
-        system_prompt = """You are a Senior Editor (AI). Analyze the gathered research.
-Is it sufficient to write a comprehensive, academic-grade report on the user's topic?
-If 'YES', proceed.
-If 'NO', generate 2 new specific search queries to fill the gaps.
-
-Return JSON:
-{
-    "sufficient": boolean,
-    "missing_info": "Description of what is missing",
-    "new_queries": ["query1", "query2"] (only if sufficient is false)
-}"""
+        system_prompt = (
+            "You are a Senior Editor (AI). Analyze the gathered research.\n"
+            "Is it sufficient to write a comprehensive, academic-grade report on the user's topic?\n"
+            "If 'YES', proceed.\n"
+            "If 'NO', generate 2 new specific search queries to fill the gaps.\n\n"
+            "Return JSON:\n"
+            "{\n"
+            '    "sufficient": boolean,\n'
+            '    "missing_info": "Description of what is missing",\n'
+            '    "new_queries": ["query1", "query2"] (only if sufficient is false)\n'
+            "}"
+        )
 
         user_prompt = f"Research Question: {state.research_question}\n\nFindings Summary:\n{findings_text}"
         
