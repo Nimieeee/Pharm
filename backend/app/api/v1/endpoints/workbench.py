@@ -141,6 +141,7 @@ async def preview_data(
     
     try:
         import pandas as pd
+        import numpy as np
         
         # Validate file type
         allowed_extensions = {'.csv', '.xlsx', '.xls', '.json', '.tsv'}
@@ -181,6 +182,20 @@ async def preview_data(
             "numeric_columns": df.select_dtypes(include=['number']).columns.tolist(),
             "categorical_columns": df.select_dtypes(include=['object', 'category']).columns.tolist()
         }
+        
+        # Replace NaN and Inf with None for JSON compliance
+        # This must be done on the dictionary or the dataframe before converting to dict
+        # Re-processing the response dictionary to handle NaNs in sample data
+        response_data = {
+            "filename": data_file.filename,
+            "rows": len(df),
+            "columns": list(df.columns),
+            "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
+            "sample": df.head(10).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records'),
+            "numeric_columns": df.select_dtypes(include=['number']).columns.tolist(),
+            "categorical_columns": df.select_dtypes(include=['object', 'category']).columns.tolist()
+        }
+        return response_data
         
     except HTTPException:
         raise

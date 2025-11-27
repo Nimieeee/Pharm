@@ -1,20 +1,22 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Loader2, Zap, BookOpen, Search, Send,
-  Mic, Headphones, Paperclip
+  Paperclip
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
 
-type Mode = 'fast' | 'detailed' | 'deep_research';
+export type Mode = 'fast' | 'detailed' | 'deep_research';
 
 interface ChatInputProps {
   onSend: (message: string, mode: Mode) => void;
   onFileUpload?: (files: FileList) => void;
   isLoading: boolean;
   isUploading?: boolean;
+  mode: Mode;
+  setMode: (mode: Mode) => void;
 }
 
 const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
@@ -23,10 +25,8 @@ const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
   { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
 ];
 
-export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading = false }: ChatInputProps) {
+export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
   const [message, setMessage] = useState('');
-  const [mode, setMode] = useState<Mode>('fast'); // Default to fast mode
-  const [showModes, setShowModes] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +75,6 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
   };
 
   const currentMode = modes.find(m => m.id === mode)!;
-  const ModeIcon = currentMode.icon;
 
   return (
     <>
@@ -97,7 +96,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
 
       {/* Desktop Floating Capsule */}
       <div
-        className="hidden md:block fixed bottom-8 z-50 w-[60%] min-w-[500px] max-w-[700px] transition-all duration-300"
+        className="hidden md:block fixed bottom-8 z-[50] w-[60%] min-w-[500px] max-w-[700px] transition-all duration-300"
         style={{
           left: sidebarOpen ? 'calc(140px + 50%)' : '50%',
           transform: 'translateX(-50%)'
@@ -132,7 +131,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
             className={`relative rounded-[28px] border-2 transition-all ${isDragging
                 ? 'border-[var(--accent)] bg-[var(--accent)]/5'
                 : 'border-[var(--border)] hover:border-[var(--text-secondary)]/30'
-              } bg-[var(--surface)] shadow-2xl`}
+              } bg-[var(--surface)]/80 backdrop-blur-xl shadow-2xl`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
@@ -156,56 +155,88 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                   )}
                 </button>
 
-                {/* Attach Menu Dropdown */}
-                {showAttachMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute bottom-full left-0 mb-4 w-48 p-1.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)] transition-colors"
+                {/* Attach Menu Dropdown - Glassmorphism */}
+                <AnimatePresence>
+                  {showAttachMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 10, originX: 0, originY: 1 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                      className="absolute bottom-full left-0 mb-4 w-64 p-2 rounded-2xl bg-white/80 dark:bg-[#1E1E1E]/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl z-50"
                     >
-                      <Paperclip size={18} strokeWidth={1.5} />
-                      <span className="text-sm font-medium">Upload File</span>
-                    </button>
-                  </motion.div>
-                )}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
+                          <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-sm font-medium block">Upload File</span>
+                          <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
+                        </div>
+                      </button>
+
+                      <div className="h-px bg-[var(--border)]/50 my-1 mx-2" />
+
+                      {modes.map((m) => {
+                        const Icon = m.icon;
+                        const isActive = mode === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isActive
+                                ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
+                                : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50'
+                              }`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-[var(--accent)]/20' : 'bg-[var(--surface-highlight)]'
+                              }`}>
+                              <Icon size={16} strokeWidth={1.5} />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-medium">{m.label}</p>
+                              <p className="text-[10px] text-[var(--text-secondary)]">{m.desc}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
-            {/* Center: Text Input */}
-            <textarea
-              ref={textareaRef}
-              value={message}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              placeholder={`Ask anything in ${currentMode.label} mode...`}
-              disabled={isLoading}
-              rows={1}
-              className="w-full py-4 pl-16 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-base"
-              style={{ minHeight: '60px', maxHeight: '200px' }}
-            />
+            {/* Center: Text Input or Upload Status */}
+            {isUploading ? (
+              <div className="w-full py-4 pl-16 pr-16 flex items-center justify-center gap-2 text-[var(--text-primary)]" style={{ minHeight: '60px' }}>
+                <Loader2 size={16} strokeWidth={1.5} className="animate-spin text-[var(--accent)]" />
+                <span className="text-sm font-medium">Scanning Document...</span>
+              </div>
+            ) : (
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={handleTextareaChange}
+                onKeyDown={handleKeyDown}
+                placeholder={`Ask anything in ${currentMode.label} mode...`}
+                disabled={isLoading}
+                rows={1}
+                className="w-full py-4 pl-16 pr-16 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-base"
+                style={{ minHeight: '60px', maxHeight: '200px' }}
+              />
+            )}
 
-            {/* Right: Voice Icon + Send */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              {/* Voice/Headphones Icon */}
-              <button
-                type="button"
-                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
-                title="Voice mode (coming soon)"
-              >
-                <Headphones size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-              </button>
-
-              {/* Send Button */}
+            {/* Right: Send Button ONLY */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
               <motion.button
                 type="submit"
-                disabled={!message.trim() || isLoading}
+                disabled={!message.trim() || isLoading || isUploading}
                 whileTap={{ scale: 0.95 }}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${message.trim() && !isLoading
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${message.trim() && !isLoading && !isUploading
                     ? 'bg-[var(--foreground)] text-[var(--background)]'
                     : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
                   }`}
@@ -228,7 +259,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
       </div>
 
       {/* Mobile Floating Capsule - ChatGPT Style */}
-      <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-[50]">
         {/* Gradient Fade - Mobile */}
         <div className="fixed bottom-0 left-0 right-0 h-24 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] to-transparent" />
 
@@ -236,7 +267,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
           <div className={`relative rounded-full border-2 transition-all ${isDragging
               ? 'border-[var(--accent)] bg-[var(--accent)]/5'
               : 'border-[var(--border)]'
-            } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-xl`}>
+            } bg-[var(--surface)]/80 backdrop-blur-xl dark:bg-[#1E1E1E]/80 shadow-xl`}>
             {/* Left: Plus Button */}
             <div className="absolute left-1.5 top-1/2 -translate-y-1/2">
               <div className="relative">
@@ -256,94 +287,91 @@ export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading
                   )}
                 </button>
 
-                {/* Mobile Attach Menu */}
-                {showAttachMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute bottom-full left-0 mb-2 w-56 p-2 rounded-2xl bg-[var(--surface)] dark:bg-[#1E1E1E] border border-[var(--border)] shadow-xl"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)] transition-colors"
+                {/* Mobile Attach Menu - Glassmorphism */}
+                <AnimatePresence>
+                  {showAttachMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 10, originX: 0, originY: 1 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                      className="absolute bottom-full left-0 mb-2 w-64 p-2 rounded-2xl bg-white/80 dark:bg-[#1E1E1E]/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl z-50"
                     >
-                      <Paperclip size={18} strokeWidth={1.5} />
-                      <span className="text-sm font-medium">Upload File</span>
-                    </button>
-                    {modes.map((m) => {
-                      const Icon = m.icon;
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${mode === m.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]'
-                            }`}
-                        >
-                          <Icon size={18} strokeWidth={1.5} />
-                          <div className="text-left">
-                            <p className="text-sm font-medium">{m.label}</p>
-                            <p className="text-xs text-[var(--text-secondary)]">{m.desc}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
+                          <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-sm font-medium block">Upload File</span>
+                          <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
+                        </div>
+                      </button>
+
+                      <div className="h-px bg-[var(--border)]/50 my-1 mx-2" />
+
+                      {modes.map((m) => {
+                        const Icon = m.icon;
+                        const isActive = mode === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isActive
+                                ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
+                                : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50'
+                              }`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-[var(--accent)]/20' : 'bg-[var(--surface-highlight)]'
+                              }`}>
+                              <Icon size={16} strokeWidth={1.5} />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-medium">{m.label}</p>
+                              <p className="text-[10px] text-[var(--text-secondary)]">{m.desc}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
-            {/* Mode Indicator - Mobile */}
-            <div className="absolute left-12 top-1/2 -translate-y-1/2">
-              <button
-                type="button"
-                onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${mode === 'fast' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-                    mode === 'detailed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
-                      'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                  }`}
-              >
-                <ModeIcon size={10} strokeWidth={1.5} />
-              </button>
-            </div>
+            {/* Center: Text Input or Upload Status */}
+            {isUploading ? (
+              <div className="w-full py-3 pl-12 pr-12 flex items-center justify-center gap-2 text-[var(--text-primary)]">
+                <Loader2 size={14} strokeWidth={1.5} className="animate-spin text-[var(--accent)]" />
+                <span className="text-xs font-medium">Scanning...</span>
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="Message..."
+                disabled={isLoading}
+                className="w-full py-3 pl-12 pr-12 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm text-center"
+              />
+            )}
 
-            {/* Center: Text Input */}
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              placeholder="Message..."
-              disabled={isLoading}
-              className="w-full py-3 pl-20 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm"
-            />
-
-            {/* Right: Divider + Voice + Send */}
-            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-              {/* Divider */}
-              <div className="w-px h-5 bg-[var(--border)] mr-1" />
-
-              {/* Voice Icon */}
-              <button
-                type="button"
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                title="Voice mode"
-              >
-                <Headphones size={16} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-              </button>
-
-              {/* Send Button */}
+            {/* Right: Send Button ONLY */}
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center">
               <motion.button
                 type="submit"
-                disabled={!message.trim() || isLoading}
+                disabled={!message.trim() || isLoading || isUploading}
                 whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${message.trim() && !isLoading
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${message.trim() && !isLoading && !isUploading
                     ? 'bg-[var(--text-primary)] text-[var(--background)]'
                     : 'bg-transparent text-[var(--text-secondary)]'
                   }`}

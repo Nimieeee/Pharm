@@ -6,6 +6,7 @@ Handles document processing and vector search using LangChain + Supabase pgvecto
 import os
 import tempfile
 from typing import List, Dict, Any, Optional, Tuple
+import asyncio
 from uuid import UUID
 from supabase import Client
 import re
@@ -262,6 +263,9 @@ class RAGService:
                         success_count += 1
                     else:
                         print(f"  ❌ Failed to store chunk {i+1}")
+                    
+                    # Rate limiting to avoid 429 errors
+                    await asyncio.sleep(0.5)
                 
                 print(f"✅ Successfully stored {success_count}/{len(chunks)} chunks")
                 

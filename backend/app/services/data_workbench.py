@@ -94,7 +94,7 @@ class DataWorkbenchService:
                     model = "pixtral-large-latest"  # Vision model
                 else:
                     messages.append({"role": "user", "content": user_prompt})
-                    model = "mistral-large-latest"
+                    model = "mistral-small-latest"
                 
                 payload = {
                     "model": model,

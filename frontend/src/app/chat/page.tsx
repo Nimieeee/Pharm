@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles } from 'lucide-react';
 import { openMobileNav } from '@/components/chat/MobileNav';
 import ChatMessage from '@/components/chat/ChatMessage';
-import ChatInput from '@/components/chat/ChatInput';
+import ChatInput, { Mode } from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -18,6 +18,7 @@ function ChatContent() {
   const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation } = useChatContext();
   const { sidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
 
   // Restore conversation from localStorage on mount
   useEffect(() => {
@@ -50,14 +51,14 @@ function ChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (message: string, mode: 'fast' | 'detailed' | 'deep_research') => {
-    sendMessage(message, mode);
+  const handleSend = (message: string, selectedMode: Mode) => {
+    sendMessage(message, selectedMode);
   };
 
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[var(--background)]">
-      {/* Mobile Header - ChatGPT Style */}
-      <header className="md:hidden sticky top-0 z-30 h-14 px-3 flex items-center justify-between bg-[var(--surface)] border-b border-[var(--border)]">
+      {/* Mobile Header - ChatGPT Style with Glassmorphism */}
+      <header className="md:hidden sticky top-0 z-30 h-16 px-4 flex items-center justify-between bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]/10">
         {/* Left: Hamburger Menu */}
         <button
           onClick={() => openMobileNav()}
@@ -66,11 +67,10 @@ function ChatContent() {
           <Menu size={20} strokeWidth={1.5} className="text-[var(--text-primary)]" />
         </button>
 
-        {/* Center: Model Selector */}
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-[var(--surface-highlight)] transition-colors">
-          <span className="text-sm font-medium text-[var(--text-primary)]">PharmGPT</span>
-          <ChevronDown size={14} strokeWidth={2} className="text-[var(--text-secondary)]" />
-        </button>
+        {/* Center: Model Selector (Simplified) */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-base font-medium text-[var(--text-primary)]">PharmGPT</span>
+        </div>
 
         {/* Right: New Chat */}
         <button
@@ -78,13 +78,13 @@ function ChatContent() {
           className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--surface-highlight)] transition-colors"
           title="New chat"
         >
-          <Edit3 size={18} strokeWidth={1.5} className="text-[var(--text-primary)]" />
+          <Edit3 size={20} strokeWidth={1.5} className="text-[var(--text-primary)]" />
         </button>
       </header>
 
-      {/* Desktop Header */}
-      <header className={`hidden md:flex h-14 px-6 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>
-        <div className="flex items-center gap-3">
+      {/* Desktop Header with Glassmorphism */}
+      <header className={`hidden md:flex h-[72px] px-6 items-center justify-between border-b border-[var(--border)]/10 bg-[var(--background)]/80 backdrop-blur-md transition-all duration-300 ${!sidebarOpen ? 'pl-16' : ''}`}>
+        <div className="flex items-center gap-3 h-full">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
             <Sparkles size={16} strokeWidth={1.5} className="text-white" />
           </div>
@@ -93,7 +93,7 @@ function ChatContent() {
             <p className="text-xs text-[var(--text-secondary)]">AI Research Assistant</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 h-full">
           {/* Delete Conversation Button */}
           {conversationId && messages.length > 0 && (
             <button
@@ -110,11 +110,10 @@ function ChatContent() {
               Delete
             </button>
           )}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-            isLoading 
-              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' 
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isLoading
+              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
               : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          }`}>
+            }`}>
             {isLoading ? (
               <>
                 <Loader2 size={12} strokeWidth={1.5} className="animate-spin" />
@@ -134,7 +133,10 @@ function ChatContent() {
       <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 pb-32 sm:pb-36 md:pb-44">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 ? (
-            <EmptyState onSuggestionClick={(msg) => handleSend(msg, 'fast')} />
+            <EmptyState
+              onSuggestionClick={(msg) => handleSend(msg, mode)}
+              currentMode={mode}
+            />
           ) : (
             <AnimatePresence mode="popLayout">
               {messages.map((msg, index) => (
@@ -145,23 +147,23 @@ function ChatContent() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <ChatMessage 
-                    message={msg} 
+                  <ChatMessage
+                    message={msg}
                     isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
                   />
                 </motion.div>
               ))}
             </AnimatePresence>
           )}
-          
+
           {/* Deep Research Progress */}
           {deepResearchProgress && (
             <div className="mb-4">
-              <DeepResearchUI 
+              <DeepResearchUI
                 state={{
                   status: deepResearchProgress.message || deepResearchProgress.status || 'Processing...',
                   progress: deepResearchProgress.progress || 0,
-                  logs: deepResearchProgress.plan_overview 
+                  logs: deepResearchProgress.plan_overview
                     ? [`Strategy: ${deepResearchProgress.plan_overview}`]
                     : [],
                   sources: deepResearchProgress.citations?.map(c => ({
@@ -181,7 +183,7 @@ function ChatContent() {
               />
             </div>
           )}
-          
+
           {/* Loading indicator - minimal, no avatar */}
           {isLoading && !deepResearchProgress && (messages.length === 0 || messages[messages.length - 1]?.role !== 'assistant') && (
             <motion.div
@@ -202,17 +204,19 @@ function ChatContent() {
       </div>
 
       {/* Input */}
-      <ChatInput 
-        onSend={handleSend} 
+      <ChatInput
+        onSend={handleSend}
         onFileUpload={uploadFiles}
-        isLoading={isLoading} 
+        isLoading={isLoading}
         isUploading={isUploading}
+        mode={mode}
+        setMode={setMode}
       />
     </div>
   );
 }
 
-function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) => void }) {
+function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string) => void, currentMode: Mode }) {
   const suggestions = [
     'What are the common drug interactions with Warfarin?',
     'Explain the mechanism of action of SSRIs',
@@ -235,6 +239,8 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick: (msg: string) =>
       </h2>
       <p className="text-[var(--text-secondary)] mb-8 max-w-md mx-auto text-sm md:text-base">
         Ask about drug interactions, research writing, or upload documents for analysis.
+        <br />
+        <span className="text-xs opacity-70 mt-2 block">Current Mode: {currentMode === 'deep_research' ? 'Deep Research' : currentMode === 'detailed' ? 'Detailed' : 'Fast'}</span>
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto px-2 sm:px-4">
         {suggestions.map((suggestion, i) => (

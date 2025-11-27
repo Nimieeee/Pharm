@@ -307,7 +307,7 @@ class DeepResearchService:
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 payload = {
-                    "model": "mistral-large-latest",
+                    "model": "mistral-small-latest",
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}

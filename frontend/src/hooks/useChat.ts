@@ -18,10 +18,10 @@ interface DeepResearchProgress {
   steps?: Array<{ id: number; topic: string; source: string }>;
   count?: number;
   report?: string;
-  citations?: Array<{ 
-    id: number; 
-    title: string; 
-    url: string; 
+  citations?: Array<{
+    id: number;
+    title: string;
+    url: string;
     source: string;
     authors?: string;
     year?: string;
@@ -94,7 +94,7 @@ export function useChat() {
     if (!content.trim() || isLoading) return;
 
     const token = localStorage.getItem('token');
-    
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -150,9 +150,9 @@ export function useChat() {
           citations: [],
           plan_overview: ''
         };
-        
+
         setDeepResearchProgress(accumulatedState);
-        
+
         const response = await fetch(`${API_BASE_URL}/api/v1/ai/deep-research/stream`, {
           method: 'POST',
           headers: {
@@ -191,10 +191,10 @@ export function useChat() {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6).trim();
                 if (data === '[DONE]') continue;
-                
+
                 try {
                   const progress = JSON.parse(data) as DeepResearchProgress;
-                  
+
                   // Accumulate state for better UI experience
                   accumulatedState = {
                     ...accumulatedState,
@@ -204,9 +204,9 @@ export function useChat() {
                     citations: progress.citations || accumulatedState.citations,
                     plan_overview: progress.plan_overview || accumulatedState.plan_overview,
                   };
-                  
+
                   setDeepResearchProgress({ ...accumulatedState });
-                  
+
                   if (progress.type === 'complete' && progress.report) {
                     finalReport = progress.report;
                   }
@@ -234,7 +234,7 @@ export function useChat() {
       // Regular chat mode - try streaming first, fallback to non-streaming
       const assistantMessageId = (Date.now() + 1).toString();
       let useStreaming = true;
-      
+
       try {
         const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
           method: 'POST',
@@ -272,7 +272,7 @@ export function useChat() {
 
             const chunk = decoder.decode(value, { stream: true });
             buffer += chunk;
-            
+
             // Process complete lines from buffer
             const lines = buffer.split('\n');
             // Keep the last potentially incomplete line in buffer
@@ -282,31 +282,31 @@ export function useChat() {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6);
                 if (data.trim() === '[DONE]') continue;
-                
+
                 // Skip any JSON log messages that might have leaked into the stream
                 if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
                 if (data.trim().startsWith('{') && data.includes('"level"')) continue;
-                
+
                 // The data is the actual text content, not JSON
                 // Add it directly to the content
                 fullContent += data;
                 // Update the message content in real-time
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessageId 
+                setMessages(prev => prev.map(msg =>
+                  msg.id === assistantMessageId
                     ? { ...msg, content: fullContent }
                     : msg
                 ));
               }
             }
           }
-          
+
           // Process any remaining buffer
           if (buffer.startsWith('data: ')) {
             const data = buffer.slice(6);
             if (data.trim() !== '[DONE]') {
               fullContent += data;
-              setMessages(prev => prev.map(msg => 
-                msg.id === assistantMessageId 
+              setMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId
                   ? { ...msg, content: fullContent }
                   : msg
               ));
@@ -347,7 +347,7 @@ export function useChat() {
         }
 
         const data = await response.json();
-        
+
         const assistantMessage: Message = {
           id: assistantMessageId,
           role: 'assistant',
@@ -359,7 +359,7 @@ export function useChat() {
       }
     } catch (error: any) {
       console.error('Chat error:', error);
-      
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -452,19 +452,13 @@ export function useChat() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
-      // Add upload status message
-      const uploadingMessage: Message = {
-        id: `upload-${Date.now()}-${i}`,
-        role: 'assistant',
-        content: `📤 Uploading ${file.name}...`,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, uploadingMessage]);
+
+      // Uploading status is handled by UI state (ChatInput spinner)
+      // We don't add a message here anymore to avoid "plumbing" logs
 
       try {
         console.log(`📤 Uploading file: ${file.name} to conversation: ${currentConversationId}`);
-        
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -481,16 +475,15 @@ export function useChat() {
 
         console.log(`📤 Upload response status: ${response.status}`);
 
-        // Remove uploading message
-        setMessages(prev => prev.filter(m => m.id !== uploadingMessage.id));
-
         if (response.ok) {
           const result = await response.json();
           console.log(`✅ Upload success:`, result);
+
+          // Simple success message
           const successMessage: Message = {
             id: `upload-success-${Date.now()}-${i}`,
             role: 'assistant',
-            content: `✅ **${file.name}** uploaded successfully!\n\n${result.chunk_count || 0} text chunks extracted and indexed. You can now ask questions about this document.`,
+            content: `✅ **${file.name}**: Document Ready.`,
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, successMessage]);
@@ -513,9 +506,7 @@ export function useChat() {
         }
       } catch (error: any) {
         console.error(`❌ Upload exception:`, error);
-        // Remove uploading message
-        setMessages(prev => prev.filter(m => m.id !== uploadingMessage.id));
-        
+
         const errorMessage: Message = {
           id: `upload-error-${Date.now()}-${i}`,
           role: 'assistant',
