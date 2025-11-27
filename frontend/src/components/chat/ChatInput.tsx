@@ -13,6 +13,7 @@ export type Mode = 'fast' | 'detailed' | 'deep_research';
 interface ChatInputProps {
   onSend: (message: string, mode: Mode) => void;
   onFileUpload?: (files: FileList) => Promise<any>;
+  onCancelUpload?: () => void;
   isLoading: boolean;
   isUploading?: boolean;
   mode: Mode;
@@ -32,7 +33,7 @@ const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
   { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
 ];
 
-export default function ChatInput({ onSend, onFileUpload, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
+export default function ChatInput({ onSend, onFileUpload, onCancelUpload, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);

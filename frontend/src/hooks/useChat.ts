@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
@@ -38,6 +38,7 @@ export function useChat() {
   const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load conversation messages when conversationId changes
   const loadConversation = useCallback(async (convId: string) => {
@@ -504,57 +505,85 @@ export function useChat() {
     setIsUploading(true);
     const results: { fileName: string; status: 'success' | 'error'; error?: string }[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    // Create new AbortController for this upload session
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
-      try {
-        console.log(`📤 Uploading file: ${file.name} to conversation: ${currentConversationId}`);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        if (signal.aborted) break;
 
-        const formData = new FormData();
-        formData.append('file', file);
+        const file = files[i];
 
-        const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`;
+        try {
+          console.log(`📤 Uploading file: ${file.name} to conversation: ${currentConversationId}`);
 
-        const response = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
+          const formData = new FormData();
+          formData.append('file', file);
 
-        if (response.ok) {
-          console.log(`✅ Upload success: ${file.name}`);
+          const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`;
 
-          // Add to uploaded files state for display
-          const fileSizeKB = (file.size / 1024).toFixed(1);
-          setUploadedFiles(prev => [...prev, {
-            name: file.name,
-            size: `${fileSizeKB} KB`,
-            type: file.type
-          }]);
+          const response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+            signal,
+          });
 
-          results.push({ fileName: file.name, status: 'success' });
-        } else {
-          let errorDetail = 'Unknown error';
-          try {
-            const errorData = await response.json();
-            errorDetail = errorData.detail || JSON.stringify(errorData);
-          } catch {
-            errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+          if (response.ok) {
+            console.log(`✅ Upload success: ${file.name}`);
+
+            // Add to uploaded files state for display
+            const fileSizeKB = (file.size / 1024).toFixed(1);
+            setUploadedFiles(prev => [...prev, {
+              name: file.name,
+              size: `${fileSizeKB} KB`,
+              type: file.type
+            }]);
+
+            results.push({ fileName: file.name, status: 'success' });
+          } else {
+            let errorDetail = 'Unknown error';
+            try {
+              const errorData = await response.json();
+              errorDetail = errorData.detail || JSON.stringify(errorData);
+            } catch {
+              errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            console.error(`❌ Upload failed:`, errorDetail);
+            results.push({ fileName: file.name, status: 'error', error: errorDetail });
           }
-          console.error(`❌ Upload failed:`, errorDetail);
-          results.push({ fileName: file.name, status: 'error', error: errorDetail });
+        } catch (error: any) {
+          console.error(`❌ Upload exception:`, error);
+          results.push({ fileName: file.name, status: 'error', error: error.message || 'Network error' });
         }
-      } catch (error: any) {
-        console.error(`❌ Upload exception:`, error);
-        results.push({ fileName: file.name, status: 'error', error: error.message || 'Network error' });
       }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Upload cancelled');
+        return [{ fileName: 'Upload', status: 'error', error: 'Upload cancelled by user' }];
+      }
+      console.error('Upload error:', error);
+    } finally {
+      setIsUploading(false);
+      abortControllerRef.current = null;
     }
 
-    setIsUploading(false);
     return results;
   }, [conversationId]);
+
+  const cancelUpload = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsUploading(false);
+    }
+  }, []);
 
   return {
     messages,
@@ -565,6 +594,7 @@ export function useChat() {
     clearMessages,
     deleteConversation,
     uploadFiles,
+    cancelUpload,
     conversationId,
     deepResearchProgress,
     selectConversation,
