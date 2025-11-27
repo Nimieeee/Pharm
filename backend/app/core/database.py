@@ -18,14 +18,18 @@ class Database:
     def _initialize_client(self):
         """Initialize Supabase client"""
         try:
-            if settings.SUPABASE_URL and settings.SUPABASE_ANON_KEY:
-                self.client = create_client(
-                    settings.SUPABASE_URL, 
-                    settings.SUPABASE_ANON_KEY
-                )
-                print("✅ Database client initialized")
-            else:
-                raise ValueError("Missing Supabase credentials")
+            if settings.SUPABASE_URL:
+                # Prefer Service Role Key to bypass RLS for backend operations
+                key = settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_ANON_KEY
+                
+                if key:
+                    self.client = create_client(
+                        settings.SUPABASE_URL, 
+                        key
+                    )
+                    print(f"✅ Database client initialized (using {'Service Role' if key == settings.SUPABASE_SERVICE_ROLE_KEY else 'Anon'} Key)")
+                else:
+                    raise ValueError("Missing Supabase credentials")
         except Exception as e:
             print(f"❌ Error initializing database: {e}")
             raise
