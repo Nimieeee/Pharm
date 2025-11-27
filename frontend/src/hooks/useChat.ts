@@ -37,6 +37,7 @@ export function useChat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
 
   // Load conversation messages when conversationId changes
   const loadConversation = useCallback(async (convId: string) => {
@@ -100,9 +101,11 @@ export function useChat() {
       role: 'user',
       content: content.trim(),
       timestamp: new Date(),
+      attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setUploadedFiles([]); // Clear attachments after sending
     setIsLoading(true);
 
     try {
@@ -426,7 +429,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [conversationId, isLoading]);
+  }, [conversationId, isLoading, uploadedFiles]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -522,6 +525,15 @@ export function useChat() {
 
         if (response.ok) {
           console.log(`✅ Upload success: ${file.name}`);
+
+          // Add to uploaded files state for display
+          const fileSizeKB = (file.size / 1024).toFixed(1);
+          setUploadedFiles(prev => [...prev, {
+            name: file.name,
+            size: `${fileSizeKB} KB`,
+            type: file.type
+          }]);
+
           results.push({ fileName: file.name, status: 'success' });
         } else {
           let errorDetail = 'Unknown error';
