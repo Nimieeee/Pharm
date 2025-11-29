@@ -585,6 +585,18 @@ export function useChat() {
     }
   }, []);
 
+  const editMessage = useCallback((messageId: string, newContent: string) => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, content: newContent }
+        : msg
+    ));
+  }, []);
+
+  const deleteMessage = useCallback((messageId: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+  }, []);
+
   return {
     messages,
     isLoading,
@@ -595,6 +607,8 @@ export function useChat() {
     deleteConversation,
     uploadFiles,
     cancelUpload,
+    editMessage,
+    deleteMessage,
     conversationId,
     deepResearchProgress,
     selectConversation,

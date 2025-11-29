@@ -17,16 +17,42 @@ interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
   onRegenerate?: () => void;
+  onEdit?: (messageId: string, newContent: string) => void;
+  onDelete?: (messageId: string) => void;
 }
 
-export default function ChatMessage({ message, isStreaming, onRegenerate }: ChatMessageProps) {
+export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit, onDelete }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editContent.trim() && onEdit) {
+      onEdit(message.id, editContent.trim());
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(message.content);
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    if (confirm('Delete this message?') && onDelete) {
+      onDelete(message.id);
+    }
   };
 
   // ============================================
@@ -53,8 +79,31 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
           </div>
         ))}
 
-        {/* 2. The Text Bubble */}
-        {message.content && (
+        {/* 2. Text Bubble */}
+        {isEditing ? (
+          <div className="bg-[var(--surface)] px-4 py-3 rounded-2xl shadow-sm border border-border max-w-fit min-w-[200px]">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full min-h-[60px] bg-transparent border-none outline-none text-sm resize-none text-foreground"
+              autoFocus
+            />
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={handleSaveEdit}
+                className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-3 py-1 bg-surface-highlight text-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
           <div className="max-w-[85%] bg-[var(--surface-highlight)] text-[var(--text-primary)] rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm">
             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
               {message.content}
@@ -76,13 +125,17 @@ export default function ChatMessage({ message, isStreaming, onRegenerate }: Chat
             )}
           </button>
           <button
-            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors"
+            onClick={handleEdit}
+            disabled={!onEdit}
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Edit message"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg>
           </button>
           <button
-            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors"
+            onClick={handleDelete}
+            disabled={!onDelete}
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Delete message"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>

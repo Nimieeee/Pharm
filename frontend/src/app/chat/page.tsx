@@ -15,7 +15,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload } = useChatContext();
+  const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, editMessage, deleteMessage } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
@@ -105,6 +105,8 @@ function ChatContent() {
                   <ChatMessage
                     message={msg}
                     isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
+                    onEdit={editMessage}
+                    onDelete={deleteMessage}
                   />
                 </motion.div>
               ))}
