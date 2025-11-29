@@ -9,7 +9,16 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  citations?: Array<{ id: number; title: string; url: string }>;
+  citations?: Array<{
+    id: number;
+    title: string;
+    url: string;
+    authors?: string;
+    year?: string;
+    journal?: string;
+    source?: string;
+    doi?: string;
+  }>;
   attachments?: Array<{ name: string; size: string; type: string }>;
 }
 
@@ -214,22 +223,49 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
 
       {/* Citations */}
       {message.citations && message.citations.length > 0 && (
-        <div className="mt-4 p-3 bg-[var(--surface-highlight)] rounded-xl">
-          <p className="text-xs font-medium text-[var(--text-secondary)] mb-2">References</p>
-          <div className="space-y-1">
-            {message.citations.map((citation) => (
-              <a
-                key={citation.id}
-                href={citation.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-[var(--accent)] hover:underline"
-              >
-                <span className="font-medium">[{citation.id}]</span>
-                <span className="truncate">{citation.title}</span>
-                <ExternalLink size={10} strokeWidth={1.5} className="flex-shrink-0" />
-              </a>
-            ))}
+        <div className="mt-4 p-4 bg-[var(--surface-highlight)] rounded-xl border border-border">
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+            <FileText size={14} />
+            References ({message.citations.length})
+          </p>
+          <div className="space-y-2.5">
+            {message.citations.map((citation) => {
+              // Format author-year citation
+              const hasAuthors = citation.authors && citation.authors.trim();
+              const hasYear = citation.year && citation.year.trim();
+              const authorYear = hasAuthors
+                ? `${citation.authors!.split(',')[0]} et al.` + (hasYear ? ` (${citation.year})` : '')
+                : citation.source || 'Web';
+
+              return (
+                <div key={citation.id} className="text-xs">
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-[var(--accent)] flex-shrink-0 mt-0.5">[{citation.id}]</span>
+                    <div className="flex-1 min-w-0">
+                      <a
+                        href={citation.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors inline-flex items-center gap-1.5 font-medium"
+                      >
+                        <span className="underline decoration-dotted underline-offset-2">{citation.title}</span>
+                        <ExternalLink size={10} strokeWidth={2} className="flex-shrink-0" />
+                      </a>
+                      <p className="text-[var(--text-secondary)] mt-0.5">
+                        {authorYear}
+                        {citation.journal && citation.journal !== citation.source && (
+                          <span className="italic">. {citation.journal}</span>
+                        )}
+                        {hasYear ? `.` : '. n.d.'}
+                        {citation.doi && (
+                          <span className="ml-1 opacity-70">DOI: {citation.doi}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
