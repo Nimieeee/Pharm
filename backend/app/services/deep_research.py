@@ -396,6 +396,29 @@ class ResearchTools:
                         if len(authors_list) > 3:
                             authors += " et al."
                         
+                        # Parse Journal and Year from summary
+                        # Format: "Authors - Journal, Year - Publisher"
+                        summary = publication_info.get("summary", "")
+                        journal = ""
+                        year = ""
+                        
+                        if summary:
+                            parts = summary.split(" - ")
+                            if len(parts) >= 2:
+                                # Middle part usually contains "Journal, Year"
+                                # e.g. "New England Journal of Medicine, 1993"
+                                journal_year = parts[1]
+                                jy_parts = journal_year.split(",")
+                                if len(jy_parts) >= 2:
+                                    year = jy_parts[-1].strip()
+                                    journal = ",".join(jy_parts[:-1]).strip()
+                                else:
+                                    # Sometimes just year or just journal
+                                    if journal_year.strip().isdigit():
+                                        year = journal_year.strip()
+                                    else:
+                                        journal = journal_year.strip()
+                        
                         # Get citation count
                         inline_links = result.get("inline_links", {})
                         cited_by = inline_links.get("cited_by", {})
@@ -409,7 +432,8 @@ class ResearchTools:
                             "title": result.get("title", ""),
                             "snippet": result.get("snippet", ""),
                             "authors": authors,
-                            "year": publication_info.get("summary", "").split(",")[-1].strip() if publication_info.get("summary") else "",
+                            "year": year,
+                            "journal": journal,
                             "cited_by": citation_count,
                             "url": result.get("link", ""),
                             "pdf_url": pdf_url,
