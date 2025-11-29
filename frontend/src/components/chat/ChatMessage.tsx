@@ -18,6 +18,9 @@ export interface Message {
     journal?: string;
     source?: string;
     doi?: string;
+    volume?: string;
+    issue?: string;
+    pages?: string;
   }>;
   attachments?: Array<{ name: string; size: string; type: string }>;
 }
@@ -230,13 +233,33 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
           </p>
           <div className="space-y-2.5">
             {message.citations.map((citation) => {
-              // Format author-year citation
-              const hasAuthors = citation.authors && citation.authors.trim();
+              // Helper to format authors to APA style (Last, F. M.)
+              const formatAuthors = (authorStr: string) => {
+                if (!authorStr) return '';
+                // Remove "et al." for processing if present
+                const cleanStr = authorStr.replace(/ et al\.?/i, '');
+                const authors = cleanStr.split(/,\s*|\s+and\s+/).map(a => a.trim()).filter(a => a);
+
+                // If authors are already in "Last, F." format, just join them
+                if (authors.some(a => a.includes('.'))) return authorStr;
+
+                // Try to convert "First Last" to "Last, F."
+                // This is a best-effort heuristic
+                return authors.map(name => {
+                  const parts = name.split(' ');
+                  if (parts.length < 2) return name;
+                  const last = parts[parts.length - 1];
+                  const initials = parts.slice(0, -1).map(p => p[0] + '.').join(' ');
+                  return `${last}, ${initials}`;
+                }).join(', ') + (authorStr.includes('et al') ? ' et al.' : '');
+              };
+
+              const formattedAuthors = citation.authors ? formatAuthors(citation.authors) : '';
               const hasYear = citation.year && citation.year.trim();
 
-              // Get domain for web sources
-              let sourceName = citation.source || 'Web';
-              if (sourceName === 'Web' || !sourceName) {
+              // Get domain for web sources if no journal
+              let sourceName = citation.journal || citation.source || 'Web';
+              if ((sourceName === 'Web' || !sourceName) && citation.url) {
                 try {
                   const urlObj = new URL(citation.url);
                   sourceName = urlObj.hostname.replace('www.', '');
@@ -245,32 +268,31 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
                 }
               }
 
-              const authorYear = hasAuthors
-                ? `${citation.authors!.split(',')[0]} et al.` + (hasYear ? ` (${citation.year})` : '')
-                : sourceName;
-
               return (
-                <div key={citation.id} className="text-xs">
+                <div key={citation.id} className="text-xs mb-3">
                   <div className="flex items-start gap-2">
                     <span className="font-bold text-[var(--accent)] flex-shrink-0 mt-0.5">[{citation.id}]</span>
-                    <div className="flex-1 min-w-0">
-                      <a
-                        href={citation.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors inline-flex items-center gap-1.5 font-medium"
-                      >
-                        <span className="underline decoration-dotted underline-offset-2">{citation.title}</span>
-                        <ExternalLink size={10} strokeWidth={2} className="flex-shrink-0" />
-                      </a>
-                      <p className="text-[var(--text-secondary)] mt-0.5">
-                        {authorYear}
-                        {citation.journal && citation.journal !== citation.source && (
-                          <span className="italic">. {citation.journal}</span>
-                        )}
-                        {hasYear ? `.` : ''}
+                    <div className="flex-1 min-w-0 break-words">
+                      <p className="text-[var(--text-secondary)] leading-relaxed">
+                        {formattedAuthors && <span className="font-medium text-[var(--text-primary)]">{formattedAuthors} </span>}
+                        {hasYear && <span>({citation.year}). </span>}
+                        <a
+                          href={citation.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors font-medium"
+                        >
+                          {citation.title}.
+                        </a>{' '}
+                        <span className="italic">{sourceName}</span>
+                        {citation.volume && <span>, {citation.volume}</span>}
+                        {citation.issue && <span>({citation.issue})</span>}
+                        {citation.pages && <span>, {citation.pages}</span>}
+                        .
                         {citation.doi && (
-                          <span className="ml-1 opacity-70">DOI: {citation.doi}</span>
+                          <span className="block mt-0.5 text-[var(--accent)] opacity-80 hover:opacity-100">
+                            doi:{citation.doi.replace('doi:', '')}
+                          </span>
                         )}
                       </p>
                     </div>

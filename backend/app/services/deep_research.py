@@ -285,6 +285,72 @@ class ResearchTools:
         
         return results
     
+    async def search_duckduckgo(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search DuckDuckGo (HTML fallback)
+        Returns list of { title, snippet, url }
+        """
+        results = []
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                    headers={"User-Agent": "Mozilla/5.0 (compatible; PharmGPT/1.0)"}
+                )
+                
+                if response.status_code == 200:
+                    from html.parser import HTMLParser
+                    
+                    class DDGParser(HTMLParser):
+                        def __init__(self):
+                            super().__init__()
+                            self.results = []
+                            self.current_result = {}
+                            self.in_result = False
+                            self.in_title = False
+                            self.in_snippet = False
+                        
+                        def handle_starttag(self, tag, attrs):
+                            attrs_dict = dict(attrs)
+                            if tag == "a" and "result__a" in attrs_dict.get("class", ""):
+                                self.in_title = True
+                                self.current_result = {"url": attrs_dict.get("href", "")}
+                            elif tag == "a" and "result__snippet" in attrs_dict.get("class", ""):
+                                self.in_snippet = True
+                        
+                        def handle_endtag(self, tag):
+                            if tag == "a" and self.in_title:
+                                self.in_title = False
+                            elif tag == "a" and self.in_snippet:
+                                self.in_snippet = False
+                                if self.current_result:
+                                    self.results.append(self.current_result)
+                                    self.current_result = {}
+                        
+                        def handle_data(self, data):
+                            if self.in_title:
+                                self.current_result["title"] = data.strip()
+                            elif self.in_snippet:
+                                self.current_result["snippet"] = data.strip()
+                    
+                    parser = DDGParser()
+                    parser.feed(response.text)
+                    
+                    # Format results to match other tools
+                    for r in parser.results[:max_results]:
+                        results.append({
+                            "title": r.get("title", ""),
+                            "snippet": r.get("snippet", ""),
+                            "url": r.get("url", ""),
+                            "source": "DuckDuckGo"
+                        })
+                        
+        except Exception as e:
+            print(f"DuckDuckGo search error: {e}")
+            
+        return results
+    
     async def search_google_scholar(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """
         Search Google Scholar using SERP API
