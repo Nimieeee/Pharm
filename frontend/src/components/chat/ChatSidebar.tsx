@@ -151,12 +151,12 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     };
 
     checkActiveChat();
+
+    // Only listen to storage events from other tabs
     window.addEventListener('storage', checkActiveChat);
-    const interval = setInterval(checkActiveChat, 1000);
 
     return () => {
       window.removeEventListener('storage', checkActiveChat);
-      clearInterval(interval);
     };
   }, []);
 
@@ -474,7 +474,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className="fixed md:relative z-[100] md:z-0 h-full w-[280px] border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none"
+            className="fixed md:relative z-[100] md:z-0 h-full w-[280px] border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none will-change-transform"
           >
             <div className="p-4 flex flex-col h-full">
               {/* Header Area */}

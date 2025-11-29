@@ -9,6 +9,28 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
 
 type Mode = 'fast' | 'detailed' | 'deep_research';
 
+// Helper function to generate intelligent conversation title
+function generateConversationTitle(message: string): string {
+  // Remove extra whitespace and newlines
+  const cleaned = message.trim().replace(/\s+/g, ' ');
+
+  // If message is short enough, use it as-is
+  if (cleaned.length <= 50) {
+    return cleaned;
+  }
+
+  // Try to cut at a sentence boundary
+  const firstSentence = cleaned.match(/^[^.!?]+[.!?]/);
+  if (firstSentence && firstSentence[0].length <= 60) {
+    return firstSentence[0].replace(/[.!?]$/, '');
+  }
+
+  // Otherwise, cut at word boundary around 50 chars
+  const truncated = cleaned.substring(0, 50);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > 30 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+}
+
 interface DeepResearchProgress {
   type: string;
   status?: string;
@@ -131,7 +153,7 @@ export function useChat() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ title: content.slice(0, 50) }),
+          body: JSON.stringify({ title: generateConversationTitle(content) }),
         });
 
         if (convResponse.ok) {
