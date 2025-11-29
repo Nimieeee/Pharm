@@ -59,6 +59,7 @@ export function useChat() {
           role: msg.role,
           content: msg.content,
           timestamp: new Date(msg.created_at),
+          attachments: msg.metadata?.attachments || undefined,
         }));
         setMessages(loadedMessages);
         setConversationId(convId);
@@ -166,6 +167,7 @@ export function useChat() {
           body: JSON.stringify({
             question: content.trim(),
             conversation_id: currentConversationId,
+            metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
           }),
         });
 
@@ -393,6 +395,7 @@ export function useChat() {
             conversation_id: currentConversationId,
             mode: mode,
             use_rag: true,
+            metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
           }),
         });
 
