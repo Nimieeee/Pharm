@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
-  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2
+  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle
 } from 'lucide-react';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
@@ -565,6 +565,20 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
               {/* Footer Actions */}
               <div className="pt-4 border-t border-border space-y-2">
+                <button
+                  onClick={() => router.push('/docs')}
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
+                >
+                  <Book size={20} strokeWidth={1.5} className="text-blue-500" />
+                  <span className="text-sm text-foreground">Documentation</span>
+                </button>
+                <button
+                  onClick={() => router.push('/faq')}
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
+                >
+                  <HelpCircle size={20} strokeWidth={1.5} className="text-teal-500" />
+                  <span className="text-sm text-foreground">FAQ</span>
+                </button>
                 <button
                   onClick={() => router.push('/workbench')}
                   className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"

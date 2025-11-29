@@ -51,8 +51,17 @@ export default function HomePage() {
             </div>
             <span className="font-serif font-medium text-foreground">PharmGPT</span>
           </div>
-          
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-6 mr-4">
+              <button onClick={() => router.push('/docs')} className="text-sm font-medium text-foreground-muted hover:text-foreground transition-colors">
+                Docs
+              </button>
+              <button onClick={() => router.push('/faq')} className="text-sm font-medium text-foreground-muted hover:text-foreground transition-colors">
+                FAQ
+              </button>
+            </div>
+
             <button
               onClick={toggleTheme}
               className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
@@ -101,7 +110,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <motion.main 
+      <motion.main
         className="pt-32 pb-24 px-6"
         variants={container}
         initial="hidden"
@@ -117,13 +126,13 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-foreground-muted max-w-xl mx-auto text-lg">
-              Accelerate pharmaceutical research with intelligent document analysis, 
+              Accelerate pharmaceutical research with intelligent document analysis,
               drug interaction insights, and clinical data processing.
             </p>
           </motion.div>
 
           {/* Search Input */}
-          <motion.form 
+          <motion.form
             variants={item}
             onSubmit={handleSubmit}
             className="max-w-2xl mx-auto mb-24"
@@ -146,7 +155,7 @@ export default function HomePage() {
           </motion.form>
 
           {/* Feature Cards */}
-          <motion.div 
+          <motion.div
             variants={item}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
@@ -174,10 +183,18 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-8 border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-6 text-center">
+        <div className="max-w-[1200px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-foreground-muted text-sm">
             © 2025 PharmGPT. Built for pharmaceutical research excellence.
           </p>
+          <div className="flex items-center gap-6">
+            <button onClick={() => router.push('/docs')} className="text-sm text-foreground-muted hover:text-foreground transition-colors">
+              Documentation
+            </button>
+            <button onClick={() => router.push('/faq')} className="text-sm text-foreground-muted hover:text-foreground transition-colors">
+              FAQ
+            </button>
+          </div>
         </div>
       </footer>
     </div>
