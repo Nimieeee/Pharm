@@ -91,6 +91,46 @@ async def chat(
         try:
             security_guard.validate_transaction(chat_request.message)
             print("✅ Security checks passed")
+            
+            # 1. Check for Prompt Injection (Pre-Filter)
+            injection_check = ai_service.check_for_injection(chat_request.message)
+            if injection_check["is_injection"]:
+                print(f"🚨 Prompt Injection Detected: {chat_request.message[:50]}...")
+                
+                # We still need to validate conversation exists to save the refusal
+                conversation = await chat_service.get_conversation(
+                    chat_request.conversation_id, current_user
+                )
+                if not conversation:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Conversation not found"
+                    )
+                
+                # Save user message and refusal
+                user_msg = MessageCreate(
+                    conversation_id=chat_request.conversation_id,
+                    role="user",
+                    content=chat_request.message,
+                    metadata=chat_request.metadata
+                )
+                await chat_service.add_message(user_msg, current_user)
+                
+                refusal_msg = MessageCreate(
+                    conversation_id=chat_request.conversation_id,
+                    role="assistant",
+                    content=injection_check["refusal_message"],
+                    metadata={"security_refusal": True}
+                )
+                await chat_service.add_message(refusal_msg, current_user)
+                
+                return ChatResponse(
+                    response=injection_check["refusal_message"],
+                    conversation_id=chat_request.conversation_id,
+                    mode=chat_request.mode,
+                    context_used=False
+                )
+                
         except SecurityViolationException as e:
             logger.warning(f"🚨 Security violation blocked: {e}")
             raise HTTPException(
@@ -221,6 +261,38 @@ async def chat_stream(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found"
+            )
+            
+        # 1. Check for Prompt Injection (Pre-Filter)
+        injection_check = ai_service.check_for_injection(chat_request.message)
+        if injection_check["is_injection"]:
+            print(f"🚨 Prompt Injection Detected in Stream: {chat_request.message[:50]}...")
+            
+            # Save user message and refusal
+            user_msg = MessageCreate(
+                conversation_id=chat_request.conversation_id,
+                role="user",
+                content=chat_request.message,
+                metadata=chat_request.metadata
+            )
+            await chat_service.add_message(user_msg, current_user)
+            
+            refusal_msg = MessageCreate(
+                conversation_id=chat_request.conversation_id,
+                role="assistant",
+                content=injection_check["refusal_message"],
+                metadata={"security_refusal": True}
+            )
+            await chat_service.add_message(refusal_msg, current_user)
+            
+            # Return streaming refusal
+            async def refusal_stream():
+                yield f"data: {injection_check['refusal_message']}\n\n"
+                yield "data: [DONE]\n\n"
+                
+            return StreamingResponse(
+                refusal_stream(),
+                media_type="text/event-stream"
             )
         
         # Add user message to conversation
@@ -778,7 +850,35 @@ async def deep_research(
         )
         await chat_service.add_message(user_message, current_user)
         
-        # Execute deep research
+        # 1. Check for Prompt Injection (Pre-Filter)
+        injection_check = ai_service.check_for_injection(request.question)
+        if injection_check["is_injection"]:
+            print(f"🚨 Prompt Injection Detected: {request.question[:50]}...")
+            # Save the refusal as a message
+            conversation = await chat_service.get_conversation(request.conversation_id, current_user.id)
+            if not conversation:
+                # This path should ideally not be taken if conversation validation passed above
+                conversation = await chat_service.create_conversation(current_user.id, "New Conversation")
+            
+            await chat_service.add_message(conversation.id, request.question, "user")
+            await chat_service.add_message(conversation.id, injection_check["refusal_message"], "assistant")
+            
+            # Adapting ChatResponse to DeepResearchResponse
+            return DeepResearchResponse(
+                status="failed",
+                report=injection_check["refusal_message"],
+                citations=[],
+                plan_overview="Injection detected, research aborted.",
+                steps_completed=0,
+                findings_count=0
+            )
+
+        # 2. Check for Deep Research Mode (This line seems misplaced from the original snippet,
+        # as this is already the deep research endpoint. I will remove the `if` condition
+        # and fix the malformed `_service.run_research` part to just `research_service.run_research`.)
+        # The original snippet had `if chat_request.mode == "research":_service.run_research(...)`
+        # which is syntactically incorrect and semantically redundant here.
+        # I will assume the intent was to proceed with research if not an injection.
         state = await research_service.run_research(
             question=request.question,
             user_id=current_user.id

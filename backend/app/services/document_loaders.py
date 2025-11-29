@@ -319,9 +319,13 @@ class EnhancedDocumentLoader:
                 }
             )
             
-            # Pass image_analyzer if it's the PDF loader
+            # Pass image_analyzer to appropriate loaders
             if file_extension == '.pdf':
                 documents = await self._load_pdf(tmp_file_path, filename, image_analyzer)
+            elif file_extension == '.docx':
+                documents = await self._load_docx(tmp_file_path, filename, image_analyzer)
+            elif file_extension == '.pptx':
+                documents = await self._load_pptx(tmp_file_path, filename, image_analyzer)
             else:
                 documents = await loader_func(tmp_file_path, filename)
                 
@@ -594,8 +598,13 @@ class EnhancedDocumentLoader:
             }
         )
     
-    async def _load_docx(self, file_path: str, filename: str) -> List[Document]:
-        """Load DOCX document using Docx2txtLoader"""
+    async def _load_docx(
+        self, 
+        file_path: str, 
+        filename: str,
+        image_analyzer: Optional[Any] = None
+    ) -> List[Document]:
+        """Load DOCX document using Docx2txtLoader with optional image analysis"""
         try:
             loader = Docx2txtLoader(file_path)
             documents = loader.load()
@@ -615,6 +624,41 @@ class EnhancedDocumentLoader:
                 "source": filename,
                 "loader": "Docx2txtLoader"
             })
+            
+            # --- MULTIMODAL IMAGE EXTRACTION ---
+            if image_analyzer:
+                try:
+                    import docx
+                    
+                    doc_obj = docx.Document(file_path)
+                    image_descriptions = []
+                    image_count = 0
+                    
+                    # Extract images from relationships
+                    # This finds all images in the document
+                    for rel in doc_obj.part.rels.values():
+                        if "image" in rel.target_ref:
+                            try:
+                                img_part = rel.target_part
+                                img_bytes = img_part.blob
+                                
+                                # Analyze image
+                                description = await image_analyzer(img_bytes)
+                                if description:
+                                    image_count += 1
+                                    image_descriptions.append(f"[IMAGE {image_count}: {description}]")
+                            except Exception as img_err:
+                                logger.warning(f"Failed to analyze image in DOCX: {img_err}")
+                    
+                    if image_descriptions:
+                        logger.info(f"🖼️ Found {len(image_descriptions)} images in DOCX: {filename}")
+                        # Append image descriptions to content
+                        doc.page_content += "\n\n=== IMAGES IN DOCUMENT ===\n" + "\n\n".join(image_descriptions)
+                        doc.metadata["has_images"] = True
+                        doc.metadata["image_count"] = image_count
+                        
+                except Exception as e:
+                    logger.warning(f"Multimodal extraction failed for DOCX {filename}: {e}")
             
             logger.debug(f"Successfully loaded DOCX file: {filename}")
             return [doc]
@@ -637,8 +681,13 @@ class EnhancedDocumentLoader:
                 details={"filename": filename, "file_type": "docx", "error": str(e)}
             )
     
-    async def _load_pptx(self, file_path: str, filename: str) -> List[Document]:
-        """Load PPTX document using UnstructuredPowerPointLoader"""
+    async def _load_pptx(
+        self, 
+        file_path: str, 
+        filename: str,
+        image_analyzer: Optional[Any] = None
+    ) -> List[Document]:
+        """Load PPTX document using UnstructuredPowerPointLoader with optional image analysis"""
         try:
             loader = UnstructuredPowerPointLoader(file_path)
             documents = loader.load()
@@ -658,6 +707,49 @@ class EnhancedDocumentLoader:
                 "source": filename,
                 "loader": "UnstructuredPowerPointLoader"
             })
+            
+            # --- MULTIMODAL IMAGE EXTRACTION ---
+            if image_analyzer:
+                try:
+                    from pptx import Presentation
+                    from pptx.enum.shapes import MSO_SHAPE_TYPE
+                    
+                    prs = Presentation(file_path)
+                    image_descriptions = []
+                    total_images = 0
+                    
+                    for i, slide in enumerate(prs.slides):
+                        slide_images = []
+                        for shape in slide.shapes:
+                            try:
+                                # Check if shape is a picture
+                                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                                    image = shape.image
+                                    img_bytes = image.blob
+                                    
+                                    # Analyze image
+                                    description = await image_analyzer(img_bytes)
+                                    if description:
+                                        slide_images.append(description)
+                                        total_images += 1
+                            except Exception as shape_err:
+                                continue
+                        
+                        if slide_images:
+                            # Append slide images to content, marking the slide number
+                            # Note: Unstructured loader usually dumps all text. We'll append images at the end.
+                            image_descriptions.append(f"\n--- Images on Slide {i+1} ---")
+                            for desc in slide_images:
+                                image_descriptions.append(f"[IMAGE: {desc}]")
+                    
+                    if image_descriptions:
+                        logger.info(f"🖼️ Found {total_images} images in PPTX: {filename}")
+                        doc.page_content += "\n\n=== SLIDE IMAGES ===\n" + "\n".join(image_descriptions)
+                        doc.metadata["has_images"] = True
+                        doc.metadata["image_count"] = total_images
+                        
+                except Exception as e:
+                    logger.warning(f"Multimodal extraction failed for PPTX {filename}: {e}")
             
             logger.debug(f"Successfully loaded PPTX file: {filename}")
             return [doc]
