@@ -10,10 +10,11 @@ PharmGPT now supports **8 academic databases** beyond PubMed and Tavily:
 - **Requires API key** (free tier: 100 searches/month, paid: $50/5000 searches)
 - **Best for**: Broadest academic coverage, highly cited papers, interdisciplinary research
 
-### 0.5. **DuckDuckGo** (Web Search) ⭐ NEW!
+### 0.5. **DuckDuckGo** (Web Search)
 - **API**: HTML Scraping (No key needed)
 - **Features**: General web search, privacy-focused
 - **Best for**: General knowledge, government sites (FDA, NIH), news
+- **Status**: Runs in parallel with Tavily and PubMed
 ### 1. **Semantic Scholar** (AI-Powered Academic Search)
 - **API**: `https://api.semanticscholar.org/graph/v1`
 - **Features**: Citation counts, AI-powered relevance, cross-disciplinary

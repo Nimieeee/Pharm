@@ -675,11 +675,20 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
             step_findings_count = 0
             
             for query in queries:
-                # Parallel Search: PubMed AND Web
-                pubmed_task = self.tools.search_pubmed(query, max_results=3)
-                web_task = self.tools.search_web(query, max_results=3)
+                # Parallel Search: PubMed, Web (Tavily), DuckDuckGo, Google Scholar
+                tasks = [
+                    self.tools.search_pubmed(query, max_results=3),
+                    self.tools.search_web(query, max_results=3),
+                    self.tools.search_duckduckgo(query, max_results=3),
+                    self.tools.search_google_scholar(query, max_results=3)
+                ]
                 
-                results_pubmed, results_web = await asyncio.gather(pubmed_task, web_task)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                results_pubmed = results[0] if not isinstance(results[0], Exception) else []
+                results_web = results[1] if not isinstance(results[1], Exception) else []
+                results_ddg = results[2] if not isinstance(results[2], Exception) else []
+                results_scholar = results[3] if not isinstance(results[3], Exception) else []
                 
                 # Process PubMed Results
                 for r in results_pubmed:
@@ -701,7 +710,7 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                     state.findings.append(finding)
                     step_findings_count += 1
                 
-                # Process Web Results
+                # Process Web Results (Tavily)
                 for r in results_web:
                     finding = Finding(
                         title=r.get("title", ""),
@@ -709,6 +718,38 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                         source="Web",
                         raw_content=r.get("snippet", "")
                     )
+                    step.findings.append(finding)
+                    state.findings.append(finding)
+                    step_findings_count += 1
+
+                # Process DuckDuckGo Results
+                for r in results_ddg:
+                    finding = Finding(
+                        title=r.get("title", ""),
+                        url=r.get("url", ""),
+                        source="DuckDuckGo",
+                        raw_content=r.get("snippet", "")
+                    )
+                    step.findings.append(finding)
+                    state.findings.append(finding)
+                    step_findings_count += 1
+
+                # Process Google Scholar Results
+                for r in results_scholar:
+                    finding = Finding(
+                        title=r.get("title", ""),
+                        url=r.get("url", ""),
+                        source="Google Scholar",
+                        raw_content=r.get("snippet", "")
+                    )
+                    # Store rich metadata for citation formatting
+                    finding._pubmed_data = {
+                        "authors": r.get("authors", ""),
+                        "year": r.get("year", ""),
+                        "journal": "Google Scholar", # Or extract if available
+                        "doi": "", # Scholar doesn't always give DOI directly
+                        "cited_by": r.get("cited_by", 0)
+                    }
                     step.findings.append(finding)
                     state.findings.append(finding)
                     step_findings_count += 1
