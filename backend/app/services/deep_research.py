@@ -284,6 +284,80 @@ class ResearchTools:
             print(f"Web search error: {e}")
         
         return results
+    
+    async def search_google_scholar(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search Google Scholar using SERP API
+        Returns list of academic papers with citations, authors, and links
+        
+        Args:
+            query: Search query
+            max_results: Max results (default 10)
+            
+        Returns:
+            List of { title, snippet, authors, year, cited_by, url, pdf_url }
+        """
+        results = []
+        
+        if not self.serp_api_key:
+            print("SERP_API_KEY not configured, skipping Google Scholar search")
+            return results
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    "https://serpapi.com/search",
+                    params={
+                        "engine": "google_scholar",
+                        "q": query,
+                        "api_key": self.serp_api_key,
+                        "num": min(max_results, 20),  # SERP API max is 20
+                        "hl": "en"
+                    }
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    organic_results = data.get("organic_results", [])
+                    
+                    for result in organic_results:
+                        # Extract publication info
+                        publication_info = result.get("publication_info", {})
+                        
+                        # Parse authors
+                        authors_list = publication_info.get("authors", [])
+                        authors = ", ".join([a.get("name", "") for a in authors_list[:3]])
+                        if len(authors_list) > 3:
+                            authors += " et al."
+                        
+                        # Get citation count
+                        inline_links = result.get("inline_links", {})
+                        cited_by = inline_links.get("cited_by", {})
+                        citation_count = cited_by.get("total", 0)
+                        
+                        # Get PDF link if available
+                        resources = result.get("resources", [])
+                        pdf_url = next((r.get("link") for r in resources if r.get("file_format") == "PDF"), "")
+                        
+                        results.append({
+                            "title": result.get("title", ""),
+                            "snippet": result.get("snippet", ""),
+                            "authors": authors,
+                            "year": publication_info.get("summary", "").split(",")[-1].strip() if publication_info.get("summary") else "",
+                            "cited_by": citation_count,
+                            "url": result.get("link", ""),
+                            "pdf_url": pdf_url,
+                            "source": "Google Scholar"
+                        })
+                    
+                    return results[:max_results]
+                else:
+                    print(f"SERP API error: {response.status_code}")
+                    
+        except Exception as e:
+            print(f"Google Scholar search error: {e}")
+        
+        return results
 
 
 # ============================================================================

@@ -1,9 +1,14 @@
 # Additional Free/Open Academic Sources Integration Guide
 
-PharmGPT now supports **7 additional free academic databases** beyond PubMed and Tavily:
+PharmGPT now supports **8 academic databases** beyond PubMed and Tavily:
 
 ## ✅ Integrated Sources
 
+### 0. **Google Scholar** (via SERP API) ⭐ NEW!
+- **API**: `https://serpapi.com/search` (requires SERP_API_KEY)
+- **Features**: Comprehensive academic coverage, citation counts, PDF links
+- **Requires API key** (free tier: 100 searches/month, paid: $50/5000 searches)
+- **Best for**: Broadest academic coverage, highly cited papers, interdisciplinary research
 ### 1. **Semantic Scholar** (AI-Powered Academic Search)
 - **API**: `https://api.semanticscholar.org/graph/v1`
 - **Features**: Citation counts, AI-powered relevance, cross-disciplinary
