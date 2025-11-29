@@ -18,13 +18,18 @@ const faqs: FAQItem[] = [
     },
     {
         category: 'features',
+        question: "What are Fast and Detailed modes?",
+        answer: "We offer two core chat modes to suit your needs. 'Fast Mode' is optimized for speed, providing quick, concise answers for definitions or simple facts. 'Detailed Mode' provides in-depth explanations, context, and broader analysis, making it ideal for learning complex concepts or exploring nuances."
+    },
+    {
+        category: 'features',
         question: "What is 'Deep Research' mode?",
-        answer: "Deep Research mode is an autonomous agentic workflow. Instead of just answering a question, PharmGPT creates a research plan, queries multiple academic databases (PubMed, Google Scholar, Tavily), analyzes the findings, and synthesizes a comprehensive, cited report. It's like having a research assistant write a literature review for you."
+        answer: "Deep Research mode is an autonomous agentic workflow. Instead of just answering a question, PharmGPT creates a research plan, queries multiple academic databases (PubMed, Google Scholar), analyzes the findings, and synthesizes a comprehensive, cited report. It's like having a research assistant write a literature review for you."
     },
     {
         category: 'features',
         question: "Can I upload images?",
-        answer: "Yes! PharmGPT is multimodal. You can upload images of chemical structures, clinical trial graphs, or scanned documents. Our Vision-to-Text Bridge (powered by Pixtral) analyzes the image in detail and allows the AI to 'see' and reason about the visual content."
+        answer: "Yes! PharmGPT is multimodal. You can upload images of chemical structures, clinical trial graphs, or scanned documents. Our advanced Vision AI analyzes the image in detail and allows the system to 'see' and reason about the visual content alongside text."
     },
     {
         category: 'features',
@@ -46,12 +51,12 @@ const faqs: FAQItem[] = [
     {
         category: 'technical',
         question: "Does it search the real-time web?",
-        answer: "Yes. We integrate with Tavily and DuckDuckGo for general web search, and Google Scholar (via SERP API) and PubMed for academic literature. This ensures you get the most up-to-date information, not just what the AI was trained on."
+        answer: "Yes. We integrate with leading general web search engines and specialized academic databases to access real-time information. This ensures you get the most up-to-date scientific data, clinical trial results, and news, rather than relying solely on the AI's training data."
     },
     {
         category: 'privacy',
         question: "Is my data secure?",
-        answer: "Absolutely. Your conversations and uploaded documents are stored in a secure Supabase database with Row Level Security (RLS). Only you can access your data. We do not use your data to train our public models."
+        answer: "Absolutely. Your conversations and uploaded documents are stored in a secure, enterprise-grade database with strict access controls. Only you can access your data. We do not use your private data to train our public models."
     }
 ];
 

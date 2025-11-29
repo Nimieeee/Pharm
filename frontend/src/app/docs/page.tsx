@@ -45,15 +45,28 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                PharmGPT is designed to be intuitive. Once you log in, you are presented with the main chat interface.
-                                You can start by asking simple questions or uploading documents.
+                                PharmGPT is designed to be intuitive for researchers and clinicians. This guide will help you get up and running quickly.
                             </p>
-                            <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-white">Chat Modes</h3>
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">1. Interface Overview</h3>
+                            <p>The main interface consists of three key areas:</p>
                             <ul className="list-disc pl-5 space-y-2">
-                                <li><strong>Fast Mode:</strong> Quick, concise answers. Best for definitions and simple facts.</li>
-                                <li><strong>Detailed Mode:</strong> In-depth explanations with context. Good for learning new concepts.</li>
-                                <li><strong>Deep Research Mode:</strong> Autonomous agentic workflow for complex queries (see below).</li>
+                                <li><strong>Chat Window:</strong> The central area where you interact with the AI.</li>
+                                <li><strong>Sidebar:</strong> Access your chat history, pinned conversations, and settings.</li>
+                                <li><strong>Data Workbench:</strong> A dedicated space for managing your uploaded files and datasets.</li>
                             </ul>
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">2. Chat Modes</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">Fast Mode</h4>
+                                    <p className="text-sm">Optimized for speed. Use this for quick definitions, checking drug interactions, or simple fact retrieval. It uses a lightweight model to deliver near-instant responses.</p>
+                                </div>
+                                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <h4 className="font-bold text-purple-600 dark:text-purple-400 mb-2">Detailed Mode</h4>
+                                    <p className="text-sm">Optimized for depth. Use this for complex explanations, learning new mechanisms, or when you need the AI to "think" through a problem step-by-step.</p>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -67,20 +80,38 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                Deep Research is the flagship feature of PharmGPT. It transforms the AI from a chatbot into an autonomous researcher.
+                                Deep Research transforms PharmGPT from a chatbot into an autonomous research assistant. It is designed to handle complex queries that require synthesizing information from multiple scientific sources.
                             </p>
-                            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg my-4 border-l-4 border-purple-500">
-                                <strong>How it works:</strong>
-                                <ol className="list-decimal pl-5 mt-2 space-y-1">
-                                    <li><strong>Plan:</strong> The AI analyzes your query and creates a step-by-step research plan.</li>
-                                    <li><strong>Search:</strong> It executes parallel searches across PubMed, Google Scholar, and the web.</li>
-                                    <li><strong>Analyze:</strong> It reads abstracts and snippets to extract relevant findings.</li>
-                                    <li><strong>Synthesize:</strong> It compiles the findings into a structured report with APA citations.</li>
-                                </ol>
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">How It Works</h3>
+                            <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-100 dark:border-gray-700 space-y-4">
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">1</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Planning</h4>
+                                        <p className="text-sm mt-1">The AI analyzes your request and breaks it down into sub-questions. It decides which databases to search (e.g., PubMed for clinical data, Google Scholar for broader literature).</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">2</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Execution</h4>
+                                        <p className="text-sm mt-1">It executes parallel search queries in real-time. It reads abstracts, snippets, and open-access full text to gather evidence.</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">3</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Synthesis</h4>
+                                        <p className="text-sm mt-1">The AI compiles the findings into a cohesive report. It resolves conflicting data and highlights consensus in the literature.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <p>
-                                Use this mode for literature reviews, understanding complex mechanisms, or gathering data for a paper.
-                            </p>
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Example Use Case</h3>
+                            <div className="bg-gray-900 text-gray-300 p-4 rounded-lg font-mono text-sm">
+                                "Conduct a literature review on the efficacy of GLP-1 receptor agonists in treating non-alcoholic steatohepatitis (NASH), focusing on trials published in the last 3 years."
+                            </div>
                         </div>
                     </section>
 
@@ -94,25 +125,47 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                PharmGPT can "see" and understand visual content. This is powered by the <strong>Vision-to-Text Bridge</strong>.
+                                PharmGPT includes a powerful <strong>Vision-to-Text Bridge</strong> that allows it to "see" and understand visual content. This is crucial for analyzing scientific papers, which often contain vital data in charts and figures.
                             </p>
-                            <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-white">Supported Visuals</h3>
-                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">✓</span> Chemical Structures (2D/3D)
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">✓</span> Clinical Trial Graphs & Charts
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">✓</span> Histology Slides
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">✓</span> Scanned Documents
-                                </li>
-                            </ul>
-                            <p className="mt-4">
-                                <strong>Inside Documents:</strong> When you upload a PDF, Word doc, or PowerPoint, the system automatically extracts images from the pages, analyzes them, and includes the description in the text index. This means you can search for "the graph on page 5" and get an answer.
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Supported Visuals</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <span className="text-teal-500 text-xl">⚗️</span>
+                                    <div>
+                                        <strong className="block text-gray-900 dark:text-white">Chemical Structures</strong>
+                                        <span className="text-sm">2D skeletal structures and 3D conformers.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <span className="text-teal-500 text-xl">📊</span>
+                                    <div>
+                                        <strong className="block text-gray-900 dark:text-white">Data Visualizations</strong>
+                                        <span className="text-sm">Kaplan-Meier plots, forest plots, and bar charts.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <span className="text-teal-500 text-xl">🔬</span>
+                                    <div>
+                                        <strong className="block text-gray-900 dark:text-white">Microscopy</strong>
+                                        <span className="text-sm">Histology slides and cell culture images.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <span className="text-teal-500 text-xl">📄</span>
+                                    <div>
+                                        <strong className="block text-gray-900 dark:text-white">Documents</strong>
+                                        <span className="text-sm">Scanned PDFs, handwritten notes, and forms.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Inside Documents</h3>
+                            <p>
+                                When you upload a <strong>PDF, Word, or PowerPoint</strong> file, our system automatically extracts every image found within the pages. These images are sent to our Vision AI, which generates a detailed textual description. This description is then embedded into the document's text index.
+                            </p>
+                            <p className="mt-2">
+                                <strong>Why this matters:</strong> You can ask questions like <em>"What does the survival curve in Figure 2 show?"</em> and PharmGPT will be able to answer, even though the information was originally just pixels in an image.
                             </p>
                         </div>
                     </section>
@@ -127,13 +180,26 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                The Data Workbench is your space for managing files and datasets.
+                                The Data Workbench is the central hub for your research materials. It handles the ingestion, processing, and indexing of your private data.
                             </p>
-                            <ul className="list-disc pl-5 space-y-2">
-                                <li><strong>Upload:</strong> Drag and drop files (PDF, CSV, SDF, etc.).</li>
-                                <li><strong>Preview:</strong> View file contents and metadata.</li>
-                                <li><strong>Process:</strong> Automatically chunk and embed documents for RAG (Retrieval-Augmented Generation).</li>
-                            </ul>
+
+                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Processing Pipeline</h3>
+                            <ol className="list-decimal pl-5 space-y-2">
+                                <li><strong>Upload:</strong> Files are securely transferred to our storage.</li>
+                                <li><strong>Extraction:</strong> Text and images are extracted. Optical Character Recognition (OCR) is applied if needed.</li>
+                                <li><strong>Chunking:</strong> Long documents are split into smaller, semantic "chunks" to optimize retrieval.</li>
+                                <li><strong>Embedding:</strong> Each chunk is converted into a vector embedding, allowing for semantic search (finding matches by meaning, not just keywords).</li>
+                                <li><strong>Indexing:</strong> Embeddings are stored in our vector database for instant retrieval during chat.</li>
+                            </ol>
+
+                            <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-100 dark:border-orange-800">
+                                <h4 className="font-bold text-orange-800 dark:text-orange-300 mb-2">File Limits</h4>
+                                <ul className="text-sm space-y-1">
+                                    <li>Max file size: 50MB per file</li>
+                                    <li>Max PDF pages: 100 pages (for optimal performance)</li>
+                                    <li>Supported formats: PDF, DOCX, PPTX, TXT, MD, CSV, XLSX, SDF</li>
+                                </ul>
+                            </div>
                         </div>
                     </section>
 
@@ -147,26 +213,24 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                We take security seriously. PharmGPT is built with multiple layers of protection.
+                                We adhere to strict security protocols to ensure your research data remains confidential and protected.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                                 <div className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
                                     <h4 className="font-bold mb-2">Anti-Jailbreak Protocol</h4>
                                     <p className="text-sm">
-                                        A hardened system prompt and backend pre-filter prevent the AI from being manipulated into generating harmful or non-scientific content.
+                                        A hardened system prompt and backend pre-filter prevent the AI from being manipulated into generating harmful or non-scientific content. We strictly enforce safety boundaries.
                                     </p>
                                 </div>
                                 <div className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
-                                    <h4 className="font-bold mb-2">Row Level Security (RLS)</h4>
+                                    <h4 className="font-bold mb-2">Data Isolation</h4>
                                     <p className="text-sm">
-                                        Your data is stored in Supabase with strict RLS policies. Only your authenticated user account can access your documents and chat history.
+                                        Your data is stored in an enterprise-grade database with strict access policies. Data is logically isolated per user, meaning no other user can access your documents or chat history.
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </section>
-
-                </div>
+                    </section>                  </div>
             </div>
         </div>
     );
