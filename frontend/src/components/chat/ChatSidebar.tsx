@@ -251,7 +251,14 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) {
-        throw new Error('Failed to delete conversation');
+        let errorMessage = 'Failed to delete conversation';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          // If json parse fails, use default message
+        }
+        throw new Error(errorMessage);
       }
       if (activeChatId === id) {
         onNewChat?.();

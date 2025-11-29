@@ -233,9 +233,21 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
               // Format author-year citation
               const hasAuthors = citation.authors && citation.authors.trim();
               const hasYear = citation.year && citation.year.trim();
+
+              // Get domain for web sources
+              let sourceName = citation.source || 'Web';
+              if (sourceName === 'Web' || !sourceName) {
+                try {
+                  const urlObj = new URL(citation.url);
+                  sourceName = urlObj.hostname.replace('www.', '');
+                } catch (e) {
+                  sourceName = 'Web';
+                }
+              }
+
               const authorYear = hasAuthors
                 ? `${citation.authors!.split(',')[0]} et al.` + (hasYear ? ` (${citation.year})` : '')
-                : citation.source || 'Web';
+                : sourceName;
 
               return (
                 <div key={citation.id} className="text-xs">
@@ -256,7 +268,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
                         {citation.journal && citation.journal !== citation.source && (
                           <span className="italic">. {citation.journal}</span>
                         )}
-                        {hasYear ? `.` : '. n.d.'}
+                        {hasYear ? `.` : ''}
                         {citation.doi && (
                           <span className="ml-1 opacity-70">DOI: {citation.doi}</span>
                         )}
