@@ -236,22 +236,33 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
               // Helper to format authors to APA style (Last, F. M.)
               const formatAuthors = (authorStr: string) => {
                 if (!authorStr) return '';
-                // Remove "et al." for processing if present
+                // Remove "et al." for processing if present in the source string
                 const cleanStr = authorStr.replace(/ et al\.?/i, '');
                 const authors = cleanStr.split(/,\s*|\s+and\s+/).map(a => a.trim()).filter(a => a);
 
-                // If authors are already in "Last, F." format, just join them
-                if (authors.some(a => a.includes('.'))) return authorStr;
+                // If authors are already in "Last, F." format, just join them with & for the last one
+                if (authors.some(a => a.includes('.'))) {
+                  if (authors.length > 1) {
+                    const lastAuthor = authors.pop();
+                    return `${authors.join(', ')}, & ${lastAuthor}`;
+                  }
+                  return authors[0];
+                }
 
-                // Try to convert "First Last" to "Last, F."
-                // This is a best-effort heuristic
-                return authors.map(name => {
+                // Convert "First Last" to "Last, F."
+                const formattedList = authors.map(name => {
                   const parts = name.split(' ');
                   if (parts.length < 2) return name;
                   const last = parts[parts.length - 1];
                   const initials = parts.slice(0, -1).map(p => p[0] + '.').join(' ');
                   return `${last}, ${initials}`;
-                }).join(', ') + (authorStr.includes('et al') ? ' et al.' : '');
+                });
+
+                if (formattedList.length > 1) {
+                  const lastAuthor = formattedList.pop();
+                  return `${formattedList.join(', ')}, & ${lastAuthor}`;
+                }
+                return formattedList[0] || '';
               };
 
               const formattedAuthors = citation.authors ? formatAuthors(citation.authors) : '';
