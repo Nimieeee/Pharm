@@ -216,6 +216,10 @@ class ChatService:
             return len(result.data) > 0
             
         except Exception as e:
+            print(f"Delete conversation error: {str(e)}")
+            # Check for common RLS error
+            if "policy" in str(e).lower() or "permission" in str(e).lower():
+                raise Exception(f"Permission denied. Backend may be missing SUPABASE_SERVICE_ROLE_KEY. Details: {str(e)}")
             raise Exception(f"Failed to delete conversation: {str(e)}")
     
     async def add_message(
