@@ -189,7 +189,8 @@ class EnhancedDocumentLoader:
         self, 
         file_content: bytes, 
         filename: str, 
-        additional_metadata: Optional[Dict[str, Any]] = None
+        additional_metadata: Optional[Dict[str, Any]] = None,
+        image_analyzer: Optional[Any] = None  # Callable[[bytes], Awaitable[str]]
     ) -> List[Document]:
         """
         Load document from file content using appropriate LangChain loader
@@ -198,6 +199,7 @@ class EnhancedDocumentLoader:
             file_content: Raw file bytes
             filename: Original filename
             additional_metadata: Additional metadata to add to documents
+            image_analyzer: Optional async function to analyze images found in documents
             
         Returns:
             List of LangChain Document objects
@@ -317,7 +319,12 @@ class EnhancedDocumentLoader:
                 }
             )
             
-            documents = await loader_func(tmp_file_path, filename)
+            # Pass image_analyzer if it's the PDF loader
+            if file_extension == '.pdf':
+                documents = await self._load_pdf(tmp_file_path, filename, image_analyzer)
+            else:
+                documents = await loader_func(tmp_file_path, filename)
+                
             loader_duration = time.time() - loader_start_time
             
             if not documents:
@@ -419,8 +426,13 @@ class EnhancedDocumentLoader:
                         }
                     )
     
-    async def _load_pdf(self, file_path: str, filename: str) -> List[Document]:
-        """Load PDF document using PyPDFLoader"""
+    async def _load_pdf(
+        self, 
+        file_path: str, 
+        filename: str,
+        image_analyzer: Optional[Any] = None
+    ) -> List[Document]:
+        """Load PDF document using PyPDFLoader with optional image analysis"""
         try:
             loader = PyPDFLoader(file_path)
             documents = loader.load()
@@ -444,6 +456,46 @@ class EnhancedDocumentLoader:
                 # Clean up extracted text
                 if doc.page_content:
                     doc.page_content = self._clean_text(doc.page_content)
+                
+                # --- MULTIMODAL IMAGE EXTRACTION ---
+                if image_analyzer:
+                    try:
+                        # We need to access the underlying pypdf object to get images
+                        # PyPDFLoader doesn't expose images easily, so we might need to open the file again with pypdf
+                        import pypdf
+                        import io
+                        from PIL import Image
+                        
+                        reader = pypdf.PdfReader(file_path)
+                        if i < len(reader.pages):
+                            page = reader.pages[i]
+                            images = page.images
+                            
+                            if images:
+                                logger.info(f"🖼️ Found {len(images)} images on page {i+1} of {filename}")
+                                image_descriptions = []
+                                
+                                for img in images:
+                                    try:
+                                        # Convert image bytes to base64 or pass bytes to analyzer
+                                        # image_analyzer expects bytes or base64 url
+                                        img_data = img.data
+                                        
+                                        # Analyze image
+                                        description = await image_analyzer(img_data)
+                                        if description:
+                                            image_descriptions.append(f"[IMAGE ANALYSIS: {description}]")
+                                    except Exception as img_err:
+                                        logger.warning(f"Failed to analyze image on page {i+1}: {img_err}")
+                                
+                                if image_descriptions:
+                                    # Append image descriptions to page content
+                                    doc.page_content += "\n\n" + "\n\n".join(image_descriptions)
+                                    doc.metadata["has_images"] = True
+                                    doc.metadata["image_count"] = len(images)
+                    except Exception as e:
+                        logger.warning(f"Multimodal extraction failed for page {i+1}: {e}")
+                        # Continue without images, don't fail the whole load
             
             # Filter out empty pages
             documents = [doc for doc in documents if doc.page_content.strip()]

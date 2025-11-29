@@ -91,13 +91,31 @@ class EnhancedRAGService:
             
             # Load document using LangChain loaders
             try:
+                # Initialize AI Service for multimodal analysis (lazy import to avoid circular dependency)
+                from app.services.ai import AIService
+                import base64
+                
+                ai_service = AIService(self.db)
+                
+                async def image_analyzer_wrapper(image_bytes: bytes) -> str:
+                    """Wrapper to convert bytes to base64 and call AI service"""
+                    try:
+                        b64_str = base64.b64encode(image_bytes).decode('utf-8')
+                        # Assume JPEG for simplicity, or detect mime type if possible
+                        data_url = f"data:image/jpeg;base64,{b64_str}"
+                        return await ai_service.analyze_image(data_url)
+                    except Exception as e:
+                        logger.error(f"Image analysis wrapper failed: {e}")
+                        return ""
+
                 documents = await self.document_loader.load_document(
                     file_content=file_content,
                     filename=filename,
                     additional_metadata={
                         "user_id": str(user_id),
                         "conversation_id": str(conversation_id)
-                    }
+                    },
+                    image_analyzer=image_analyzer_wrapper
                 )
             except DocumentProcessingError as e:
                 # Use structured error information from DocumentProcessingError
