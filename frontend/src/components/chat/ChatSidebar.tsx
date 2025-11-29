@@ -125,11 +125,14 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   // Fetch conversation history when user is logged in
   useEffect(() => {
@@ -203,12 +206,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const handlePin = async (id: string, currentPinned: boolean) => {
     setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: !currentPinned } : c));
     try {
-      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_pinned: !currentPinned })
       });
+      if (!response.ok) {
+        throw new Error(`Failed to ${currentPinned ? 'unpin' : 'pin'} conversation`);
+      }
     } catch (error) {
+      console.error('Pin error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update conversation');
       setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: currentPinned } : c));
     }
   };
@@ -216,12 +224,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const handleArchive = async (id: string, currentArchived: boolean) => {
     setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: !currentArchived } : c));
     try {
-      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_archived: !currentArchived })
       });
+      if (!response.ok) {
+        throw new Error('Failed to archive conversation');
+      }
     } catch (error) {
+      console.error('Archive error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to archive conversation');
       setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: currentArchived } : c));
     }
   };
@@ -233,15 +246,20 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     setChatHistory(prev => prev.filter(c => c.id !== id));
 
     try {
-      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!response.ok) {
+        throw new Error('Failed to delete conversation');
+      }
       if (activeChatId === id) {
         onNewChat?.();
         router.push('/chat');
       }
     } catch (error) {
+      console.error('Delete error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete conversation');
       setChatHistory(prevHistory);
     }
   };
@@ -252,13 +270,15 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (response.ok) {
-        fetchConversationHistory(); // Refresh list
-        const newChat = await response.json();
-        onSelectConversation?.(newChat.id);
+      if (!response.ok) {
+        throw new Error('Failed to clone conversation');
       }
+      const newChat = await response.json();
+      fetchConversationHistory(); // Refresh list
+      onSelectConversation?.(newChat.id);
     } catch (error) {
-      console.error('Failed to clone chat:', error);
+      console.error('Clone error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to clone conversation');
     }
   };
 
@@ -270,12 +290,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     setEditingId(null);
 
     try {
-      await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editTitle })
       });
+      if (!response.ok) {
+        throw new Error('Failed to rename conversation');
+      }
     } catch (error) {
+      console.error('Rename error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to rename conversation');
       setChatHistory(prevHistory);
     }
   };
@@ -286,18 +311,21 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (response.ok) {
-        const fullChat = await response.json();
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullChat, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `${chat.title.replace(/[^a-z0-9]/gi, '_')}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+      if (!response.ok) {
+        throw new Error('Failed to download conversation');
       }
+
+      const fullChat = await response.json();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullChat, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `${chat.title.replace(/[^a-z0-9]/gi, '_')}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
     } catch (error) {
-      console.error('Failed to download chat:', error);
+      console.error('Download error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to download conversation');
     }
   };
 
@@ -353,7 +381,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
           )}
 
           {/* Context Menu Trigger */}
-          <RadixPopover.Root>
+          <RadixPopover.Root open={openPopoverId === chat.id} onOpenChange={(open) => setOpenPopoverId(open ? chat.id : null)}>
             <RadixPopover.Trigger asChild>
               <div
                 role="button"
@@ -373,42 +401,42 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
               >
                 <div className="flex flex-col gap-0.5">
                   <button
-                    onClick={() => handlePin(chat.id, !!chat.is_pinned)}
+                    onClick={() => { handlePin(chat.id, !!chat.is_pinned); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Pin size={14} className="text-foreground-muted" />
                     {chat.is_pinned ? 'Unpin' : 'Pin'}
                   </button>
                   <button
-                    onClick={() => { setEditingId(chat.id); setEditTitle(chat.title); }}
+                    onClick={() => { setEditingId(chat.id); setEditTitle(chat.title); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Pencil size={14} className="text-foreground-muted" />
                     Rename
                   </button>
                   <button
-                    onClick={() => handleClone(chat.id)}
+                    onClick={() => { handleClone(chat.id); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Copy size={14} className="text-foreground-muted" />
                     Clone
                   </button>
                   <button
-                    onClick={() => handleArchive(chat.id, !!chat.is_archived)}
+                    onClick={() => { handleArchive(chat.id, !!chat.is_archived); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Archive size={14} className="text-foreground-muted" />
                     Archive
                   </button>
                   <button
-                    onClick={() => handleDownload(chat)}
+                    onClick={() => { handleDownload(chat); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Download size={14} className="text-foreground-muted" />
                     Download
                   </button>
                   <button
-                    onClick={() => handleDelete(chat.id)}
+                    onClick={() => { handleDelete(chat.id); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
                   >
                     <Trash2 size={14} />
