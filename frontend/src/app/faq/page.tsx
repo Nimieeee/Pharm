@@ -33,6 +33,11 @@ const faqs: FAQItem[] = [
     },
     {
         category: 'features',
+        question: "What is the Data Workbench?",
+        answer: "The Data Workbench is an embedded AI Data Analyst. It allows you to upload raw, messy data (Excel, CSV, PDF tables) and instantly turns it into clean, interactive visualizations. It handles intelligent parsing, automated cleaning, and auto-plotting without you needing to write any code."
+    },
+    {
+        category: 'features',
         question: "What file types are supported?",
         answer: (
             <ul className="list-disc list-inside space-y-1">
