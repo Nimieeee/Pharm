@@ -3,13 +3,20 @@ Configuration settings for PharmGPT Backend
 """
 
 import os
-from typing import List, Optional
-from pydantic import validator
-from pydantic_settings import BaseSettings
+from typing import List, Optional, Union
+from pydantic import field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings"""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        # Prevent JSON parsing for string fields
+        env_parse_none_str='null'
+    )
     
     # Basic app settings
     APP_NAME: str = "PharmGPT Backend"
@@ -64,71 +71,74 @@ class Settings(BaseSettings):
     ENABLE_EMBEDDING_CACHE: bool = os.getenv("ENABLE_EMBEDDING_CACHE", "true").lower() == "true"
     FALLBACK_TO_HASH_EMBEDDINGS: bool = os.getenv("FALLBACK_TO_HASH_EMBEDDINGS", "true").lower() == "true"
     
-    # CORS settings
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",  # Local development
-        "http://localhost:5173",  # Vite dev server
-        "https://*.netlify.app",  # Netlify deployments
-        "https://pharmgpt.netlify.app",  # Production frontend (Netlify)
-        "https://*.vercel.app",  # Vercel preview deployments
-        "https://pharmgpt.vercel.app",  # Production frontend (Vercel)
-        "https://pharmgpt-frontend.vercel.app",  # Alternative Vercel domain
-    ]
+    # CORS settings - Use str to accept from env, will be converted to list
+    ALLOWED_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:5173,https://pharmgpt.netlify.app,https://pharmgpt.vercel.app,https://pharmgpt-frontend.vercel.app"
     
     # Admin settings
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@pharmgpt.com")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
     
-    @validator("ALLOWED_ORIGINS", pre=True)
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v):
+        """Parse ALLOWED_ORIGINS from comma-separated string or list"""
         if isinstance(v, str):
+            # Handle empty string
+            if not v or v.strip() == "":
+                return [
+                    "http://localhost:3000",
+                    "http://localhost:5173",
+                    "https://pharmgpt.netlify.app",
+                    "https://pharmgpt.vercel.app",
+                    "https://pharmgpt-frontend.vercel.app",
+                ]
             # Handle comma-separated string from environment variable
-            return [i.strip() for i in v.split(",")]
+            return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, list):
             return v
-        return v
+        # Fallback to defaults
+        return [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://pharmgpt.netlify.app",
+            "https://pharmgpt.vercel.app",
+            "https://pharmgpt-frontend.vercel.app",
+        ]
     
-    @validator("SUPABASE_URL")
+    @field_validator("SUPABASE_URL", mode="after")
+    @classmethod
     def validate_supabase_url(cls, v):
         if not v:
             raise ValueError("SUPABASE_URL is required")
         return v
     
-    @validator("SUPABASE_ANON_KEY")
+    @field_validator("SUPABASE_ANON_KEY", mode="after")
+    @classmethod
     def validate_supabase_key(cls, v):
         if not v:
             raise ValueError("SUPABASE_ANON_KEY is required")
         return v
     
-    @validator("MISTRAL_API_KEY")
+    @field_validator("MISTRAL_API_KEY", mode="after")
+    @classmethod
     def validate_mistral_key(cls, v):
         if not v:
             print("⚠️  Warning: MISTRAL_API_KEY not set - embeddings will use fallback")
         return v
     
-    @validator("LANGCHAIN_CHUNK_SIZE")
+    @field_validator("LANGCHAIN_CHUNK_SIZE", mode="after")
+    @classmethod
     def validate_chunk_size(cls, v):
         if v < 100 or v > 8000:
             raise ValueError("LANGCHAIN_CHUNK_SIZE must be between 100 and 8000")
         return v
     
-    @validator("LANGCHAIN_CHUNK_OVERLAP")
-    def validate_chunk_overlap(cls, v, values):
-        chunk_size = values.get("LANGCHAIN_CHUNK_SIZE", 1500)
-        if v >= chunk_size:
+    @model_validator(mode="after")
+    def validate_chunk_overlap(self):
+        """Validate chunk overlap is less than chunk size"""
+        if self.LANGCHAIN_CHUNK_OVERLAP >= self.LANGCHAIN_CHUNK_SIZE:
             raise ValueError("LANGCHAIN_CHUNK_OVERLAP must be less than LANGCHAIN_CHUNK_SIZE")
-        return v
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        
-        @classmethod
-        def parse_env_var(cls, field_name: str, raw_val: str):
-            # Don't try to JSON parse ALLOWED_ORIGINS, just return the string
-            if field_name == 'ALLOWED_ORIGINS':
-                return raw_val
-            return cls.json_loads(raw_val)
+        return self
 
 
 # Global settings instance
