@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import ChatSidebar from '@/components/chat/ChatSidebar';
-import MobileNav from '@/components/chat/MobileNav';
+
 import { SidebarContext } from '@/contexts/SidebarContext';
 import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
 
@@ -36,12 +36,7 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
           onNewChat={handleNewChat}
         />
 
-        {/* Mobile Navigation - Legacy, can be removed if not needed */}
-        <MobileNav
-          onSelectConversation={handleSelectConversation}
-          onNewChat={handleNewChat}
-          onDeleteConversation={handleDeleteConversation}
-        />
+
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
