@@ -4,7 +4,8 @@ Configuration settings for PharmGPT Backend
 
 import os
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+from pydantic import validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+    SERP_API_KEY: str = os.getenv("SERP_API_KEY", "")
     
     # Embedding settings - Using Mistral embeddings only
     EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "mistral")  # "sentence-transformers" or "mistral"
