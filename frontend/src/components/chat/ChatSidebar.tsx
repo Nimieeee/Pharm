@@ -35,6 +35,7 @@ interface SettingsModalProps {
 }
 
 function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
 
@@ -91,6 +92,30 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">About</p>
             <p className="text-sm text-foreground">PharmGPT v1.0</p>
             <p className="text-xs text-foreground-muted mt-1">AI-Powered Pharmaceutical Research Assistant</p>
+          </div>
+          {/* Help & Documentation */}
+          <div className="p-4 rounded-xl bg-surface-highlight space-y-2">
+            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Help & Support</p>
+            <button
+              onClick={() => { onClose(); router.push('/docs'); }}
+              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Book size={18} className="text-blue-500" />
+                <span className="text-sm text-foreground">Documentation</span>
+              </div>
+              <ChevronsRight size={14} className="text-foreground-muted" />
+            </button>
+            <button
+              onClick={() => { onClose(); router.push('/faq'); }}
+              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <HelpCircle size={18} className="text-teal-500" />
+                <span className="text-sm text-foreground">FAQ</span>
+              </div>
+              <ChevronsRight size={14} className="text-foreground-muted" />
+            </button>
           </div>
         </div>
 
@@ -565,20 +590,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
               {/* Footer Actions */}
               <div className="pt-4 border-t border-border space-y-2">
-                <button
-                  onClick={() => router.push('/docs')}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
-                >
-                  <Book size={20} strokeWidth={1.5} className="text-blue-500" />
-                  <span className="text-sm text-foreground">Documentation</span>
-                </button>
-                <button
-                  onClick={() => router.push('/faq')}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
-                >
-                  <HelpCircle size={20} strokeWidth={1.5} className="text-teal-500" />
-                  <span className="text-sm text-foreground">FAQ</span>
-                </button>
+
                 <button
                   onClick={() => router.push('/workbench')}
                   className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
