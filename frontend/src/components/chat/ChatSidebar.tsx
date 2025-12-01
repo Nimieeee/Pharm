@@ -231,7 +231,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const handlePin = async (id: string, currentPinned: boolean) => {
     setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: !currentPinned } : c));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_pinned: !currentPinned })
@@ -249,7 +249,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const handleArchive = async (id: string, currentArchived: boolean) => {
     setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: !currentArchived } : c));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_archived: !currentArchived })
@@ -271,7 +271,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     setChatHistory(prev => prev.filter(c => c.id !== id));
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -298,7 +298,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
   const handleClone = async (id: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}/clone`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}/clone`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -322,7 +322,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     setEditingId(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/conversations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editTitle })
