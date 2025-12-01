@@ -502,13 +502,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
       <AnimatePresence mode="wait">
         {isOpen && (
           <motion.aside
-            initial={{ x: -280, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -280, opacity: 0 }}
+            initial={{ width: 0, x: -20, opacity: 0 }}
+            animate={{ width: 280, x: 0, opacity: 1 }}
+            exit={{ width: 0, x: -20, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className="fixed md:relative z-[100] md:z-0 h-full w-[280px] border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none will-change-transform"
+            className="fixed md:relative z-[100] md:z-0 h-full border-r border-border bg-surface overflow-hidden shadow-2xl md:shadow-none will-change-transform whitespace-nowrap"
           >
-            <div className="p-4 flex flex-col h-full">
+            <div className="w-[280px] h-full flex flex-col p-4">
               {/* Header Area */}
               <div className="flex flex-col gap-4 mb-2">
                 <div className="flex items-center justify-between h-12 px-1">
