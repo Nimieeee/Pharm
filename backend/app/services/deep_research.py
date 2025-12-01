@@ -503,6 +503,30 @@ class DeepResearchService:
             print(f"LLM call error: {e}")
             return ""
 
+    def _is_valid_finding(self, finding: Finding) -> bool:
+        """
+        Validate if a finding is high quality enough to be used.
+        Filters out empty results, scraper blocks, and malformed data.
+        """
+        # 1. Check for missing essential fields
+        if not finding.title or len(finding.title) < 5:
+            return False
+        if not finding.url or not finding.url.startswith("http"):
+            return False
+        if not finding.raw_content or len(finding.raw_content) < 20:
+            return False
+            
+        # 2. Check for "garbage" titles (scraper blocks)
+        garbage_terms = [
+            "access denied", "captcha", "robot check", "403 forbidden", 
+            "404 not found", "page not found", "just a moment", 
+            "enable javascript", "security check", "challenge validation"
+        ]
+        if any(term in finding.title.lower() for term in garbage_terms):
+            return False
+            
+        return True
+
     # ========================================================================
     # NODE A: THE PLANNER (Deconstructor)
     # ========================================================================
@@ -730,9 +754,10 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                         "doi": r.get("doi", ""),
                         "pmid": r.get("pmid", "")
                     }
-                    step.findings.append(finding)
-                    state.findings.append(finding)
-                    step_findings_count += 1
+                    if self._is_valid_finding(finding):
+                        step.findings.append(finding)
+                        state.findings.append(finding)
+                        step_findings_count += 1
                 
                 # Process Web Results (Tavily)
                 for r in results_web:
@@ -742,9 +767,10 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                         source="Web",
                         raw_content=r.get("snippet", "")
                     )
-                    step.findings.append(finding)
-                    state.findings.append(finding)
-                    step_findings_count += 1
+                    if self._is_valid_finding(finding):
+                        step.findings.append(finding)
+                        state.findings.append(finding)
+                        step_findings_count += 1
 
                 # Process DuckDuckGo Results
                 for r in results_ddg:
@@ -754,9 +780,10 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                         source="DuckDuckGo",
                         raw_content=r.get("snippet", "")
                     )
-                    step.findings.append(finding)
-                    state.findings.append(finding)
-                    step_findings_count += 1
+                    if self._is_valid_finding(finding):
+                        step.findings.append(finding)
+                        state.findings.append(finding)
+                        step_findings_count += 1
 
                 # Process Google Scholar Results
                 for r in results_scholar:
@@ -774,9 +801,10 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                         "doi": "", # Scholar doesn't always give DOI directly
                         "cited_by": r.get("cited_by", 0)
                     }
-                    step.findings.append(finding)
-                    state.findings.append(finding)
-                    step_findings_count += 1
+                    if self._is_valid_finding(finding):
+                        step.findings.append(finding)
+                        state.findings.append(finding)
+                        step_findings_count += 1
             
             step.status = "completed"
             state.progress_log.append(f"[{datetime.now().isoformat()}] Found {step_findings_count} sources for: {step.topic}")
@@ -895,7 +923,10 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
             finding = next((f for f in state.findings if f.title == citation.title), None)
             if finding:
                 findings_text += f"\n[{citation.id}] {citation.title}\n"
+                findings_text += f"   Authors: {citation.authors or 'Unknown'}\n"
                 findings_text += f"   Source: {citation.source} | Year: {citation.year or 'n.d.'}\n"
+                if citation.doi:
+                    findings_text += f"   DOI: {citation.doi}\n"
                 findings_text += f"   Key Content: {finding.raw_content[:500]}\n"
         
         system_prompt = """You are writing a formal medical manuscript. Use the provided research context.
