@@ -881,6 +881,15 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                      # Deduplicate based on title
                     if not any(c.title == f.title for c in state.citations):
                         pubmed_data = getattr(f, '_pubmed_data', None)
+                        
+                        # Filter out Web/DDG results that look like academic papers but lack metadata
+                        # This prevents "Title Only" citations for scientific sources
+                        if not pubmed_data and f.source in ["Web", "DuckDuckGo"]:
+                            # Heuristic: Long titles or academic keywords usually imply a paper
+                            is_likely_paper = len(f.title) > 60 or any(w in f.title.lower() for w in ["study", "analysis", "effect of", "role of", "clinical", "mechanism"])
+                            if is_likely_paper:
+                                continue
+
                         citation = Citation(
                             id=citation_id,
                             title=f.title,
