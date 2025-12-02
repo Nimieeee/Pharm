@@ -512,18 +512,29 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
               {/* Header Area */}
               <div className="flex flex-col gap-4 mb-2">
                 <div className="flex items-center justify-between h-12 px-1">
-                  <button
-                    onClick={() => router.push('/')}
-                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">P</span>
-                    </div>
-                    <span className="font-serif font-medium text-foreground text-lg">PharmGPT</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Mobile Toggle */}
+                    <button
+                      onClick={onToggle}
+                      className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
+                    >
+                      <ChevronsLeft size={20} strokeWidth={1.5} />
+                    </button>
+
+                    <button
+                      onClick={() => router.push('/')}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">P</span>
+                      </div>
+                      <span className="font-serif font-medium text-foreground text-lg">PharmGPT</span>
+                    </button>
+                  </div>
+
                   <button
                     onClick={onToggle}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
+                    className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
                   >
                     <ChevronsLeft size={20} strokeWidth={1.5} />
                   </button>
@@ -600,7 +611,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                 </button>
                 <button
                   onClick={toggleTheme}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors hidden md:flex items-center gap-3"
                 >
                   {theme === 'light' ? (
                     <Moon size={20} strokeWidth={1.5} className="text-foreground-muted" />
@@ -645,7 +656,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center hover:bg-surface-hover transition-colors btn-press shadow-lg"
+          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-surface border border-border items-center justify-center hover:bg-surface-hover transition-colors btn-press shadow-lg"
         >
           <ChevronsRight size={16} strokeWidth={1.5} className="text-foreground-muted" />
         </button>

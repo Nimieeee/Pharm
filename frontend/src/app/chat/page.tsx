@@ -62,7 +62,7 @@ function ChatContent() {
         {/* Sidebar Trigger - Always visible on mobile, hidden on desktop only when sidebar is open */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className={`absolute top-3 left-4 z-50 p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm pointer-events-auto ${sidebarOpen ? 'md:hidden' : 'block'}`}
+          className={`absolute top-3 left-4 z-50 p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm pointer-events-auto md:hidden`}
         >
           <Menu size={24} strokeWidth={1.5} />
         </button>
