@@ -13,6 +13,7 @@
     "@langchain/mistralai": "^0.0.27",
     "@radix-ui/react-popover": "^1.1.15",
     "framer-motion": "^10.16.16",
+    "liquid-glass-react": "^1.1.1",
     "lucide-react": "^0.294.0",
     "mermaid": "^11.12.1",
     "next": "14.0.4",
