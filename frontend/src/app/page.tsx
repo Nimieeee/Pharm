@@ -173,10 +173,10 @@ export default function HomePage() {
       >
         <div className="max-w-[1200px] mx-auto">
           <motion.div variants={item} className="text-center mb-16">
-            <h1 className="text-hero font-serif text-foreground mb-6">
+            <h1 className="text-5xl md:text-7xl font-serif text-foreground mb-6 leading-tight tracking-tight">
               Your AI Research
               <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-violet-500">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-violet-500 italic">
                 Companion
               </span>
             </h1>
@@ -250,7 +250,7 @@ export default function HomePage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveDemoTab(tab.id)}
-                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeDemoTab === tab.id ? 'bg-foreground text-background shadow-lg' : 'text-foreground-muted hover:text-foreground'}`}
+                  className={`px-6 py-2 rounded-full text-sm font-serif font-medium transition-all duration-300 ${activeDemoTab === tab.id ? 'bg-foreground text-background shadow-lg' : 'text-foreground-muted hover:text-foreground'}`}
                 >
                   {tab.label}
                 </button>
