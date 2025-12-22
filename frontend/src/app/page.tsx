@@ -98,7 +98,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-atmospheric text-foreground selection:bg-indigo-500/20">
 
       {/* Navbar with Pill Design - Liquid Glass */}
-      <nav className="fixed top-0 left-0 right-0 rounded-none md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl md:rounded-full z-50 glass-effect transition-all duration-300">
+      <nav className="!fixed top-0 left-0 right-0 rounded-none md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl md:rounded-full z-50 glass-effect transition-all duration-300">
         <div className="w-full h-16 md:h-14 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
