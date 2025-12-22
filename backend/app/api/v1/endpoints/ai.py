@@ -20,6 +20,7 @@ from app.models.conversation import MessageCreate
 from app.models.document import DocumentUploadResponse, DocumentSearchRequest, DocumentSearchResponse
 from app.security import LLMSecurityGuard, SecurityViolationException, get_hardened_prompt
 import logging
+import json
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -330,10 +331,9 @@ async def chat_stream(
                 use_rag=chat_request.use_rag
             ):
                 full_response += chunk
-                # SSE format: newlines in data terminate the field
-                # We need to encode newlines to preserve them
-                # Replace actual newlines with a marker that frontend can decode
-                encoded_chunk = chunk.replace('\n', '\\n')
+                # Use JSON encoding to properly preserve all characters including newlines
+                # This is the most reliable way to send text over SSE
+                encoded_chunk = json.dumps({"text": chunk})
                 yield f"data: {encoded_chunk}\n\n"
             
             # Add complete response to conversation

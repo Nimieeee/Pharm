@@ -341,11 +341,23 @@ export function useChat() {
                 if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
                 if (data.trim().startsWith('{') && data.includes('"level"')) continue;
 
-                // The data is the actual text content, not JSON
-                // Decode escaped newlines (\\n -> \n) that were encoded for SSE transport
-                const decodedData = data.replace(/\\n/g, '\n');
-                // Add it directly to the content
-                fullContent += decodedData;
+                // Try to parse as JSON (new format with proper newline handling)
+                let textContent = '';
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.text !== undefined) {
+                    textContent = parsed.text;
+                  } else {
+                    // Fallback: treat as raw text
+                    textContent = data.replace(/\\n/g, '\n');
+                  }
+                } catch {
+                  // Not JSON - might be legacy format, decode escaped newlines
+                  textContent = data.replace(/\\n/g, '\n');
+                }
+
+                // Add to content
+                fullContent += textContent;
                 // Update the message content in real-time
                 setMessages(prev => prev.map(msg =>
                   msg.id === assistantMessageId
@@ -360,9 +372,19 @@ export function useChat() {
           if (buffer.startsWith('data: ')) {
             const data = buffer.slice(6);
             if (data.trim() !== '[DONE]') {
-              // Decode escaped newlines
-              const decodedData = data.replace(/\\n/g, '\n');
-              fullContent += decodedData;
+              // Try to parse as JSON
+              let textContent = '';
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.text !== undefined) {
+                  textContent = parsed.text;
+                } else {
+                  textContent = data.replace(/\\n/g, '\n');
+                }
+              } catch {
+                textContent = data.replace(/\\n/g, '\n');
+              }
+              fullContent += textContent;
               setMessages(prev => prev.map(msg =>
                 msg.id === assistantMessageId
                   ? { ...msg, content: fullContent }
