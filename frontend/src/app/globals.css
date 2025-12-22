@@ -8,36 +8,42 @@
   /* ============================================
      LIGHT THEME - Semantic Layered System
      ============================================ */
-  
+
   /* Background - Main app background */
-  --background: #FDFCF8;           /* Warm Cream */
+  --background: #FDFCF8;
+  /* Warm Cream */
   --background-rgb: 253, 252, 248;
-  
+
   /* Surface - Sidebars, Cards, Inputs */
   --surface: #FFFFFF;
   --surface-rgb: 255, 255, 255;
-  --surface-hover: #F4F4F5;        /* Zinc-100 */
-  --surface-highlight: #F4F4F5;    /* Legacy alias */
-  
+  --surface-hover: #F4F4F5;
+  /* Zinc-100 */
+  --surface-highlight: #F4F4F5;
+  /* Legacy alias */
+
   /* Border - Subtle separation */
-  --border: #E4E4E7;               /* Zinc-200 */
+  --border: #E4E4E7;
+  /* Zinc-200 */
   --border-rgb: 228, 228, 231;
-  
+
   /* Foreground - Text colors */
-  --foreground: #18181B;           /* Zinc-950 - Primary text */
-  --foreground-muted: #71717A;     /* Zinc-500 - Secondary text */
-  
+  --foreground: #18181B;
+  /* Zinc-950 - Primary text */
+  --foreground-muted: #71717A;
+  /* Zinc-500 - Secondary text */
+
   /* Legacy aliases for backward compatibility */
   --text-primary: var(--foreground);
   --text-secondary: var(--foreground-muted);
-  
+
   /* Accent colors */
   --accent: #6366f1;
   --accent-light: #818cf8;
-  
+
   /* Gradient color for atmospheric background */
   --gradient-color: rgba(99, 102, 241, 0.08);
-  
+
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -46,36 +52,43 @@
   /* ============================================
      DARK THEME - Semantic Layered System (Zinc)
      ============================================ */
-  
+
   /* Background - Rich deep gray, NOT pure black */
-  --background: #09090B;           /* Zinc-950 */
+  --background: #09090B;
+  /* Zinc-950 */
   --background-rgb: 9, 9, 11;
-  
+
   /* Surface - Slightly lighter than background for hierarchy */
-  --surface: #18181B;              /* Zinc-900 */
+  --surface: #18181B;
+  /* Zinc-900 */
   --surface-rgb: 24, 24, 27;
-  --surface-hover: #27272A;        /* Zinc-800 */
-  --surface-highlight: #27272A;    /* Legacy alias */
-  
+  --surface-hover: #27272A;
+  /* Zinc-800 */
+  --surface-highlight: #27272A;
+  /* Legacy alias */
+
   /* Border - Subtle separation */
-  --border: #27272A;               /* Zinc-800 */
+  --border: #27272A;
+  /* Zinc-800 */
   --border-rgb: 39, 39, 42;
-  
+
   /* Foreground - Text colors */
-  --foreground: #FAFAFA;           /* Zinc-50 - Soft white, not pure white */
-  --foreground-muted: #A1A1AA;     /* Zinc-400 - Readable but secondary */
-  
+  --foreground: #FAFAFA;
+  /* Zinc-50 - Soft white, not pure white */
+  --foreground-muted: #A1A1AA;
+  /* Zinc-400 - Readable but secondary */
+
   /* Legacy aliases for backward compatibility */
   --text-primary: var(--foreground);
   --text-secondary: var(--foreground-muted);
-  
+
   /* Accent colors */
   --accent: #818cf8;
   --accent-light: #a5b4fc;
-  
+
   /* Gradient color for atmospheric background */
   --gradient-color: rgba(129, 140, 248, 0.06);
-  
+
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
@@ -108,7 +121,10 @@ body {
   font-family: var(--font-gt-super), Georgia, 'Times New Roman', serif;
 }
 
-h1, h2, h3, .heading {
+h1,
+h2,
+h3,
+.heading {
   font-family: var(--font-gt-super), Georgia, serif;
 }
 
@@ -148,9 +164,10 @@ h1, h2, h3, .heading {
 }
 
 .glass-strong {
-  background: rgba(var(--surface-rgb), 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(var(--surface-rgb), 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
 /* Card Styles */
@@ -205,6 +222,7 @@ h1, h2, h3, .heading {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -215,6 +233,7 @@ h1, h2, h3, .heading {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -224,16 +243,20 @@ h1, h2, h3, .heading {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
   }
+
   50% {
     opacity: 0.8;
     filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.7));
@@ -245,7 +268,7 @@ h1, h2, h3, .heading {
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
@@ -259,6 +282,7 @@ h1, h2, h3, .heading {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -268,6 +292,7 @@ h1, h2, h3, .heading {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -278,18 +303,32 @@ h1, h2, h3, .heading {
   animation: fadeInUp 0.6s ease-out forwards;
 }
 
-.stagger-1 { animation-delay: 0.1s; }
-.stagger-2 { animation-delay: 0.2s; }
-.stagger-3 { animation-delay: 0.3s; }
-.stagger-4 { animation-delay: 0.4s; }
-.stagger-5 { animation-delay: 0.5s; }
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+
+.stagger-5 {
+  animation-delay: 0.5s;
+}
 
 /* Mobile Responsive Typography */
 @media (max-width: 768px) {
   .text-hero {
     font-size: 2.8rem;
   }
-  
+
   .text-section-header {
     font-size: 1.2rem;
   }
@@ -336,6 +375,7 @@ h1, h2, h3, .heading {
   .prose-table {
     font-size: 0.75rem;
   }
+
   .prose-table th,
   .prose-table td {
     padding: 0.5rem;
@@ -391,10 +431,12 @@ h1, h2, h3, .heading {
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
   }
+
   .streamdown-content [data-streamdown="heading-2"] {
     font-size: 1.25rem;
     margin-top: 1.25rem;
   }
+
   .streamdown-content [data-streamdown="heading-3"] {
     font-size: 1.1rem;
     margin-top: 1rem;
@@ -439,6 +481,7 @@ h1, h2, h3, .heading {
 }
 
 @media (min-width: 640px) {
+
   .streamdown-content [data-streamdown="unordered-list"],
   .streamdown-content [data-streamdown="ordered-list"] {
     margin: 0.75rem 0;
@@ -578,6 +621,7 @@ h1, h2, h3, .heading {
 }
 
 @media (min-width: 640px) {
+
   .streamdown-content [data-streamdown="table-header-cell"],
   .streamdown-content [data-streamdown="table-cell"] {
     padding: 0.75rem 1rem;
@@ -689,6 +733,7 @@ h1, h2, h3, .heading {
 
 /* Ensure controls are visible on mobile */
 @media (max-width: 639px) {
+
   .streamdown-content [data-streamdown="code-block"] button,
   .streamdown-content [data-streamdown="table-wrapper"] button,
   .streamdown-content [data-streamdown="mermaid-block"] button {
@@ -739,8 +784,8 @@ h1, h2, h3, .heading {
   line-height: 1.75;
 }
 
-.markdown-content li > ul,
-.markdown-content li > ol {
+.markdown-content li>ul,
+.markdown-content li>ol {
   margin-top: 0.5rem;
   margin-bottom: 0;
 }
@@ -806,10 +851,21 @@ h1, h2, h3, .heading {
   margin-top: 0;
 }
 
-.markdown-content h1 { font-size: 1.5rem; }
-.markdown-content h2 { font-size: 1.25rem; }
-.markdown-content h3 { font-size: 1.125rem; }
-.markdown-content h4 { font-size: 1rem; }
+.markdown-content h1 {
+  font-size: 1.5rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.25rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.125rem;
+}
+
+.markdown-content h4 {
+  font-size: 1rem;
+}
 
 /* Code styling */
 .markdown-content code {
@@ -871,15 +927,23 @@ h1, h2, h3, .heading {
   .markdown-content {
     font-size: 0.9375rem;
   }
-  
-  .markdown-content h1 { font-size: 1.25rem; }
-  .markdown-content h2 { font-size: 1.125rem; }
-  .markdown-content h3 { font-size: 1rem; }
-  
+
+  .markdown-content h1 {
+    font-size: 1.25rem;
+  }
+
+  .markdown-content h2 {
+    font-size: 1.125rem;
+  }
+
+  .markdown-content h3 {
+    font-size: 1rem;
+  }
+
   .markdown-content table {
     font-size: 0.75rem;
   }
-  
+
   .markdown-content th,
   .markdown-content td {
     padding: 0.5rem;
