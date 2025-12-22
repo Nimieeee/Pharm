@@ -52,35 +52,62 @@ class ChatService:
             raise Exception(f"Failed to create conversation: {str(e)}")
     
     async def get_user_conversations(self, user: User) -> List[Conversation]:
-        """Get all conversations for a user (Parallelized stats fetch)"""
+        """Get all conversations for a user (Optimized: Single Query)"""
         import asyncio
         try:
-            result = self.db.table("conversations").select(
-                "*"
-            ).eq("user_id", str(user.id)).order("updated_at", desc=True).execute()
-            
-            conversations_records = result.data or []
-            if not conversations_records:
-                return []
-            
-            # Parallelize the stats fetching (N+1 optimization)
-            # Create a list of coroutine objects
-            tasks = [self._get_conversation_stats(conv["id"], user.id) for conv in conversations_records]
-            
-            # Run all tasks concurrently
-            stats_results = await asyncio.gather(*tasks)
-            
-            conversations = []
-            for conv_record, stats in zip(conversations_records, stats_results):
-                conversation = Conversation(
-                    **conv_record,
-                    message_count=stats["message_count"],
-                    document_count=stats["document_count"],
-                    last_activity=stats["last_activity"]
-                )
-                conversations.append(conversation)
-            
-            return conversations
+            # OPTIMIZED PATH: Fetch everything in 1 query using PostgREST embedding
+            try:
+                response = self.db.table("conversations").select(
+                    "*, messages(count), document_chunks(count)"
+                ).eq("user_id", str(user.id)).order("updated_at", desc=True).execute()
+                
+                conversations = []
+                for record in response.data or []:
+                    # Safely extract counts from relation arrays
+                    # Structure: "messages": [{"count": 5}]
+                    msgs = record.get("messages", [])
+                    msg_count = msgs[0]["count"] if msgs and isinstance(msgs, list) and len(msgs) > 0 and "count" in msgs[0] else 0
+                    
+                    docs = record.get("document_chunks", [])
+                    doc_count = docs[0]["count"] if docs and isinstance(docs, list) and len(docs) > 0 and "count" in docs[0] else 0
+                    
+                    # Clean record for Pydantic (remove relation fields)
+                    conv_data = {k: v for k, v in record.items() if k not in ["messages", "document_chunks"]}
+                    
+                    # specific last_activity logic can be proxied by updated_at for list views
+                    conversations.append(Conversation(
+                        **conv_data,
+                        message_count=msg_count,
+                        document_count=doc_count,
+                        last_activity=conv_data.get("updated_at")
+                    ))
+                return conversations
+
+            except Exception as e:
+                print(f"⚠️ Optimized fetch failed (falling back to parallel): {e}")
+                # FALLBACK PATH: Parallel Fetch (N+1 Optimization)
+                result = self.db.table("conversations").select(
+                    "*"
+                ).eq("user_id", str(user.id)).order("updated_at", desc=True).execute()
+                
+                conversations_records = result.data or []
+                if not conversations_records:
+                    return []
+                
+                tasks = [self._get_conversation_stats(conv["id"], user.id) for conv in conversations_records]
+                stats_results = await asyncio.gather(*tasks)
+                
+                conversations = []
+                for conv_record, stats in zip(conversations_records, stats_results):
+                    conversation = Conversation(
+                        **conv_record,
+                        message_count=stats["message_count"],
+                        document_count=stats["document_count"],
+                        last_activity=stats["last_activity"]
+                    )
+                    conversations.append(conversation)
+                
+                return conversations
             
         except Exception as e:
             raise Exception(f"Failed to get conversations: {str(e)}")
