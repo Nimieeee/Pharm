@@ -6,6 +6,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut } from 'lucide-react';
+import Image from 'next/image';
 
 const container = {
   hidden: { opacity: 0 },
@@ -41,10 +42,25 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-atmospheric">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen relative text-foreground selection:bg-indigo-500/20">
+      {/* Nano Banana Background */}
+      <div className="fixed inset-0 z-[-1]">
+        <Image
+          src="/background.png"
+          alt="Background"
+          fill
+          className="object-cover"
+          quality={100}
+          priority
+        />
+        {/* Subtle overlay to ensure text readability while keeping vibrancy */}
+        <div className="absolute inset-0 bg-background/30 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background" />
+      </div>
+
+      {/* Navbar with Pill Design on Desktop */}
+      <nav className="fixed top-0 left-0 right-0 md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl z-50 glass-strong border-b md:border border-white/10 md:rounded-full transition-all duration-300 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl">
+        <div className="w-full h-16 md:h-14 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">P</span>
