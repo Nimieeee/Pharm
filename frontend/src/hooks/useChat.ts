@@ -342,8 +342,10 @@ export function useChat() {
                 if (data.trim().startsWith('{') && data.includes('"level"')) continue;
 
                 // The data is the actual text content, not JSON
+                // Decode escaped newlines (\\n -> \n) that were encoded for SSE transport
+                const decodedData = data.replace(/\\n/g, '\n');
                 // Add it directly to the content
-                fullContent += data;
+                fullContent += decodedData;
                 // Update the message content in real-time
                 setMessages(prev => prev.map(msg =>
                   msg.id === assistantMessageId
@@ -358,7 +360,9 @@ export function useChat() {
           if (buffer.startsWith('data: ')) {
             const data = buffer.slice(6);
             if (data.trim() !== '[DONE]') {
-              fullContent += data;
+              // Decode escaped newlines
+              const decodedData = data.replace(/\\n/g, '\n');
+              fullContent += decodedData;
               setMessages(prev => prev.map(msg =>
                 msg.id === assistantMessageId
                   ? { ...msg, content: fullContent }

@@ -330,7 +330,11 @@ async def chat_stream(
                 use_rag=chat_request.use_rag
             ):
                 full_response += chunk
-                yield f"data: {chunk}\n\n"
+                # SSE format: newlines in data terminate the field
+                # We need to encode newlines to preserve them
+                # Replace actual newlines with a marker that frontend can decode
+                encoded_chunk = chunk.replace('\n', '\\n')
+                yield f"data: {encoded_chunk}\n\n"
             
             # Add complete response to conversation
             assistant_message = MessageCreate(
