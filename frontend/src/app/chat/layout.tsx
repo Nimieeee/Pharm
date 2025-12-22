@@ -34,6 +34,7 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
           onToggle={() => setSidebarOpen(!sidebarOpen)}
           onSelectConversation={handleSelectConversation}
           onNewChat={handleNewChat}
+          currentChatId={conversationId}
         />
 
 

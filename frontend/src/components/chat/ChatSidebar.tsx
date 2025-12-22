@@ -18,6 +18,7 @@ interface ChatSidebarProps {
   onToggle: () => void;
   onSelectConversation?: (id: string) => void;
   onNewChat?: () => void;
+  currentChatId?: string | null;
 }
 
 interface ChatHistory {
@@ -145,7 +146,7 @@ const getRelativeDateCategory = (dateString: string) => {
   return date.toLocaleString('default', { month: 'long' });
 };
 
-export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat }: ChatSidebarProps) {
+export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, currentChatId }: ChatSidebarProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
@@ -383,7 +384,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   });
 
   const renderChatItem = (chat: ChatHistory) => {
-    const isActive = activeChatId === chat.id;
+    // Prefer external currentChatId if provided, otherwise fallback to local state
+    const effectiveActiveId = currentChatId !== undefined ? currentChatId : activeChatId;
+    const isActive = effectiveActiveId === chat.id;
     const isEditing = editingId === chat.id;
 
     return (
