@@ -977,8 +977,9 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                     findings_text += f"   DOI: {citation.doi}\n"
                 findings_text += f"   Key Content: {finding.raw_content[:500]}\n"
         
-        system_prompt = """You are writing a formal medical manuscript. Use the provided research context.
-Format:
+        system_prompt = """You are writing a formal medical/scientific manuscript. Use the provided research context.
+
+## DOCUMENT STRUCTURE:
 # Title
 ## Abstract
 ## 1. Introduction (Background & Pathophysiology)
@@ -988,7 +989,44 @@ Format:
 ## 5. Conclusion
 ## References
 
-Constraint: The output must be Raw Markdown. Do NOT use code blocks. Do NOT be concise. Be exhaustive. Write at least 1500 words if possible."""
+## CITATION FORMAT - STRICTLY FOLLOW APA 7TH EDITION:
+
+### In-Text Citations:
+Use parenthetical or narrative citations throughout the text:
+- Parenthetical: "...affects an estimated 50 million individuals worldwide (World Health Organization, 2023)."
+- Narrative: "Kwan and Brodie (2021) demonstrated that approximately one-third of patients..."
+- Multiple authors (3+): "(Gorgulla et al., 2020)" or "Gorgulla et al. (2020)"
+- Two authors: "(Kwan & Brodie, 2021)" or "Kwan and Brodie (2021)"
+
+### References Section:
+Each reference MUST follow this exact format:
+```
+Authors. (Year). Title of article. Journal Name, Volume(Issue), Pages. doi:DOI
+```
+
+EXAMPLE REFERENCES (follow this format exactly):
+DiMasi, J. A., Grabowski, H. G., & Hansen, R. W. (2016). Innovation in the pharmaceutical industry: New estimates of R&D costs. Journal of Health Economics, 47, 20–33. doi:10.1016/j.jhealeco.2016.01.012
+
+Gorgulla, C., Boeszoermenyi, A., Wang, Z. F., Fischer, P. D., Coote, P. W., Padmanabha Das, K. M., Malets, Y. S., Radchenko, D. S., Moroz, Y. S., Scott, D. A., Fackeldey, K., Hoffmann, M., Iavniuk, I., Wagner, G., & Arthanari, H. (2020). An open-source drug discovery platform enables ultra-large virtual screens. Nature, 580(7805), 663–668. doi:10.1038/s41586-020-2117-z
+
+Paul, S. M., Mytelka, D. S., Dunwiddie, C. T., Persinger, C. C., Munos, B. H., Lindborg, S. R., & Schacht, A. L. (2010). How to improve R&D productivity: The pharmaceutical industry's grand challenge. Nature Reviews Drug Discovery, 9(3), 203–214. doi:10.1038/nrd3078
+
+### Reference Rules:
+1. List all authors (up to 20). Use "et al." only in-text, NOT in references
+2. Use "&" before the last author
+3. Italicize journal name and volume number
+4. Include DOI when available (format: doi:10.xxxx/xxxxx)
+5. Use "n.d." if no date is available
+6. Alphabetize references by first author's last name
+7. Use hanging indent (first line flush left, subsequent lines indented)
+
+## WRITING CONSTRAINTS:
+- Output must be Raw Markdown (no code blocks)
+- Be exhaustive and comprehensive - write at least 1500 words
+- Every major claim must have an in-text citation
+- All cited sources must appear in the References section
+- Do NOT fabricate citations - only use sources provided in the context"""
+
 
         user_prompt = f"""Research Question: {state.research_question}
 
