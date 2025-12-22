@@ -891,7 +891,7 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
         try:
             review = json.loads(response)
             
-            if not review.get("sufficient", True) and state.iteration_count < self.max_iterations:
+            if not review.get("sufficient", True) and state.iteration_count < state.max_iterations:
                 state.progress_log.append(f"[{datetime.now().isoformat()}] Gaps detected: {review.get('missing_info')}. Recursion triggered.")
                 
                 # Add new steps for recursion
