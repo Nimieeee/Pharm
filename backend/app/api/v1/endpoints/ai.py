@@ -988,24 +988,35 @@ async def deep_research_stream(
                     if data.get("type") == "complete":
                         final_report = data.get("report", "")
                         citations_count = len(data.get("citations", []))
-                except:
+                        logger.info(f"📄 Deep Research report captured: {len(final_report)} chars, {citations_count} citations")
+                    elif data.get("type") == "error":
+                        # Capture error as the report
+                        final_report = f"# Research Error\n\nThe deep research encountered an error: {data.get('message', 'Unknown error')}\n\nPlease try again or rephrase your query."
+                        logger.warning(f"⚠️ Deep Research error captured: {data.get('message')}")
+                except Exception as parse_error:
+                    logger.debug(f"Could not parse update: {parse_error}")
                     pass
             
-            # Save final report to conversation
-            if final_report:
-                assistant_message = MessageCreate(
-                    conversation_id=request.conversation_id,
-                    role="assistant",
-                    content=final_report,
-                    metadata={
-                        "mode": "deep_research",
-                        "citations_count": citations_count,
-                        "streaming": True
-                    }
-                )
-                await chat_service.add_message(assistant_message, current_user)
+            # ALWAYS save a message to conversation - use fallback if empty
+            if not final_report:
+                final_report = f"# Research Report: {request.question}\n\n**Note:** The research process completed but did not produce a detailed report. This may be due to:\n- Limited available literature on this specific topic\n- API rate limiting\n- Network issues\n\nPlease try again in a few moments or try a different query."
+                logger.warning(f"⚠️ Deep Research produced empty report, using fallback")
+            
+            assistant_message = MessageCreate(
+                conversation_id=request.conversation_id,
+                role="assistant",
+                content=final_report,
+                metadata={
+                    "mode": "deep_research",
+                    "citations_count": citations_count,
+                    "streaming": True
+                }
+            )
+            await chat_service.add_message(assistant_message, current_user)
+            logger.info(f"✅ Deep Research message saved to conversation {request.conversation_id}")
             
             yield "data: [DONE]\n\n"
+
         
         return StreamingResponse(
             generate_stream(),
