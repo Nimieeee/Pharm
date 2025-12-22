@@ -44,15 +44,15 @@ export default function HomePage() {
     <div className="min-h-screen bg-atmospheric">
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">P</span>
             </div>
-            <span className="font-serif font-medium text-foreground">PharmGPT</span>
+            <span className="font-serif font-medium text-foreground hidden md:block">PharmGPT</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 md:gap-6">
             <div className="hidden md:flex items-center gap-6 mr-4">
               <button onClick={() => router.push('/docs')} className="text-sm font-medium text-foreground-muted hover:text-foreground transition-colors">
                 Docs
@@ -67,9 +67,9 @@ export default function HomePage() {
               className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
             >
               {theme === 'light' ? (
-                <Moon size={20} strokeWidth={1.5} className="text-foreground-muted" />
+                <Moon size={18} strokeWidth={1.5} className="text-foreground-muted" />
               ) : (
-                <Sun size={20} strokeWidth={1.5} className="text-foreground-muted" />
+                <Sun size={18} strokeWidth={1.5} className="text-foreground-muted" />
               )}
             </button>
             {user ? (
@@ -94,7 +94,7 @@ export default function HomePage() {
                   onClick={() => router.push('/login')}
                   className="px-4 py-2.5 rounded-full bg-surface-highlight text-foreground font-medium text-sm btn-press transition-all hover:bg-surface-hover flex items-center gap-2"
                 >
-                  <LogIn size={16} strokeWidth={1.5} />
+                  <LogIn size={18} strokeWidth={1.5} />
                   Sign In
                 </button>
                 <button
