@@ -45,7 +45,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-atmospheric text-foreground selection:bg-indigo-500/20">
 
       {/* Navbar with Pill Design - Liquid Glass */}
-      <nav className="fixed top-0 left-0 right-0 md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl z-50 glass-effect transition-all duration-300">
+      <nav className="fixed top-0 left-0 right-0 rounded-none md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl md:rounded-full z-50 glass-effect transition-all duration-300">
         <div className="w-full h-16 md:h-14 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -163,18 +163,20 @@ export default function HomePage() {
             {features.map((feature) => (
               <GlassCard
                 key={feature.title}
-                className="cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
+                className="p-8 h-full flex flex-col justify-between cursor-pointer group hover:scale-[1.02] hover:shadow-lg transition-all duration-300"
                 onClick={() => router.push('/chat')}
               >
-                <div className="mb-4 text-foreground-muted group-hover:text-indigo-500 transition-colors">
-                  <feature.icon size={32} strokeWidth={1.5} />
+                <div>
+                  <div className="mb-6 p-3 w-fit rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
+                    <feature.icon size={28} strokeWidth={2} />
+                  </div>
+                  <h3 className="text-xl font-serif text-foreground mb-3 font-medium">
+                    {feature.title}
+                  </h3>
+                  <p className="text-foreground-muted text-sm leading-relaxed">
+                    {feature.desc}
+                  </p>
                 </div>
-                <h3 className="text-section-header font-serif text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-foreground-muted text-sm">
-                  {feature.desc}
-                </p>
               </GlassCard>
             ))}
           </motion.div>
