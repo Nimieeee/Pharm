@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut } from 'lucide-react';
-import Image from 'next/image';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 const container = {
   hidden: { opacity: 0 },
@@ -42,24 +42,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen relative text-foreground selection:bg-indigo-500/20">
-      {/* Nano Banana Background */}
-      <div className="fixed inset-0 z-[-1]">
-        <Image
-          src="/background.png"
-          alt="Background"
-          fill
-          className="object-cover"
-          quality={100}
-          priority
-        />
-        {/* Subtle overlay to ensure text readability while keeping vibrancy */}
-        <div className="absolute inset-0 bg-background/30 backdrop-blur-[1px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background" />
-      </div>
+    <div className="min-h-screen bg-atmospheric text-foreground selection:bg-indigo-500/20">
 
-      {/* Navbar with Pill Design on Desktop */}
-      <nav className="fixed top-0 left-0 right-0 md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl z-50 glass-strong border-b md:border border-white/10 md:rounded-full transition-all duration-300 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl">
+      {/* Navbar with Pill Design - Liquid Glass */}
+      <nav className="fixed top-0 left-0 right-0 md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl z-50 glass-effect transition-all duration-300">
         <div className="w-full h-16 md:h-14 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -147,28 +133,27 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          {/* Search Input */}
-          <motion.form
+          {/* Search Input - Wrapped in GlassCard for Liquid Effect */}
+          <motion.div
             variants={item}
-            onSubmit={handleSubmit}
             className="max-w-2xl mx-auto mb-24"
           >
-            <div className="relative">
+            <GlassCard className="p-2 flex items-center gap-4">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ask about drug interactions, compounds, clinical trials..."
-                className="w-full h-16 px-6 pr-14 rounded-2xl bg-surface border border-border text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-lg"
+                className="flex-1 h-12 bg-transparent border-none text-foreground placeholder:text-foreground-muted focus:outline-none px-4"
               />
               <button
-                type="submit"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center btn-press transition-all hover:opacity-90"
+                onClick={(e) => { e.preventDefault(); handleSubmit(e as any); }}
+                className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center btn-press transition-all hover:opacity-90"
               >
                 <ArrowRight size={20} strokeWidth={1.5} />
               </button>
-            </div>
-          </motion.form>
+            </GlassCard>
+          </motion.div>
 
           {/* Feature Cards */}
           <motion.div
@@ -176,10 +161,9 @@ export default function HomePage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {features.map((feature) => (
-              <motion.div
+              <GlassCard
                 key={feature.title}
-                variants={item}
-                className="card-swiss border border-border cursor-pointer group"
+                className="cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
                 onClick={() => router.push('/chat')}
               >
                 <div className="mb-4 text-foreground-muted group-hover:text-indigo-500 transition-colors">
@@ -191,7 +175,7 @@ export default function HomePage() {
                 <p className="text-foreground-muted text-sm">
                   {feature.desc}
                 </p>
-              </motion.div>
+              </GlassCard>
             ))}
           </motion.div>
         </div>
