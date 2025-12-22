@@ -109,14 +109,14 @@ export default function HomePage() {
 
       {/* Navbar with Pill Design - Liquid Glass */}
       <LiquidGlass
-        className="fixed top-0 left-0 right-0 w-full md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl z-50 transition-all duration-300"
+        className="fixed top-0 left-0 right-0 md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl z-50 transition-all duration-300"
         cornerRadius={isDesktop ? 100 : 0}
         blurAmount={0.3}
         elasticity={0.2}
         saturation={110}
         padding="0"
       >
-        <div className="w-full h-20 md:h-16 px-6 md:px-8 flex items-center justify-between">
+        <div className="w-full h-16 md:h-14 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">P</span>
@@ -203,34 +203,26 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          {/* Search Input - Wrapped in Liquid Glass */}
+          {/* Search Input - Wrapped in GlassCard for Liquid Effect */}
           <motion.div
             variants={item}
             className="max-w-2xl mx-auto mb-24"
           >
-            <LiquidGlass
-              cornerRadius={24}
-              blurAmount={0.2}
-              elasticity={0.1}
-              padding="8px"
-              className="flex items-center gap-4"
-            >
-              <div className="flex items-center gap-4 w-full px-2">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ask about drug interactions, compounds, clinical trials..."
-                  className="flex-1 h-12 bg-transparent border-none text-foreground placeholder:text-foreground-muted focus:outline-none px-2"
-                />
-                <button
-                  onClick={(e) => { e.preventDefault(); handleSubmit(e as any); }}
-                  className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center btn-press transition-all hover:opacity-90 shrink-0"
-                >
-                  <ArrowRight size={20} strokeWidth={1.5} />
-                </button>
-              </div>
-            </LiquidGlass>
+            <GlassCard className="p-2 flex items-center gap-4">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ask about drug interactions, compounds, clinical trials..."
+                className="flex-1 h-12 bg-transparent border-none text-foreground placeholder:text-foreground-muted focus:outline-none px-4"
+              />
+              <button
+                onClick={(e) => { e.preventDefault(); handleSubmit(e as any); }}
+                className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center btn-press transition-all hover:opacity-90"
+              >
+                <ArrowRight size={20} strokeWidth={1.5} />
+              </button>
+            </GlassCard>
           </motion.div>
 
           {/* Feature Cards */}
@@ -239,27 +231,23 @@ export default function HomePage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {features.map((feature) => (
-              <LiquidGlass
+              <GlassCard
                 key={feature.title}
-                className="cursor-pointer group hover:scale-[1.02] hover:shadow-lg transition-all duration-300 h-full"
-                cornerRadius={24}
-                padding="32px"
+                className="p-8 h-full flex flex-col justify-between cursor-pointer group hover:scale-[1.02] hover:shadow-lg transition-all duration-300"
                 onClick={() => router.push('/chat')}
               >
-                <div className="flex flex-col justify-between h-full">
-                  <div>
-                    <div className="mb-6 p-3 w-fit rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
-                      <feature.icon size={28} strokeWidth={2} />
-                    </div>
-                    <h3 className="text-xl font-serif text-foreground mb-3 font-medium">
-                      {feature.title}
-                    </h3>
-                    <p className="text-foreground-muted text-sm leading-relaxed">
-                      {feature.desc}
-                    </p>
+                <div>
+                  <div className="mb-6 p-3 w-fit rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
+                    <feature.icon size={28} strokeWidth={2} />
                   </div>
+                  <h3 className="text-xl font-serif text-foreground mb-3 font-medium">
+                    {feature.title}
+                  </h3>
+                  <p className="text-foreground-muted text-sm leading-relaxed">
+                    {feature.desc}
+                  </p>
                 </div>
-              </LiquidGlass>
+              </GlassCard>
             ))}
           </motion.div>
         </div>
@@ -286,38 +274,32 @@ export default function HomePage() {
               ))}
             </div>
 
-            <LiquidGlass
-              className="w-full max-w-3xl aspect-[16/9] md:aspect-[2/1] relative group"
-              cornerRadius={24}
-              padding="32px py-8 px-8"
-            >
-              <div className="flex flex-col h-full">
-                <div className="absolute top-0 left-0 right-0 h-10 bg-indigo-500/5 px-4 flex items-center gap-2 border-b border-indigo-500/10">
-                  <div className="w-3 h-3 rounded-full bg-red-400/80" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-400/80" />
-                </div>
-                <div className="mt-8 font-mono text-sm md:text-base text-foreground/90 whitespace-pre-wrap">
-                  <span className="text-indigo-500 mr-2">{'>'}</span>
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={activeDemoTab}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {demoTabs.find(t => t.id === activeDemoTab)?.content}
-                    </motion.span>
-                  </AnimatePresence>
-                  <motion.span
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ repeat: Infinity, duration: 0.8 }}
-                    className="inline-block w-2.5 h-4 ml-1 mx-1 bg-indigo-500 align-middle"
-                  />
-                </div>
+            <GlassCard className="w-full max-w-3xl aspect-[16/9] md:aspect-[2/1] p-8 flex flex-col relative overflow-hidden group">
+              <div className="absolute top-0 left-0 right-0 h-10 bg-indigo-500/5 px-4 flex items-center gap-2 border-b border-indigo-500/10">
+                <div className="w-3 h-3 rounded-full bg-red-400/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
+                <div className="w-3 h-3 rounded-full bg-green-400/80" />
               </div>
-            </LiquidGlass>
+              <div className="mt-8 font-mono text-sm md:text-base text-foreground/90 whitespace-pre-wrap">
+                <span className="text-indigo-500 mr-2">{'>'}</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={activeDemoTab}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {demoTabs.find(t => t.id === activeDemoTab)?.content}
+                  </motion.span>
+                </AnimatePresence>
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.8 }}
+                  className="inline-block w-2.5 h-4 ml-1 mx-1 bg-indigo-500 align-middle"
+                />
+              </div>
+            </GlassCard>
           </div>
         </div>
       </section>
@@ -328,13 +310,8 @@ export default function HomePage() {
           <h2 className="text-4xl font-serif text-foreground mb-16 text-center">Powerful Research Capabilities</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {capabilities.map((cap, i) => (
-              <LiquidGlass
-                key={i}
-                className={`${cap.className} relative hover:scale-[1.01] transition-transform duration-500 h-full`}
-                cornerRadius={24}
-                padding="32px"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${cap.gradient} opacity-20 pointer-events-none`} />
+              <GlassCard key={i} className={`${cap.className} p-8 relative overflow-hidden hover:scale-[1.01] transition-transform duration-500`}>
+                <div className={`absolute inset-0 bg-gradient-to-br ${cap.gradient} opacity-20`} />
                 <div className="relative z-10 flex flex-col h-full justify-between">
                   <div className="mb-6 p-3 w-fit rounded-2xl bg-foreground/5 text-foreground">
                     <cap.icon size={24} />
@@ -344,7 +321,7 @@ export default function HomePage() {
                     <p className="text-foreground-muted">{cap.desc}</p>
                   </div>
                 </div>
-              </LiquidGlass>
+              </GlassCard>
             ))}
           </div>
         </div>
@@ -356,13 +333,7 @@ export default function HomePage() {
           <h2 className="text-4xl font-serif text-foreground mb-12 text-center">Frequently Asked Questions</h2>
           <div className="space-y-4">
             {faqs.map((faq, i) => (
-              <LiquidGlass
-                key={i}
-                className="cursor-pointer"
-                cornerRadius={20}
-                padding="24px"
-                onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
-              >
+              <GlassCard key={i} className="px-6 py-4 cursor-pointer overflow-hidden" onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-lg text-foreground">{faq.q}</span>
                   <ChevronDown className={`text-foreground-muted transition-transform duration-300 ${openFaqIndex === i ? 'rotate-180' : ''}`} />
@@ -379,7 +350,7 @@ export default function HomePage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </LiquidGlass>
+              </GlassCard>
             ))}
           </div>
         </div>
@@ -388,17 +359,13 @@ export default function HomePage() {
       {/* CTA Banner */}
       <section className="py-24 px-6" >
         <div className="max-w-[1200px] mx-auto">
-          <LiquidGlass
-            className="text-center relative overflow-hidden"
-            cornerRadius={40}
-            padding="48px 24px" // Approx p-12/20
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 pointer-events-none" />
+          <GlassCard className="p-12 md:p-20 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10" />
             <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-8 relative z-10">Start accelerating your research today</h2>
             <button onClick={() => router.push('/register')} className="px-8 py-4 rounded-full bg-foreground text-background font-bold text-lg hover:scale-105 transition-transform shadow-lg relative z-10">
               Start Free Research
             </button>
-          </LiquidGlass>
+          </GlassCard>
         </div>
       </section>
 
