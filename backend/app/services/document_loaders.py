@@ -436,101 +436,142 @@ class EnhancedDocumentLoader:
         filename: str,
         image_analyzer: Optional[Any] = None
     ) -> List[Document]:
-        """Load PDF document using PyPDFLoader with optional image analysis"""
+        """
+        Hybrid PDF Loader:
+        1. Tries standard text extraction (PyPDF) first (Fast/Free).
+        2. If text content is low (likely scanned), falls back to Vision Analysis (Pixtral).
+        3. Allows manual 'image_analyzer' hook for Pixtral processing with Rate Limiting.
+        """
+        import time
+        from app.utils.rate_limiter import mistral_limiter
+        
         try:
+            # 1. Try standard text extraction
             loader = PyPDFLoader(file_path)
             documents = loader.load()
             
-            if not documents:
-                raise DocumentProcessingError(
-                    ErrorMessageTemplates.empty_content(filename),
-                    error_category=ErrorCategory.EMPTY_CONTENT,
-                    is_user_error=True,
-                    details={"filename": filename, "file_type": "pdf"}
-                )
+            # Check text density
+            total_text = sum(len(doc.page_content.strip()) for doc in documents)
+            avg_text_per_page = total_text / len(documents) if documents else 0
             
-            # Add page numbers and enhance metadata
-            for i, doc in enumerate(documents):
-                doc.metadata.update({
-                    "page": i + 1,
-                    "source": filename,
-                    "loader": "PyPDFLoader"
-                })
-                
-                # Clean up extracted text
-                if doc.page_content:
+            is_scanned = avg_text_per_page < 50
+            
+            if not is_scanned:
+                logger.info(f"📄 PDF {filename} has sufficient text ({avg_text_per_page:.0f} chars/page). Using standard extraction.")
+                # Add page numbers
+                for i, doc in enumerate(documents):
+                    doc.metadata.update({"page": i + 1, "source": filename, "loader": "PyPDFLoader"})
                     doc.page_content = self._clean_text(doc.page_content)
-                
-                # --- MULTIMODAL IMAGE EXTRACTION ---
-                if image_analyzer:
-                    try:
-                        # We need to access the underlying pypdf object to get images
-                        # PyPDFLoader doesn't expose images easily, so we might need to open the file again with pypdf
-                        import pypdf
-                        import io
-                        from PIL import Image
-                        
-                        reader = pypdf.PdfReader(file_path)
-                        if i < len(reader.pages):
-                            page = reader.pages[i]
-                            images = page.images
-                            
-                            if images:
-                                logger.info(f"🖼️ Found {len(images)} images on page {i+1} of {filename}")
-                                image_descriptions = []
-                                
-                                for img in images:
-                                    try:
-                                        # Convert image bytes to base64 or pass bytes to analyzer
-                                        # image_analyzer expects bytes or base64 url
-                                        img_data = img.data
-                                        
-                                        # Analyze image
-                                        description = await image_analyzer(img_data)
-                                        if description:
-                                            image_descriptions.append(f"[IMAGE ANALYSIS: {description}]")
-                                    except Exception as img_err:
-                                        logger.warning(f"Failed to analyze image on page {i+1}: {img_err}")
-                                
-                                if image_descriptions:
-                                    # Append image descriptions to page content
-                                    doc.page_content += "\n\n" + "\n\n".join(image_descriptions)
-                                    doc.metadata["has_images"] = True
-                                    doc.metadata["image_count"] = len(images)
-                    except Exception as e:
-                        logger.warning(f"Multimodal extraction failed for page {i+1}: {e}")
-                        # Continue without images, don't fail the whole load
+                return documents
             
-            # Filter out empty pages
-            documents = [doc for doc in documents if doc.page_content.strip()]
+            # 2. Fallback to Vision Analysis (Pixtral) if scanned
+            logger.info(f"📷 PDF {filename} appears scanned/image-heavy ({avg_text_per_page:.0f} chars/page). Switching to Vision Analysis.")
             
-            if not documents:
+            if not image_analyzer:
+                logger.warning("⚠️ Scanned PDF detected but no image analyzer provided. Returning sparse text.")
+                return documents
+
+            # Import tools for converting PDF to images
+            try:
+                from pdf2image import convert_from_path
+                import io
+                import base64
+            except ImportError as e:
+                logger.error(f"Missing dependencies for PDF image conversion: {e}")
                 raise DocumentProcessingError(
-                    ErrorMessageTemplates.empty_content(filename),
-                    error_category=ErrorCategory.EMPTY_CONTENT,
-                    is_user_error=True,
-                    details={"filename": filename, "file_type": "pdf", "reason": "All pages are empty"}
+                    "Server missing dependencies (pdf2image/poppler) for scanned PDF processing.",
+                    error_category=ErrorCategory.PROCESSING_ERROR
                 )
+
+            # Convert PDF to images
+            try:
+                images = convert_from_path(file_path)
+            except Exception as e:
+                logger.error(f"Failed to convert PDF to images: {e}")
+                # Fallback to sparse text
+                return documents
             
-            logger.debug(f"Extracted {len(documents)} pages from PDF: {filename}")
-            return documents
+            vision_documents = []
+            total_pages = len(images)
             
+            import os
+            api_key = os.getenv("MISTRAL_API_KEY")
+            if not api_key:
+                logger.warning("No Mistral API key for Vision analysis")
+                return documents
+                
+            import httpx # Use httpx directly to avoid mistralai SDK dependency issues if not present
+            
+            for i, image in enumerate(images):
+                # Rate Limit Wait
+                await mistral_limiter.wait_for_slot()
+                
+                logger.info(f"👁️ Analyzing page {i+1}/{total_pages} of {filename} with Pixtral...")
+                
+                try:
+                    # Prepare image
+                    buffered = io.BytesIO()
+                    image.save(buffered, format="JPEG")
+                    base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    
+                    # Call Pixtral via HTTP directly (matches ai.py implementation)
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        response = await client.post(
+                            "https://api.mistral.ai/v1/chat/completions",
+                            headers={
+                                "Authorization": f"Bearer {api_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "model": "pixtral-12b-2409",
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {"type": "text", "text": "Analyze this page in detail. Transcribe all visible text. Describe charts, graphs, or chemical structures using Markdown."},
+                                            {"type": "image_url", "image_url": f"data:image/jpeg;base64,{base64_image}"} 
+                                        ]
+                                    }
+                                ],
+                                "max_tokens": 2000
+                            }
+                        )
+                        
+                        if response.status_code == 200:
+                            content = response.json()["choices"][0]["message"]["content"]
+                            page_content = f"--- [Page {i+1} : Vision Analysis] ---\n{content}"
+                        else:
+                            logger.error(f"Vision API Error {response.status_code}: {response.text}")
+                            page_content = f"--- [Page {i+1}] ---\n(Analysis failed: {response.status_code})"
+                            
+                    # Create document for this page
+                    doc = Document(
+                        page_content=page_content,
+                        metadata={
+                            "source": filename,
+                            "page": i + 1,
+                            "loader": "PixtralVisionLoader",
+                            "is_scanned": True
+                        }
+                    )
+                    vision_documents.append(doc)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing page {i+1}: {e}")
+                    # Keep going for other pages
+            
+            if vision_documents:
+                return vision_documents
+            else:
+                return documents # Fallback if vision failed completely
+                
         except DocumentProcessingError:
             raise
         except Exception as e:
             logger.error(f"❌ PDF processing error for {filename}: {e}", exc_info=True)
-            if "PDF" in str(e) or "corrupt" in str(e).lower() or "invalid" in str(e).lower():
-                raise DocumentProcessingError(
-                    ErrorMessageTemplates.corrupted_file(filename, "PDF"),
-                    error_category=ErrorCategory.CORRUPTED_FILE,
-                    is_user_error=True,
-                    details={"filename": filename, "file_type": "pdf", "error": str(e)}
-                )
             raise DocumentProcessingError(
                 ErrorMessageTemplates.processing_error(filename, str(e)),
-                error_category=ErrorCategory.PROCESSING_ERROR,
-                is_user_error=False,
-                details={"filename": filename, "file_type": "pdf", "error": str(e)}
+                error_category=ErrorCategory.PROCESSING_ERROR
             )
     
     async def _load_text(self, file_path: str, filename: str) -> List[Document]:

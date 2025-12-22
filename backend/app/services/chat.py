@@ -52,17 +52,26 @@ class ChatService:
             raise Exception(f"Failed to create conversation: {str(e)}")
     
     async def get_user_conversations(self, user: User) -> List[Conversation]:
-        """Get all conversations for a user"""
+        """Get all conversations for a user (Parallelized stats fetch)"""
+        import asyncio
         try:
             result = self.db.table("conversations").select(
                 "*"
             ).eq("user_id", str(user.id)).order("updated_at", desc=True).execute()
             
+            conversations_records = result.data or []
+            if not conversations_records:
+                return []
+            
+            # Parallelize the stats fetching (N+1 optimization)
+            # Create a list of coroutine objects
+            tasks = [self._get_conversation_stats(conv["id"], user.id) for conv in conversations_records]
+            
+            # Run all tasks concurrently
+            stats_results = await asyncio.gather(*tasks)
+            
             conversations = []
-            for conv_record in result.data or []:
-                # Get conversation stats
-                stats = await self._get_conversation_stats(conv_record["id"], user.id)
-                
+            for conv_record, stats in zip(conversations_records, stats_results):
                 conversation = Conversation(
                     **conv_record,
                     message_count=stats["message_count"],

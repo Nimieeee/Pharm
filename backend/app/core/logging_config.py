@@ -477,7 +477,17 @@ def setup_logging():
     import os
     
     # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
+    try:
+        os.makedirs('logs', exist_ok=True)
+    except PermissionError:
+        # Fallback for read-only filesystems (like HF Spaces)
+        # Disable file handler if we can't write to logs/
+        LOGGING_CONFIG['handlers'].pop('file', None)
+        # Remove file handler from loggers
+        for logger_config in LOGGING_CONFIG.get('loggers', {}).values():
+            if 'file' in logger_config.get('handlers', []):
+                logger_config['handlers'].remove('file')
+        print("⚠️  Warning: Read-only filesystem detected. File logging disabled.")
     
     # Apply logging configuration
     logging.config.dictConfig(LOGGING_CONFIG)

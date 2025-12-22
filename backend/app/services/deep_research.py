@@ -467,41 +467,80 @@ class DeepResearchService:
         self.mistral_base_url = "https://api.mistral.ai/v1"
     
     async def _call_llm(self, system_prompt: str, user_prompt: str, json_mode: bool = False) -> str:
-        """Call Mistral LLM"""
-        try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                payload = {
-                    "model": "mistral-small-latest",
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.3 if json_mode else 0.7,
-                    "max_tokens": 4000
-                }
+        """
+        Call Mistral LLM with robust fallback strategy.
+        Sequence: mistral-large-latest -> mistral-medium-latest -> mistral-small-latest
+        """
+        from app.utils.rate_limiter import mistral_limiter
+        
+        # Models to try in order of capability
+        models_to_try = [
+            "mistral-large-latest",   # Best reasoning
+            "mistral-medium-latest",  # Good balance
+            "mistral-small-latest"    # Reliable/Fast fallback
+        ]
+        
+        last_error = None
+        
+        for model in models_to_try:
+            try:
+                # Apply rate limit before EACH call attempt
+                await mistral_limiter.wait_for_slot()
                 
-                if json_mode:
-                    payload["response_format"] = {"type": "json_object"}
+                print(f"🔬 Deep Research: Attempting with model {model}...")
                 
-                response = await client.post(
-                    f"{self.mistral_base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.mistral_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json=payload
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    return result["choices"][0]["message"]["content"]
-                else:
-                    print(f"LLM error: {response.status_code} - {response.text}")
-                    return ""
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    payload = {
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "temperature": 0.3 if json_mode else 0.7,
+                        "max_tokens": 4000
+                    }
                     
-        except Exception as e:
-            print(f"LLM call error: {e}")
-            return ""
+                    if json_mode:
+                        payload["response_format"] = {"type": "json_object"}
+                    
+                    response = await client.post(
+                        f"{self.mistral_base_url}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.mistral_api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json=payload
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        content = result["choices"][0]["message"]["content"]
+                        if not content:
+                            raise ValueError("Empty content from LLM")
+                        return content
+                    
+                    elif response.status_code in [401, 403, 404, 429]:
+                        # Auth/Rate/Model errors -> Try next model immediately
+                        print(f"⚠️ Model {model} failed (Status {response.status_code}): {response.text}")
+                        last_error = f"Status {response.status_code}"
+                        continue
+                    else:
+                        # Other errors -> Log and try next
+                        print(f"⚠️ Model {model} error: {response.text}")
+                        last_error = f"Status {response.status_code}"
+                        continue
+                        
+            except Exception as e:
+                print(f"⚠️ Model {model} exception: {e}")
+                last_error = str(e)
+                continue
+        
+        # If all failed
+        print(f"❌ CRITICAL: All Deep Research models failed. Last error: {last_error}")
+        # Return a valid JSON error structure if json_mode was requested, to prevent downstream crash
+        if json_mode:
+            return '{"error": "Deep Research unavailable due to model failures", "plan_overview": "Research failed", "steps": []}'
+        return "Deep Research unavailable at this time."
 
     def _is_valid_finding(self, finding: Finding) -> bool:
         """
