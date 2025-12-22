@@ -8,7 +8,8 @@ passlib==1.7.4
 bcrypt==4.0.1
 python-multipart==0.0.6
 supabase==2.9.0
-# mistralai removed - using direct HTTP calls instead to avoid httpx conflict
+# mistralai for Conversations API with tools (web_search, code_interpreter, image_generation)
+mistralai>=1.2.0
 python-docx==1.1.0
 python-pptx==0.6.23
 openpyxl==3.1.2
