@@ -166,7 +166,7 @@ h3,
 /* Liquid Glass Effect - Apple Style */
 .glass-effect {
   position: relative;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(25px) saturate(180%);
   -webkit-backdrop-filter: blur(25px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -178,7 +178,7 @@ h3,
 }
 
 .dark .glass-effect {
-  background: rgba(20, 20, 23, 0.6);
+  background: rgba(20, 20, 23, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);

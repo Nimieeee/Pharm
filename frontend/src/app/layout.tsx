@@ -45,9 +45,22 @@ const gtSuper = localFont({
   display: 'swap',
 });
 
+import type { Viewport } from 'next';
+
 export const metadata = {
   title: 'PharmGPT - AI-Powered Pharmaceutical Assistant',
   description: 'Intelligent pharmaceutical research assistant powered by AI',
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
