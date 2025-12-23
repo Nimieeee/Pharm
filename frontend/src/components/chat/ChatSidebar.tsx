@@ -186,16 +186,36 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     };
   }, []);
 
-  const fetchConversationHistory = async () => {
+  const fetchConversationHistory = async (retryCount = 0) => {
     if (!token) return;
 
-    setIsLoadingHistory(true);
+    // Show cached data instantly while fetching fresh data
+    const cacheKey = 'conversation_history_cache';
+    const cached = localStorage.getItem(cacheKey);
+    if (cached && retryCount === 0) {
+      try {
+        const cachedHistory = JSON.parse(cached);
+        setChatHistory(cachedHistory);
+        // Don't show loading if we have cache
+        setIsLoadingHistory(false);
+      } catch { }
+    } else {
+      setIsLoadingHistory(true);
+    }
+
     try {
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const conversations = await response.json();
@@ -208,9 +228,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
           is_archived: conv.is_archived
         }));
         setChatHistory(formattedHistory);
+        // Update cache
+        localStorage.setItem(cacheKey, JSON.stringify(formattedHistory));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch conversation history:', error);
+      // Retry once on timeout
+      if (error.name === 'AbortError' && retryCount < 1) {
+        console.log('Request timed out, retrying...');
+        setTimeout(() => fetchConversationHistory(retryCount + 1), 1000);
+        return;
+      }
     } finally {
       setIsLoadingHistory(false);
     }

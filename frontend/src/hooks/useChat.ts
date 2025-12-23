@@ -65,7 +65,7 @@ export function useChat() {
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Keep-alive ping to prevent HF Space cold starts (runs every 5 minutes)
+  // Keep-alive ping to prevent HF Space cold starts (runs every 30 seconds)
   useEffect(() => {
     const pingBackend = async () => {
       try {
@@ -76,8 +76,8 @@ export function useChat() {
     // Initial ping
     pingBackend();
 
-    // Ping every 5 minutes while the app is open
-    const interval = setInterval(pingBackend, 5 * 60 * 1000);
+    // Ping every 30 seconds while the app is open
+    const interval = setInterval(pingBackend, 30 * 1000);
     return () => clearInterval(interval);
   }, []);
 
