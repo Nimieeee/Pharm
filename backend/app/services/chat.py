@@ -302,11 +302,7 @@ class ChatService:
     ) -> List[Message]:
         """Get messages for a conversation"""
         try:
-            # Check if conversation belongs to user
-            conversation = await self.get_conversation(conversation_id, user)
-            if not conversation:
-                return []
-            
+            # OPTIMIZATION: Direct query with user_id filter (Faster)
             query = self.db.table("messages").select(
                 "*"
             ).eq("conversation_id", str(conversation_id)).eq(
@@ -336,8 +332,18 @@ class ChatService:
     ) -> List[Message]:
         """Get recent messages for context"""
         try:
-            messages = await self.get_conversation_messages(conversation_id, user)
-            return messages[-limit:] if messages else []
+            # OPTIMIZATION: Push limit to DB query instead of fetching all
+            # Get last N messages by sorting DESC, limiting, then re-sorting ASC in memory
+            result = self.db.table("messages").select("*")\
+                .eq("conversation_id", str(conversation_id))\
+                .eq("user_id", str(user.id))\
+                .order("created_at", desc=True)\
+                .limit(limit)\
+                .execute()
+            
+            messages = [Message(**r) for r in result.data or []]
+            # Return ordered chronologically (Oldest -> Newest)
+            return sorted(messages, key=lambda x: x.created_at)
             
         except Exception as e:
             raise Exception(f"Failed to get recent messages: {str(e)}")
