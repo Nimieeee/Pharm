@@ -382,6 +382,20 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     const isActive = effectiveActiveId === chat.id;
     const isEditing = editingId === chat.id;
 
+    // Long-press handler for mobile
+    let longPressTimer: NodeJS.Timeout | null = null;
+    const handleTouchStart = () => {
+      longPressTimer = setTimeout(() => {
+        setOpenPopoverId(chat.id);
+      }, 500); // 500ms long press
+    };
+    const handleTouchEnd = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
+
     return (
       <div key={chat.id} className="group relative">
         <div
@@ -389,6 +403,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             ? 'bg-[var(--surface-highlight)] text-foreground'
             : 'text-foreground/80 hover:bg-[var(--surface-highlight)]/50'
             }`}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
         >
           {isEditing ? (
             <input
@@ -408,13 +425,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             </button>
           )}
 
-          {/* Context Menu Trigger */}
+          {/* Context Menu Trigger - Hidden on mobile (use long-press instead) */}
           <RadixPopover.Root open={openPopoverId === chat.id} onOpenChange={(open) => setOpenPopoverId(open ? chat.id : null)}>
             <RadixPopover.Trigger asChild>
               <div
                 role="button"
                 tabIndex={0}
-                className={`p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                className={`hidden md:block p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   } transition-opacity`}
                 onClick={(e) => e.stopPropagation()}
               >
