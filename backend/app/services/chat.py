@@ -279,12 +279,17 @@ class ChatService:
     ) -> Optional[Message]:
         """Add a message to a conversation"""
         try:
+            print(f"📝 add_message: conv={message_data.conversation_id}, user={user.id}, role={message_data.role}")
+            
             # OPTIMIZATION: Lightweight existence check instead of full get_conversation
             check = self.db.table("conversations").select("id", count="exact", head=True)\
                 .eq("id", str(message_data.conversation_id))\
                 .eq("user_id", str(user.id)).execute()
             
+            print(f"📝 Conversation check: count={check.count}")
+            
             if check.count == 0:
+                print(f"❌ Conversation not found or user mismatch!")
                 return None
             
             # Insert message - convert UUIDs to strings for JSON serialization
@@ -299,9 +304,11 @@ class ChatService:
             result = self.db.table("messages").insert(msg_dict).execute()
             
             if not result.data:
+                print(f"❌ Message insert returned no data!")
                 raise Exception("Failed to create message")
             
             msg_record = result.data[0]
+            print(f"✅ Message saved: id={msg_record.get('id')}")
             
             # Update conversation timestamp
             await self._update_conversation_timestamp(message_data.conversation_id)
@@ -309,6 +316,7 @@ class ChatService:
             return Message(**msg_record)
             
         except Exception as e:
+            print(f"❌ add_message error: {str(e)}")
             raise Exception(f"Failed to add message: {str(e)}")
     
     async def get_conversation_messages(
@@ -319,6 +327,8 @@ class ChatService:
     ) -> List[Message]:
         """Get messages for a conversation"""
         try:
+            print(f"📖 get_messages: conv={conversation_id}, user={user.id}")
+            
             # OPTIMIZATION: Direct query with user_id filter (Faster)
             query = self.db.table("messages").select(
                 "*"
@@ -331,6 +341,8 @@ class ChatService:
             
             result = query.execute()
             
+            print(f"📖 Found {len(result.data or [])} messages")
+            
             messages = []
             for msg_record in result.data or []:
                 message = Message(**msg_record)
@@ -339,6 +351,7 @@ class ChatService:
             return messages
             
         except Exception as e:
+            print(f"❌ get_messages error: {str(e)}")
             raise Exception(f"Failed to get messages: {str(e)}")
     
     async def get_recent_messages(
