@@ -393,31 +393,17 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
         <div className="h-4 bg-slate-100 dark:bg-slate-900 rounded w-1/2 animate-pulse"></div>
       </div>
 
+
       {/* Progress Card */}
       <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-black border border-slate-200 dark:border-slate-800 rounded-xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-              <Loader2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-slate-800 dark:text-slate-200">Deep Research in Progress</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-500">This may take 30-60 seconds</p>
-            </div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+            <Loader2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
           </div>
-          {progressPercent > 0 && (
-            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{progressPercent}%</span>
-          )}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mb-4">
-          <motion.div
-            className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
+          <div>
+            <h4 className="font-semibold text-slate-800 dark:text-slate-200">Deep Research in Progress</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-500">This may take 30-60 seconds</p>
+          </div>
         </div>
 
         <div className="space-y-2">

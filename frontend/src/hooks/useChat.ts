@@ -69,6 +69,9 @@ export function useChat() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
+    // Reset deep research UI when switching conversations
+    setDeepResearchProgress(null);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
         headers: {
@@ -92,6 +95,7 @@ export function useChat() {
       console.error('Failed to load conversation:', error);
     }
   }, []);
+
 
   const selectConversation = useCallback((convId: string) => {
     loadConversation(convId);
@@ -488,6 +492,7 @@ export function useChat() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    setDeepResearchProgress(null); // Reset deep research UI
     // Clear from localStorage as well
     if (typeof window !== 'undefined') {
       localStorage.removeItem('currentConversationId');
