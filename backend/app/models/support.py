@@ -58,7 +58,7 @@ class SupportRequestInDB(SupportRequestBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SupportRequest(SupportRequestBase):
@@ -71,7 +71,7 @@ class SupportRequest(SupportRequestBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SupportRequestResponse(BaseModel):
