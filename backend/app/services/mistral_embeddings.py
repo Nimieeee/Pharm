@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 from cachetools import TTLCache
 
 from app.core.config import settings
+from app.utils.rate_limiter import mistral_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,9 @@ class MistralEmbeddingsService:
         }
         # Rate limiting: Mistral free tier - conservative approach
         self.last_api_call_time = 0
-        self.min_time_between_calls = 1.5  # 1.5 seconds to be safe
+        self.min_time_between_calls = 0.1  # Minimal internal wait, relying on global mistral_limiter
         self.max_batch_size = 16  # Mistral supports up to 16 texts per request
-        self.rate_limit_lock = threading.Lock()  # Thread-safe rate limiting
+        self.rate_limit_lock = asyncio.Lock()  # Corrected to asyncio Lock for async compliance
         
         # Check API key
         if self.mistral_api_key:
@@ -112,17 +113,9 @@ class MistralEmbeddingsService:
         
         for attempt in range(max_retries):
             try:
-                # Thread-safe rate limiting
-                with self.rate_limit_lock:
-                    current_time = time.time()
-                    time_since_last_call = current_time - self.last_api_call_time
-                    if time_since_last_call < self.min_time_between_calls:
-                        wait_time = self.min_time_between_calls - time_since_last_call
-                        logger.debug(f"⏱️  Rate limiting: waiting {wait_time:.2f}s")
-                        await asyncio.sleep(wait_time)
-                    
-                    # Update last call time immediately after waiting
-                    self.last_api_call_time = time.time()
+                # Use unified global rate limiter to avoid deadlocks and respect user constraints
+                await mistral_limiter.wait_for_slot()
+                self.last_api_call_time = time.time()
                 
                 self.cache_stats["api_calls"] += 1
                 start_time = time.time()
@@ -281,16 +274,9 @@ class MistralEmbeddingsService:
         
         for attempt in range(max_retries):
             try:
-                # Thread-safe rate limiting
-                with self.rate_limit_lock:
-                    current_time = time.time()
-                    time_since_last_call = current_time - self.last_api_call_time
-                    if time_since_last_call < self.min_time_between_calls:
-                        wait_time = self.min_time_between_calls - time_since_last_call
-                        await asyncio.sleep(wait_time)
-                    
-                    # Update last call time immediately after waiting
-                    self.last_api_call_time = time.time()
+                # Use unified global rate limiter
+                await mistral_limiter.wait_for_slot()
+                self.last_api_call_time = time.time()
                 
                 self.cache_stats["api_calls"] += 1
                 start_time = time.time()
