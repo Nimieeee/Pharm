@@ -86,7 +86,8 @@ export function useChat() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Reset deep research UI and messages when switching conversations
+    // IMPORTANT: Set conversationId IMMEDIATELY so UI knows which chat we're in
+    setConversationId(convId);
     setDeepResearchProgress(null);
     setMessages([]); // Clear previous messages immediately
     setIsLoadingConversation(true);
@@ -101,37 +102,62 @@ export function useChat() {
           ...msg,
           timestamp: new Date(msg.timestamp)
         })));
-        setConversationId(convId);
       } catch { }
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+    // Retry logic with exponential backoff (3 attempts)
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      if (response.ok) {
-        const data = await response.json();
-        const loadedMessages: Message[] = data.map((msg: any) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.created_at),
-          attachments: msg.metadata?.attachments || undefined,
-        }));
-        setMessages(loadedMessages);
-        setConversationId(convId);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-        // Cache the messages for faster subsequent loads
-        localStorage.setItem(cachedKey, JSON.stringify(loadedMessages));
+        const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          const loadedMessages: Message[] = data.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date(msg.created_at),
+            attachments: msg.metadata?.attachments || undefined,
+          }));
+          setMessages(loadedMessages);
+
+          // Cache the messages for faster subsequent loads
+          localStorage.setItem(cachedKey, JSON.stringify(loadedMessages));
+          setIsLoadingConversation(false);
+          return; // Success - exit
+        } else if (response.status === 401) {
+          // Token expired - clear and redirect
+          localStorage.removeItem('token');
+          setIsLoadingConversation(false);
+          return;
+        }
+
+        lastError = new Error(`HTTP ${response.status}`);
+      } catch (error: any) {
+        lastError = error;
+        // Wait before retry (exponential backoff: 1s, 2s, 4s)
+        if (attempt < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        }
       }
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
-    } finally {
-      setIsLoadingConversation(false);
     }
+
+    // All retries failed - log but keep conversationId set
+    console.error('Failed to load conversation after retries:', lastError);
+    setIsLoadingConversation(false);
   }, []);
 
 
