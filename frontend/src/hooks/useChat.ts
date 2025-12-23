@@ -175,6 +175,13 @@ export function useChat() {
     setUploadedFiles([]); // Clear attachments after sending
     setIsLoading(true);
 
+    // Cancel any ongoing operations
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     try {
       if (!token) {
         const authMessage: Message = {
@@ -234,6 +241,7 @@ export function useChat() {
             conversation_id: currentConversationId,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
           }),
+          signal,
         });
 
         if (!response.ok) {
@@ -345,6 +353,7 @@ export function useChat() {
             mode: mode,
             use_rag: true,
           }),
+          signal,
         });
 
         if (streamResponse.ok && streamResponse.body) {
@@ -488,6 +497,7 @@ export function useChat() {
             use_rag: true,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
           }),
+          signal,
         });
 
         if (!response.ok) {
