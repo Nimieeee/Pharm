@@ -56,6 +56,7 @@ async def process_visual_document(
     client = Mistral(api_key=api_key)
     
     # 1. CONVERT TO IMAGES (High DPI for small text)
+    logger.info(f"📄 [Vision] Converting {filename} to images...")
     images = _convert_to_images(content, filename)
     if not images:
         return f"Error: Could not extract images from {filename}"
@@ -154,9 +155,9 @@ def _convert_to_images(content: bytes, filename: str):
     
     try:
         if ext == 'pdf':
-            # DPI=300 is the sweet spot for academic papers (readable text, manageable size)
+            # DPI=200 is sufficient for OCR (Pixtral doesn't need 300) and faster
             if convert_from_bytes:
-                return convert_from_bytes(content, dpi=300, fmt="jpeg")
+                return convert_from_bytes(content, dpi=200, fmt="jpeg", thread_count=4)
             else:
                 raise ImportError("pdf2image missing")
             
