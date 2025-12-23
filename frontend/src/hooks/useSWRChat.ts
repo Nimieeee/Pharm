@@ -51,8 +51,12 @@ export function clearSWRCache() {
 }
 
 // Hook for conversation list (sidebar)
-export function useConversations() {
-    const tokenHash = getTokenHash();
+export function useConversations(authToken?: string | null) {
+    // Prefer passed token (reactive), fallback to localStorage
+    const token = authToken !== undefined ? authToken : (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+
+    // Generate hash from the effective token
+    const tokenHash = token ? token.substring(0, 8) : '';
 
     const { data, error, mutate, isLoading } = useSWR(
         tokenHash ? `/api/v1/chat/conversations?user=${tokenHash}` : null,
@@ -61,9 +65,9 @@ export function useConversations() {
             revalidateOnFocus: false,
             dedupingInterval: 30000,
             revalidateOnReconnect: true,
-            errorRetryCount: 3,           // Retry up to 3 times
-            errorRetryInterval: 2000,      // Wait 2s between retries
-            keepPreviousData: true,        // Keep showing old data while fetching
+            errorRetryCount: 3,
+            errorRetryInterval: 2000,
+            // Removed keepPreviousData: true to prevent showing incorrect user data
         }
     );
 

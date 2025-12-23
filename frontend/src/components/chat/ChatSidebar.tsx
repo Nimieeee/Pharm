@@ -159,8 +159,8 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const [editTitle, setEditTitle] = useState('');
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
-  // SWR for instant cache-first loading
-  const { conversations, isLoading: isLoadingHistory, mutate: mutateConversations } = useConversations();
+  // SWR for instant cache-first loading - Pass token to ensure reactivity on account switch
+  const { conversations, isLoading: isLoadingHistory, mutate: mutateConversations } = useConversations(token);
 
   // Transform to ChatHistory format
   const chatHistory = useMemo(() =>
@@ -173,6 +173,14 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
       is_archived: conv.is_archived
     })), [conversations]
   );
+
+  // Clear cache on unmount or logout if needed
+  useEffect(() => {
+    if (!user) {
+      // Clear sensitive data when no user
+      mutateConversations([], false);
+    }
+  }, [user, mutateConversations]);
 
   // Listen for active conversation changes from localStorage
   useEffect(() => {
@@ -196,10 +204,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     mutateConversations();
   };
 
-  const handleSignOut = () => {
-    // Clear SWR cache to prevent showing previous user's data
-    clearSWRCache();
-    logout();
+  const handleSignOut = async () => {
+    try {
+      // 1. Clear SWR cache explicitly
+      const { clearSWRCache } = await import('@/hooks/useSWRChat');
+      clearSWRCache();
+
+      // 2. Perform logout
+      await logout();
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
     router.push('/login');
   };
 
