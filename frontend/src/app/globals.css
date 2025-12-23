@@ -118,14 +118,14 @@ body {
 }
 
 .font-serif {
-  font-family: var(--font-gt-super), Georgia, 'Times New Roman', serif;
+  font-family: var(--font-fraunces), var(--font-gt-super), Georgia, serif;
 }
 
 h1,
 h2,
 h3,
 .heading {
-  font-family: var(--font-gt-super), Georgia, serif;
+  font-family: var(--font-fraunces), var(--font-gt-super), Georgia, serif;
 }
 
 /* Typography Classes */

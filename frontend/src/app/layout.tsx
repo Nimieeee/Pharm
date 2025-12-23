@@ -2,6 +2,7 @@ import './globals.css';
 import 'katex/dist/katex.min.css';
 import { ThemeProvider } from '@/lib/theme-context';
 import { AuthProvider } from '@/lib/auth-context';
+import { Fraunces } from 'next/font/google';
 import localFont from 'next/font/local';
 
 // Sohne Sans - UI and body text
@@ -22,7 +23,14 @@ const sohne = localFont({
   display: 'swap',
 });
 
-// GT Super Display - Headings and emphasis
+// Fraunces - Headings and emphasis
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  display: 'swap',
+});
+
+// GT Super Display - Legacy font (keeping for safety but priority is Fraunces)
 const gtSuper = localFont({
   src: [
     {
@@ -69,7 +77,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${sohne.variable} ${gtSuper.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${sohne.variable} ${fraunces.variable} ${gtSuper.variable}`}>
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)] antialiased">
         <AuthProvider>
           <ThemeProvider>
