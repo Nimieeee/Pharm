@@ -15,7 +15,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, editMessage, deleteMessage } = useChatContext();
+  const { messages, isLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, editMessage, deleteMessage } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
@@ -87,7 +87,11 @@ function ChatContent() {
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44">
         <div className="max-w-3xl mx-auto">
-          {messages.length === 0 ? (
+          {isLoadingConversation ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-500 opacity-50" />
+            </div>
+          ) : messages.length === 0 ? (
             <EmptyState
               onSuggestionClick={(msg) => handleSend(msg, mode)}
               currentMode={mode}

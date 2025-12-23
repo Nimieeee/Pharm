@@ -86,8 +86,9 @@ export function useChat() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Reset deep research UI when switching conversations
+    // Reset deep research UI and messages when switching conversations
     setDeepResearchProgress(null);
+    setMessages([]); // Clear previous messages immediately
     setIsLoadingConversation(true);
 
     // Try to load from cache first for instant feedback
