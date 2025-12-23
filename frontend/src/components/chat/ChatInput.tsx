@@ -320,8 +320,9 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="fixed inset-0 bg-background/20 backdrop-blur-sm z-[45]"
+                          className="fixed inset-0 z-[45]"
                           onClick={() => setShowAttachMenu(false)}
+                          onTouchEnd={() => setShowAttachMenu(false)}
                         />
                         <motion.div
                           initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
@@ -481,8 +482,9 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="fixed inset-0 bg-background/20 backdrop-blur-sm z-[45]"
+                          className="fixed inset-0 z-[45]"
                           onClick={() => setShowAttachMenu(false)}
+                          onTouchEnd={() => setShowAttachMenu(false)}
                         />
                         <motion.div
                           initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
