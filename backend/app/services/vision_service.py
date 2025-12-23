@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 import logging
+import asyncio
 from typing import List, Any
 try:
     from PIL import Image
@@ -59,35 +60,44 @@ async def process_visual_document(
         return f"Error: Could not extract images from {filename}"
         
     raw_vision_data = []
-    logger.info(f"👁️ [Robust Vision] Analyzing {len(images)} pages with Pixtral-Large...")
+    logger.info(f"👁️ [Robust Vision] Analyzing {len(images)} pages in parallel with Pixtral-12B...")
 
-    for i, img in enumerate(images):
-        await mistral_limiter.wait_for_slot()
-        
-        # 2. IMAGE OPTIMIZATION (Crucial for "Detailed" mode)
-        # We ensure the image isn't too large for the API but big enough to read tiny text.
-        base64_img = _optimize_and_encode(img)
-        
-        try:
-            # 3. EXTRACTION STEP (Pixtral Phase)
-            response = await client.chat.complete_async(
-                model="pixtral-12b-2409", # Using the stable pixtral identifier
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": ROBUST_SYSTEM_PROMPT},
-                            {"type": "image_url", "image_url": f"data:image/jpeg;base64,{base64_img}"}
-                        ]
-                    }
-                ]
-            )
-            extracted_content = response.choices[0].message.content
-            raw_vision_data.append(f"## --- PAGE {i+1} START ---\n{extracted_content}\n## --- PAGE {i+1} END ---")
+    # Semaphores to control concurrency (prevent hitting rate limits too hard)
+    semaphore = asyncio.Semaphore(5) 
+
+    async def process_single_page(idx, img):
+        async with semaphore:
+            await mistral_limiter.wait_for_slot()
             
-        except Exception as e:
-            logger.error(f"⚠️ Error on page {i+1}: {e}")
-            raw_vision_data.append(f"## Page {i+1} [Extraction Failed: {str(e)}]")
+            # Optimization
+            base64_img = _optimize_and_encode(img)
+            
+            try:
+                response = await client.chat.complete_async(
+                    model="pixtral-12b-2409",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": ROBUST_SYSTEM_PROMPT},
+                                {"type": "image_url", "image_url": f"data:image/jpeg;base64,{base64_img}"}
+                            ]
+                        }
+                    ]
+                )
+                content = response.choices[0].message.content
+                return idx, f"## --- PAGE {idx+1} START ---\n{content}\n## --- PAGE {idx+1} END ---"
+            except Exception as e:
+                logger.error(f"⚠️ Error on page {idx+1}: {e}")
+                return idx, f"## Page {idx+1} [Extraction Failed: {str(e)}]"
+
+    # Launch parallel tasks
+    tasks = [process_single_page(i, img) for i, img in enumerate(images)]
+    results = await asyncio.gather(*tasks)
+    
+    # Sort results to ensure page order is preserved
+    results.sort(key=lambda x: x[0])
+    raw_vision_data = [r[1] for r in results]
 
     # Join all pages
     full_document_context = "\n\n".join(raw_vision_data)
