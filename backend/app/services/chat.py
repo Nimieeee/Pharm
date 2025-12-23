@@ -279,9 +279,12 @@ class ChatService:
     ) -> Optional[Message]:
         """Add a message to a conversation"""
         try:
-            # Check if conversation exists and belongs to user
-            conversation = await self.get_conversation(message_data.conversation_id, user)
-            if not conversation:
+            # OPTIMIZATION: Lightweight existence check instead of full get_conversation
+            check = self.db.table("conversations").select("id", count="exact", head=True)\
+                .eq("id", str(message_data.conversation_id))\
+                .eq("user_id", str(user.id)).execute()
+            
+            if check.count == 0:
                 return None
             
             # Insert message - convert UUIDs to strings for JSON serialization
