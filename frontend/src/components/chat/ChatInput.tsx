@@ -232,7 +232,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
             className={`relative rounded-[28px] border-2 transition-all ${isDragging
               ? 'border-[var(--accent)] bg-[var(--accent)]/5'
               : 'border-[var(--border)] hover:border-[var(--text-secondary)]/30'
-              } bg-[var(--surface)]/80 backdrop-blur-xl shadow-2xl flex flex-col`}
+              } bg-[var(--surface)] shadow-2xl flex flex-col`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
@@ -408,7 +408,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
           <div className={`relative rounded-[24px] border-2 transition-all ${isDragging
             ? 'border-[var(--accent)] bg-[var(--accent)]/5'
             : 'border-[var(--border)]'
-            } bg-[var(--surface)]/80 backdrop-blur-xl dark:bg-[#1E1E1E]/80 shadow-xl flex flex-col`}>
+            } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-xl flex flex-col`}>
 
             {/* Mobile File Attachment Grid */}
             <AnimatePresence>
