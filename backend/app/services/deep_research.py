@@ -466,7 +466,7 @@ class DeepResearchService:
         self.mistral_api_key = settings.MISTRAL_API_KEY
         self.mistral_base_url = "https://api.mistral.ai/v1"
     
-    async def _call_llm(self, system_prompt: str, user_prompt: str, json_mode: bool = False) -> str:
+    async def _call_llm(self, system_prompt: str, user_prompt: str, json_mode: bool = False, max_tokens: int = 4000) -> str:
         """
         Call Mistral LLM with robust fallback strategy.
         Sequence: mistral-large-latest -> mistral-medium-latest -> mistral-small-latest
@@ -489,7 +489,7 @@ class DeepResearchService:
                 
                 print(f"🔬 Deep Research: Attempting with model {model}...")
                 
-                async with httpx.AsyncClient(timeout=120.0) as client:
+                async with httpx.AsyncClient(timeout=180.0) as client:  # Increased timeout for longer responses
                     payload = {
                         "model": model,
                         "messages": [
@@ -497,7 +497,7 @@ class DeepResearchService:
                             {"role": "user", "content": user_prompt}
                         ],
                         "temperature": 0.3 if json_mode else 0.7,
-                        "max_tokens": 4000
+                        "max_tokens": max_tokens
                     }
                     
                     if json_mode:
@@ -1035,7 +1035,8 @@ Research Context (Use these sources):
 
 Synthesize a comprehensive research report."""
 
-        response = await self._call_llm(system_prompt, user_prompt, json_mode=False)
+        # Use higher token limit for complete report with references
+        response = await self._call_llm(system_prompt, user_prompt, json_mode=False, max_tokens=8000)
         
         state.final_report = response
         state.status = "complete"
