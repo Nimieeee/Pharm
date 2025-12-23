@@ -22,6 +22,16 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting PharmGPT Backend API...")
     await init_db()
     print("✅ Database initialized")
+    
+    # Warmup: Pre-initialize services to avoid cold-start on first request
+    try:
+        from app.services.embeddings import embeddings_service
+        # Make a dummy embedding call to warm up the Mistral connection
+        await embeddings_service.generate_embedding("warmup")
+        print("✅ Embeddings service warmed up")
+    except Exception as e:
+        print(f"⚠️ Warmup embedding failed (non-critical): {e}")
+    
     yield
     # Shutdown
     print("🛑 Shutting down PharmGPT Backend API...")
