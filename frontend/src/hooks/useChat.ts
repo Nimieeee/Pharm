@@ -57,12 +57,29 @@ interface DeepResearchProgress {
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Keep-alive ping to prevent HF Space cold starts (runs every 5 minutes)
+  useEffect(() => {
+    const pingBackend = async () => {
+      try {
+        await fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
+      } catch { }
+    };
+
+    // Initial ping
+    pingBackend();
+
+    // Ping every 5 minutes while the app is open
+    const interval = setInterval(pingBackend, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Load conversation messages when conversationId changes
   const loadConversation = useCallback(async (convId: string) => {
@@ -71,6 +88,21 @@ export function useChat() {
 
     // Reset deep research UI when switching conversations
     setDeepResearchProgress(null);
+    setIsLoadingConversation(true);
+
+    // Try to load from cache first for instant feedback
+    const cachedKey = `conversation_messages_${convId}`;
+    const cached = localStorage.getItem(cachedKey);
+    if (cached) {
+      try {
+        const cachedMessages = JSON.parse(cached);
+        setMessages(cachedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })));
+        setConversationId(convId);
+      } catch { }
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
@@ -90,9 +122,14 @@ export function useChat() {
         }));
         setMessages(loadedMessages);
         setConversationId(convId);
+
+        // Cache the messages for faster subsequent loads
+        localStorage.setItem(cachedKey, JSON.stringify(loadedMessages));
       }
     } catch (error) {
       console.error('Failed to load conversation:', error);
+    } finally {
+      setIsLoadingConversation(false);
     }
   }, []);
 
@@ -658,6 +695,7 @@ export function useChat() {
   return {
     messages,
     isLoading,
+    isLoadingConversation,
     isUploading,
     isDeleting,
     sendMessage,
