@@ -257,20 +257,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
               )}
             </AnimatePresence>
 
-            {/* Warning Message for AI Vision Analysis */}
-            <AnimatePresence>
-              {attachments.some(a => a.status === 'uploading') && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="px-4 pb-2 text-xs text-[var(--accent)] flex items-center gap-2"
-                >
-                  <Loader2 size={12} className="animate-spin" />
-                  <span>Processing with AI Vision... This may take a moment (approx 1.5s per page) to ensure accuracy.</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+
 
             <div className="relative w-full">
               {/* Left: Plus Button (Attach Menu) */}
