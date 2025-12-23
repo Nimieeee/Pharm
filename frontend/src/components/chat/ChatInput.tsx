@@ -63,8 +63,28 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
   const processFiles = async (files: FileList) => {
     if (!onFileUpload) return;
 
+    // 1. Validation: Max 5 files at once
+    if (files.length > 5) {
+      alert("You can only upload up to 5 files at a time.");
+      return;
+    }
+
+    // 2. Validation: Max 20MB per file
+    const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+    const validFiles: File[] = [];
+
+    Array.from(files).forEach(file => {
+      if (file.size > MAX_SIZE) {
+        alert(`File '${file.name}' exceeds the 20MB limit.`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (validFiles.length === 0) return;
+
     // Create temporary attachments
-    const newAttachments: Attachment[] = Array.from(files).map(file => ({
+    const newAttachments: Attachment[] = validFiles.map(file => ({
       id: Math.random().toString(36).substring(7),
       file,
       status: 'uploading'
@@ -72,9 +92,14 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
     setAttachments(prev => [...prev, ...newAttachments]);
 
+    // Create FileList from valid files
+    const dt = new DataTransfer();
+    validFiles.forEach(file => dt.items.add(file));
+    const filteredFileList = dt.files;
+
     // Upload files
     try {
-      const results = await onFileUpload(files);
+      const results = await onFileUpload(filteredFileList);
 
       // Update status based on results
       setAttachments(prev => prev.map(att => {
