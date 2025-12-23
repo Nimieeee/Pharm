@@ -18,7 +18,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/health", response_model=Dict[str, Any])
+@router.get("/", response_model=Dict[str, Any])
 async def get_system_health(db: Client = Depends(get_db)):
     """
     Get comprehensive system health status
@@ -138,7 +138,7 @@ async def get_system_health(db: Client = Depends(get_db)):
         )
 
 
-@router.get("/health/embeddings", response_model=Dict[str, Any])
+@router.get("/embeddings", response_model=Dict[str, Any])
 async def get_embeddings_health():
     """
     Get detailed embeddings service health
@@ -169,7 +169,7 @@ async def get_embeddings_health():
         )
 
 
-@router.get("/health/migration", response_model=Dict[str, Any])
+@router.get("/migration", response_model=Dict[str, Any])
 async def get_migration_health(db: Client = Depends(get_db)):
     """
     Get migration service health and progress
@@ -198,7 +198,7 @@ async def get_migration_health(db: Client = Depends(get_db)):
         )
 
 
-@router.get("/health/database", response_model=Dict[str, Any])
+@router.get("/database", response_model=Dict[str, Any])
 async def get_database_health(db: Client = Depends(get_db)):
     """
     Get database health and vector search performance
@@ -281,7 +281,7 @@ async def get_database_health(db: Client = Depends(get_db)):
         )
 
 
-@router.get("/health/performance", response_model=Dict[str, Any])
+@router.get("/performance", response_model=Dict[str, Any])
 async def get_performance_metrics():
     """
     Get system performance metrics
@@ -319,7 +319,7 @@ async def get_performance_metrics():
         )
 
 
-@router.post("/health/test-embedding", response_model=Dict[str, Any])
+@router.post("/test-embedding", response_model=Dict[str, Any])
 async def test_embedding_generation():
     """
     Test embedding generation functionality
@@ -372,7 +372,7 @@ async def test_embedding_generation():
         }
 
 
-@router.post("/health/clear-cache", response_model=Dict[str, Any])
+@router.post("/clear-cache", response_model=Dict[str, Any])
 async def clear_embeddings_cache():
     """
     Clear embeddings cache (admin operation)
@@ -405,7 +405,7 @@ async def clear_embeddings_cache():
         )
 
 
-@router.post("/health/reset-performance-stats", response_model=Dict[str, Any])
+@router.post("/reset-performance-stats", response_model=Dict[str, Any])
 async def reset_performance_statistics():
     """
     Reset performance statistics (admin operation)
