@@ -1,28 +1,39 @@
 import asyncio
 import time
+from typing import Optional
 
-class GlobalRateLimiter:
+class RateLimiter:
     """
-    Ensures that no matter how many files you upload or chat requests you send,
-    the backend never calls Mistral faster than the configured limit.
-    Default: 0.8 requests per second (approx 1 request every 1.25 seconds).
+    Token Bucket Rate Limiter for AI API calls.
+    Ensures we don't hit rate limits by waiting for available slots.
     """
-    def __init__(self, requests_per_second=0.8):
-        self.delay = 1.0 / requests_per_second
-        self.last_call_time = 0
+    def __init__(self, calls_per_second: float = 1.0, burst: int = 5):
+        self.rate = calls_per_second
+        self.capacity = burst
+        self.tokens = burst
+        self.last_update = time.monotonic()
         self._lock = asyncio.Lock()
 
     async def wait_for_slot(self):
         async with self._lock:
-            current_time = time.time()
-            elapsed = current_time - self.last_call_time
+            now = time.monotonic()
+            elapsed = now - self.last_update
+            self.last_update = now
             
-            if elapsed < self.delay:
-                wait_time = self.delay - elapsed + 0.1  # +0.1s buffer
+            # Refill tokens based on elapsed time
+            new_tokens = elapsed * self.rate
+            if new_tokens > 0:
+                self.tokens = min(self.capacity, self.tokens + new_tokens)
+            
+            # Wait if no tokens available
+            if self.tokens < 1:
+                wait_time = (1 - self.tokens) / self.rate
                 await asyncio.sleep(wait_time)
-            
-            self.last_call_time = time.time()
+                self.tokens = 0
+                self.last_update = time.monotonic()
+            else:
+                self.tokens -= 1
 
-# Initialize a single global instance
-# Set to 0.8 (approx 1 req every 1.25s) to be super safe for Free Tier
-mistral_limiter = GlobalRateLimiter(requests_per_second=0.8)
+# Default instance for Mistral API (conservative limits)
+# Free tier might be lower, adjusting to ~1 request per 2 seconds to be safe
+mistral_limiter = RateLimiter(calls_per_second=0.5, burst=2)
