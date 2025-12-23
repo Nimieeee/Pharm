@@ -190,6 +190,92 @@ class EnhancedDocumentLoader:
         file_content: bytes, 
         filename: str, 
         additional_metadata: Optional[Dict[str, Any]] = None,
+        image_analyzer: Optional[Any] = None
+    ) -> List[Document]:
+        """
+        Smart Vision Router Implementation:
+        Delegates to smart_loader for intelligent document processing.
+        Falls back to legacy LangChain loaders if smart processing fails.
+        """
+        try:
+            start_time = time.time()
+            from app.services.smart_loader import process_file as smart_process
+            from app.core.config import settings
+
+            # Basic Validation
+            if not file_content:
+                 raise DocumentProcessingError(
+                    ErrorMessageTemplates.empty_content(filename), 
+                    error_category=ErrorCategory.EMPTY_CONTENT,
+                    is_user_error=True
+                 )
+
+            if not self.is_supported_format(filename):
+                ext = Path(filename).suffix.lower()
+                raise DocumentProcessingError(
+                    ErrorMessageTemplates.unsupported_format(filename, ext, self.get_supported_formats()),
+                    error_category=ErrorCategory.UNSUPPORTED_FORMAT
+                )
+
+            # Default Prompt Strategy
+            user_prompt = (
+                "Analyze this pharmaceutical document comprehensively. "
+                "Extract all text verbatim, interpret charts/tables data, "
+                "and provide statistical summary for data files."
+            )
+
+            logger.info(f"🧠 Smart Router: Processing {filename}...")
+
+            # Process using Smart Vision Router
+            content = await smart_process(
+                file_content=file_content,
+                filename=filename,
+                user_prompt=user_prompt,
+                api_key=settings.MISTRAL_API_KEY
+            )
+
+            # Check for explicit failure strings from smart_loader
+            if content.startswith("Error") or content.startswith("❌"):
+                 # Force fallback
+                 raise Exception(f"Smart Loader returned error: {content}")
+
+            # Success - Create Document
+            metadata = additional_metadata or {}
+            ext = Path(filename).suffix.lower()
+            metadata.update({
+                "source": filename,
+                "file_extension": ext,
+                "processor": "smart_vision_router",
+                "processed_at": time.time(),
+                "filename": filename,
+                "loader_version": "smart_v2",
+                "file_type": ext.lstrip('.')
+            })
+            
+            logger.info(f"✅ Smart Vision Router processed {filename} in {time.time()-start_time:.2f}s")
+            return [Document(page_content=content, metadata=metadata)]
+
+        except DocumentProcessingError as dpe:
+            # If it's a validation error (empty content, unsupported format), re-raise
+            # Don't fallback for user errors
+            logger.warning(f"Smart Loader Validation Error: {dpe.message}")
+            if dpe.is_user_error:
+                raise dpe
+            
+            # If system error, try fallback
+            logger.info("⚠️ Falling back to legacy loader due to processing error...")
+            return await self._legacy_load_document(file_content, filename, additional_metadata, image_analyzer)
+
+        except Exception as e:
+            logger.error(f"Smart Loader System Failure: {e}")
+            logger.info("⚠️ Falling back to legacy loader...")
+            return await self._legacy_load_document(file_content, filename, additional_metadata, image_analyzer)
+
+    async def _legacy_load_document(
+        self, 
+        file_content: bytes, 
+        filename: str, 
+        additional_metadata: Optional[Dict[str, Any]] = None,
         image_analyzer: Optional[Any] = None  # Callable[[bytes], Awaitable[str]]
     ) -> List[Document]:
         """
