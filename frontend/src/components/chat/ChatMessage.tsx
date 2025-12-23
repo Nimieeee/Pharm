@@ -185,7 +185,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   const displayContent = cleanContent(message.content);
 
   return (
-    <article className="py-5 sm:py-6 w-full">
+    <article className="py-5 sm:py-6 w-full pl-2 sm:pl-0">
       {/* AI Response - Editorial style, transparent background */}
       <div className="text-[var(--text-primary)] leading-relaxed w-full">
         <MarkdownRenderer

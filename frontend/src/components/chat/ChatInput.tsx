@@ -359,7 +359,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                 placeholder={`Ask anything in ${currentMode.label} mode...`}
                 disabled={isLoading}
                 rows={1}
-                className="w-full py-4 pl-16 pr-16 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-base"
+                className="w-full py-[18px] pl-16 pr-16 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-base"
                 style={{ minHeight: '60px', maxHeight: '200px' }}
               />
 
