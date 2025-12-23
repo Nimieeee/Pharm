@@ -295,7 +295,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                   <button
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    disabled={isUploading} // Global uploading state from parent
+                    disabled={isUploading}
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isUploading
                       ? 'bg-[var(--accent)]/20 cursor-not-allowed'
                       : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
@@ -304,7 +304,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     {isUploading ? (
                       <Loader2 size={18} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
                     ) : (
-                      <Plus size={20} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                      <Plus
+                        size={20}
+                        strokeWidth={2}
+                        className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
+                      />
                     )}
                   </button>
 
@@ -462,7 +466,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     {isUploading ? (
                       <Loader2 size={16} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
                     ) : (
-                      <Plus size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                      <Plus
+                        size={18}
+                        strokeWidth={2}
+                        className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
+                      />
                     )}
                   </button>
 
