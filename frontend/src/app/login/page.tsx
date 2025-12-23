@@ -23,13 +23,13 @@ export default function LoginPage() {
       // Fire multiple warmup requests to ensure backend is awake
       const pings = [
         fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { }),
-        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => { }),
       ];
       await Promise.all(pings);
 
       // Second wave after 2 seconds
       setTimeout(() => {
-        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { });
+        fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => { });
       }, 2000);
     };
     warmup();
