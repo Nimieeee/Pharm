@@ -229,7 +229,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const handlePin = async (id: string, currentPinned: boolean) => {
     // Optimistic update
     mutateConversations(
-      (current: any[]) => current?.map((c: any) => c.id === id ? { ...c, is_pinned: !currentPinned } : c),
+      (current: any[] | undefined) => current?.map((c: any) => c.id === id ? { ...c, is_pinned: !currentPinned } : c) || [],
       false
     );
     try {
@@ -250,7 +250,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
   const handleArchive = async (id: string, currentArchived: boolean) => {
     mutateConversations(
-      (current: any[]) => current?.map((c: any) => c.id === id ? { ...c, is_archived: !currentArchived } : c),
+      (current: any[] | undefined) => current?.map((c: any) => c.id === id ? { ...c, is_archived: !currentArchived } : c) || [],
       false
     );
     try {
@@ -273,7 +273,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     if (!confirm('Are you sure you want to delete this chat?')) return;
 
     mutateConversations(
-      (current: any[]) => current?.filter((c: any) => c.id !== id),
+      (current: any[] | undefined) => current?.filter((c: any) => c.id !== id) || [],
       false
     );
 
@@ -325,7 +325,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     if (!editTitle.trim()) return;
 
     mutateConversations(
-      (current: any[]) => current?.map((c: any) => c.id === id ? { ...c, title: editTitle } : c),
+      (current: any[] | undefined) => current?.map((c: any) => c.id === id ? { ...c, title: editTitle } : c) || [],
       false
     );
     setEditingId(null);
