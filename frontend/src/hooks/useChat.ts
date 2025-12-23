@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'http://164.68.122.165'
+  ? '' // Use relative path for production (proxied by Vercel)
   : 'http://localhost:8000';
 
 type Mode = 'fast' | 'detailed' | 'deep_research';

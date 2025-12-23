@@ -3,7 +3,7 @@
 import useSWR, { mutate as globalMutate } from 'swr';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'http://164.68.122.165'
+    ? '' // Use relative path for production (proxied by Vercel)
     : 'http://localhost:8000';
 
 /**

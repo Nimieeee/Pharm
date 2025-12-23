@@ -8,6 +8,22 @@ const nextConfig = {
     // Optimize package imports
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://164.68.122.165/api/:path*', // Proxy to Contabo VPS
+      },
+      {
+        source: '/docs',
+        destination: 'http://164.68.122.165/docs', // Proxy docs
+      },
+      {
+        source: '/openapi.json',
+        destination: 'http://164.68.122.165/openapi.json', // Proxy openapi
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
