@@ -75,17 +75,20 @@ async def process_visual_document(
             base64_img = _optimize_and_encode(img)
             
             try:
-                response = await client.chat.complete_async(
-                    model="pixtral-12b-2409",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": ROBUST_SYSTEM_PROMPT},
-                                {"type": "image_url", "image_url": f"data:image/jpeg;base64,{base64_img}"}
-                            ]
-                        }
-                    ]
+                response = await asyncio.wait_for(
+                    client.chat.complete_async(
+                        model="pixtral-12b-2409",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": ROBUST_SYSTEM_PROMPT},
+                                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{base64_img}"}
+                                ]
+                            }
+                        ]
+                    ),
+                    timeout=90.0
                 )
                 content = response.choices[0].message.content
                 

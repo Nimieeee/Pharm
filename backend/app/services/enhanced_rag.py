@@ -5,6 +5,7 @@ Replaces the custom RAG implementation with industry-standard tools
 
 import logging
 import time
+import asyncio
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
 from supabase import Client
@@ -112,31 +113,33 @@ class EnhancedRAGService:
 
                 # Streaming Ingestion Support
                 streamed_chunks_count = 0
+                ingestion_semaphore = asyncio.Semaphore(3) # Limit concurrent embedding requests
                 
                 async def streaming_ingest_callback(content_chunk: str, page_idx: int):
-                    nonlocal streamed_chunks_count
-                    try:
-                        temp_doc = Document(
-                            page_content=content_chunk,
-                            metadata={
-                                "source": filename,
-                                "page": page_idx + 1,
-                                "user_id": str(user_id),
-                                "conversation_id": str(conversation_id),
-                                "filename": filename
-                            }
-                        )
-                        sub_chunks = self.text_splitter.split_documents([temp_doc])
-                        for i, chunk in enumerate(sub_chunks):
-                            success = await self._process_and_store_chunk(
-                                chunk, filename, conversation_id, user_id, 
-                                chunk_index=streamed_chunks_count + i
+                    async with ingestion_semaphore:
+                        nonlocal streamed_chunks_count
+                        try:
+                            temp_doc = Document(
+                                page_content=content_chunk,
+                                metadata={
+                                    "source": filename,
+                                    "page": page_idx + 1,
+                                    "user_id": str(user_id),
+                                    "conversation_id": str(conversation_id),
+                                    "filename": filename
+                                }
                             )
-                            if success:
-                                streamed_chunks_count += 1
-                        logger.info(f"⚡ Streamed ingestion: Processed page {page_idx+1}")
-                    except Exception as e:
-                        logger.error(f"Streaming ingestion failed: {e}")
+                            sub_chunks = self.text_splitter.split_documents([temp_doc])
+                            for i, chunk in enumerate(sub_chunks):
+                                success = await self._process_and_store_chunk(
+                                    chunk, filename, conversation_id, user_id, 
+                                    chunk_index=streamed_chunks_count + i
+                                )
+                                if success:
+                                    streamed_chunks_count += 1
+                            logger.info(f"⚡ Streamed ingestion: Processed page {page_idx+1}")
+                        except Exception as e:
+                            logger.error(f"Streaming ingestion failed: {e}")
 
                 documents = await self.document_loader.load_document(
                     file_content=file_content,
