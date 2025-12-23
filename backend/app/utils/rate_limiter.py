@@ -34,6 +34,6 @@ class RateLimiter:
             else:
                 self.tokens -= 1
 
-# Default instance for Mistral API (Optimized for responsiveness)
-# Increased from 0.5 to 2.0 to eliminate the artificially high TTFT latency
-mistral_limiter = RateLimiter(calls_per_second=2.0, burst=10)
+# Default instance for Mistral API (Aligned with 1 req/sec limit)
+# Optimized burst to handle rapid RAG + Generation sequences
+mistral_limiter = RateLimiter(calls_per_second=1.0, burst=5)
