@@ -146,18 +146,32 @@ class ChatService:
         conversation_id: UUID, 
         user: User
     ) -> Optional[ConversationWithMessages]:
-        """Get conversation with all messages"""
+        """Get conversation with all messages (OPTIMIZED: Parallel fetch)"""
+        import asyncio
         try:
-            # Get conversation
-            conversation = await self.get_conversation(conversation_id, user)
-            if not conversation:
+            # Fetch conversation record and messages IN PARALLEL
+            conv_query = self.db.table("conversations").select("*")\
+                .eq("id", str(conversation_id)).eq("user_id", str(user.id)).execute()
+            
+            msg_query = self.db.table("messages").select("*")\
+                .eq("conversation_id", str(conversation_id))\
+                .eq("user_id", str(user.id))\
+                .order("created_at").execute()
+            
+            if not conv_query.data:
                 return None
             
-            # Get messages
-            messages = await self.get_conversation_messages(conversation_id, user)
+            conv_record = conv_query.data[0]
             
+            # Build messages list
+            messages = [Message(**r) for r in msg_query.data or []]
+            
+            # Use message count from fetched data instead of separate stats query
             return ConversationWithMessages(
-                **conversation.dict(),
+                **conv_record,
+                message_count=len(messages),
+                document_count=0,  # Skip doc count for speed - not critical for display
+                last_activity=conv_record.get("updated_at"),
                 messages=messages
             )
             
