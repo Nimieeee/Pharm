@@ -15,6 +15,10 @@ from supabase import Client
 from app.core.config import settings
 from app.models.user import User, UserCreate, UserInDB
 from app.models.auth import Token, TokenData
+from cachetools import TTLCache
+
+# Cache user lookups for 60 seconds to avoid hitting DB on every request
+_user_cache = TTLCache(maxsize=500, ttl=60)
 
 
 class AuthService:
@@ -166,7 +170,12 @@ class AuthService:
             return None
     
     async def get_user_by_email(self, email: str) -> Optional[User]:
-        """Get user by email"""
+        """Get user by email (with caching)"""
+        # Check cache first
+        cache_key = f"user:email:{email}"
+        if cache_key in _user_cache:
+            return _user_cache[cache_key]
+        
         try:
             result = self.db.table("users").select("*").eq("email", email).execute()
             
@@ -174,7 +183,11 @@ class AuthService:
                 return None
             
             user_data = result.data[0]
-            return User(**user_data)
+            user = User(**user_data)
+            
+            # Store in cache
+            _user_cache[cache_key] = user
+            return user
             
         except Exception:
             return None
