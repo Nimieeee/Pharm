@@ -34,6 +34,6 @@ class RateLimiter:
             else:
                 self.tokens -= 1
 
-# Default instance for Mistral API (conservative limits)
-# Free tier might be lower, adjusting to ~1 request per 2 seconds to be safe
-mistral_limiter = RateLimiter(calls_per_second=0.5, burst=2)
+# Default instance for Mistral API (Optimized for responsiveness)
+# Increased from 0.5 to 2.0 to eliminate the artificially high TTFT latency
+mistral_limiter = RateLimiter(calls_per_second=2.0, burst=10)
