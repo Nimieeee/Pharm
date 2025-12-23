@@ -89,9 +89,23 @@ export default function HomePage() {
 
   // Warm up backend immediately when landing page loads
   // This ensures backend is ready by the time user logs in
+  // Aggressive backend warmup
   useEffect(() => {
     const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
-    fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
+    const warmup = async () => {
+      // Fire multiple warmup requests
+      const pings = [
+        fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { }),
+      ];
+      await Promise.all(pings);
+
+      // Second wave
+      setTimeout(() => {
+        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { });
+      }, 2000);
+    };
+    warmup();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
