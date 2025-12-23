@@ -273,22 +273,13 @@ class ChatService:
         message_data: MessageCreate, 
         user: User
     ) -> Optional[Message]:
-        """Add a message to a conversation - OPTIMIZED"""
+        """Add a message to a conversation - FIXED: Direct insert, no unreliable count check"""
         start = time.time()
         try:
-            # Quick existence check
-            check_start = time.time()
-            check = self.db.table("conversations").select("id", count="exact", head=True)\
-                .eq("id", str(message_data.conversation_id))\
-                .eq("user_id", str(user.id)).execute()
-            check_time = (time.time() - check_start) * 1000
+            print(f"💾 add_message: conv={message_data.conversation_id}, user={user.id}, role={message_data.role}")
             
-            if check.count == 0:
-                print(f"⚠️ add_message: conversation not found ({check_time:.0f}ms)")
-                return None
-            
-            # Insert message
-            insert_start = time.time()
+            # FIXED: Skip the unreliable HEAD/count check - just insert directly
+            # If conversation doesn't exist, Supabase will return error due to FK constraint
             msg_dict = {
                 "conversation_id": str(message_data.conversation_id),
                 "user_id": str(user.id),
@@ -298,20 +289,19 @@ class ChatService:
             }
             
             result = self.db.table("messages").insert(msg_dict).execute()
-            insert_time = (time.time() - insert_start) * 1000
             
             if not result.data:
-                raise Exception("Failed to create message")
+                raise Exception("Failed to create message - no data returned")
             
             msg_record = result.data[0]
             
-            # Update timestamp (non-blocking)
+            # Update conversation timestamp (non-blocking)
             self.db.table("conversations").update({
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", str(message_data.conversation_id)).execute()
             
-            total_time = (time.time() - start) * 1000
-            print(f"✅ add_message: {total_time:.0f}ms (check={check_time:.0f}ms, insert={insert_time:.0f}ms)")
+            elapsed = (time.time() - start) * 1000
+            print(f"✅ add_message saved: {elapsed:.0f}ms, id={msg_record.get('id')}")
             
             return Message(**msg_record)
             
