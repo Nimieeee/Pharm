@@ -159,8 +159,8 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const [editTitle, setEditTitle] = useState('');
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
-  // SWR for instant cache-first loading - Pass token to ensure reactivity on account switch
-  const { conversations, isLoading: isLoadingHistory, isError, mutate: mutateConversations } = useConversations(token);
+  // SWR for conversation list - no token param needed (uses localStorage internally)
+  const { conversations, isLoading: isLoadingHistory, isError, mutate: mutateConversations } = useConversations();
 
   // Transform to ChatHistory format
   const chatHistory = useMemo(() =>

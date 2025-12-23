@@ -7,41 +7,35 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
     : 'http://localhost:8000';
 
 /**
- * Simple fetcher with auth and timeout
+ * Get token from localStorage (stable, doesn't cause re-renders)
+ */
+function getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('token');
+}
+
+/**
+ * Simple fetcher - no complex abort logic
  */
 async function fetcher<T>(url: string): Promise<T> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = getToken();
     if (!token) {
         throw new Error('Not authenticated');
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
 
-    try {
-        const response = await fetch(`${API_BASE_URL}${url}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                throw new Error('Session expired');
-            }
-            throw new Error(`Request failed: ${response.status}`);
+    if (!response.ok) {
+        if (response.status === 401) {
+            localStorage.removeItem('token');
+            throw new Error('Session expired');
         }
-
-        return response.json();
-    } catch (error: any) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-            throw new Error('Request timeout');
-        }
-        throw error;
+        throw new Error(`Request failed: ${response.status}`);
     }
+
+    return response.json();
 }
 
 /**
@@ -52,29 +46,30 @@ export function clearSWRCache() {
 }
 
 /**
- * Hook for conversation list
+ * Hook for conversation list - SIMPLIFIED
+ * Uses a stable cache key that doesn't change on re-render
  */
-export function useConversations(authToken?: string | null) {
-    // Use token to create unique cache key per user
-    const token = authToken !== undefined ? authToken : (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
-    const cacheKey = token ? `conversations-${token.substring(0, 8)}` : null;
+export function useConversations() {
+    // Get token once for the cache key - use stable reference
+    const token = getToken();
 
-    const { data, error, mutate, isLoading } = useSWR(
+    // Simple, stable cache key
+    const cacheKey = token ? 'conversations' : null;
+
+    const { data, error, mutate, isLoading } = useSWR<any[]>(
         cacheKey,
-        () => fetcher('/api/v1/chat/conversations'),
+        () => fetcher<any[]>('/api/v1/chat/conversations'),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: false,
-            revalidateIfStale: false,
-            dedupingInterval: 60000,
+            dedupingInterval: 30000,
             errorRetryCount: 2,
-            errorRetryInterval: 3000,
         }
     );
 
     return {
         conversations: data || [],
-        isLoading: !cacheKey || isLoading,
+        isLoading: isLoading,
         isError: error,
         mutate,
     };
@@ -89,7 +84,6 @@ export function useConversationMessages(conversationId: string | null) {
         () => fetcher(`/api/v1/chat/conversations/${conversationId}/messages`),
         {
             revalidateOnFocus: false,
-            revalidateOnReconnect: false,
             dedupingInterval: 30000,
         }
     );
