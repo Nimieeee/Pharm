@@ -151,8 +151,12 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
                     onClick={() => { setIsOpen(false); router.push('/'); }}
                     className="flex items-center gap-2"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      <Sparkles size={16} className="text-white" />
+                    <div className="w-8 h-8 relative rounded-xl overflow-hidden">
+                      <img
+                        src="/PharmGPT.png"
+                        alt="PharmGPT Logo"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
                   </button>
