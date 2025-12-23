@@ -290,7 +290,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
             <div className="relative w-full">
               {/* Left: Plus Button (Attach Menu) */}
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-[51]">
                 <div className="relative">
                   <button
                     type="button"
@@ -453,7 +453,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
             <div className="relative w-full">
               {/* Left: Plus Button */}
-              <div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10">
+              <div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-[51]">
                 <div className="relative">
                   <button
                     type="button"
