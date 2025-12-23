@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Loader2, Zap, BookOpen, Search, Send,
+  Plus, Loader2, Zap, BookOpen, Search, Send, Square,
   Paperclip, FileText, File, Table, XCircle, X
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -12,6 +12,7 @@ export type Mode = 'fast' | 'detailed' | 'deep_research';
 
 interface ChatInputProps {
   onSend: (message: string, mode: Mode) => void;
+  onStop?: () => void;
   onFileUpload?: (files: FileList) => Promise<any>;
   onCancelUpload?: () => void;
   isLoading: boolean;
@@ -33,7 +34,7 @@ const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
   { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
 ];
 
-export default function ChatInput({ onSend, onFileUpload, onCancelUpload, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
+export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -341,23 +342,31 @@ export default function ChatInput({ onSend, onFileUpload, onCancelUpload, isLoad
                 style={{ minHeight: '60px', maxHeight: '200px' }}
               />
 
-              {/* Right: Send Button ONLY */}
+              {/* Right: Send/Stop Button */}
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center z-10">
-                <motion.button
-                  type="submit"
-                  disabled={!message.trim() || isLoading || isUploading}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${message.trim() && !isLoading && !isUploading
-                    ? 'bg-[var(--foreground)] text-[var(--background)]'
-                    : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
-                    }`}
-                >
-                  {isLoading ? (
-                    <Loader2 size={18} strokeWidth={1.5} className="animate-spin" />
-                  ) : (
+                {isLoading ? (
+                  <motion.button
+                    type="button"
+                    onClick={onStop}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-all"
+                    title="Stop generating"
+                  >
+                    <Square size={14} fill="currentColor" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="submit"
+                    disabled={!message.trim() || isUploading}
+                    whileTap={{ scale: 0.95 }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${message.trim() && !isUploading
+                      ? 'bg-[var(--foreground)] text-[var(--background)]'
+                      : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)]'
+                      }`}
+                  >
                     <Send size={18} strokeWidth={2} />
-                  )}
-                </motion.button>
+                  </motion.button>
+                )}
               </div>
             </div>
           </div>
@@ -520,23 +529,31 @@ export default function ChatInput({ onSend, onFileUpload, onCancelUpload, isLoad
                 className="w-full py-3 pl-12 pr-12 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm text-center"
               />
 
-              {/* Right: Send Button ONLY */}
+              {/* Right: Send/Stop Button */}
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center z-10">
-                <motion.button
-                  type="submit"
-                  disabled={!message.trim() || isLoading || isUploading}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${message.trim() && !isLoading && !isUploading
-                    ? 'bg-[var(--text-primary)] text-[var(--background)]'
-                    : 'bg-transparent text-[var(--text-secondary)]'
-                    }`}
-                >
-                  {isLoading ? (
-                    <Loader2 size={16} strokeWidth={1.5} className="animate-spin" />
-                  ) : (
+                {isLoading ? (
+                  <motion.button
+                    type="button"
+                    onClick={onStop}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-all"
+                    title="Stop generating"
+                  >
+                    <Square size={12} fill="currentColor" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="submit"
+                    disabled={!message.trim() || isUploading}
+                    whileTap={{ scale: 0.95 }}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${message.trim() && !isUploading
+                      ? 'bg-[var(--text-primary)] text-[var(--background)]'
+                      : 'bg-transparent text-[var(--text-secondary)]'
+                      }`}
+                  >
                     <Send size={14} strokeWidth={2} />
-                  )}
-                </motion.button>
+                  </motion.button>
+                )}
               </div>
             </div>
           </div>

@@ -680,6 +680,15 @@ export function useChat() {
     }
   }, []);
 
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+    setDeepResearchProgress(null);
+  }, []);
+
   const editMessage = useCallback((messageId: string, newContent: string) => {
     setMessages(prev => prev.map(msg =>
       msg.id === messageId
@@ -699,6 +708,7 @@ export function useChat() {
     isUploading,
     isDeleting,
     sendMessage,
+    stopGeneration,
     clearMessages,
     deleteConversation,
     uploadFiles,

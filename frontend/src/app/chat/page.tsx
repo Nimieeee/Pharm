@@ -15,7 +15,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isUploading, isDeleting, sendMessage, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, editMessage, deleteMessage } = useChatContext();
+  const { messages, isLoading, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, editMessage, deleteMessage } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
@@ -158,6 +158,7 @@ function ChatContent() {
       {/* Input Area */}
       <ChatInput
         onSend={handleSend}
+        onStop={stopGeneration}
         onFileUpload={uploadFiles}
         onCancelUpload={cancelUpload}
         isLoading={isLoading}

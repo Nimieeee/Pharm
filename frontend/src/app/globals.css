@@ -163,48 +163,48 @@ h3,
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Liquid Glass Effect - Tailwind Style */
+/* Liquid Glass Effect - Matches ChatInput mode buttons */
 .glass-effect {
   position: relative;
-  /* Core glass properties */
-  background: rgba(255, 255, 255, 0.15);
+  /* Use CSS variables for consistency */
+  background: var(--surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  /* Glass edges */
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--border);
   border-radius: 1rem;
-  /* Depth */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
 }
 
 .glass-effect:hover {
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border-color: rgba(var(--foreground-rgb), 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
+/* Dark mode - subtle white transparency like the screenshot */
 .dark .glass-effect {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .dark .glass-effect:hover {
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* Top highlight shine */
+/* Top highlight shine - subtle */
 .glass-effect::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 10%;
+  right: 10%;
   height: 1px;
   background: linear-gradient(90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.5) 50%,
+      rgba(255, 255, 255, 0.3) 50%,
       transparent 100%);
   border-radius: inherit;
   pointer-events: none;
@@ -213,7 +213,7 @@ h3,
 .dark .glass-effect::before {
   background: linear-gradient(90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.1) 50%,
       transparent 100%);
 }
 
