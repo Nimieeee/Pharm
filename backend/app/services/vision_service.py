@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # --- CONFIGURATION ---
 MODE_MAPPING = {
     "fast": "mistral-small-latest",       # Fast, good for summaries
-    "detailed": "mistral-large-latest",   # Best reasoning
+    "detailed": "mistral-medium-latest",  # Best reasoning
     "research": "mistral-large-latest"    # Research requires top-tier logic
 }
 
