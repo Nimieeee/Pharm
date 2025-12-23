@@ -1,6 +1,6 @@
 """
-Chat service for conversation and message management
-OPTIMIZED VERSION with performance monitoring
+Chat Service - CLEAN REWRITE
+Simple, reliable conversation and message management
 """
 
 import time
@@ -17,270 +17,230 @@ from app.models.user import User
 
 
 class ChatService:
-    """Optimized chat service with performance monitoring"""
+    """Simple, reliable chat service"""
     
     def __init__(self, db: Client):
         self.db = db
     
-    async def create_conversation(
-        self, 
-        conversation_data: ConversationCreate, 
-        user: User
-    ) -> Conversation:
-        """Create a new conversation for user"""
+    # =====================
+    # CONVERSATION METHODS
+    # =====================
+    
+    async def create_conversation(self, conversation_data: ConversationCreate, user: User) -> Conversation:
+        """Create a new conversation"""
         start = time.time()
         try:
-            conv_dict = conversation_data.dict()
-            conv_dict["user_id"] = str(user.id)
+            data = {
+                "title": conversation_data.title,
+                "user_id": str(user.id)
+            }
             
-            result = self.db.table("conversations").insert(conv_dict).execute()
+            result = self.db.table("conversations").insert(data).execute()
             
             if not result.data:
-                raise Exception("Failed to create conversation")
+                raise Exception("No data returned from insert")
             
-            conv_record = result.data[0]
-            elapsed = (time.time() - start) * 1000
-            print(f"✅ create_conversation: {elapsed:.0f}ms")
+            record = result.data[0]
+            print(f"✅ create_conversation: {(time.time()-start)*1000:.0f}ms")
             
             return Conversation(
-                **conv_record,
+                id=record["id"],
+                title=record["title"],
+                user_id=record["user_id"],
+                created_at=record["created_at"],
+                updated_at=record["updated_at"],
+                is_pinned=record.get("is_pinned", False),
+                is_archived=record.get("is_archived", False),
                 message_count=0,
                 document_count=0,
-                last_activity=conv_record.get("updated_at")
+                last_activity=record["updated_at"]
             )
-            
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ create_conversation failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to create conversation: {str(e)}")
+            print(f"❌ create_conversation failed: {e}")
+            raise
     
     async def get_user_conversations(self, user: User) -> List[Conversation]:
-        """Get all conversations for a user - OPTIMIZED single query"""
+        """Get all conversations for user - simple and fast"""
         start = time.time()
         try:
-            # Single optimized query - no joins, just conversations
-            result = self.db.table("conversations").select(
-                "id, title, created_at, updated_at, is_pinned, is_archived, user_id"
-            ).eq("user_id", str(user.id)).order("updated_at", desc=True).limit(50).execute()
-            
-            query_time = (time.time() - start) * 1000
-            print(f"📊 get_user_conversations query: {query_time:.0f}ms, rows={len(result.data or [])}")
+            result = self.db.table("conversations").select("*")\
+                .eq("user_id", str(user.id))\
+                .order("updated_at", desc=True)\
+                .limit(50)\
+                .execute()
             
             conversations = []
-            for record in result.data or []:
+            for r in result.data or []:
                 conversations.append(Conversation(
-                    **record,
-                    message_count=0,  # Skip counting for speed
+                    id=r["id"],
+                    title=r["title"],
+                    user_id=r["user_id"],
+                    created_at=r["created_at"],
+                    updated_at=r["updated_at"],
+                    is_pinned=r.get("is_pinned", False),
+                    is_archived=r.get("is_archived", False),
+                    message_count=0,
                     document_count=0,
-                    last_activity=record.get("updated_at")
+                    last_activity=r["updated_at"]
                 ))
             
-            total_time = (time.time() - start) * 1000
-            if total_time > 1000:
-                print(f"🐢 get_user_conversations SLOW: {total_time:.0f}ms")
-            else:
-                print(f"✅ get_user_conversations: {total_time:.0f}ms")
-            
+            print(f"✅ get_user_conversations: {(time.time()-start)*1000:.0f}ms, count={len(conversations)}")
             return conversations
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ get_user_conversations failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to get conversations: {str(e)}")
+            print(f"❌ get_user_conversations failed: {e}")
+            raise
     
-    async def get_conversation(
-        self, 
-        conversation_id: UUID, 
-        user: User
-    ) -> Optional[Conversation]:
-        """Get a specific conversation for user"""
+    async def get_conversation(self, conversation_id: UUID, user: User) -> Optional[Conversation]:
+        """Get a single conversation"""
         start = time.time()
         try:
-            result = self.db.table("conversations").select(
-                "id, title, created_at, updated_at, is_pinned, is_archived, user_id"
-            ).eq("id", str(conversation_id)).eq("user_id", str(user.id)).single().execute()
-            
-            elapsed = (time.time() - start) * 1000
+            result = self.db.table("conversations").select("*")\
+                .eq("id", str(conversation_id))\
+                .eq("user_id", str(user.id))\
+                .execute()
             
             if not result.data:
-                print(f"⚠️ get_conversation: not found ({elapsed:.0f}ms)")
+                print(f"⚠️ get_conversation: not found")
                 return None
             
-            print(f"✅ get_conversation: {elapsed:.0f}ms")
+            r = result.data[0]
+            print(f"✅ get_conversation: {(time.time()-start)*1000:.0f}ms")
             
             return Conversation(
-                **result.data,
+                id=r["id"],
+                title=r["title"],
+                user_id=r["user_id"],
+                created_at=r["created_at"],
+                updated_at=r["updated_at"],
+                is_pinned=r.get("is_pinned", False),
+                is_archived=r.get("is_archived", False),
                 message_count=0,
                 document_count=0,
-                last_activity=result.data.get("updated_at")
+                last_activity=r["updated_at"]
             )
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ get_conversation failed after {elapsed:.0f}ms: {e}")
+            print(f"❌ get_conversation failed: {e}")
             return None
     
-    async def get_conversation_with_messages(
-        self, 
-        conversation_id: UUID, 
-        user: User
-    ) -> Optional[ConversationWithMessages]:
-        """Get conversation with all messages - OPTIMIZED"""
+    async def get_conversation_with_messages(self, conversation_id: UUID, user: User) -> Optional[ConversationWithMessages]:
+        """Get conversation with all its messages"""
         start = time.time()
         try:
-            # Step 1: Get conversation
-            conv_start = time.time()
-            conv_result = self.db.table("conversations").select("*")\
-                .eq("id", str(conversation_id)).eq("user_id", str(user.id)).execute()
-            conv_time = (time.time() - conv_start) * 1000
-            print(f"  📊 conversation query: {conv_time:.0f}ms")
-            
-            if not conv_result.data:
-                print(f"⚠️ get_conversation_with_messages: conversation not found")
+            # Get conversation
+            conv = await self.get_conversation(conversation_id, user)
+            if not conv:
                 return None
             
-            conv_record = conv_result.data[0]
+            # Get messages
+            messages = await self.get_conversation_messages(conversation_id, user)
             
-            # Step 2: Get messages
-            msg_start = time.time()
-            msg_result = self.db.table("messages").select("*")\
-                .eq("conversation_id", str(conversation_id))\
-                .eq("user_id", str(user.id))\
-                .order("created_at").execute()
-            msg_time = (time.time() - msg_start) * 1000
-            print(f"  📊 messages query: {msg_time:.0f}ms, rows={len(msg_result.data or [])}")
-            
-            messages = [Message(**r) for r in msg_result.data or []]
-            
-            total_time = (time.time() - start) * 1000
-            if total_time > 1000:
-                print(f"🐢 get_conversation_with_messages SLOW: {total_time:.0f}ms")
-            else:
-                print(f"✅ get_conversation_with_messages: {total_time:.0f}ms")
+            print(f"✅ get_conversation_with_messages: {(time.time()-start)*1000:.0f}ms, msgs={len(messages)}")
             
             return ConversationWithMessages(
-                **conv_record,
+                id=conv.id,
+                title=conv.title,
+                user_id=conv.user_id,
+                created_at=conv.created_at,
+                updated_at=conv.updated_at,
+                is_pinned=conv.is_pinned,
+                is_archived=conv.is_archived,
                 message_count=len(messages),
                 document_count=0,
-                last_activity=conv_record.get("updated_at"),
+                last_activity=conv.updated_at,
                 messages=messages
             )
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ get_conversation_with_messages failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to get conversation with messages: {str(e)}")
+            print(f"❌ get_conversation_with_messages failed: {e}")
+            raise
     
-    async def update_conversation(
-        self, 
-        conversation_id: UUID, 
-        conversation_data: ConversationUpdate, 
-        user: User
-    ) -> Optional[Conversation]:
+    async def update_conversation(self, conversation_id: UUID, data: ConversationUpdate, user: User) -> Optional[Conversation]:
         """Update a conversation"""
         start = time.time()
         try:
-            update_dict = conversation_data.dict(exclude_unset=True)
+            update_dict = data.dict(exclude_unset=True)
             if not update_dict:
                 return await self.get_conversation(conversation_id, user)
             
-            result = self.db.table("conversations").update(
-                update_dict
-            ).eq("id", str(conversation_id)).eq("user_id", str(user.id)).execute()
-            
-            elapsed = (time.time() - start) * 1000
+            result = self.db.table("conversations").update(update_dict)\
+                .eq("id", str(conversation_id))\
+                .eq("user_id", str(user.id))\
+                .execute()
             
             if not result.data:
-                print(f"⚠️ update_conversation: not found ({elapsed:.0f}ms)")
                 return None
             
-            print(f"✅ update_conversation: {elapsed:.0f}ms")
+            print(f"✅ update_conversation: {(time.time()-start)*1000:.0f}ms")
             return await self.get_conversation(conversation_id, user)
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ update_conversation failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to update conversation: {str(e)}")
+            print(f"❌ update_conversation failed: {e}")
+            raise
     
-    async def clone_conversation(
-        self, 
-        conversation_id: UUID, 
-        user: User
-    ) -> Optional[Conversation]:
-        """Clone a conversation and its messages"""
+    async def delete_conversation(self, conversation_id: UUID, user: User) -> bool:
+        """Delete a conversation"""
         start = time.time()
+        try:
+            # Verify ownership first
+            conv = await self.get_conversation(conversation_id, user)
+            if not conv:
+                return False
+            
+            result = self.db.table("conversations").delete()\
+                .eq("id", str(conversation_id))\
+                .eq("user_id", str(user.id))\
+                .execute()
+            
+            print(f"✅ delete_conversation: {(time.time()-start)*1000:.0f}ms")
+            return True
+            
+        except Exception as e:
+            print(f"❌ delete_conversation failed: {e}")
+            return False
+    
+    async def clone_conversation(self, conversation_id: UUID, user: User) -> Optional[Conversation]:
+        """Clone a conversation with its messages"""
         try:
             original = await self.get_conversation(conversation_id, user)
             if not original:
                 return None
             
-            new_title = f"{original.title} (Copy)"
-            new_conv_data = ConversationCreate(title=new_title)
-            new_conv = await self.create_conversation(new_conv_data, user)
+            # Create new conversation
+            new_conv = await self.create_conversation(
+                ConversationCreate(title=f"{original.title} (Copy)"),
+                user
+            )
             
+            # Copy messages
             messages = await self.get_conversation_messages(conversation_id, user)
-            
             for msg in messages:
-                msg_dict = {
-                    "conversation_id": str(new_conv.id),
-                    "user_id": str(user.id),
-                    "role": msg.role,
-                    "content": msg.content,
-                    "metadata": msg.metadata or {}
-                }
-                self.db.table("messages").insert(msg_dict).execute()
+                await self.add_message(
+                    MessageCreate(
+                        conversation_id=new_conv.id,
+                        role=msg.role,
+                        content=msg.content,
+                        metadata=msg.metadata
+                    ),
+                    user
+                )
             
-            elapsed = (time.time() - start) * 1000
-            print(f"✅ clone_conversation: {elapsed:.0f}ms, messages={len(messages)}")
-            
-            return await self.get_conversation(new_conv.id, user)
+            return new_conv
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ clone_conversation failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to clone conversation: {str(e)}")
-
-    async def delete_conversation(
-        self, 
-        conversation_id: UUID, 
-        user: User
-    ) -> bool:
-        """Delete a conversation and all its data"""
-        start = time.time()
-        try:
-            existing = await self.get_conversation(conversation_id, user)
-            if not existing:
-                return False
-            
-            result = self.db.table("conversations").delete().eq(
-                "id", str(conversation_id)
-            ).eq("user_id", str(user.id)).execute()
-            
-            elapsed = (time.time() - start) * 1000
-            print(f"✅ delete_conversation: {elapsed:.0f}ms")
-            
-            return len(result.data) > 0
-            
-        except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ delete_conversation failed after {elapsed:.0f}ms: {e}")
-            if "policy" in str(e).lower() or "permission" in str(e).lower():
-                raise Exception(f"Permission denied. Details: {str(e)}")
-            raise Exception(f"Failed to delete conversation: {str(e)}")
+            print(f"❌ clone_conversation failed: {e}")
+            raise
     
-    async def add_message(
-        self, 
-        message_data: MessageCreate, 
-        user: User
-    ) -> Optional[Message]:
-        """Add a message to a conversation - FIXED: Direct insert, no unreliable count check"""
+    # ================
+    # MESSAGE METHODS
+    # ================
+    
+    async def add_message(self, message_data: MessageCreate, user: User) -> Optional[Message]:
+        """Add a message - SIMPLE DIRECT INSERT"""
         start = time.time()
         try:
-            print(f"💾 add_message: conv={message_data.conversation_id}, user={user.id}, role={message_data.role}")
-            
-            # FIXED: Skip the unreliable HEAD/count check - just insert directly
-            # If conversation doesn't exist, Supabase will return error due to FK constraint
-            msg_dict = {
+            data = {
                 "conversation_id": str(message_data.conversation_id),
                 "user_id": str(user.id),
                 "role": message_data.role,
@@ -288,70 +248,76 @@ class ChatService:
                 "metadata": message_data.metadata or {}
             }
             
-            result = self.db.table("messages").insert(msg_dict).execute()
+            print(f"💾 add_message: conv={message_data.conversation_id}, role={message_data.role}")
+            
+            result = self.db.table("messages").insert(data).execute()
             
             if not result.data:
-                raise Exception("Failed to create message - no data returned")
+                print(f"❌ add_message: no data returned")
+                return None
             
-            msg_record = result.data[0]
+            record = result.data[0]
             
-            # Update conversation timestamp (non-blocking)
-            self.db.table("conversations").update({
-                "updated_at": datetime.utcnow().isoformat()
-            }).eq("id", str(message_data.conversation_id)).execute()
+            # Update conversation timestamp
+            try:
+                self.db.table("conversations").update({
+                    "updated_at": datetime.utcnow().isoformat()
+                }).eq("id", str(message_data.conversation_id)).execute()
+            except:
+                pass  # Non-critical
             
-            elapsed = (time.time() - start) * 1000
-            print(f"✅ add_message saved: {elapsed:.0f}ms, id={msg_record.get('id')}")
+            print(f"✅ add_message: {(time.time()-start)*1000:.0f}ms, id={record['id']}")
             
-            return Message(**msg_record)
+            return Message(
+                id=record["id"],
+                conversation_id=record["conversation_id"],
+                user_id=record["user_id"],
+                role=record["role"],
+                content=record["content"],
+                metadata=record.get("metadata", {}),
+                created_at=record["created_at"]
+            )
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ add_message failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to add message: {str(e)}")
+            print(f"❌ add_message failed: {e}")
+            # Don't raise - return None so streaming can continue
+            return None
     
-    async def get_conversation_messages(
-        self, 
-        conversation_id: UUID, 
-        user: User,
-        limit: Optional[int] = None
-    ) -> List[Message]:
-        """Get messages for a conversation - OPTIMIZED"""
+    async def get_conversation_messages(self, conversation_id: UUID, user: User, limit: Optional[int] = None) -> List[Message]:
+        """Get messages for a conversation"""
         start = time.time()
         try:
-            query = self.db.table("messages").select(
-                "id, conversation_id, user_id, role, content, metadata, created_at"
-            ).eq("conversation_id", str(conversation_id)).eq(
-                "user_id", str(user.id)
-            ).order("created_at")
+            query = self.db.table("messages").select("*")\
+                .eq("conversation_id", str(conversation_id))\
+                .eq("user_id", str(user.id))\
+                .order("created_at")
             
             if limit:
                 query = query.limit(limit)
             
             result = query.execute()
             
-            messages = [Message(**r) for r in result.data or []]
+            messages = []
+            for r in result.data or []:
+                messages.append(Message(
+                    id=r["id"],
+                    conversation_id=r["conversation_id"],
+                    user_id=r["user_id"],
+                    role=r["role"],
+                    content=r["content"],
+                    metadata=r.get("metadata", {}),
+                    created_at=r["created_at"]
+                ))
             
-            elapsed = (time.time() - start) * 1000
-            if elapsed > 500:
-                print(f"🐢 get_conversation_messages SLOW: {elapsed:.0f}ms, rows={len(messages)}")
-            else:
-                print(f"✅ get_conversation_messages: {elapsed:.0f}ms, rows={len(messages)}")
-            
+            print(f"✅ get_conversation_messages: {(time.time()-start)*1000:.0f}ms, count={len(messages)}")
             return messages
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ get_conversation_messages failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to get messages: {str(e)}")
+            print(f"❌ get_conversation_messages failed: {e}")
+            return []
     
-    async def get_recent_messages(
-        self, 
-        conversation_id: UUID, 
-        user: User, 
-        limit: int = 50
-    ) -> List[Message]:
-        """Get recent messages for context"""
+    async def get_recent_messages(self, conversation_id: UUID, user: User, limit: int = 20) -> List[Message]:
+        """Get recent messages for AI context"""
         start = time.time()
         try:
             result = self.db.table("messages").select("*")\
@@ -361,36 +327,41 @@ class ChatService:
                 .limit(limit)\
                 .execute()
             
-            messages = [Message(**r) for r in result.data or []]
-            messages = sorted(messages, key=lambda x: x.created_at)
+            messages = []
+            for r in result.data or []:
+                messages.append(Message(
+                    id=r["id"],
+                    conversation_id=r["conversation_id"],
+                    user_id=r["user_id"],
+                    role=r["role"],
+                    content=r["content"],
+                    metadata=r.get("metadata", {}),
+                    created_at=r["created_at"]
+                ))
             
-            elapsed = (time.time() - start) * 1000
-            print(f"✅ get_recent_messages: {elapsed:.0f}ms, rows={len(messages)}")
+            # Reverse to get chronological order
+            messages.reverse()
             
+            print(f"✅ get_recent_messages: {(time.time()-start)*1000:.0f}ms, count={len(messages)}")
             return messages
             
         except Exception as e:
-            elapsed = (time.time() - start) * 1000
-            print(f"❌ get_recent_messages failed after {elapsed:.0f}ms: {e}")
-            raise Exception(f"Failed to get recent messages: {str(e)}")
+            print(f"❌ get_recent_messages failed: {e}")
+            return []
     
-    async def _get_conversation_stats(
-        self, 
-        conversation_id: str, 
-        user_id: UUID
-    ) -> Dict[str, Any]:
-        """Get conversation statistics - optimized"""
-        return {
-            "message_count": 0,
-            "document_count": 0,
-            "last_activity": None
-        }
+    # ===============
+    # HELPER METHODS
+    # ===============
+    
+    async def _get_conversation_stats(self, conversation_id: str, user_id: UUID) -> Dict[str, Any]:
+        """Placeholder for stats"""
+        return {"message_count": 0, "document_count": 0, "last_activity": None}
     
     async def _update_conversation_timestamp(self, conversation_id: UUID):
-        """Update conversation's updated_at timestamp"""
+        """Update conversation timestamp"""
         try:
             self.db.table("conversations").update({
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", str(conversation_id)).execute()
-        except Exception:
-            pass  # Non-critical
+        except:
+            pass

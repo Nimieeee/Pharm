@@ -6,89 +6,91 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
     ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
     : 'http://localhost:8000';
 
-// Get a short hash of the token for cache key isolation
-function getTokenHash(): string {
-    if (typeof window === 'undefined') return '';
-    const token = localStorage.getItem('token');
-    if (!token) return '';
-    return token.substring(0, 8);
-}
-
-// Fetcher with timeout and retry
-const fetcher = async (url: string) => {
+/**
+ * Simple fetcher with auth and timeout
+ */
+async function fetcher<T>(url: string): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (!token) throw new Error('No token');
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
     try {
         const response = await fetch(`${API_BASE_URL}${url}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: { 'Authorization': `Bearer ${token}` },
             signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-            throw new Error(`Fetch failed: ${response.status}`);
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                throw new Error('Session expired');
+            }
+            throw new Error(`Request failed: ${response.status}`);
         }
+
         return response.json();
     } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
-            throw new Error('Request timeout - backend may be starting up');
+            throw new Error('Request timeout');
         }
         throw error;
     }
-};
+}
 
-// Clear all SWR cache (call on logout)
+/**
+ * Clear all SWR cache - call on logout
+ */
 export function clearSWRCache() {
     globalMutate(() => true, undefined, { revalidate: false });
 }
 
-// Hook for conversation list (sidebar)
+/**
+ * Hook for conversation list
+ */
 export function useConversations(authToken?: string | null) {
-    // Prefer passed token (reactive), fallback to localStorage
+    // Use token to create unique cache key per user
     const token = authToken !== undefined ? authToken : (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
-
-    // Generate hash from the effective token
-    const tokenHash = token ? token.substring(0, 8) : '';
+    const cacheKey = token ? `conversations-${token.substring(0, 8)}` : null;
 
     const { data, error, mutate, isLoading } = useSWR(
-        tokenHash ? `/api/v1/chat/conversations?user=${tokenHash}` : null,
+        cacheKey,
         () => fetcher('/api/v1/chat/conversations'),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: false,
-            revalidateIfStale: false,  // Don't auto-refetch stale data
-            dedupingInterval: 60000,   // 60 second deduplication window
+            revalidateIfStale: false,
+            dedupingInterval: 60000,
             errorRetryCount: 2,
             errorRetryInterval: 3000,
-            refreshInterval: 0,        // No automatic refresh
         }
     );
 
     return {
         conversations: data || [],
-        isLoading: isLoading || !tokenHash,
+        isLoading: !cacheKey || isLoading,
         isError: error,
         mutate,
     };
 }
 
-// Hook for conversation messages
+/**
+ * Hook for conversation messages
+ */
 export function useConversationMessages(conversationId: string | null) {
     const { data, error, mutate, isLoading } = useSWR(
-        conversationId ? `/api/v1/chat/conversations/${conversationId}/messages` : null,
-        fetcher,
+        conversationId ? `messages-${conversationId}` : null,
+        () => fetcher(`/api/v1/chat/conversations/${conversationId}/messages`),
         {
             revalidateOnFocus: false,
-            dedupingInterval: 60000,        // Cache messages for 60 seconds
-            revalidateOnReconnect: true,
+            revalidateOnReconnect: false,
+            dedupingInterval: 30000,
         }
     );
 
@@ -100,7 +102,9 @@ export function useConversationMessages(conversationId: string | null) {
     };
 }
 
-// Optimistic update helper - add a message to cache immediately
+/**
+ * Optimistic update - add message to cache
+ */
 export function optimisticAddMessage(
     mutate: (data?: any, shouldRevalidate?: boolean) => Promise<any>,
     message: any
@@ -108,7 +112,9 @@ export function optimisticAddMessage(
     mutate((current: any[]) => [...(current || []), message], false);
 }
 
-// Optimistic update helper - update last message (for streaming)
+/**
+ * Optimistic update - update last message content
+ */
 export function optimisticUpdateLastMessage(
     mutate: (data?: any, shouldRevalidate?: boolean) => Promise<any>,
     content: string
