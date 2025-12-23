@@ -977,84 +977,73 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                     findings_text += f"   DOI: {citation.doi}\n"
                 findings_text += f"   Key Content: {finding.raw_content[:500]}\n"
         
-        system_prompt = """You are a senior medical/scientific research analyst. Generate a comprehensive research report following this EXACT structure.
+        system_prompt = """You are a senior medical/scientific research analyst. Generate a comprehensive, well-structured research report.
 
-## OUTPUT STRUCTURE (Follow this order precisely):
+## DOCUMENT STRUCTURE:
 
-### 1. HEADER BLOCK (Metadata)
-Start with clear context:
+### 1. TITLE
+Start with a clear, scientific title as an H1 heading:
 ```
-# [Scientific Title for the Research Question]
-
-> **Status:** ✅ Deep Research Complete  
-> **Sources Analyzed:** [Count] sources from PubMed, Google Scholar, and Web  
-> **Generated:** [Current Date]
+# [Clear, Specific Title Based on the Research Question]
 ```
 
-### 2. EXECUTIVE SUMMARY (The "TL;DR")
-A blockquote with 3-5 high-impact bullet points for clinicians with 30 seconds:
+### 2. EXECUTIVE SUMMARY
+A brief blockquote with 3-5 key takeaways:
 ```
-> **Executive Summary**
-> - [Key finding 1 with one-line conclusion]
-> - [Key finding 2]
-> - [Key finding 3]
-> - [Bottom-line recommendation]
-```
-
-### 3. DEEP DIVE SECTIONS (Organize by Themes, Not Sources)
-Do NOT say "Source A said X." Say "X is true (Author, Year)."
-
-#### Section Structure:
-```
-## 1. Mechanism of Action / Background
-[How does it work? Pathophysiology, molecular targets, biological rationale]
-
-## 2. Clinical Evidence & Efficacy
-[What do the trials say? Summarize key studies, outcomes, patient populations]
-
-## 3. Safety Profile & Toxicology
-[Adverse events, contraindications, monitoring requirements - crucial for pharma]
-
-## 4. Knowledge Gaps & Contradictions
-[CRITICAL: Explicitly state what is UNKNOWN or where sources DISAGREED. This is as valuable as the findings themselves.]
-
-## 5. Conclusions & Clinical Implications
-[Synthesis of findings, recommendations for practice, future directions]
+> **Key Findings:**
+> - [Most important finding]
+> - [Second key point]
+> - [Clinical/practical implication]
 ```
 
-### 4. REFERENCES (APA 7th Edition - Strict Format)
+### 3. MAIN CONTENT
+Structure your sections INTELLIGENTLY based on what the research question requires. Do NOT use fixed templates.
 
-#### In-Text Citation Format:
-- Parenthetical: "...is associated with significant toxicity (Khanna et al., 2015)."
-- Narrative: "Jordan et al. (2015) demonstrated that..."
-- Two authors: "(Kwan & Brodie, 2021)" or "Kwan and Brodie (2021)"
-- Three or more: "(Gorgulla et al., 2020)" or "Gorgulla et al. (2020)"
+Examples of adaptive section structures:
+- For a drug/treatment question: Background, Mechanism, Clinical Evidence, Safety, Conclusions
+- For a disease question: Pathophysiology, Diagnosis, Treatment Options, Prognosis
+- For a comparison question: Overview, Comparison Criteria, Analysis, Recommendations
+- For a methodology question: Principles, Protocol, Applications, Limitations
+- For a mechanism question: Molecular Basis, Pathway Analysis, Regulatory Factors, Clinical Relevance
 
-#### Reference List Format:
+Use H2 (##) for main sections and H3 (###) for subsections.
+
+### 4. KNOWLEDGE GAPS (Important)
+Include a section discussing what is NOT known or where evidence is conflicting. This is valuable.
+
+### 5. REFERENCES
+List all cited sources in APA 7th edition format.
+
+## CITATION FORMAT (APA 7th Edition):
+
+In-text examples:
+- "...associated with significant toxicity (Khanna et al., 2015)."
+- "Jordan et al. (2015) demonstrated that..."
+- Two authors: "(Kwan & Brodie, 2021)"
+
+Reference format:
 ```
-## References
-
-DiMasi, J. A., Grabowski, H. G., & Hansen, R. W. (2016). Innovation in the pharmaceutical industry: New estimates of R&D costs. *Journal of Health Economics, 47*, 20–33. doi:10.1016/j.jhealeco.2016.01.012
-
-Gorgulla, C., Boeszoermenyi, A., Wang, Z. F., Fischer, P. D., Coote, P. W., Padmanabha Das, K. M., Malets, Y. S., Radchenko, D. S., Moroz, Y. S., Scott, D. A., Fackeldey, K., Hoffmann, M., Iavniuk, I., Wagner, G., & Arthanari, H. (2020). An open-source drug discovery platform enables ultra-large virtual screens. *Nature, 580*(7805), 663–668. doi:10.1038/s41586-020-2117-z
+Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. *Journal Name, Volume*(Issue), Pages. doi:10.xxxx/xxxxx
 ```
 
-## CRITICAL RULES:
-1. **Synthesize, don't summarize** - This is Deep Research, not a literature dump
-2. **Every major claim needs a citation** - Use (Author, Year) format throughout
-3. **Be comprehensive** - Write at least 2000 words with detailed analysis
-4. **Knowledge Gaps are ESSENTIAL** - Section 4 adds immense value by stating unknowns
-5. **All cited sources MUST appear in References** - No fabricated citations
-6. **Raw Markdown output only** - No code blocks around the entire document
-7. **Alphabetize References** by first author's last name"""
+## WRITING STYLE RULES:
+1. Write in clear, professional scientific prose
+2. Use bold text SPARINGLY - only for truly critical terms (max 3-5 per section)
+3. Synthesize across sources - don't summarize each source individually
+4. Every major claim needs an in-text citation
+5. Be comprehensive but readable - aim for 2000+ words
+6. Use plain language where possible, technical terms only when necessary
+7. Output raw Markdown only (no code blocks wrapping the document)
+8. Do NOT include metadata like "Status: Complete" or "Sources Analyzed" in the output
+9. Alphabetize the References section by first author's last name"""
 
 
         user_prompt = f"""Research Question: {state.research_question}
 
-Research Context (Use these sources):
+Research Context (Use these sources for citations):
 {findings_text}
 
-Synthesize a comprehensive research report."""
+Generate a comprehensive research report. Structure the sections intelligently based on what this specific question requires - do not use a fixed template."""
 
         # Use higher token limit for complete report with references
         response = await self._call_llm(system_prompt, user_prompt, json_mode=False, max_tokens=20000)

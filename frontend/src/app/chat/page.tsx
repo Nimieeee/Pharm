@@ -119,6 +119,7 @@ function ChatContent() {
               <DeepResearchUI
                 isLoading={deepResearchProgress.type !== 'complete'}
                 progressStep={deepResearchProgress.message || deepResearchProgress.status || 'Processing...'}
+                progressPercent={deepResearchProgress.progress || 0}
                 reportContent={deepResearchProgress.report || ''}
                 sources={deepResearchProgress.citations?.map(c => ({
                   id: c.id,
