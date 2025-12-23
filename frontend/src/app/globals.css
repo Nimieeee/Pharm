@@ -166,18 +166,20 @@ h3,
 /* Liquid Glass Effect - Matches ChatInput mode buttons */
 .glass-effect {
   position: relative;
-  /* Use CSS variables for consistency */
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
+  /* Use rgba for transparency instead of opaque var(--surface) */
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 1rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 }
 
 .glass-effect:hover {
-  border-color: rgba(var(--foreground-rgb), 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  /* Darker border on hover in light mode */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
