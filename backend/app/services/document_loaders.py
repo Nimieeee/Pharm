@@ -190,7 +190,9 @@ class EnhancedDocumentLoader:
         file_content: bytes, 
         filename: str, 
         additional_metadata: Optional[Dict[str, Any]] = None,
-        image_analyzer: Optional[Any] = None
+        image_analyzer: Optional[Any] = None,
+        user_prompt: Optional[str] = None,
+        mode: str = "detailed"
     ) -> List[Document]:
         """
         Smart Vision Router Implementation:
@@ -218,20 +220,22 @@ class EnhancedDocumentLoader:
                 )
 
             # Default Prompt Strategy
-            user_prompt = (
-                "Analyze this pharmaceutical document comprehensively. "
-                "Extract all text verbatim, interpret charts/tables data, "
-                "and provide statistical summary for data files."
-            )
+            if not user_prompt:
+                user_prompt = (
+                    "Analyze this pharmaceutical document comprehensively. "
+                    "Extract all text verbatim, interpret charts/tables data, "
+                    "and provide statistical summary for data files."
+                )
 
-            logger.info(f"🧠 Smart Router: Processing {filename}...")
+            logger.info(f"🧠 Smart Router: Processing {filename} in mode={mode}...")
 
             # Process using Smart Vision Router
             content = await smart_process(
                 file_content=file_content,
                 filename=filename,
                 user_prompt=user_prompt,
-                api_key=settings.MISTRAL_API_KEY
+                api_key=settings.MISTRAL_API_KEY,
+                mode=mode
             )
 
             # Check for explicit failure strings from smart_loader

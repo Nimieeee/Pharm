@@ -9,7 +9,8 @@ async def process_file(
     file_content: bytes, 
     filename: str, 
     user_prompt: str, 
-    api_key: str
+    api_key: str,
+    mode: str = "detailed"  # <--- NEW PARAMETER
 ) -> str:
     """
     The Brain: Decides how to read the file based on extension.
@@ -17,13 +18,15 @@ async def process_file(
     """
     ext = filename.split('.')[-1].lower()
     
-    logger.info(f"🧠 Smart Loader processing {filename} (Ext: {ext})")
+    logger.info(f"🧠 Smart Loader processing {filename} (Ext: {ext}) in mode: {mode}")
 
     try:
         # --- STRATEGY 1: VISUAL DOCS (PDF, PPTX, IMAGES) ---
         # We use Pixtral to "see" these files.
         if ext in ['pdf', 'pptx', 'png', 'jpg', 'jpeg', 'webp']:
-            return await process_visual_document(file_content, filename, user_prompt, api_key)
+            return await process_visual_document(
+                file_content, filename, user_prompt, api_key, mode=mode
+            )
 
         # --- STRATEGY 2: DATASETS (CSV, EXCEL) ---
         # We use Pandas to analyze data structures.

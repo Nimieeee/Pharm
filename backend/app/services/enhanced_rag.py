@@ -37,7 +37,9 @@ class EnhancedRAGService:
         file_content: bytes, 
         filename: str, 
         conversation_id: UUID, 
-        user_id: UUID
+        user_id: UUID,
+        user_prompt: Optional[str] = None,
+        mode: str = "detailed"
     ) -> DocumentUploadResponse:
         """
         Process uploaded file using LangChain loaders and Mistral embeddings
@@ -115,7 +117,9 @@ class EnhancedRAGService:
                         "user_id": str(user_id),
                         "conversation_id": str(conversation_id)
                     },
-                    image_analyzer=image_analyzer_wrapper
+                    image_analyzer=image_analyzer_wrapper,
+                    user_prompt=user_prompt,
+                    mode=mode
                 )
             except DocumentProcessingError as e:
                 # Use structured error information from DocumentProcessingError

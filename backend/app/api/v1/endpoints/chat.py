@@ -4,7 +4,7 @@ Chat API endpoints
 
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from supabase import Client
 
 from app.core.database import get_db
@@ -270,6 +270,8 @@ async def get_messages(
 async def upload_document(
     conversation_id: UUID,
     file: UploadFile = File(...),
+    prompt: Optional[str] = Form(None),
+    mode: str = Form("detailed"),
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service),
     rag_service: EnhancedRAGService = Depends(get_rag_service)
@@ -322,7 +324,12 @@ async def upload_document(
         # Process file
         logger.info(f"⚙️  Processing file with RAG service...")
         result = await rag_service.process_uploaded_file(
-            file_content, file.filename, conversation_id, current_user.id
+            file_content, 
+            file.filename, 
+            conversation_id, 
+            current_user.id,
+            user_prompt=prompt,
+            mode=mode
         )
         
         logger.info(f"✅ Upload complete: {result.chunk_count} chunks processed")
