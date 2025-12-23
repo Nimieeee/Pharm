@@ -11,23 +11,38 @@ function getTokenHash(): string {
     if (typeof window === 'undefined') return '';
     const token = localStorage.getItem('token');
     if (!token) return '';
-    // Use first 8 chars of token as user identifier (unique per user)
     return token.substring(0, 8);
 }
 
-// Generic fetcher with auth
+// Fetcher with timeout and retry
 const fetcher = async (url: string) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) throw new Error('No token');
 
-    const response = await fetch(`${API_BASE_URL}${url}`, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-        },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-    if (!response.ok) throw new Error('Fetch failed');
-    return response.json();
+    try {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`Fetch failed: ${response.status}`);
+        }
+        return response.json();
+    } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout - backend may be starting up');
+        }
+        throw error;
+    }
 };
 
 // Clear all SWR cache (call on logout)
@@ -40,15 +55,15 @@ export function useConversations() {
     const tokenHash = getTokenHash();
 
     const { data, error, mutate, isLoading } = useSWR(
-        // Include tokenHash in key for user isolation
         tokenHash ? `/api/v1/chat/conversations?user=${tokenHash}` : null,
-        // Actual fetch URL (without the user param - it's just for cache key)
         () => fetcher('/api/v1/chat/conversations'),
         {
-            revalidateOnFocus: false,       // Don't reload on window focus
-            dedupingInterval: 30000,        // Cache for 30 seconds
-            revalidateOnReconnect: true,    // Reload when connection restored
-            // No fallbackData - prevents showing stale data from other users
+            revalidateOnFocus: false,
+            dedupingInterval: 30000,
+            revalidateOnReconnect: true,
+            errorRetryCount: 3,           // Retry up to 3 times
+            errorRetryInterval: 2000,      // Wait 2s between retries
+            keepPreviousData: true,        // Keep showing old data while fetching
         }
     );
 

@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth-context';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
+const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
+
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
@@ -15,10 +17,22 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Warm up backend while user is on login page
+  // Aggressive backend warmup - multiple pings
   useEffect(() => {
-    const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
-    fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
+    const warmup = async () => {
+      // Fire multiple warmup requests to ensure backend is awake
+      const pings = [
+        fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { }),
+      ];
+      await Promise.all(pings);
+
+      // Second wave after 2 seconds
+      setTimeout(() => {
+        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { });
+      }, 2000);
+    };
+    warmup();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +41,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      const result = await login(email, password);
+
+      // Pre-fetch conversations while navigating (primes the cache)
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Fire off the conversations request immediately (don't await)
+        fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => { });
+      }
+
       router.push('/chat');
     } catch (err: any) {
       setError(err.message || 'Login failed');
