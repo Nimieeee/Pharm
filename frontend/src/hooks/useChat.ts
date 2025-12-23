@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://pharmgpt-backend.onrender.com'
+  ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
   : 'http://localhost:8000';
 
 type Mode = 'fast' | 'detailed' | 'deep_research';

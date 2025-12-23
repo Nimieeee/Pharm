@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://pharmgpt-backend.onrender.com'
+  ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
   : 'http://localhost:8000';
 
 interface ChatSidebarProps {

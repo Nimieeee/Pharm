@@ -23,7 +23,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useRouter } from 'next/navigation';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://pharmgpt-backend.onrender.com'
+  ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
   : 'http://localhost:8000';
 
 // ============================================================================
@@ -340,8 +340,8 @@ export default function DataWorkbench() {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDataDrop}
                 className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dataFile
-                    ? 'border-emerald-500 bg-emerald-500/5'
-                    : 'border-[var(--border)] hover:border-indigo-500/50'
+                  ? 'border-emerald-500 bg-emerald-500/5'
+                  : 'border-[var(--border)] hover:border-indigo-500/50'
                   }`}
               >
                 {isPreviewLoading ? (
@@ -432,8 +432,8 @@ export default function DataWorkbench() {
                         setStyleDescription('');
                       }}
                       className={`p-3 rounded-xl border text-left transition-all ${selectedPreset === style.id
-                          ? 'border-indigo-500 bg-indigo-500/10'
-                          : 'border-[var(--border)] hover:border-indigo-500/50'
+                        ? 'border-indigo-500 bg-indigo-500/10'
+                        : 'border-[var(--border)] hover:border-indigo-500/50'
                         }`}
                     >
                       <div className="flex gap-1 mb-2">
@@ -504,8 +504,8 @@ export default function DataWorkbench() {
               disabled={!dataFile || isAnalyzing}
               whileTap={{ scale: 0.98 }}
               className={`w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-3 transition-all shadow-lg ${dataFile && !isAnalyzing
-                  ? 'bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 shadow-cyan-500/25'
-                  : 'bg-[var(--border)] cursor-not-allowed shadow-none'
+                ? 'bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 shadow-cyan-500/25'
+                : 'bg-[var(--border)] cursor-not-allowed shadow-none'
                 }`}
             >
               {isAnalyzing ? (
@@ -545,8 +545,8 @@ export default function DataWorkbench() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                      ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                 >
                   <tab.icon size={16} />
