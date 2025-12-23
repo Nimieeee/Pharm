@@ -353,19 +353,36 @@ class ChatService:
         conversation_id: str, 
         user_id: UUID
     ) -> Dict[str, Any]:
-        """Get conversation statistics"""
+        """Get conversation statistics (Optimized: Direct DB queries, Async Executor)"""
+        import asyncio
+        
+        def _fetch_counts():
+            try:
+                # 1. Message Count
+                msg_res = self.db.table("messages").select(
+                    "id", count="exact", head=True
+                ).eq("conversation_id", str(conversation_id)).execute()
+                
+                # 2. Document Chunk Count
+                doc_res = self.db.table("document_chunks").select(
+                    "id", count="exact", head=True
+                ).eq("conversation_id", str(conversation_id)).execute()
+                
+                m_count = msg_res.count if msg_res.count is not None else 0
+                d_count = doc_res.count if doc_res.count is not None else 0
+                return m_count, d_count
+            except Exception as e:
+                # print(f"Stats fetch error: {e}")
+                return 0, 0
+
         try:
-            result = self.db.rpc('get_conversation_stats', {
-                'conversation_uuid': conversation_id,
-                'user_session_uuid': str(user_id)
-            }).execute()
-            
-            if result.data and len(result.data) > 0:
-                return result.data[0]
+            # Run blocking DB calls in thread pool to avoid blocking the event loop
+            loop = asyncio.get_event_loop()
+            msg_count, doc_count = await loop.run_in_executor(None, _fetch_counts)
             
             return {
-                "message_count": 0,
-                "document_count": 0,
+                "message_count": msg_count,
+                "document_count": doc_count,
                 "last_activity": None
             }
             
