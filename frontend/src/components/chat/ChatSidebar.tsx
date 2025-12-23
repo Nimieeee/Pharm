@@ -560,10 +560,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
               {/* Chat History */}
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                {isLoadingHistory ? (
-                  <p className="text-sm text-foreground-muted px-2">Loading...</p>
+                {isLoadingHistory && chatHistory.length === 0 ? (
+                  // Skeleton loader for fresh logins - feels faster than "Loading..."
+                  <div className="space-y-2 px-2">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-10 bg-[var(--surface-highlight)] rounded-lg" />
+                      </div>
+                    ))}
+                  </div>
                 ) : chatHistory.length === 0 ? (
-                  <p className="text-sm text-foreground-muted px-2">Chat history will appear here</p>
+                  <p className="text-sm text-foreground-muted px-2">No conversations yet. Start a new chat!</p>
                 ) : (
                   <>
                     {/* Pinned Chats */}
