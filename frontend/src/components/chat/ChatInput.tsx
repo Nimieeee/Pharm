@@ -101,6 +101,10 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
   };
 
   const removeAttachment = (id: string) => {
+    const attachment = attachments.find(a => a.id === id);
+    if (attachment?.status === 'uploading' && onCancelUpload) {
+      onCancelUpload();
+    }
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
