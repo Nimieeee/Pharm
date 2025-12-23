@@ -561,6 +561,19 @@ class EnhancedRAGService:
                 }
             )
             
+            # OPTIMIZATION: Check if conversation has documents before paying for embedding
+            # This saves ~500ms for "New Chat" or chat without docs
+            try:
+                check = self.db.table("document_chunks").select("id", count="exact", head=True)\
+                    .eq("conversation_id", str(conversation_id)).execute()
+                
+                if check.count == 0:
+                    logger.info("⏩ Skipping RAG search: No documents found for this conversation")
+                    return []
+            except Exception as e:
+                # If check fails, fall through to normal flow safe
+                logger.warning(f"Optimization check failed: {e}")
+            
             # Generate query embedding using Mistral
             query_embedding = await self.embeddings_service.generate_embedding(query)
             
