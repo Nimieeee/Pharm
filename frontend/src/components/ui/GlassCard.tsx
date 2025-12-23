@@ -1,72 +1,71 @@
 "use client";
 
 import React, { ReactNode, useState, useEffect } from 'react';
-import LiquidGlass from './LiquidGlass';
 
 interface GlassCardProps {
     children: ReactNode;
     className?: string;
     onClick?: () => void;
-    // Liquid Glass options
-    enableLiquidGlass?: boolean;
-    bezelWidth?: number;
-    glassThickness?: number;
-    borderRadius?: number;
-}
-
-// Chrome detection
-function isChrome(): boolean {
-    if (typeof window === "undefined") return false;
-    const userAgent = navigator.userAgent;
-    return /Chrome/.test(userAgent) && !/Edge|Edg|OPR|Opera/.test(userAgent);
 }
 
 export const GlassCard = ({
     children,
     className = '',
     onClick,
-    enableLiquidGlass = true,
-    bezelWidth = 16,
-    glassThickness = 6,
-    borderRadius = 20
 }: GlassCardProps) => {
-    const [useAdvanced, setUseAdvanced] = useState(false);
-
-    useEffect(() => {
-        setUseAdvanced(enableLiquidGlass && isChrome());
-    }, [enableLiquidGlass]);
-
-    if (useAdvanced) {
-        return (
-            <LiquidGlass
-                className={className}
-                bezelWidth={bezelWidth}
-                glassThickness={glassThickness}
-                borderRadius={borderRadius}
-                refractiveIndex={1.45}
-                highlightIntensity={0.5}
-                style={{ cursor: onClick ? 'pointer' : 'default' }}
-            >
-                <div onClick={onClick}>
-                    {children}
-                </div>
-            </LiquidGlass>
-        );
-    }
-
-    // Fallback to CSS glass effect
+    // Always use the proven CSS glass effect
+    // The liquid glass SVG approach has browser compatibility issues
     return (
         <div
             className={`glass-effect ${className}`}
             onClick={onClick}
-            style={{ borderRadius }}
         >
             {children}
         </div>
     );
 };
 
-// Preset for navigation bars
+// Enhanced glass effect with more prominent styling
+export const GlassCardEnhanced = ({
+    children,
+    className = '',
+    onClick,
+}: GlassCardProps) => {
+    return (
+        <div
+            className={`
+                relative overflow-hidden rounded-2xl
+                bg-white/10 dark:bg-white/5
+                backdrop-blur-xl
+                border border-white/20 dark:border-white/10
+                shadow-lg shadow-black/5 dark:shadow-black/20
+                ${className}
+            `}
+            onClick={onClick}
+            style={{
+                // Enhanced glass effect
+                backgroundImage: `
+                    linear-gradient(
+                        135deg,
+                        rgba(255, 255, 255, 0.1) 0%,
+                        rgba(255, 255, 255, 0.05) 50%,
+                        rgba(255, 255, 255, 0.02) 100%
+                    )
+                `,
+            }}
+        >
+            {/* Specular highlight - top edge glow */}
+            <div
+                className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                aria-hidden="true"
+            />
+            {/* Content */}
+            {children}
+        </div>
+    );
+};
+
+// Glass navbar with pill shape
 export const GlassNavbar = ({
     children,
     className = '',
@@ -74,27 +73,6 @@ export const GlassNavbar = ({
     children: ReactNode;
     className?: string;
 }) => {
-    const [useAdvanced, setUseAdvanced] = useState(false);
-
-    useEffect(() => {
-        setUseAdvanced(isChrome());
-    }, []);
-
-    if (useAdvanced) {
-        return (
-            <LiquidGlass
-                className={className}
-                bezelWidth={12}
-                glassThickness={4}
-                borderRadius={9999}
-                refractiveIndex={1.4}
-                highlightIntensity={0.4}
-            >
-                {children}
-            </LiquidGlass>
-        );
-    }
-
     return (
         <div className={`glass-effect ${className}`}>
             {children}

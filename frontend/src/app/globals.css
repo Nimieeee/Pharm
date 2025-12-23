@@ -166,34 +166,53 @@ h3,
 /* Liquid Glass Effect - Apple Style */
 .glass-effect {
   position: relative;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(25px) saturate(180%);
   -webkit-backdrop-filter: blur(25px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  /* Default radius, but can be overridden by utility classes */
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 1.5rem;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .dark .glass-effect {
-  background: rgba(20, 20, 23, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: rgba(30, 30, 35, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
 }
 
-/* Shine effect */
+/* Top shine effect */
+.glass-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Diagonal shine effect */
 .glass-effect::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  /* Inherit rounded corners from parent */
-  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0%, transparent 60%);
-  opacity: 0.3;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
+  opacity: 0.5;
   pointer-events: none;
+}
+
+.dark .glass-effect::after {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+  opacity: 1;
 }
 
 /* Card Styles */
