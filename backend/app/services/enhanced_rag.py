@@ -110,6 +110,34 @@ class EnhancedRAGService:
                         logger.error(f"Image analysis wrapper failed: {e}")
                         return ""
 
+                # Streaming Ingestion Support
+                streamed_chunks_count = 0
+                
+                async def streaming_ingest_callback(content_chunk: str, page_idx: int):
+                    nonlocal streamed_chunks_count
+                    try:
+                        temp_doc = Document(
+                            page_content=content_chunk,
+                            metadata={
+                                "source": filename,
+                                "page": page_idx + 1,
+                                "user_id": str(user_id),
+                                "conversation_id": str(conversation_id),
+                                "filename": filename
+                            }
+                        )
+                        sub_chunks = self.text_splitter.split_documents([temp_doc])
+                        for i, chunk in enumerate(sub_chunks):
+                            success = await self._process_and_store_chunk(
+                                chunk, filename, conversation_id, user_id, 
+                                chunk_index=streamed_chunks_count + i
+                            )
+                            if success:
+                                streamed_chunks_count += 1
+                        logger.info(f"⚡ Streamed ingestion: Processed page {page_idx+1}")
+                    except Exception as e:
+                        logger.error(f"Streaming ingestion failed: {e}")
+
                 documents = await self.document_loader.load_document(
                     file_content=file_content,
                     filename=filename,
@@ -119,7 +147,8 @@ class EnhancedRAGService:
                     },
                     image_analyzer=image_analyzer_wrapper,
                     user_prompt=user_prompt,
-                    mode=mode
+                    mode=mode,
+                    chunk_callback=streaming_ingest_callback
                 )
             except DocumentProcessingError as e:
                 # Use structured error information from DocumentProcessingError
@@ -173,10 +202,15 @@ class EnhancedRAGService:
             
             # Split documents into chunks using LangChain text splitter
             chunk_start_time = time.time()
-            chunks = self.text_splitter.split_documents(documents)
+            
+            if streamed_chunks_count > 0:
+                 chunks = []
+            else:
+                 chunks = self.text_splitter.split_documents(documents)
+            
             chunk_duration = time.time() - chunk_start_time
             
-            if not chunks:
+            if not chunks and streamed_chunks_count == 0:
                 logger.error(
                     f"❌ No chunks generated from {filename}",
                     extra={
@@ -221,17 +255,21 @@ class EnhancedRAGService:
             
             # Store chunks directly using database
             storage_start_time = time.time()
-            logger.info(
-                f"💾 Storing {len(chunks)} chunks in database...",
-                extra={
-                    'operation': 'chunk_storage',
-                    'document_name': filename,
-                    'user_id': str(user_id),
-                    'conversation_id': str(conversation_id),
-                    'chunk_count': len(chunks)
-                }
-            )
-            success_count = 0
+            if streamed_chunks_count > 0:
+                 logger.info(f"💾 Streaming complete. {streamed_chunks_count} chunks already stored.")
+            else:
+                 logger.info(
+                    f"💾 Storing {len(chunks)} chunks in database...",
+                    extra={
+                        'operation': 'chunk_storage',
+                        'document_name': filename,
+                        'user_id': str(user_id),
+                        'conversation_id': str(conversation_id),
+                        'chunk_count': len(chunks)
+                    }
+                 )
+            
+            success_count = streamed_chunks_count
             failed_count = 0
             
             for chunk_index, chunk in enumerate(chunks):

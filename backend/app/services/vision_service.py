@@ -50,7 +50,8 @@ async def process_visual_document(
     filename: str, 
     user_prompt: str, 
     api_key: str,
-    mode: str = "detailed"
+    mode: str = "detailed",
+    chunk_callback: Any = None
 ):
     client = Mistral(api_key=api_key)
     
@@ -86,6 +87,14 @@ async def process_visual_document(
                     ]
                 )
                 content = response.choices[0].message.content
+                
+                # Streaming Ingestion: Fire and forget
+                if chunk_callback:
+                    try:
+                        asyncio.create_task(chunk_callback(content, idx))
+                    except Exception as cb_e:
+                        logger.error(f"Callback error: {cb_e}")
+                        
                 return idx, f"## --- PAGE {idx+1} START ---\n{content}\n## --- PAGE {idx+1} END ---"
             except Exception as e:
                 logger.error(f"⚠️ Error on page {idx+1}: {e}")

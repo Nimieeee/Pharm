@@ -10,7 +10,8 @@ async def process_file(
     filename: str, 
     user_prompt: str, 
     api_key: str,
-    mode: str = "detailed"  # <--- NEW PARAMETER
+    mode: str = "detailed",
+    chunk_callback=None
 ) -> str:
     """
     The Brain: Decides how to read the file based on extension.
@@ -25,7 +26,7 @@ async def process_file(
         # We use Pixtral to "see" these files.
         if ext in ['pdf', 'pptx', 'png', 'jpg', 'jpeg', 'webp']:
             return await process_visual_document(
-                file_content, filename, user_prompt, api_key, mode=mode
+                file_content, filename, user_prompt, api_key, mode=mode, chunk_callback=chunk_callback
             )
 
         # --- STRATEGY 2: DATASETS (CSV, EXCEL) ---

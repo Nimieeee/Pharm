@@ -192,7 +192,8 @@ class EnhancedDocumentLoader:
         additional_metadata: Optional[Dict[str, Any]] = None,
         image_analyzer: Optional[Any] = None,
         user_prompt: Optional[str] = None,
-        mode: str = "detailed"
+        mode: str = "detailed",
+        chunk_callback: Optional[Any] = None
     ) -> List[Document]:
         """
         Smart Vision Router Implementation:
@@ -235,7 +236,8 @@ class EnhancedDocumentLoader:
                 filename=filename,
                 user_prompt=user_prompt,
                 api_key=settings.MISTRAL_API_KEY,
-                mode=mode
+                mode=mode,
+                chunk_callback=chunk_callback
             )
 
             # Check for explicit failure strings from smart_loader
