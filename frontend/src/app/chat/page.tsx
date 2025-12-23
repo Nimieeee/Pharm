@@ -117,26 +117,20 @@ function ChatContent() {
           {deepResearchProgress && (
             <div className="mb-4">
               <DeepResearchUI
-                state={{
-                  status: deepResearchProgress.message || deepResearchProgress.status || 'Processing...',
-                  progress: deepResearchProgress.progress || 0,
-                  logs: deepResearchProgress.plan_overview
-                    ? [`Strategy: ${deepResearchProgress.plan_overview}`]
-                    : [],
-                  sources: deepResearchProgress.citations?.map(c => ({
-                    title: c.title,
-                    url: c.url,
-                    source: c.source,
-                    authors: c.authors,
-                    year: c.year,
-                    journal: c.journal,
-                    doi: c.doi
-                  })) || [],
-                  isComplete: deepResearchProgress.type === 'complete',
-                  planOverview: deepResearchProgress.plan_overview,
-                  steps: deepResearchProgress.steps,
-                  report: deepResearchProgress.report
-                }}
+                isLoading={deepResearchProgress.type !== 'complete'}
+                progressStep={deepResearchProgress.message || deepResearchProgress.status || 'Processing...'}
+                reportContent={deepResearchProgress.report || ''}
+                sources={deepResearchProgress.citations?.map(c => ({
+                  id: c.id,
+                  title: c.title,
+                  url: c.url,
+                  snippet: c.snippet || '',
+                  journal: c.journal,
+                  year: c.year,
+                  authors: c.authors,
+                  source_type: c.source_type || c.source
+                })) || []}
+                error={deepResearchProgress.type === 'error' ? (deepResearchProgress.message || 'An error occurred') : undefined}
               />
             </div>
           )}

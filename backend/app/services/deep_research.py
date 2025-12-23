@@ -977,55 +977,76 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                     findings_text += f"   DOI: {citation.doi}\n"
                 findings_text += f"   Key Content: {finding.raw_content[:500]}\n"
         
-        system_prompt = """You are writing a formal medical/scientific manuscript. Use the provided research context.
+        system_prompt = """You are a senior medical/scientific research analyst. Generate a comprehensive research report following this EXACT structure.
 
-## DOCUMENT STRUCTURE:
-# Title
-## Abstract
-## 1. Introduction (Background & Pathophysiology)
-## 2. Mechanism of Action (Molecular details)
-## 3. Clinical Evidence (Cite specific trials mentioned in context)
-## 4. Safety Profile
-## 5. Conclusion
+## OUTPUT STRUCTURE (Follow this order precisely):
+
+### 1. HEADER BLOCK (Metadata)
+Start with clear context:
+```
+# [Scientific Title for the Research Question]
+
+> **Status:** ✅ Deep Research Complete  
+> **Sources Analyzed:** [Count] sources from PubMed, Google Scholar, and Web  
+> **Generated:** [Current Date]
+```
+
+### 2. EXECUTIVE SUMMARY (The "TL;DR")
+A blockquote with 3-5 high-impact bullet points for clinicians with 30 seconds:
+```
+> **Executive Summary**
+> - [Key finding 1 with one-line conclusion]
+> - [Key finding 2]
+> - [Key finding 3]
+> - [Bottom-line recommendation]
+```
+
+### 3. DEEP DIVE SECTIONS (Organize by Themes, Not Sources)
+Do NOT say "Source A said X." Say "X is true (Author, Year)."
+
+#### Section Structure:
+```
+## 1. Mechanism of Action / Background
+[How does it work? Pathophysiology, molecular targets, biological rationale]
+
+## 2. Clinical Evidence & Efficacy
+[What do the trials say? Summarize key studies, outcomes, patient populations]
+
+## 3. Safety Profile & Toxicology
+[Adverse events, contraindications, monitoring requirements - crucial for pharma]
+
+## 4. Knowledge Gaps & Contradictions
+[CRITICAL: Explicitly state what is UNKNOWN or where sources DISAGREED. This is as valuable as the findings themselves.]
+
+## 5. Conclusions & Clinical Implications
+[Synthesis of findings, recommendations for practice, future directions]
+```
+
+### 4. REFERENCES (APA 7th Edition - Strict Format)
+
+#### In-Text Citation Format:
+- Parenthetical: "...is associated with significant toxicity (Khanna et al., 2015)."
+- Narrative: "Jordan et al. (2015) demonstrated that..."
+- Two authors: "(Kwan & Brodie, 2021)" or "Kwan and Brodie (2021)"
+- Three or more: "(Gorgulla et al., 2020)" or "Gorgulla et al. (2020)"
+
+#### Reference List Format:
+```
 ## References
 
-## CITATION FORMAT - STRICTLY FOLLOW APA 7TH EDITION:
+DiMasi, J. A., Grabowski, H. G., & Hansen, R. W. (2016). Innovation in the pharmaceutical industry: New estimates of R&D costs. *Journal of Health Economics, 47*, 20–33. doi:10.1016/j.jhealeco.2016.01.012
 
-### In-Text Citations:
-Use parenthetical or narrative citations throughout the text:
-- Parenthetical: "...affects an estimated 50 million individuals worldwide (World Health Organization, 2023)."
-- Narrative: "Kwan and Brodie (2021) demonstrated that approximately one-third of patients..."
-- Multiple authors (3+): "(Gorgulla et al., 2020)" or "Gorgulla et al. (2020)"
-- Two authors: "(Kwan & Brodie, 2021)" or "Kwan and Brodie (2021)"
-
-### References Section:
-Each reference MUST follow this exact format:
-```
-Authors. (Year). Title of article. Journal Name, Volume(Issue), Pages. doi:DOI
+Gorgulla, C., Boeszoermenyi, A., Wang, Z. F., Fischer, P. D., Coote, P. W., Padmanabha Das, K. M., Malets, Y. S., Radchenko, D. S., Moroz, Y. S., Scott, D. A., Fackeldey, K., Hoffmann, M., Iavniuk, I., Wagner, G., & Arthanari, H. (2020). An open-source drug discovery platform enables ultra-large virtual screens. *Nature, 580*(7805), 663–668. doi:10.1038/s41586-020-2117-z
 ```
 
-EXAMPLE REFERENCES (follow this format exactly):
-DiMasi, J. A., Grabowski, H. G., & Hansen, R. W. (2016). Innovation in the pharmaceutical industry: New estimates of R&D costs. Journal of Health Economics, 47, 20–33. doi:10.1016/j.jhealeco.2016.01.012
-
-Gorgulla, C., Boeszoermenyi, A., Wang, Z. F., Fischer, P. D., Coote, P. W., Padmanabha Das, K. M., Malets, Y. S., Radchenko, D. S., Moroz, Y. S., Scott, D. A., Fackeldey, K., Hoffmann, M., Iavniuk, I., Wagner, G., & Arthanari, H. (2020). An open-source drug discovery platform enables ultra-large virtual screens. Nature, 580(7805), 663–668. doi:10.1038/s41586-020-2117-z
-
-Paul, S. M., Mytelka, D. S., Dunwiddie, C. T., Persinger, C. C., Munos, B. H., Lindborg, S. R., & Schacht, A. L. (2010). How to improve R&D productivity: The pharmaceutical industry's grand challenge. Nature Reviews Drug Discovery, 9(3), 203–214. doi:10.1038/nrd3078
-
-### Reference Rules:
-1. List all authors (up to 20). Use "et al." only in-text, NOT in references
-2. Use "&" before the last author
-3. Italicize journal name and volume number
-4. Include DOI when available (format: doi:10.xxxx/xxxxx)
-5. Use "n.d." if no date is available
-6. Alphabetize references by first author's last name
-7. Use hanging indent (first line flush left, subsequent lines indented)
-
-## WRITING CONSTRAINTS:
-- Output must be Raw Markdown (no code blocks)
-- Be exhaustive and comprehensive - write at least 1500 words
-- Every major claim must have an in-text citation
-- All cited sources must appear in the References section
-- Do NOT fabricate citations - only use sources provided in the context"""
+## CRITICAL RULES:
+1. **Synthesize, don't summarize** - This is Deep Research, not a literature dump
+2. **Every major claim needs a citation** - Use (Author, Year) format throughout
+3. **Be comprehensive** - Write at least 2000 words with detailed analysis
+4. **Knowledge Gaps are ESSENTIAL** - Section 4 adds immense value by stating unknowns
+5. **All cited sources MUST appear in References** - No fabricated citations
+6. **Raw Markdown output only** - No code blocks around the entire document
+7. **Alphabetize References** by first author's last name"""
 
 
         user_prompt = f"""Research Question: {state.research_question}
@@ -1036,7 +1057,7 @@ Research Context (Use these sources):
 Synthesize a comprehensive research report."""
 
         # Use higher token limit for complete report with references
-        response = await self._call_llm(system_prompt, user_prompt, json_mode=False, max_tokens=8000)
+        response = await self._call_llm(system_prompt, user_prompt, json_mode=False, max_tokens=20000)
         
         state.final_report = response
         state.status = "complete"
@@ -1171,10 +1192,12 @@ Synthesize a comprehensive research report."""
                         "title": c.title, 
                         "url": c.url, 
                         "source": c.source,
+                        "source_type": c.source,  # PubMed, Google Scholar, or Web
                         "authors": c.authors or "",
                         "year": c.year or "",
                         "journal": c.source if c.source != "Web" else "",
-                        "doi": c.doi or ""
+                        "doi": c.doi or "",
+                        "snippet": c.abstract[:300] + "..." if c.abstract and len(c.abstract) > 300 else (c.abstract or "")
                     }
                     for c in state.citations
                 ],

@@ -45,10 +45,12 @@ interface DeepResearchProgress {
     title: string;
     url: string;
     source: string;
+    source_type?: string;
     authors?: string;
     year?: string;
     journal?: string;
     doi?: string;
+    snippet?: string;
   }>;
 }
 

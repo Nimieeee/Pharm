@@ -1,425 +1,439 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, ChevronUp, Globe, FileText, ExternalLink, BookOpen, Loader2 } from 'lucide-react';
-import StreamdownWrapper from './StreamdownWrapper';
+import React, { useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  BookOpen,
+  ExternalLink,
+  CheckCircle2,
+  Loader2,
+  Search,
+  ChevronRight,
+  FileText,
+  AlertCircle
+} from "lucide-react";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// --- Types ---
 
-interface Source {
+export interface Source {
+  id: number;
   title: string;
   url: string;
-  favicon?: string;
-  source?: string;
-  authors?: string;
-  year?: string;
+  snippet: string;
   journal?: string;
-  doi?: string;
+  year?: string;
+  authors?: string;
+  source_type?: string; // "PubMed", "Google Scholar", "Web"
 }
 
-interface DeepResearchState {
-  status: string;
-  progress: number;
-  logs: string[];
+interface DeepResearchProps {
+  isLoading: boolean;
+  progressStep: string; // e.g., "Analyzing Source 3/10..."
+  reportContent: string; // The raw Markdown string
   sources: Source[];
-  isComplete: boolean;
-  planOverview?: string;
-  steps?: Array<{ id: number; topic: string; source: string }>;
-  report?: string;
+  error?: string;
 }
 
-interface DeepResearchUIProps {
-  state: DeepResearchState;
-}
+// --- Helper: Custom Citation Component ---
+// This finds "[1]" or "(Author, Year)" patterns in the text and can make them interactive
+const CitationRenderer = ({
+  children,
+  onCitationClick
+}: {
+  children: string,
+  onCitationClick: (id: number) => void
+}) => {
+  // Regex to find [1], [2], etc. (numbered citations)
+  const parts = children.split(/(\[\d+\])/g);
 
-// ============================================================================
-// ANIMATED COUNTER COMPONENT
-// ============================================================================
-
-function AnimatedCounter({ value }: { value: number }) {
-  const [displayValue, setDisplayValue] = useState(value);
-
-  useEffect(() => {
-    const duration = 500;
-    const startValue = displayValue;
-    const diff = value - startValue;
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(Math.round(startValue + diff * eased));
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [value]);
-
-  return <span>{displayValue}</span>;
-}
-
-// ============================================================================
-// GRADIENT SPINNER COMPONENT
-// ============================================================================
-
-function GradientSpinner({ progress, isComplete }: { progress: number; isComplete: boolean }) {
   return (
-    <div className="relative flex items-center justify-center">
-      <div
-        className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full p-[3px] ${isComplete ? '' : 'animate-spin-slow'}`}
-        style={{
-          background: isComplete
-            ? 'conic-gradient(from 0deg, #22c55e, #10b981, #22c55e)'
-            : 'conic-gradient(from 0deg, #6366f1, #8b5cf6, #a855f7, #6366f1)'
-        }}
-      >
-        <div className="h-full w-full rounded-full bg-[var(--surface)] flex items-center justify-center">
-          <span className="text-base sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">
-            <AnimatedCounter value={progress} />%
-          </span>
+    <span>
+      {parts.map((part, index) => {
+        const match = part.match(/^\[(\d+)\]$/);
+        if (match) {
+          const id = parseInt(match[1]);
+          return (
+            <button
+              key={index}
+              onClick={() => onCitationClick(id)}
+              className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-xs font-bold text-emerald-600 bg-emerald-50 rounded cursor-pointer hover:bg-emerald-100 hover:text-emerald-800 transition-colors border border-emerald-200 align-super dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-900/50"
+              title={`Jump to Source ${id}`}
+            >
+              {id}
+            </button>
+          );
+        }
+        return part;
+      })}
+    </span>
+  );
+};
+
+// --- Main Component ---
+
+export default function DeepResearchUI({
+  isLoading,
+  progressStep,
+  reportContent,
+  sources,
+  error
+}: DeepResearchProps) {
+  const [activeSourceId, setActiveSourceId] = useState<number | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+
+  // Function to handle clicking a [1] in the markdown
+  const handleCitationClick = (id: number) => {
+    setActiveSourceId(id);
+    setSidebarCollapsed(false);
+
+    // Scroll the sidebar to the specific source card
+    const element = sidebarRefs.current[id];
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+        <div className="text-center p-8">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">Research Error</h3>
+          <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
         </div>
       </div>
+    );
+  }
 
-      <div
-        className="absolute inset-0 rounded-full blur-xl opacity-20 dark:opacity-30"
-        style={{
-          background: isComplete
-            ? 'radial-gradient(circle, #22c55e 0%, transparent 70%)'
-            : 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)'
-        }}
-      />
+  return (
+    <div className="flex flex-col h-full w-full bg-white dark:bg-slate-950 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg">
+
+      {/* 1. Header / Status Bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
+        <div className="flex items-center gap-3">
+          <div className={`p-2.5 rounded-xl ${isLoading ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400'}`}>
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+              {isLoading ? "Deep Research Agent" : "✅ Deep Research Complete"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              {isLoading ? progressStep : `Analyzed ${sources.length} sources (PubMed, Google Scholar, Web)`}
+            </p>
+          </div>
+        </div>
+
+        {/* Toggle Sidebar Button (Mobile) */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="md:hidden p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+        >
+          <BookOpen className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* 2. Main Content Area (Split View) */}
+      <div className="flex flex-1 overflow-hidden relative">
+
+        {/* LEFT PANEL: The Report (70%) */}
+        <div className={`flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth ${sidebarCollapsed ? 'w-full' : ''}`}>
+          <article className="prose prose-slate dark:prose-invert max-w-none prose-headings:scroll-mt-20">
+            {isLoading && !reportContent ? (
+              <LoadingState progress={progressStep} />
+            ) : (
+              <ReactMarkdown
+                components={{
+                  // Override paragraph rendering to detect citations
+                  p: ({ children }) => {
+                    return (
+                      <p className="leading-relaxed text-slate-700 dark:text-slate-300 mb-4">
+                        {React.Children.map(children, (child) => {
+                          if (typeof child === "string") {
+                            return <CitationRenderer onCitationClick={handleCitationClick}>{child}</CitationRenderer>;
+                          }
+                          return child;
+                        })}
+                      </p>
+                    );
+                  },
+                  // Style headings
+                  h1: ({ children }) => (
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-6 pb-3 border-b-2 border-emerald-500">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-xl md:text-2xl font-semibold text-slate-800 dark:text-slate-100 mt-10 mb-4 flex items-center gap-2">
+                      <span className="w-1 h-6 bg-emerald-500 rounded-full"></span>
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mt-6 mb-3">
+                      {children}
+                    </h3>
+                  ),
+                  // Style lists
+                  ul: ({ children }) => <ul className="list-disc pl-6 space-y-2 my-4 marker:text-emerald-500">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-6 space-y-2 my-4 marker:text-emerald-500">{children}</ol>,
+                  li: ({ children }) => (
+                    <li className="text-slate-700 dark:text-slate-300 pl-1">
+                      {React.Children.map(children, (child) => {
+                        if (typeof child === "string") {
+                          return <CitationRenderer onCitationClick={handleCitationClick}>{child}</CitationRenderer>;
+                        }
+                        return child;
+                      })}
+                    </li>
+                  ),
+                  // Style blockquotes (for executive summary)
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-emerald-500 pl-4 py-2 my-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-r-lg italic text-slate-600 dark:text-slate-300">
+                      {children}
+                    </blockquote>
+                  ),
+                  // Style code blocks
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    if (isInline) {
+                      return <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-emerald-600 dark:text-emerald-400">{children}</code>;
+                    }
+                    return <code className={className}>{children}</code>;
+                  },
+                  // Style strong/bold
+                  strong: ({ children }) => <strong className="font-semibold text-slate-900 dark:text-white">{children}</strong>,
+                  // Style links
+                  a: ({ href, children }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                    >
+                      {children}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ),
+                  // Style horizontal rules
+                  hr: () => <hr className="my-8 border-slate-200 dark:border-slate-700" />,
+                }}
+              >
+                {reportContent}
+              </ReactMarkdown>
+            )}
+          </article>
+        </div>
+
+        {/* RIGHT PANEL: The Source Map Sidebar (30%) */}
+        <div className={`
+          ${sidebarCollapsed ? 'hidden' : 'flex'} 
+          md:flex
+          w-full md:w-80 lg:w-96
+          absolute md:relative inset-0 md:inset-auto
+          z-20 md:z-auto
+          border-l border-slate-200 dark:border-slate-800 
+          bg-slate-50 dark:bg-slate-900 
+          flex-col shadow-inner
+        `}>
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-emerald-500" /> Source Map
+              <span className="ml-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 text-xs rounded-full">
+                {sources.length}
+              </span>
+            </h4>
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              className="md:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Source Cards */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {sources.length === 0 && isLoading && (
+              <div className="text-center py-10 opacity-50">
+                <Search className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                <p className="text-xs text-slate-500">Gathering intelligence...</p>
+              </div>
+            )}
+
+            {sources.length === 0 && !isLoading && (
+              <div className="text-center py-10 opacity-50">
+                <FileText className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                <p className="text-xs text-slate-500">No sources found</p>
+              </div>
+            )}
+
+            {sources.map((source) => (
+              <motion.div
+                key={source.id}
+                ref={(el) => { sidebarRefs.current[source.id] = el; }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: source.id * 0.05 }}
+                className={`
+                  relative p-3 rounded-xl border text-sm transition-all duration-300 cursor-pointer group
+                  ${activeSourceId === source.id
+                    ? 'bg-emerald-50 border-emerald-500 shadow-lg ring-2 ring-emerald-500/20 dark:bg-emerald-900/30 dark:border-emerald-400'
+                    : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-600'
+                  }
+                `}
+                onClick={() => setActiveSourceId(activeSourceId === source.id ? null : source.id)}
+              >
+                {/* ID Badge */}
+                <div className={`
+                  absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border shadow-sm
+                  ${activeSourceId === source.id
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-slate-100 text-slate-600 border-slate-200 group-hover:bg-emerald-100 group-hover:text-emerald-600 dark:bg-slate-700 dark:text-slate-300 dark:group-hover:bg-emerald-800 dark:group-hover:text-emerald-300'
+                  }
+                `}>
+                  {source.id}
+                </div>
+
+                {/* Source Type Badge */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`
+                    px-2 py-0.5 text-xs font-medium rounded-full
+                    ${source.source_type === 'PubMed'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                      : source.source_type === 'Google Scholar'
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                    }
+                  `}>
+                    {source.source_type || "Web"}
+                  </span>
+                  {source.year && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{source.year}</span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h5 className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight mb-1 pr-4">
+                  {source.title}
+                </h5>
+
+                {/* Authors */}
+                {source.authors && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 line-clamp-1">
+                    {source.authors}
+                  </p>
+                )}
+
+                {/* Snippet (Only show if active) */}
+                <AnimatePresence>
+                  {activeSourceId === source.id && source.snippet && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-xs text-slate-600 dark:text-slate-400 my-2 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                        &ldquo;{source.snippet}&rdquo;
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Link */}
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300 mt-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  View Source <ExternalLink className="w-3 h-3" />
+                </a>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ============================================================================
-// SHIMMER LOADING COMPONENT
-// ============================================================================
+// --- Sub-component: Loading State with Progress Steps ---
+function LoadingState({ progress }: { progress: string }) {
+  const steps = [
+    "Planning research strategy...",
+    "Searching PubMed database...",
+    "Querying Google Scholar...",
+    "Analyzing web sources...",
+    "Cross-referencing findings...",
+    "Synthesizing report..."
+  ];
 
-function ShimmerText({ text }: { text: string }) {
-  return (
-    <span className="relative inline-block">
-      <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%] animate-shimmer">
-        {text}
-      </span>
-    </span>
-  );
-}
-
-// ============================================================================
-// APA CITATION FORMATTER
-// ============================================================================
-
-function formatAPACitation(source: Source, index: number): string {
-  // APA 7th Edition format:
-  // Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. Journal Name, Volume(Issue), Pages. DOI
-
-  const authors = source.authors || 'Unknown Author';
-  const year = source.year || 'n.d.';
-  const title = source.title || 'Untitled';
-  const journal = source.journal || source.source || '';
-  const doi = source.doi ? `https://doi.org/${source.doi}` : source.url;
-
-  return `[${index + 1}] ${authors} (${year}). ${title}. ${journal ? `*${journal}*. ` : ''}${doi}`;
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export default function DeepResearchUI({ state }: DeepResearchUIProps) {
-  const [logsExpanded, setLogsExpanded] = useState(false);
-  const [sourcesExpanded, setSourcesExpanded] = useState(true);
-  const logsEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (logsEndRef.current && logsExpanded) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [state.logs, logsExpanded]);
+  // Determine current step index based on progress text
+  const currentStepIndex = steps.findIndex(s => progress.toLowerCase().includes(s.split(" ")[0].toLowerCase())) || 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-2xl mx-auto rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden shadow-lg"
-    >
-      {/* ================================================================== */}
-      {/* HEADER - Spinner + Status */}
-      {/* ================================================================== */}
-      {/* ================================================================== */}
-      {/* HEADER - Collapsible Accordion Status */}
-      {/* ================================================================== */}
-      <div className="border-b border-[var(--border)]">
-        <button
-          onClick={() => setLogsExpanded(!logsExpanded)}
-          className={`w-full text-left transition-all duration-300 ${state.isComplete ? 'bg-[var(--surface)]' : 'bg-secondary/30'
-            }`}
-        >
-          <div className={`flex items-center gap-4 p-4 ${state.isComplete ? '' : 'border-l-2 border-primary pl-4 py-2'}`}>
-            {/* Icon / Status Indicator */}
-            <div className="flex-shrink-0">
-              {state.isComplete ? (
-                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                  <Sparkles size={14} className="text-emerald-500" />
-                </div>
+    <div className="space-y-6">
+      {/* Animated Header Skeleton */}
+      <div className="space-y-2">
+        <div className="h-8 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 rounded-lg w-3/4 animate-pulse"></div>
+        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/2 animate-pulse"></div>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="p-5 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 border border-emerald-100 dark:border-slate-700 rounded-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+            <Loader2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-slate-800 dark:text-slate-200">Deep Research in Progress</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400">This may take 30-60 seconds</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {steps.map((step, index) => (
+            <div
+              key={step}
+              className={`
+                flex items-center gap-2 text-sm transition-all duration-300
+                ${index < currentStepIndex
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : index === currentStepIndex
+                    ? 'text-blue-600 dark:text-blue-400 font-medium'
+                    : 'text-slate-400 dark:text-slate-500'
+                }
+              `}
+            >
+              {index < currentStepIndex ? (
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              ) : index === currentStepIndex ? (
+                <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
               ) : (
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-primary" size={18} />
-                </div>
+                <div className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 flex-shrink-0" />
               )}
+              <span>{step}</span>
             </div>
-
-            {/* Text Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <h3 className={`text-sm font-medium ${state.isComplete ? 'text-[var(--text-secondary)] opacity-70' : 'text-[var(--text-primary)] font-bold'}`}>
-                  {state.isComplete ? 'Research Complete' : state.status || 'Initializing Research Agent...'}
-                </h3>
-                {state.isComplete ? (
-                  <ChevronDown size={16} className="text-[var(--text-secondary)]" />
-                ) : (
-                  <span className="text-xs text-primary animate-pulse">Processing...</span>
-                )}
-              </div>
-
-              {/* Progress Bar (Only when active) */}
-              {!state.isComplete && (
-                <div className="mt-2 h-1 w-full bg-[var(--surface-highlight)] rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-primary rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${state.progress}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </button>
+          ))}
+        </div>
       </div>
 
-      {/* ================================================================== */}
-      {/* RESEARCH STEPS */}
-      {/* ================================================================== */}
-      {state.steps && state.steps.length > 0 && (
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
-          <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2 sm:mb-3">
-            Research Topics
-          </p>
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            <AnimatePresence>
-              {state.steps.map((step, i) => (
-                <motion.div
-                  key={step.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--surface-highlight)] border border-[var(--border)]"
-                >
-                  <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-[8px] sm:text-[10px] font-bold flex items-center justify-center text-white">
-                    {step.id}
-                  </span>
-                  <span className="text-[10px] sm:text-xs text-[var(--text-primary)] max-w-[120px] sm:max-w-none truncate">{step.topic}</span>
-                  <span className="hidden sm:inline text-[10px] text-[var(--text-secondary)] px-1.5 py-0.5 rounded bg-[var(--border)]">
-                    {step.source}
-                  </span>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+      {/* Content Skeleton */}
+      <div className="space-y-4 pt-4">
+        <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-1/3 animate-pulse"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full animate-pulse"></div>
+          <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6 animate-pulse"></div>
+          <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-4/6 animate-pulse"></div>
         </div>
-      )}
-
-      {/* ================================================================== */}
-      {/* ACTIVITY LOG (Collapsible) */}
-      {/* ================================================================== */}
-      <div className="border-b border-[var(--border)]">
-        <button
-          onClick={() => setLogsExpanded(!logsExpanded)}
-          className="w-full px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between hover:bg-[var(--surface-highlight)] transition-colors"
-        >
-          <span className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-            <FileText size={12} className="sm:w-[14px] sm:h-[14px]" />
-            Activity Log
-            {state.logs.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[var(--surface-highlight)] text-[var(--text-secondary)] text-[10px]">
-                {state.logs.length}
-              </span>
-            )}
-          </span>
-          {logsExpanded ? (
-            <ChevronUp size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
-          ) : (
-            <ChevronDown size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
-          )}
-        </button>
-
-        <AnimatePresence>
-          {logsExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <div className="px-4 sm:px-6 pb-3 sm:pb-4 max-h-32 overflow-y-auto scrollbar-hide">
-                <div className="space-y-1">
-                  <AnimatePresence>
-                    {state.logs.map((log, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex items-start gap-2"
-                      >
-                        <span className="text-[var(--text-secondary)] text-xs mt-0.5">›</span>
-                        <span className="font-mono text-[10px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">
-                          {log}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  <div ref={logsEndRef} />
-                </div>
-
-                {state.logs.length === 0 && (
-                  <p className="font-mono text-[10px] sm:text-xs text-[var(--text-secondary)] italic opacity-60">
-                    Waiting for activity...
-                  </p>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-
-      {/* ================================================================== */}
-      {/* SOURCES / REFERENCES (APA Style) */}
-      {/* ================================================================== */}
-      {state.sources.length > 0 && (
-        <div className="border-b border-[var(--border)]">
-          <button
-            onClick={() => setSourcesExpanded(!sourcesExpanded)}
-            className="w-full px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between hover:bg-[var(--surface-highlight)] transition-colors"
-          >
-            <span className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-              <BookOpen size={12} className="sm:w-[14px] sm:h-[14px]" />
-              References
-              <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] text-[10px]">
-                {state.sources.length}
-              </span>
-            </span>
-            {sourcesExpanded ? (
-              <ChevronUp size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
-            ) : (
-              <ChevronDown size={14} className="sm:w-4 sm:h-4 text-[var(--text-secondary)]" />
-            )}
-          </button>
-
-          <AnimatePresence>
-            {sourcesExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="px-4 sm:px-6 pb-3 sm:pb-4 max-h-48 overflow-y-auto scrollbar-hide">
-                  <div className="space-y-2">
-                    {state.sources.map((source, i) => (
-                      <motion.a
-                        key={source.url || i}
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.03 }}
-                        className="block p-2 sm:p-3 rounded-lg bg-[var(--surface-highlight)] hover:bg-[var(--border)] transition-colors group"
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] sm:text-xs font-medium text-[var(--accent)] flex-shrink-0">
-                            [{i + 1}]
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] sm:text-xs text-[var(--text-primary)] leading-relaxed">
-                              {source.authors && <span>{source.authors} </span>}
-                              {source.year && <span>({source.year}). </span>}
-                              <span className="font-medium">{source.title}</span>
-                              {source.journal && <span className="italic">. {source.journal}</span>}
-                            </p>
-                            <p className="text-[10px] text-[var(--accent)] mt-1 truncate group-hover:underline flex items-center gap-1">
-                              {source.doi ? `doi:${source.doi}` : source.url}
-                              <ExternalLink size={10} className="flex-shrink-0" />
-                            </p>
-                          </div>
-                        </div>
-                      </motion.a>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* ================================================================== */}
-      {/* REPORT OUTPUT (Using Streamdown) */}
-      {/* ================================================================== */}
-      {state.report && (
-        <div className="p-4 sm:p-6">
-          <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Sparkles size={12} className="sm:w-[14px] sm:h-[14px]" />
-            Research Report
-          </p>
-          <div className="text-sm text-[var(--text-primary)]">
-            <StreamdownWrapper
-              isAnimating={!state.isComplete}
-              className="streamdown-content"
-            >
-              {state.report}
-            </StreamdownWrapper>
-          </div>
-        </div>
-      )}
-
-      {/* ================================================================== */}
-      {/* COMPLETION MESSAGE */}
-      {/* ================================================================== */}
-      {state.isComplete && !state.report && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-emerald-500/10 to-indigo-500/10 border-t border-emerald-500/20"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              <Sparkles size={14} className="sm:w-4 sm:h-4 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-emerald-500">
-                Research synthesis complete
-              </p>
-              <p className="text-[10px] sm:text-xs text-[var(--text-secondary)]">
-                {state.sources.length} sources analyzed • Report ready
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </motion.div>
+    </div>
   );
 }
