@@ -160,7 +160,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   // SWR for instant cache-first loading - Pass token to ensure reactivity on account switch
-  const { conversations, isLoading: isLoadingHistory, mutate: mutateConversations } = useConversations(token);
+  const { conversations, isLoading: isLoadingHistory, isError, mutate: mutateConversations } = useConversations(token);
 
   // Transform to ChatHistory format
   const chatHistory = useMemo(() =>
@@ -593,6 +593,16 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                         <div className="h-10 bg-[var(--surface-highlight)] rounded-lg" />
                       </div>
                     ))}
+                  </div>
+                ) : isError ? (
+                  <div className="flex flex-col items-center justify-center py-6 px-2 text-center text-foreground-muted space-y-2">
+                    <p className="text-sm">Could not load chats</p>
+                    <button
+                      onClick={() => mutateConversations()}
+                      className="text-xs px-3 py-1.5 bg-indigo-500/10 text-indigo-500 rounded-md hover:bg-indigo-500/20 transition-colors"
+                    >
+                      Retry
+                    </button>
                   </div>
                 ) : chatHistory.length === 0 ? (
                   <p className="text-sm text-foreground-muted px-2">No conversations yet. Start a new chat!</p>
