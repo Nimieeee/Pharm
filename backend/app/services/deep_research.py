@@ -1026,9 +1026,12 @@ Reference format:
 Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. *Journal Name, Volume*(Issue), Pages. doi:10.xxxx/xxxxx
 ```
 
-## WRITING STYLE RULES:
+## WRITING STYLE RULES (CRITICAL):
 1. Write in clear, professional scientific prose
-2. Use bold text SPARINGLY - only for truly critical terms (max 3-5 per section)
+2. AVOID BOLD TEXT - Maximum 2 bold terms in the ENTIRE document:
+   - Only for critical drug names or safety warnings
+   - Never bold entire phrases or sentences
+   - Use italics for emphasis instead
 3. Synthesize across sources - don't summarize each source individually
 4. Every major claim needs an in-text citation
 5. Be comprehensive but readable - aim for 2000+ words
