@@ -1,10 +1,19 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
     : 'http://localhost:8000';
+
+// Get a short hash of the token for cache key isolation
+function getTokenHash(): string {
+    if (typeof window === 'undefined') return '';
+    const token = localStorage.getItem('token');
+    if (!token) return '';
+    // Use first 8 chars of token as user identifier (unique per user)
+    return token.substring(0, 8);
+}
 
 // Generic fetcher with auth
 const fetcher = async (url: string) => {
@@ -21,22 +30,31 @@ const fetcher = async (url: string) => {
     return response.json();
 };
 
+// Clear all SWR cache (call on logout)
+export function clearSWRCache() {
+    globalMutate(() => true, undefined, { revalidate: false });
+}
+
 // Hook for conversation list (sidebar)
 export function useConversations() {
+    const tokenHash = getTokenHash();
+
     const { data, error, mutate, isLoading } = useSWR(
-        '/api/v1/chat/conversations',
-        fetcher,
+        // Include tokenHash in key for user isolation
+        tokenHash ? `/api/v1/chat/conversations?user=${tokenHash}` : null,
+        // Actual fetch URL (without the user param - it's just for cache key)
+        () => fetcher('/api/v1/chat/conversations'),
         {
             revalidateOnFocus: false,       // Don't reload on window focus
             dedupingInterval: 30000,        // Cache for 30 seconds
             revalidateOnReconnect: true,    // Reload when connection restored
-            fallbackData: [],               // Start with empty array (no loading flash)
+            // No fallbackData - prevents showing stale data from other users
         }
     );
 
     return {
         conversations: data || [],
-        isLoading,
+        isLoading: isLoading || !tokenHash,
         isError: error,
         mutate,
     };

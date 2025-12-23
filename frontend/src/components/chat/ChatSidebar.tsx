@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
-import { useConversations } from '@/hooks/useSWRChat';
+import { useConversations, clearSWRCache } from '@/hooks/useSWRChat';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
@@ -197,6 +197,8 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   };
 
   const handleSignOut = () => {
+    // Clear SWR cache to prevent showing previous user's data
+    clearSWRCache();
     logout();
     router.push('/login');
   };
