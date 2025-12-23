@@ -1038,7 +1038,15 @@ Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. *Journal
 6. Use plain language where possible, technical terms only when necessary
 7. Output raw Markdown only (no code blocks wrapping the document)
 8. Do NOT include metadata like "Status: Complete" or "Sources Analyzed" in the output
-9. Alphabetize the References section by first author's last name"""
+9. Alphabetize the References section by first author's last name
+10. TABLES: When including comparison tables or data tables:
+    - Always include a caption below the table
+    - Caption must state the source: "Table adapted from [Author et al., Year]" or "Data compiled from [Author1, Year; Author2, Year]"
+    - Example format:
+      | Drug | Dose | Efficacy |
+      |------|------|----------|
+      | Drug A | 10mg | 85% |
+      *Table 1: Comparison of efficacy. Adapted from Smith et al. (2023).*"""
 
 
         user_prompt = f"""Research Question: {state.research_question}
