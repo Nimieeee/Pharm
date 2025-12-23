@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassCard, GlassNavbar } from '@/components/ui/GlassCard';
 
 const container = {
   hidden: { opacity: 0 },
