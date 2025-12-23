@@ -20,9 +20,11 @@ function getToken(): string | null {
 async function fetcher<T>(url: string): Promise<T> {
     const token = getToken();
     if (!token) {
+        console.warn('⚠️ SWR Fetcher: No token found');
         throw new Error('Not authenticated');
     }
 
+    console.log(`🚀 fetching: ${url}`);
     const response = await fetch(`${API_BASE_URL}${url}`, {
         headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -35,7 +37,9 @@ async function fetcher<T>(url: string): Promise<T> {
         throw new Error(`Request failed: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`✅ SWR Fetcher Success (${url}):`, Array.isArray(data) ? `Array(${data.length})` : data);
+    return data;
 }
 
 /**
@@ -62,8 +66,9 @@ export function useConversations() {
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: false,
-            dedupingInterval: 30000,
-            errorRetryCount: 2,
+            dedupingInterval: 5000, // Reduced for debugging
+            onSuccess: (data) => console.log('SWR onSuccess:', data),
+            onError: (err) => console.error('SWR onError:', err)
         }
     );
 
