@@ -425,24 +425,34 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             </button>
           )}
 
-          {/* Context Menu Trigger - Hidden on mobile (use long-press instead) */}
+          {/* Context Menu - Anchored to this position */}
           <RadixPopover.Root open={openPopoverId === chat.id} onOpenChange={(open) => setOpenPopoverId(open ? chat.id : null)}>
             <RadixPopover.Trigger asChild>
+              {/* Trigger: visible on desktop, invisible but present on mobile for anchoring */}
               <div
                 role="button"
                 tabIndex={0}
-                className={`hidden md:block p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  } transition-opacity`}
+                className={`p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-opacity
+                  md:block ${isActive ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'}
+                  ${openPopoverId === chat.id ? 'opacity-100' : 'opacity-0 md:opacity-0'}
+                `}
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal size={14} className="text-foreground-muted" />
               </div>
             </RadixPopover.Trigger>
             <RadixPopover.Portal>
+              {/* Backdrop for mobile - tap outside to close */}
+              <div
+                className="md:hidden fixed inset-0 z-[99]"
+                onClick={() => setOpenPopoverId(null)}
+                onTouchEnd={() => setOpenPopoverId(null)}
+              />
               <RadixPopover.Content
                 className="z-[100] w-[200px] rounded-xl border border-border bg-background shadow-2xl p-1 animate-in fade-in zoom-in-95 duration-200"
                 sideOffset={5}
                 align="end"
+                side="bottom"
               >
                 <div className="flex flex-col gap-0.5">
                   <button
