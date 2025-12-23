@@ -65,7 +65,10 @@ async def process_visual_document(
     logger.info(f"👁️ [Robust Vision] Analyzing {len(images)} pages in parallel with Pixtral-12B...")
 
     # Semaphores to control concurrency (prevent hitting rate limits too hard)
-    semaphore = asyncio.Semaphore(5) 
+    semaphore = asyncio.Semaphore(5)
+    
+    # Track background tasks to cancel them if needed
+    ingestion_tasks = set()
 
     async def process_single_page(idx, img):
         async with semaphore:
@@ -92,10 +95,12 @@ async def process_visual_document(
                 )
                 content = response.choices[0].message.content
                 
-                # Streaming Ingestion: Fire and forget
+                # Streaming Ingestion: Fire and forget but track
                 if chunk_callback:
                     try:
-                        asyncio.create_task(chunk_callback(content, idx))
+                        t = asyncio.create_task(chunk_callback(content, idx))
+                        ingestion_tasks.add(t)
+                        t.add_done_callback(ingestion_tasks.discard)
                     except Exception as cb_e:
                         logger.error(f"Callback error: {cb_e}")
                         
@@ -106,7 +111,14 @@ async def process_visual_document(
 
     # Launch parallel tasks
     tasks = [process_single_page(i, img) for i, img in enumerate(images)]
-    results = await asyncio.gather(*tasks)
+    
+    try:
+        results = await asyncio.gather(*tasks)
+    except asyncio.CancelledError:
+        logger.warning(f"⚠️ Processing cancelled for {filename}. Terminating {len(ingestion_tasks)} background ingestion tasks...")
+        for t in ingestion_tasks:
+            t.cancel()
+        raise
     
     # Sort results to ensure page order is preserved
     results.sort(key=lambda x: x[0])
