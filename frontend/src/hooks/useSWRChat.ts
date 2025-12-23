@@ -3,7 +3,7 @@
 import useSWR, { mutate as globalMutate } from 'swr';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
+    ? 'http://164.68.122.165'
     : 'http://localhost:8000';
 
 /**
