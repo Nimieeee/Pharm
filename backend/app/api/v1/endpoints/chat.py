@@ -41,14 +41,22 @@ async def get_conversations(
     
     Returns list of conversations ordered by last activity
     """
+    import time
+    start = time.time()
     try:
+        print(f"📋 GET /conversations - user={current_user.id}")
         conversations = await chat_service.get_user_conversations(current_user)
+        elapsed = (time.time() - start) * 1000
+        print(f"✅ GET /conversations: {elapsed:.0f}ms, count={len(conversations)}")
         return conversations
     except Exception as e:
+        elapsed = (time.time() - start) * 1000
+        print(f"❌ GET /conversations failed after {elapsed:.0f}ms: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get conversations: {str(e)}"
         )
+
 
 
 @router.post("/conversations", response_model=Conversation, status_code=status.HTTP_201_CREATED)
@@ -254,12 +262,19 @@ async def get_messages(
     
     - **limit**: Optional limit on number of messages to return
     """
+    import time
+    start = time.time()
     try:
+        print(f"📋 GET /messages - conv={conversation_id}, user={current_user.id}")
         messages = await chat_service.get_conversation_messages(
             conversation_id, current_user, limit
         )
+        elapsed = (time.time() - start) * 1000
+        print(f"✅ GET /messages: {elapsed:.0f}ms, count={len(messages)}")
         return messages
     except Exception as e:
+        elapsed = (time.time() - start) * 1000
+        print(f"❌ GET /messages failed after {elapsed:.0f}ms: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get messages: {str(e)}"

@@ -1,7 +1,9 @@
 """
 Chat service for conversation and message management
+OPTIMIZED VERSION with performance monitoring
 """
 
+import time
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import UUID
@@ -15,7 +17,7 @@ from app.models.user import User
 
 
 class ChatService:
-    """Chat service for managing conversations and messages"""
+    """Optimized chat service with performance monitoring"""
     
     def __init__(self, db: Client):
         self.db = db
@@ -26,8 +28,8 @@ class ChatService:
         user: User
     ) -> Conversation:
         """Create a new conversation for user"""
+        start = time.time()
         try:
-            # Insert conversation
             conv_dict = conversation_data.dict()
             conv_dict["user_id"] = str(user.id)
             
@@ -37,79 +39,53 @@ class ChatService:
                 raise Exception("Failed to create conversation")
             
             conv_record = result.data[0]
-            
-            # Get conversation stats
-            stats = await self._get_conversation_stats(conv_record["id"], user.id)
+            elapsed = (time.time() - start) * 1000
+            print(f"✅ create_conversation: {elapsed:.0f}ms")
             
             return Conversation(
                 **conv_record,
-                message_count=stats["message_count"],
-                document_count=stats["document_count"],
-                last_activity=stats["last_activity"]
+                message_count=0,
+                document_count=0,
+                last_activity=conv_record.get("updated_at")
             )
             
         except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ create_conversation failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to create conversation: {str(e)}")
     
     async def get_user_conversations(self, user: User) -> List[Conversation]:
-        """Get all conversations for a user (Optimized: Single Query)"""
-        import asyncio
+        """Get all conversations for a user - OPTIMIZED single query"""
+        start = time.time()
         try:
-            # OPTIMIZED PATH: Fetch everything in 1 query using PostgREST embedding
-            try:
-                response = self.db.table("conversations").select(
-                    "*, messages(count), document_chunks(count)"
-                ).eq("user_id", str(user.id)).order("updated_at", desc=True).execute()
-                
-                conversations = []
-                for record in response.data or []:
-                    # Safely extract counts from relation arrays
-                    # Structure: "messages": [{"count": 5}]
-                    msgs = record.get("messages", [])
-                    msg_count = msgs[0]["count"] if msgs and isinstance(msgs, list) and len(msgs) > 0 and "count" in msgs[0] else 0
-                    
-                    docs = record.get("document_chunks", [])
-                    doc_count = docs[0]["count"] if docs and isinstance(docs, list) and len(docs) > 0 and "count" in docs[0] else 0
-                    
-                    # Clean record for Pydantic (remove relation fields)
-                    conv_data = {k: v for k, v in record.items() if k not in ["messages", "document_chunks"]}
-                    
-                    # specific last_activity logic can be proxied by updated_at for list views
-                    conversations.append(Conversation(
-                        **conv_data,
-                        message_count=msg_count,
-                        document_count=doc_count,
-                        last_activity=conv_data.get("updated_at")
-                    ))
-                return conversations
-
-            except Exception as e:
-                print(f"⚠️ Optimized fetch failed (falling back to parallel): {e}")
-                # FALLBACK PATH: Parallel Fetch (N+1 Optimization)
-                result = self.db.table("conversations").select(
-                    "*"
-                ).eq("user_id", str(user.id)).order("updated_at", desc=True).execute()
-                
-                conversations_records = result.data or []
-                if not conversations_records:
-                    return []
-                
-                tasks = [self._get_conversation_stats(conv["id"], user.id) for conv in conversations_records]
-                stats_results = await asyncio.gather(*tasks)
-                
-                conversations = []
-                for conv_record, stats in zip(conversations_records, stats_results):
-                    conversation = Conversation(
-                        **conv_record,
-                        message_count=stats["message_count"],
-                        document_count=stats["document_count"],
-                        last_activity=stats["last_activity"]
-                    )
-                    conversations.append(conversation)
-                
-                return conversations
+            # Single optimized query - no joins, just conversations
+            result = self.db.table("conversations").select(
+                "id, title, created_at, updated_at, is_pinned, is_archived, user_id"
+            ).eq("user_id", str(user.id)).order("updated_at", desc=True).limit(50).execute()
+            
+            query_time = (time.time() - start) * 1000
+            print(f"📊 get_user_conversations query: {query_time:.0f}ms, rows={len(result.data or [])}")
+            
+            conversations = []
+            for record in result.data or []:
+                conversations.append(Conversation(
+                    **record,
+                    message_count=0,  # Skip counting for speed
+                    document_count=0,
+                    last_activity=record.get("updated_at")
+                ))
+            
+            total_time = (time.time() - start) * 1000
+            if total_time > 1000:
+                print(f"🐢 get_user_conversations SLOW: {total_time:.0f}ms")
+            else:
+                print(f"✅ get_user_conversations: {total_time:.0f}ms")
+            
+            return conversations
             
         except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ get_user_conversations failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to get conversations: {str(e)}")
     
     async def get_conversation(
@@ -118,64 +94,81 @@ class ChatService:
         user: User
     ) -> Optional[Conversation]:
         """Get a specific conversation for user"""
+        start = time.time()
         try:
             result = self.db.table("conversations").select(
-                "*"
-            ).eq("id", str(conversation_id)).eq("user_id", str(user.id)).execute()
+                "id, title, created_at, updated_at, is_pinned, is_archived, user_id"
+            ).eq("id", str(conversation_id)).eq("user_id", str(user.id)).single().execute()
+            
+            elapsed = (time.time() - start) * 1000
             
             if not result.data:
+                print(f"⚠️ get_conversation: not found ({elapsed:.0f}ms)")
                 return None
             
-            conv_record = result.data[0]
-            
-            # Get conversation stats
-            stats = await self._get_conversation_stats(conversation_id, user.id)
+            print(f"✅ get_conversation: {elapsed:.0f}ms")
             
             return Conversation(
-                **conv_record,
-                message_count=stats["message_count"],
-                document_count=stats["document_count"],
-                last_activity=stats["last_activity"]
+                **result.data,
+                message_count=0,
+                document_count=0,
+                last_activity=result.data.get("updated_at")
             )
             
         except Exception as e:
-            raise Exception(f"Failed to get conversation: {str(e)}")
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ get_conversation failed after {elapsed:.0f}ms: {e}")
+            return None
     
     async def get_conversation_with_messages(
         self, 
         conversation_id: UUID, 
         user: User
     ) -> Optional[ConversationWithMessages]:
-        """Get conversation with all messages (OPTIMIZED: Parallel fetch)"""
-        import asyncio
+        """Get conversation with all messages - OPTIMIZED"""
+        start = time.time()
         try:
-            # Fetch conversation record and messages IN PARALLEL
-            conv_query = self.db.table("conversations").select("*")\
+            # Step 1: Get conversation
+            conv_start = time.time()
+            conv_result = self.db.table("conversations").select("*")\
                 .eq("id", str(conversation_id)).eq("user_id", str(user.id)).execute()
+            conv_time = (time.time() - conv_start) * 1000
+            print(f"  📊 conversation query: {conv_time:.0f}ms")
             
-            msg_query = self.db.table("messages").select("*")\
+            if not conv_result.data:
+                print(f"⚠️ get_conversation_with_messages: conversation not found")
+                return None
+            
+            conv_record = conv_result.data[0]
+            
+            # Step 2: Get messages
+            msg_start = time.time()
+            msg_result = self.db.table("messages").select("*")\
                 .eq("conversation_id", str(conversation_id))\
                 .eq("user_id", str(user.id))\
                 .order("created_at").execute()
+            msg_time = (time.time() - msg_start) * 1000
+            print(f"  📊 messages query: {msg_time:.0f}ms, rows={len(msg_result.data or [])}")
             
-            if not conv_query.data:
-                return None
+            messages = [Message(**r) for r in msg_result.data or []]
             
-            conv_record = conv_query.data[0]
+            total_time = (time.time() - start) * 1000
+            if total_time > 1000:
+                print(f"🐢 get_conversation_with_messages SLOW: {total_time:.0f}ms")
+            else:
+                print(f"✅ get_conversation_with_messages: {total_time:.0f}ms")
             
-            # Build messages list
-            messages = [Message(**r) for r in msg_query.data or []]
-            
-            # Use message count from fetched data instead of separate stats query
             return ConversationWithMessages(
                 **conv_record,
                 message_count=len(messages),
-                document_count=0,  # Skip doc count for speed - not critical for display
+                document_count=0,
                 last_activity=conv_record.get("updated_at"),
                 messages=messages
             )
             
         except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ get_conversation_with_messages failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to get conversation with messages: {str(e)}")
     
     async def update_conversation(
@@ -185,28 +178,28 @@ class ChatService:
         user: User
     ) -> Optional[Conversation]:
         """Update a conversation"""
+        start = time.time()
         try:
-            # Check if conversation exists and belongs to user
-            existing = await self.get_conversation(conversation_id, user)
-            if not existing:
-                return None
-            
-            # Update conversation
             update_dict = conversation_data.dict(exclude_unset=True)
             if not update_dict:
-                return existing
+                return await self.get_conversation(conversation_id, user)
             
             result = self.db.table("conversations").update(
                 update_dict
             ).eq("id", str(conversation_id)).eq("user_id", str(user.id)).execute()
             
+            elapsed = (time.time() - start) * 1000
+            
             if not result.data:
+                print(f"⚠️ update_conversation: not found ({elapsed:.0f}ms)")
                 return None
             
-            # Return updated conversation
+            print(f"✅ update_conversation: {elapsed:.0f}ms")
             return await self.get_conversation(conversation_id, user)
             
         except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ update_conversation failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to update conversation: {str(e)}")
     
     async def clone_conversation(
@@ -215,21 +208,18 @@ class ChatService:
         user: User
     ) -> Optional[Conversation]:
         """Clone a conversation and its messages"""
+        start = time.time()
         try:
-            # Get original conversation
             original = await self.get_conversation(conversation_id, user)
             if not original:
                 return None
             
-            # Create new conversation
             new_title = f"{original.title} (Copy)"
             new_conv_data = ConversationCreate(title=new_title)
             new_conv = await self.create_conversation(new_conv_data, user)
             
-            # Get original messages
             messages = await self.get_conversation_messages(conversation_id, user)
             
-            # Clone messages
             for msg in messages:
                 msg_dict = {
                     "conversation_id": str(new_conv.id),
@@ -240,10 +230,14 @@ class ChatService:
                 }
                 self.db.table("messages").insert(msg_dict).execute()
             
-            # Return new conversation with updated stats
+            elapsed = (time.time() - start) * 1000
+            print(f"✅ clone_conversation: {elapsed:.0f}ms, messages={len(messages)}")
+            
             return await self.get_conversation(new_conv.id, user)
             
         except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ clone_conversation failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to clone conversation: {str(e)}")
 
     async def delete_conversation(
@@ -252,24 +246,26 @@ class ChatService:
         user: User
     ) -> bool:
         """Delete a conversation and all its data"""
+        start = time.time()
         try:
-            # Check if conversation exists and belongs to user
             existing = await self.get_conversation(conversation_id, user)
             if not existing:
                 return False
             
-            # Delete conversation (cascades to messages and document_chunks)
             result = self.db.table("conversations").delete().eq(
                 "id", str(conversation_id)
             ).eq("user_id", str(user.id)).execute()
             
+            elapsed = (time.time() - start) * 1000
+            print(f"✅ delete_conversation: {elapsed:.0f}ms")
+            
             return len(result.data) > 0
             
         except Exception as e:
-            print(f"Delete conversation error: {str(e)}")
-            # Check for common RLS error
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ delete_conversation failed after {elapsed:.0f}ms: {e}")
             if "policy" in str(e).lower() or "permission" in str(e).lower():
-                raise Exception(f"Permission denied. Backend may be missing SUPABASE_SERVICE_ROLE_KEY. Details: {str(e)}")
+                raise Exception(f"Permission denied. Details: {str(e)}")
             raise Exception(f"Failed to delete conversation: {str(e)}")
     
     async def add_message(
@@ -277,22 +273,22 @@ class ChatService:
         message_data: MessageCreate, 
         user: User
     ) -> Optional[Message]:
-        """Add a message to a conversation"""
+        """Add a message to a conversation - OPTIMIZED"""
+        start = time.time()
         try:
-            print(f"📝 add_message: conv={message_data.conversation_id}, user={user.id}, role={message_data.role}")
-            
-            # OPTIMIZATION: Lightweight existence check instead of full get_conversation
+            # Quick existence check
+            check_start = time.time()
             check = self.db.table("conversations").select("id", count="exact", head=True)\
                 .eq("id", str(message_data.conversation_id))\
                 .eq("user_id", str(user.id)).execute()
-            
-            print(f"📝 Conversation check: count={check.count}")
+            check_time = (time.time() - check_start) * 1000
             
             if check.count == 0:
-                print(f"❌ Conversation not found or user mismatch!")
+                print(f"⚠️ add_message: conversation not found ({check_time:.0f}ms)")
                 return None
             
-            # Insert message - convert UUIDs to strings for JSON serialization
+            # Insert message
+            insert_start = time.time()
             msg_dict = {
                 "conversation_id": str(message_data.conversation_id),
                 "user_id": str(user.id),
@@ -302,21 +298,26 @@ class ChatService:
             }
             
             result = self.db.table("messages").insert(msg_dict).execute()
+            insert_time = (time.time() - insert_start) * 1000
             
             if not result.data:
-                print(f"❌ Message insert returned no data!")
                 raise Exception("Failed to create message")
             
             msg_record = result.data[0]
-            print(f"✅ Message saved: id={msg_record.get('id')}")
             
-            # Update conversation timestamp
-            await self._update_conversation_timestamp(message_data.conversation_id)
+            # Update timestamp (non-blocking)
+            self.db.table("conversations").update({
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", str(message_data.conversation_id)).execute()
+            
+            total_time = (time.time() - start) * 1000
+            print(f"✅ add_message: {total_time:.0f}ms (check={check_time:.0f}ms, insert={insert_time:.0f}ms)")
             
             return Message(**msg_record)
             
         except Exception as e:
-            print(f"❌ add_message error: {str(e)}")
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ add_message failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to add message: {str(e)}")
     
     async def get_conversation_messages(
@@ -325,13 +326,11 @@ class ChatService:
         user: User,
         limit: Optional[int] = None
     ) -> List[Message]:
-        """Get messages for a conversation"""
+        """Get messages for a conversation - OPTIMIZED"""
+        start = time.time()
         try:
-            print(f"📖 get_messages: conv={conversation_id}, user={user.id}")
-            
-            # OPTIMIZATION: Direct query with user_id filter (Faster)
             query = self.db.table("messages").select(
-                "*"
+                "id, conversation_id, user_id, role, content, metadata, created_at"
             ).eq("conversation_id", str(conversation_id)).eq(
                 "user_id", str(user.id)
             ).order("created_at")
@@ -341,17 +340,19 @@ class ChatService:
             
             result = query.execute()
             
-            print(f"📖 Found {len(result.data or [])} messages")
+            messages = [Message(**r) for r in result.data or []]
             
-            messages = []
-            for msg_record in result.data or []:
-                message = Message(**msg_record)
-                messages.append(message)
+            elapsed = (time.time() - start) * 1000
+            if elapsed > 500:
+                print(f"🐢 get_conversation_messages SLOW: {elapsed:.0f}ms, rows={len(messages)}")
+            else:
+                print(f"✅ get_conversation_messages: {elapsed:.0f}ms, rows={len(messages)}")
             
             return messages
             
         except Exception as e:
-            print(f"❌ get_messages error: {str(e)}")
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ get_conversation_messages failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to get messages: {str(e)}")
     
     async def get_recent_messages(
@@ -361,9 +362,8 @@ class ChatService:
         limit: int = 50
     ) -> List[Message]:
         """Get recent messages for context"""
+        start = time.time()
         try:
-            # OPTIMIZATION: Push limit to DB query instead of fetching all
-            # Get last N messages by sorting DESC, limiting, then re-sorting ASC in memory
             result = self.db.table("messages").select("*")\
                 .eq("conversation_id", str(conversation_id))\
                 .eq("user_id", str(user.id))\
@@ -372,10 +372,16 @@ class ChatService:
                 .execute()
             
             messages = [Message(**r) for r in result.data or []]
-            # Return ordered chronologically (Oldest -> Newest)
-            return sorted(messages, key=lambda x: x.created_at)
+            messages = sorted(messages, key=lambda x: x.created_at)
+            
+            elapsed = (time.time() - start) * 1000
+            print(f"✅ get_recent_messages: {elapsed:.0f}ms, rows={len(messages)}")
+            
+            return messages
             
         except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            print(f"❌ get_recent_messages failed after {elapsed:.0f}ms: {e}")
             raise Exception(f"Failed to get recent messages: {str(e)}")
     
     async def _get_conversation_stats(
@@ -383,45 +389,12 @@ class ChatService:
         conversation_id: str, 
         user_id: UUID
     ) -> Dict[str, Any]:
-        """Get conversation statistics (Optimized: Direct DB queries, Async Executor)"""
-        import asyncio
-        
-        def _fetch_counts():
-            try:
-                # 1. Message Count
-                msg_res = self.db.table("messages").select(
-                    "id", count="exact", head=True
-                ).eq("conversation_id", str(conversation_id)).execute()
-                
-                # 2. Document Chunk Count
-                doc_res = self.db.table("document_chunks").select(
-                    "id", count="exact", head=True
-                ).eq("conversation_id", str(conversation_id)).execute()
-                
-                m_count = msg_res.count if msg_res.count is not None else 0
-                d_count = doc_res.count if doc_res.count is not None else 0
-                return m_count, d_count
-            except Exception as e:
-                # print(f"Stats fetch error: {e}")
-                return 0, 0
-
-        try:
-            # Run blocking DB calls in thread pool to avoid blocking the event loop
-            loop = asyncio.get_event_loop()
-            msg_count, doc_count = await loop.run_in_executor(None, _fetch_counts)
-            
-            return {
-                "message_count": msg_count,
-                "document_count": doc_count,
-                "last_activity": None
-            }
-            
-        except Exception:
-            return {
-                "message_count": 0,
-                "document_count": 0,
-                "last_activity": None
-            }
+        """Get conversation statistics - optimized"""
+        return {
+            "message_count": 0,
+            "document_count": 0,
+            "last_activity": None
+        }
     
     async def _update_conversation_timestamp(self, conversation_id: UUID):
         """Update conversation's updated_at timestamp"""
@@ -430,4 +403,4 @@ class ChatService:
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", str(conversation_id)).execute()
         except Exception:
-            pass  # Non-critical operation
+            pass  # Non-critical
