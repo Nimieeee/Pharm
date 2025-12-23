@@ -162,6 +162,8 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   // SWR for conversation list - no token param needed (uses localStorage internally)
   const { conversations, isLoading: isLoadingHistory, isError, mutate: mutateConversations } = useConversations();
 
+  console.log('Sidebar Debug:', { conversations, isLoadingHistory, isError, length: conversations?.length });
+
   // Transform to ChatHistory format
   const chatHistory = useMemo(() =>
     conversations.map((conv: any) => ({
