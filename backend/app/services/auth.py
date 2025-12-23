@@ -150,6 +150,10 @@ class AuthService:
             if not self.verify_password(password, user.password_hash):
                 return None
             
+            # Pre-warm the cache so first authenticated request is fast
+            cache_key = f"user:email:{email}"
+            _user_cache[cache_key] = User(**user_data)
+            
             return user
             
         except Exception:
