@@ -63,11 +63,12 @@ export function useConversations(authToken?: string | null) {
         () => fetcher('/api/v1/chat/conversations'),
         {
             revalidateOnFocus: false,
-            dedupingInterval: 30000,
-            revalidateOnReconnect: true,
-            errorRetryCount: 3,
-            errorRetryInterval: 2000,
-            // Removed keepPreviousData: true to prevent showing incorrect user data
+            revalidateOnReconnect: false,
+            revalidateIfStale: false,  // Don't auto-refetch stale data
+            dedupingInterval: 60000,   // 60 second deduplication window
+            errorRetryCount: 2,
+            errorRetryInterval: 3000,
+            refreshInterval: 0,        // No automatic refresh
         }
     );
 

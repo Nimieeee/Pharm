@@ -253,12 +253,21 @@ async def chat_stream(
     
     Returns Server-Sent Events (SSE) stream
     """
+    import time
+    start = time.time()
+    print(f"🚀 POST /chat/stream - conv={chat_request.conversation_id}, user={current_user.id}")
+    print(f"📝 Message: {chat_request.message[:100]}...")
+    
     try:
         # Validate conversation belongs to user
+        conv_start = time.time()
         conversation = await chat_service.get_conversation(
             chat_request.conversation_id, current_user
         )
+        print(f"  ⏱️ Conversation check: {(time.time() - conv_start)*1000:.0f}ms")
+        
         if not conversation:
+            print(f"❌ Conversation not found!")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found"
@@ -297,6 +306,8 @@ async def chat_stream(
             )
         
         # Add user message to conversation
+        print(f"💾 Saving user message...")
+        msg_start = time.time()
         user_message = MessageCreate(
             conversation_id=chat_request.conversation_id,
             role="user",
@@ -304,7 +315,8 @@ async def chat_stream(
             metadata=chat_request.metadata
         )
         
-        await chat_service.add_message(user_message, current_user)
+        saved_msg = await chat_service.add_message(user_message, current_user)
+        print(f"✅ User message saved in {(time.time() - msg_start)*1000:.0f}ms, id={saved_msg.id if saved_msg else 'FAILED'}")
         
         # Check for images in metadata and process them (Vision-to-Text Bridge)
         images = chat_request.metadata.get("images", [])
