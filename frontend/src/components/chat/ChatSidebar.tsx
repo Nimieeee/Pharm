@@ -382,20 +382,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     const isActive = effectiveActiveId === chat.id;
     const isEditing = editingId === chat.id;
 
-    // Long-press handler for mobile
-    let longPressTimer: NodeJS.Timeout | null = null;
-    const handleTouchStart = () => {
-      longPressTimer = setTimeout(() => {
-        setOpenPopoverId(chat.id);
-      }, 500); // 500ms long press
-    };
-    const handleTouchEnd = () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    };
-
     return (
       <div key={chat.id} className="group relative">
         <div
@@ -403,9 +389,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             ? 'bg-[var(--surface-highlight)] text-foreground'
             : 'text-foreground/80 hover:bg-[var(--surface-highlight)]/50'
             }`}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
         >
           {isEditing ? (
             <input
@@ -425,15 +408,14 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             </button>
           )}
 
-          {/* Context Menu - Anchored to this position */}
+          {/* Context Menu - 3 dots button */}
           <RadixPopover.Root open={openPopoverId === chat.id} onOpenChange={(open) => setOpenPopoverId(open ? chat.id : null)}>
             <RadixPopover.Trigger asChild>
               <div
                 role="button"
                 tabIndex={0}
                 className={`p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-opacity
-                  md:block ${isActive ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'}
-                  ${openPopoverId === chat.id ? 'opacity-100' : 'opacity-0 md:opacity-0'}
+                  ${isActive || openPopoverId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                 `}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -441,12 +423,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
               </div>
             </RadixPopover.Trigger>
             <RadixPopover.Portal>
-              {/* Backdrop for mobile - tap outside to close */}
-              <div
-                className="md:hidden fixed inset-0 z-[99]"
-                onClick={() => setOpenPopoverId(null)}
-                onTouchEnd={() => setOpenPopoverId(null)}
-              />
               <RadixPopover.Content
                 className="z-[100] w-[200px] rounded-xl border border-border bg-background shadow-2xl p-1 animate-in fade-in zoom-in-95 duration-200"
                 sideOffset={5}
