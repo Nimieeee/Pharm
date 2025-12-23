@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
+import { useConversations } from '@/hooks/useSWRChat';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
@@ -150,24 +151,28 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
-  // Fetch conversation history when user is logged in
-  useEffect(() => {
-    if (token) {
-      fetchConversationHistory();
-    } else {
-      setChatHistory([]);
-    }
-  }, [token]);
+  // SWR for instant cache-first loading
+  const { conversations, isLoading: isLoadingHistory, mutate: mutateConversations } = useConversations();
+
+  // Transform to ChatHistory format
+  const chatHistory = useMemo(() =>
+    conversations.map((conv: any) => ({
+      id: conv.id,
+      title: conv.title || 'Untitled Chat',
+      date: new Date(conv.created_at).toLocaleDateString(),
+      created_at: conv.created_at,
+      is_pinned: conv.is_pinned,
+      is_archived: conv.is_archived
+    })), [conversations]
+  );
 
   // Listen for active conversation changes from localStorage
   useEffect(() => {
@@ -186,62 +191,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     };
   }, []);
 
-  const fetchConversationHistory = async (retryCount = 0) => {
-    if (!token) return;
-
-    // Show cached data instantly while fetching fresh data
-    const cacheKey = 'conversation_history_cache';
-    const cached = localStorage.getItem(cacheKey);
-    if (cached && retryCount === 0) {
-      try {
-        const cachedHistory = JSON.parse(cached);
-        setChatHistory(cachedHistory);
-        // Don't show loading if we have cache
-        setIsLoadingHistory(false);
-      } catch { }
-    } else {
-      setIsLoadingHistory(true);
-    }
-
-    try {
-      // Add timeout to prevent infinite loading
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const conversations = await response.json();
-        const formattedHistory = conversations.map((conv: any) => ({
-          id: conv.id,
-          title: conv.title || 'Untitled Chat',
-          date: new Date(conv.created_at).toLocaleDateString(),
-          created_at: conv.created_at,
-          is_pinned: conv.is_pinned,
-          is_archived: conv.is_archived
-        }));
-        setChatHistory(formattedHistory);
-        // Update cache
-        localStorage.setItem(cacheKey, JSON.stringify(formattedHistory));
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch conversation history:', error);
-      // Retry once on timeout
-      if (error.name === 'AbortError' && retryCount < 1) {
-        console.log('Request timed out, retrying...');
-        setTimeout(() => fetchConversationHistory(retryCount + 1), 1000);
-        return;
-      }
-    } finally {
-      setIsLoadingHistory(false);
-    }
+  // Refresh conversations (called after create/delete)
+  const fetchConversationHistory = () => {
+    mutateConversations();
   };
 
   const handleSignOut = () => {
@@ -256,9 +208,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     }
   };
 
-  // Actions
+  // Actions - using SWR optimistic updates
   const handlePin = async (id: string, currentPinned: boolean) => {
-    setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: !currentPinned } : c));
+    // Optimistic update
+    mutateConversations(
+      (current: any[]) => current?.map((c: any) => c.id === id ? { ...c, is_pinned: !currentPinned } : c),
+      false
+    );
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
         method: 'PATCH',
@@ -271,12 +227,15 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     } catch (error) {
       console.error('Pin error:', error);
       alert(error instanceof Error ? error.message : 'Failed to update conversation');
-      setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_pinned: currentPinned } : c));
+      mutateConversations(); // Revalidate on error
     }
   };
 
   const handleArchive = async (id: string, currentArchived: boolean) => {
-    setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: !currentArchived } : c));
+    mutateConversations(
+      (current: any[]) => current?.map((c: any) => c.id === id ? { ...c, is_archived: !currentArchived } : c),
+      false
+    );
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
         method: 'PATCH',
@@ -289,15 +248,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     } catch (error) {
       console.error('Archive error:', error);
       alert(error instanceof Error ? error.message : 'Failed to archive conversation');
-      setChatHistory(prev => prev.map(c => c.id === id ? { ...c, is_archived: currentArchived } : c));
+      mutateConversations(); // Revalidate on error
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this chat?')) return;
 
-    const prevHistory = [...chatHistory];
-    setChatHistory(prev => prev.filter(c => c.id !== id));
+    mutateConversations(
+      (current: any[]) => current?.filter((c: any) => c.id !== id),
+      false
+    );
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${id}`, {
@@ -321,7 +282,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     } catch (error) {
       console.error('Delete error:', error);
       alert(error instanceof Error ? error.message : 'Failed to delete conversation');
-      setChatHistory(prevHistory);
+      mutateConversations(); // Revalidate on error
     }
   };
 
@@ -335,7 +296,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         throw new Error('Failed to clone conversation');
       }
       const newChat = await response.json();
-      fetchConversationHistory(); // Refresh list
+      mutateConversations(); // Refresh list
       onSelectConversation?.(newChat.id);
     } catch (error) {
       console.error('Clone error:', error);
@@ -346,8 +307,10 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const handleRename = async (id: string) => {
     if (!editTitle.trim()) return;
 
-    const prevHistory = [...chatHistory];
-    setChatHistory(prev => prev.map(c => c.id === id ? { ...c, title: editTitle } : c));
+    mutateConversations(
+      (current: any[]) => current?.map((c: any) => c.id === id ? { ...c, title: editTitle } : c),
+      false
+    );
     setEditingId(null);
 
     try {
@@ -362,7 +325,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     } catch (error) {
       console.error('Rename error:', error);
       alert(error instanceof Error ? error.message : 'Failed to rename conversation');
-      setChatHistory(prevHistory);
+      mutateConversations(); // Revalidate on error
     }
   };
 
@@ -391,10 +354,10 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   };
 
   // Group chats
-  const pinnedChats = chatHistory.filter(c => c.is_pinned && !c.is_archived);
-  const unpinnedChats = chatHistory.filter(c => !c.is_pinned && !c.is_archived);
+  const pinnedChats = chatHistory.filter((c: ChatHistory) => c.is_pinned && !c.is_archived);
+  const unpinnedChats = chatHistory.filter((c: ChatHistory) => !c.is_pinned && !c.is_archived);
 
-  const groupedChats = unpinnedChats.reduce((acc, chat) => {
+  const groupedChats = unpinnedChats.reduce((acc: Record<string, ChatHistory[]>, chat: ChatHistory) => {
     const category = getRelativeDateCategory(chat.created_at);
     if (!acc[category]) acc[category] = [];
     acc[category].push(chat);
