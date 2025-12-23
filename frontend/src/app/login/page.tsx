@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
@@ -14,6 +14,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Warm up backend while user is on login page
+  useEffect(() => {
+    const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
+    fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
@@ -86,6 +86,13 @@ export default function HomePage() {
   const [query, setQuery] = useState('');
   const [activeDemoTab, setActiveDemoTab] = useState(demoTabs[0].id);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Warm up backend immediately when landing page loads
+  // This ensures backend is ready by the time user logs in
+  useEffect(() => {
+    const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
+    fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
