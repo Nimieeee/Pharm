@@ -352,6 +352,7 @@ export function useChat() {
             conversation_id: currentConversationId,
             mode: mode,
             use_rag: true,
+            metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
           }),
           signal,
         });
