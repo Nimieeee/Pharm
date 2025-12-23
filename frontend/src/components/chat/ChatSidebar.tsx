@@ -428,7 +428,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
           {/* Context Menu - Anchored to this position */}
           <RadixPopover.Root open={openPopoverId === chat.id} onOpenChange={(open) => setOpenPopoverId(open ? chat.id : null)}>
             <RadixPopover.Trigger asChild>
-              {/* Trigger: visible on desktop, invisible but present on mobile for anchoring */}
               <div
                 role="button"
                 tabIndex={0}
