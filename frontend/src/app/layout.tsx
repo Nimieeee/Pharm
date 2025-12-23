@@ -53,23 +53,43 @@ const gtSuper = localFont({
   display: 'swap',
 });
 
-import type { Viewport } from 'next';
+import type { Viewport, Metadata } from 'next';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'PharmGPT - AI-Powered Pharmaceutical Assistant',
-  description: 'Intelligent pharmaceutical research assistant powered by AI',
+  description: 'Intelligent pharmaceutical research assistant powered by AI. Analyze drug interactions, clinical data, and research documents.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'PharmGPT',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
+  },
+  openGraph: {
+    title: 'PharmGPT - AI Pharmaceutical Assistant',
+    description: 'Intelligent pharmaceutical research assistant powered by AI',
+    type: 'website',
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
+    { media: '(prefers-color-scheme: light)', color: '#FDFCF8' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090B' },
   ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   viewportFit: 'cover',
 };
+
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
 export default function RootLayout({
   children,
@@ -79,6 +99,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${sohne.variable} ${fraunces.variable} ${gtSuper.variable}`}>
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)] antialiased">
+        <ServiceWorkerRegistration />
         <AuthProvider>
           <ThemeProvider>
             <div className="min-h-screen transition-colors duration-300">
