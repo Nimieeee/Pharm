@@ -188,7 +188,7 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-foreground-muted max-w-xl mx-auto text-lg">
-              Accelerate pharmaceutical research with intelligent document analysis,
+              Accelerate pharmacological research with intelligent document analysis,
               drug interaction insights, and clinical data processing.
             </p>
           </motion.div>

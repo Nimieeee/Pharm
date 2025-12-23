@@ -1,7 +1,7 @@
 {
     "name": "PharmGPT - AI Pharmaceutical Assistant",
     "short_name": "PharmGPT",
-    "description": "Intelligent pharmaceutical research assistant powered by AI. Analyze drug interactions, clinical data, and research documents.",
+    "description": "Intelligent pharmacological research assistant powered by AI. Analyze drug interactions, clinical data, and research documents.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#09090B",

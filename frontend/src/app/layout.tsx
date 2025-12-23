@@ -57,7 +57,7 @@ import type { Viewport, Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'PharmGPT - AI-Powered Pharmaceutical Assistant',
-  description: 'Intelligent pharmaceutical research assistant powered by AI. Analyze drug interactions, clinical data, and research documents.',
+  description: 'Intelligent pharmacological research assistant powered by AI. Analyze drug interactions, clinical data, and research documents.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -72,8 +72,8 @@ export const metadata: Metadata = {
     apple: '/icons/icon-192x192.png',
   },
   openGraph: {
-    title: 'PharmGPT - AI Pharmaceutical Assistant',
-    description: 'Intelligent pharmaceutical research assistant powered by AI',
+    title: 'PharmGPT - AI Pharmacological Assistant',
+    description: 'Intelligent pharmacological research assistant powered by AI',
     type: 'website',
   },
 };

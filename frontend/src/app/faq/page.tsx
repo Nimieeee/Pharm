@@ -14,7 +14,7 @@ const faqs: FAQItem[] = [
     {
         category: 'general',
         question: "What is PharmGPT?",
-        answer: "PharmGPT is an advanced AI-powered pharmaceutical research assistant. It combines state-of-the-art Large Language Models (LLMs) with deep research capabilities, real-time web search, and multimodal document analysis to help researchers, students, and professionals navigate complex biomedical data."
+        answer: "PharmGPT is an advanced AI-powered pharmacological research assistant. It combines state-of-the-art Large Language Models (LLMs) with deep research capabilities, real-time web search, and multimodal document analysis to help researchers, students, and professionals navigate complex biomedical data."
     },
     {
         category: 'features',
