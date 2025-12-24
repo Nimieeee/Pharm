@@ -628,10 +628,7 @@ export function useChat() {
       if (streamConversationId) {
         unregisterStream(streamConversationId);
       }
-      // Only update isLoading if still on the same conversation
-      if (currentConvIdRef.current === streamConversationId) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   }, [conversationId, uploadedFiles]);
 
