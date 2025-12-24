@@ -12,15 +12,15 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://toluwanimi465-pharmgpt-backend.hf.space/api/:path*', // Proxy to HF Space
+        destination: 'http://164.68.122.165/api/:path*', // Proxy to Contabo VPS
       },
       {
         source: '/docs',
-        destination: 'https://toluwanimi465-pharmgpt-backend.hf.space/docs', // Proxy docs
+        destination: 'http://164.68.122.165/docs', // Proxy docs
       },
       {
         source: '/openapi.json',
-        destination: 'https://toluwanimi465-pharmgpt-backend.hf.space/openapi.json', // Proxy openapi
+        destination: 'http://164.68.122.165/openapi.json', // Proxy openapi
       },
     ]
   },
