@@ -189,6 +189,9 @@ class AuthService:
             user_data = result.data[0]
             user = User(**user_data)
             
+            # Debug: Log user name
+            print(f"👤 get_user_by_email: {email} -> first_name='{user.first_name}'")
+            
             # Store in cache
             _user_cache[cache_key] = user
             return user
