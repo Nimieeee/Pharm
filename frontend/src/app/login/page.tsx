@@ -45,6 +45,9 @@ export default function LoginPage() {
     try {
       const result = await login(email, password);
 
+      // Clear any stored conversation ID so we start fresh
+      localStorage.removeItem('currentConversationId');
+
       // Pre-fetch conversations while navigating (primes the cache)
       const token = localStorage.getItem('token');
       if (token) {

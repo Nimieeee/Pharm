@@ -24,6 +24,10 @@ export default function RegisterPage() {
 
     try {
       await register(email, password, firstName, lastName);
+
+      // Clear any stored conversation ID so we start fresh
+      localStorage.removeItem('currentConversationId');
+
       router.push('/chat');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
