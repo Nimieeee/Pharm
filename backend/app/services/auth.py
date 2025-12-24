@@ -225,6 +225,25 @@ class AuthService:
             print(f"Update error: {e}")
             return None
     
+    async def delete_user(self, user_id: UUID) -> bool:
+        """Delete user account permanently"""
+        try:
+            user = await self.get_user_by_id(user_id)
+            if not user:
+                return False
+                
+            # Delete from DB
+            self.db.table("users").delete().eq("id", str(user_id)).execute()
+            
+            # Invalidate cache
+            cache_key = f"user:email:{user.email}"
+            _user_cache.pop(cache_key, None)
+            
+            return True
+        except Exception as e:
+            print(f"Delete user error: {e}")
+            return False
+
     async def create_tokens(self, user: UserInDB) -> Token:
         """Create access and refresh tokens for user"""
         token_data = {

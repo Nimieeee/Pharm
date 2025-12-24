@@ -265,3 +265,19 @@ async def upload_avatar(
         updated_user = current_user.model_copy(update={"avatar_url": avatar_url})
     
     return updated_user
+
+
+@router.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_profile(
+    current_user: User = Depends(get_current_user_dependency),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Delete current user account permanently
+    """
+    success = await auth_service.delete_user(current_user.id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete account"
+        )
