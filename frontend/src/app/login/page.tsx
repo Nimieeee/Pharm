@@ -7,7 +7,9 @@ import { useAuth } from '@/lib/auth-context';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
-const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? ''
+  : 'http://localhost:8000';
 
 export default function LoginPage() {
   const router = useRouter();
