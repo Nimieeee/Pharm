@@ -60,7 +60,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
     ] as const;
 
     return (
-        <div className={`relative flex items-center p-1 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-full ${className}`}>
+        <div className={`flex items-center p-1 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-full ${className}`}>
             {tabs.map((tab) => (
                 <button
                     key={tab.id}

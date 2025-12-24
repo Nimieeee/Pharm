@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
     SERP_API_KEY: str = os.getenv("SERP_API_KEY", "")
+    SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
     
     # Embedding settings - Using Mistral embeddings only
     EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "mistral")  # "sentence-transformers" or "mistral"

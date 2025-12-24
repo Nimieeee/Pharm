@@ -38,11 +38,11 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-atmospheric px-4 py-12 relative">
       {/* Desktop: Advanced Theme Toggle */}
-      <ThemeToggle className="hidden md:flex absolute top-6 right-6 z-50" />
+      <ThemeToggle className="hidden md:flex fixed top-8 right-8 z-50" />
       {/* Mobile: Simple Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="md:hidden absolute top-4 right-4 p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors z-50"
+        className="md:hidden fixed top-6 right-6 p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors z-50"
       >
         {theme === 'light' ? (
           <Moon size={18} className="text-[var(--text-secondary)]" />

@@ -87,6 +87,7 @@ class ResearchTools:
         self.pubmed_base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
         self.tavily_api_key = os.getenv("TAVILY_API_KEY")
         self.serp_api_key = os.getenv("SERP_API_KEY")
+        self.serper_api_key = os.getenv("SERPER_API_KEY")
     
     async def search_pubmed(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """
@@ -449,6 +450,41 @@ class ResearchTools:
         
         return results
 
+    async def search_serper(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search using Serper.dev API
+        """
+        results = []
+        if not self.serper_api_key:
+            return results
+            
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://google.serper.dev/search",
+                    headers={
+                        "X-API-KEY": self.serper_api_key,
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "q": query,
+                        "num": max_results
+                    }
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    for result in data.get("organic", []):
+                        results.append({
+                            "title": result.get("title", ""),
+                            "snippet": result.get("snippet", ""),
+                            "url": result.get("link", ""),
+                            "source": "Serper"
+                        })
+        except Exception as e:
+            print(f"Serper search error: {e}")
+        return results
+
 
 # ============================================================================
 # DEEP RESEARCH SERVICE
@@ -762,12 +798,13 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
             step_findings_count = 0
             
             for query in queries:
-                # Parallel Search: PubMed, Web (Tavily), DuckDuckGo, Google Scholar
+                # Parallel Search: PubMed, Web (Tavily), DuckDuckGo, Google Scholar, Serper
                 tasks = [
                     self.tools.search_pubmed(query, max_results=3),
                     self.tools.search_web(query, max_results=3),
                     self.tools.search_duckduckgo(query, max_results=3),
-                    self.tools.search_google_scholar(query, max_results=3)
+                    self.tools.search_google_scholar(query, max_results=3),
+                    self.tools.search_serper(query, max_results=3)
                 ]
                 
                 results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -776,6 +813,7 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                 results_web = results[1] if not isinstance(results[1], Exception) else []
                 results_ddg = results[2] if not isinstance(results[2], Exception) else []
                 results_scholar = results[3] if not isinstance(results[3], Exception) else []
+                results_serper = results[4] if not isinstance(results[4], Exception) else []
                 
                 # Process PubMed Results
                 for r in results_pubmed:
@@ -840,6 +878,19 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                         "doi": "", # Scholar doesn't always give DOI directly
                         "cited_by": r.get("cited_by", 0)
                     }
+                    if self._is_valid_finding(finding):
+                        step.findings.append(finding)
+                        state.findings.append(finding)
+                        step_findings_count += 1
+
+                # Process Serper Results
+                for r in results_serper:
+                    finding = Finding(
+                        title=r.get("title", ""),
+                        url=r.get("url", ""),
+                        source="Serper",
+                        raw_content=r.get("snippet", "")
+                    )
                     if self._is_valid_finding(finding):
                         step.findings.append(finding)
                         state.findings.append(finding)
