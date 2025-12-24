@@ -91,6 +91,7 @@ class Settings(BaseSettings):
                     "https://pharmgpt.netlify.app",
                     "https://pharmgpt.vercel.app",
                     "https://pharmgpt-frontend.vercel.app",
+                    "https://pharm-eight.vercel.app",
                 ]
             # Handle comma-separated string from environment variable
             return [i.strip() for i in v.split(",") if i.strip()]
@@ -103,6 +104,7 @@ class Settings(BaseSettings):
             "https://pharmgpt.netlify.app",
             "https://pharmgpt.vercel.app",
             "https://pharmgpt-frontend.vercel.app",
+            "https://pharm-eight.vercel.app",
         ]
     
     @field_validator("SUPABASE_URL", mode="after")

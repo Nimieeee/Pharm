@@ -1110,7 +1110,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
             "status": "initializing",
             "message": "Starting deep research...",
             "progress": 0
-        }) + "\n"
+        })
         
         try:
             # Node A: Planning
@@ -1119,7 +1119,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "status": "planning",
                 "message": "Analyzing query and creating research plan...",
                 "progress": 10
-            }) + "\n"
+            })
             
             state = await self._node_planner(state)
             
@@ -1127,7 +1127,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 yield json.dumps({
                     "type": "error",
                     "message": state.error_message
-                }) + "\n"
+                })
                 return
             
             yield json.dumps({
@@ -1135,7 +1135,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "plan_overview": state.plan_overview,
                 "steps": [{"id": s.id, "topic": s.topic, "source": s.source_preference} for s in state.steps],
                 "progress": 20
-            }) + "\n"
+            })
             
             # Node B: Researching
             yield json.dumps({
@@ -1143,7 +1143,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "status": "researching",
                 "message": f"Searching {len(state.steps)} research topics...",
                 "progress": 30
-            }) + "\n"
+            })
             
             state = await self._node_researcher(state)
             
@@ -1152,7 +1152,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "count": len(state.findings),
                 "message": f"Found {len(state.findings)} relevant sources",
                 "progress": 60
-            }) + "\n"
+            })
             
             # Node C: Reviewing
             yield json.dumps({
@@ -1160,7 +1160,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "status": "reviewing",
                 "message": "Analyzing and validating sources...",
                 "progress": 70
-            }) + "\n"
+            })
             
             state = await self._node_reviewer(state)
             
@@ -1169,7 +1169,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "count": len(state.citations),
                 "message": f"Validated {len(state.citations)} citations",
                 "progress": 80
-            }) + "\n"
+            })
             
             # Node D: Writing
             yield json.dumps({
@@ -1177,7 +1177,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "status": "writing",
                 "message": "Synthesizing research report...",
                 "progress": 90
-            }) + "\n"
+            })
             
             state = await self._node_writer(state)
             
@@ -1202,10 +1202,10 @@ Generate a comprehensive research report. Structure the sections intelligently b
                     for c in state.citations
                 ],
                 "progress": 100
-            }) + "\n"
+            })
             
         except Exception as e:
             yield json.dumps({
                 "type": "error",
                 "message": str(e)
-            }) + "\n"
+            })

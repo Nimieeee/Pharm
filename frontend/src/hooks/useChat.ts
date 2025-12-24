@@ -293,7 +293,7 @@ export function useChat() {
 
         setDeepResearchProgress(accumulatedState);
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/ai/deep-research/stream`, {
+        const response = await fetch(`${UPLOAD_BASE_URL}/api/v1/ai/deep-research/stream`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -323,12 +323,16 @@ export function useChat() {
 
         if (reader) {
           let isDone = false;
+          let buffer = '';
           while (!isDone) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
               if (line.startsWith('data: ')) {
@@ -358,6 +362,7 @@ export function useChat() {
                   }
                 } catch (e) {
                   // Ignore parse errors for partial chunks
+                  console.debug('Deep Research: Partial chunk or parse error', data);
                 }
               }
             }
