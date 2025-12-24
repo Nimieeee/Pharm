@@ -86,6 +86,11 @@ export default function HomePage() {
   const [query, setQuery] = useState('');
   const [activeDemoTab, setActiveDemoTab] = useState(demoTabs[0].id);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Warm up backend immediately when landing page loads
   // This ensures backend is ready by the time user logs in
@@ -152,7 +157,12 @@ export default function HomePage() {
                 <Sun size={18} strokeWidth={1.5} className="text-foreground-muted" />
               )}
             </button>
-            {user ? (
+
+            {/* Auth Buttons - Prevent Flash of Unauthenticated Content */}
+            {!isClient ? (
+              // Loading Skeleton
+              <div className="w-32 h-10 rounded-full bg-surface-highlight/50 animate-pulse" />
+            ) : (user || localStorage.getItem('token')) ? (
               <>
                 <button
                   onClick={() => router.push('/chat')}
