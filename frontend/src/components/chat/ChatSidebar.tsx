@@ -10,6 +10,7 @@ import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
   MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? '' // Use relative path for production (proxied by Vercel)
@@ -657,19 +658,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
                   <span className="text-sm text-foreground">Data Workbench</span>
                 </button>
-                <button
-                  onClick={toggleTheme}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors hidden md:flex items-center gap-3"
-                >
-                  {theme === 'light' ? (
-                    <Moon size={20} strokeWidth={1.5} className="text-foreground-muted" />
-                  ) : (
-                    <Sun size={20} strokeWidth={1.5} className="text-foreground-muted" />
-                  )}
-                  <span className="text-sm text-foreground">
-                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                  </span>
-                </button>
+
+                {/* Theme Toggle Row */}
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="text-sm text-foreground-muted">Theme</span>
+                  <ThemeToggle />
+                </div>
+
                 <button
                   onClick={() => router.push('/profile')}
                   className="w-full p-2.5 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"

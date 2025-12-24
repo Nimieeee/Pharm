@@ -60,19 +60,19 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
     ] as const;
 
     return (
-        <div className={`relative flex items-center p-1 bg-black/80 backdrop-blur-md border border-white/10 rounded-full ${className}`}>
+        <div className={`relative flex items-center p-1 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-full ${className}`}>
             {tabs.map((tab) => (
                 <button
                     key={tab.id}
                     onClick={() => handleModeChange(tab.id)}
-                    className={`relative w-7 h-7 flex items-center justify-center rounded-full transition-colors z-10 ${mode === tab.id ? 'text-black' : 'text-white/50 hover:text-white'
+                    className={`relative w-7 h-7 flex items-center justify-center rounded-full transition-colors z-10 ${mode === tab.id ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                     title={tab.label}
                 >
                     {mode === tab.id && (
                         <motion.div
                             layoutId="theme-toggle-active"
-                            className="absolute inset-0 bg-white rounded-full"
+                            className="absolute inset-0 bg-[var(--surface)] shadow-sm rounded-full border border-[var(--border)]"
                             transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                             style={{ zIndex: -1 }}
                         />

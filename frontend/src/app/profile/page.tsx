@@ -14,9 +14,12 @@ import {
     Calendar,
     Save,
     Trash2,
-    AlertCircle
+    AlertCircle,
+    Moon,
+    Sun
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 
@@ -26,6 +29,7 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
 
 export default function ProfilePage() {
     const { user, token, logout, checkUser } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -164,7 +168,19 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <ThemeToggle />
+                        {/* Desktop: Advanced Theme Toggle */}
+                        <ThemeToggle className="hidden md:flex" />
+                        {/* Mobile: Simple Theme Toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className="md:hidden p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors"
+                        >
+                            {theme === 'light' ? (
+                                <Moon size={18} className="text-[var(--text-secondary)]" />
+                            ) : (
+                                <Sun size={18} className="text-[var(--text-secondary)]" />
+                            )}
+                        </button>
                         <button
                             onClick={async () => {
                                 await logout();

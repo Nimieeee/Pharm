@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
-import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { useTheme } from '@/lib/theme-context';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 
@@ -15,6 +16,7 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -68,7 +70,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-atmospheric px-4 relative">
-      <ThemeToggle className="absolute top-6 right-6 z-50" />
+      {/* Desktop: Advanced Theme Toggle */}
+      <ThemeToggle className="hidden md:flex absolute top-6 right-6 z-50" />
+      {/* Mobile: Simple Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className="md:hidden absolute top-4 right-4 p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors z-50"
+      >
+        {theme === 'light' ? (
+          <Moon size={18} className="text-[var(--text-secondary)]" />
+        ) : (
+          <Sun size={18} className="text-[var(--text-secondary)]" />
+        )}
+      </button>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
