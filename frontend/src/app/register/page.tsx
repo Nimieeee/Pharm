@@ -25,6 +25,9 @@ export default function RegisterPage() {
     try {
       await register(email, password, firstName, lastName);
 
+      // Set flag for confetti animation
+      localStorage.setItem('show_confetti', 'true');
+
       // Clear any stored conversation ID so we start fresh
       localStorage.removeItem('currentConversationId');
 

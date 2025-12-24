@@ -8,7 +8,7 @@ import { useStreamingConversations } from '@/hooks/useStreamingState';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
-  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2
+  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User
 } from 'lucide-react';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
@@ -669,6 +669,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   <span className="text-sm text-foreground">
                     {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                   </span>
+                </button>
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
+                >
+                  <User size={20} strokeWidth={1.5} className="text-foreground-muted" />
+                  <span className="text-sm text-foreground">Profile</span>
                 </button>
                 <button
                   onClick={() => setShowSettings(true)}

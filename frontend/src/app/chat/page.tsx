@@ -11,6 +11,8 @@ import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 
+import confetti from 'canvas-confetti';
+
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
@@ -19,6 +21,38 @@ function ChatContent() {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
+
+  // Handle Confetti on first load after registration
+  useEffect(() => {
+    const shouldShow = localStorage.getItem('show_confetti');
+    if (shouldShow === 'true') {
+      const end = Date.now() + 5000;
+      const colors = ['#6366f1', '#a855f7', '#ec4899'];
+
+      (function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+
+      localStorage.removeItem('show_confetti');
+    }
+  }, []);
 
   // Save current conversation ID to localStorage
   useEffect(() => {

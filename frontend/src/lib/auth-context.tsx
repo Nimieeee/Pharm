@@ -7,7 +7,9 @@ interface User {
   email: string;
   first_name?: string;
   last_name?: string;
+  avatar_url?: string;
   is_admin: boolean;
+  created_at: string;
 }
 
 interface AuthContextType {
@@ -18,6 +20,7 @@ interface AuthContextType {
   register: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<boolean>;
+  checkUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,12 +31,13 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   logout: () => {},
   refreshToken: async () => false,
+  checkUser: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://pharmgpt-backend.onrender.com'
+  ? '' // Use relative path (proxied by Vercel rewrites)
   : 'http://localhost:8000';
 
 // Helper to decode JWT and check expiration
@@ -245,8 +249,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, [refreshTimer]);
 
+  const checkUser = useCallback(async () => {
+    const currentToken = localStorage.getItem('token');
+    if (currentToken) {
+      await fetchUser(currentToken);
+    }
+  }, [fetchUser]);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshToken }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshToken, checkUser }}>
       {children}
     </AuthContext.Provider>
   );

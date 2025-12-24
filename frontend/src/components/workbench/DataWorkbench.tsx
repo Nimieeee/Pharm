@@ -251,7 +251,37 @@ export default function DataWorkbench() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8">
+    <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 relative overflow-hidden">
+      {/* Coming Soon Overlay */}
+      <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[var(--background)]/80 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center p-12 rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl max-w-lg mx-4"
+        >
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/20">
+            <Sparkles size={40} className="text-white animate-pulse" />
+          </div>
+          <h2 className="text-4xl font-serif font-bold text-[var(--text-primary)] mb-4">Coming Soon</h2>
+          <p className="text-[var(--text-secondary)] mb-8 leading-relaxed">
+            The Data Analysis Workbench is currently undergoing final clinical trials for v2.0.
+            We're polishing the AI's ability to extract deeper insights from your research datasets.
+          </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-surface-highlight text-sm text-[var(--text-primary)] border border-[var(--border)]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              Finalizing Pixtral-Large Vision Node
+            </div>
+            <button
+              onClick={() => router.push('/chat')}
+              className="mt-4 px-8 py-3 rounded-xl bg-foreground text-background font-bold btn-press hover:opacity-90 transition-all"
+            >
+              Back to Research
+            </button>
+          </div>
+        </motion.div>
+      </div>
+
       {/* Sheet Selector Modal */}
       <AnimatePresence>
         {showSheetSelector && (

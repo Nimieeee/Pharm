@@ -195,6 +195,32 @@ class AuthService:
             
         except Exception:
             return None
+
+    async def update_user(self, user_id: UUID, user_update: Dict[str, Any]) -> Optional[User]:
+        """Update user record and invalidate cache"""
+        try:
+            # First get the user to get their email (for cache invalidation)
+            user = await self.get_user_by_id(user_id)
+            if not user:
+                return None
+            
+            # Update user in DB
+            result = self.db.table("users").update(user_update).eq("id", str(user_id)).execute()
+            if not result.data:
+                return None
+            
+            updated_user_data = result.data[0]
+            updated_user = User(**updated_user_data)
+            
+            # Invalidate cache
+            cache_keys = [f"user:email:{user.email}", f"user:email:{updated_user.email}"]
+            for key in cache_keys:
+                _user_cache.pop(key, None)
+            
+            return updated_user
+        except Exception as e:
+            print(f"Update error: {e}")
+            return None
     
     async def create_tokens(self, user: UserInDB) -> Token:
         """Create access and refresh tokens for user"""

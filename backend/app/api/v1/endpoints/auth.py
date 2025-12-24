@@ -2,8 +2,12 @@
 Authentication API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import os
+import shutil
+from uuid import uuid4
+from typing import Optional
 from supabase import Client
 
 from app.core.database import get_db
@@ -185,3 +189,72 @@ async def get_current_admin_user(
             detail="Admin access required"
         )
     return current_user
+
+
+@router.put("/profile", response_model=User)
+async def update_profile(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_user_dependency),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Update current user profile
+    """
+    # Only allow updating names and avatar_url via this endpoint
+    # Email updates might require verification, handled separately
+    update_data = user_update.dict(exclude_unset=True)
+    
+    # Don't allow updating sensitive fields here
+    update_data.pop("is_admin", None)
+    update_data.pop("is_active", None)
+    
+    updated_user = await auth_service.update_user(current_user.id, update_data)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update profile"
+        )
+    
+    return updated_user
+
+
+@router.post("/profile/avatar", response_model=User)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user_dependency),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Upload and set user avatar
+    """
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image"
+        )
+    
+    # Create avatar filename
+    extension = os.path.splitext(file.filename)[1]
+    if not extension:
+        extension = ".png"
+    
+    avatar_name = f"{current_user.id}_{uuid4().hex[:8]}{extension}"
+    avatar_path = os.path.join("uploads", "avatars", avatar_name)
+    
+    # Save file
+    try:
+        with open(avatar_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not save image: {str(e)}"
+        )
+    
+    # Update user avatar_url
+    # Use relative URL so it works regardless of domain
+    avatar_url = f"/uploads/avatars/{avatar_name}"
+    updated_user = await auth_service.update_user(current_user.id, {"avatar_url": avatar_url})
+    
+    return updated_user
