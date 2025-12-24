@@ -93,7 +93,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {/* App Info */}
           <div className="p-4 rounded-xl bg-surface-highlight">
             <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">About</p>
-            <p className="text-sm text-foreground">PharmGPT v1.0</p>
+            <p className="text-sm text-foreground">PharmGPT v2.0</p>
             <p className="text-xs text-foreground-muted mt-1">AI-Powered Pharmacological Research Assistant</p>
           </div>
           {/* Help & Documentation */}
