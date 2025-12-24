@@ -50,6 +50,45 @@ export function clearSWRCache() {
 }
 
 /**
+ * Move a conversation to top of list (optimistic update)
+ * Call this when a message is sent to immediately reflect the change
+ */
+export function moveConversationToTop(conversationId: string) {
+    globalMutate(
+        'conversations',
+        (current: any[] | undefined) => {
+            if (!current) return current;
+            const conv = current.find(c => c.id === conversationId);
+            if (!conv) return current;
+            // Move to top by updating updated_at
+            const updated = { ...conv, updated_at: new Date().toISOString() };
+            return [updated, ...current.filter(c => c.id !== conversationId)];
+        },
+        { revalidate: false }
+    );
+}
+
+/**
+ * Add a new conversation to the list (optimistic update)
+ * Call this when a new conversation is created
+ */
+export function addConversationToList(conversation: { id: string; title: string; created_at?: string; updated_at?: string }) {
+    globalMutate(
+        'conversations',
+        (current: any[] | undefined) => {
+            const now = new Date().toISOString();
+            const newConv = {
+                ...conversation,
+                created_at: conversation.created_at || now,
+                updated_at: conversation.updated_at || now,
+            };
+            return [newConv, ...(current || [])];
+        },
+        { revalidate: false }
+    );
+}
+
+/**
  * Hook for conversation list
  * Uses stable cache key - only fetches after client-side hydration
  */

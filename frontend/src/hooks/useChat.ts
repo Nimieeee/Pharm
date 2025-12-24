@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
+import { moveConversationToTop, addConversationToList } from './useSWRChat';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? '' // Use relative path for production (proxied by Vercel)
@@ -54,11 +55,7 @@ interface DeepResearchProgress {
   }>;
 }
 
-// Global store for active streams per conversation (persists across re-renders and conversation switches)
-const activeStreams = new Map<string, {
-  abortController: AbortController;
-  isLoading: boolean;
-}>();
+import { activeStreams, registerStream, unregisterStream, isConversationStreaming } from './useStreamingState';
 
 // Global store for messages per conversation (allows switching without losing streamed content)
 const conversationMessages = new Map<string, Message[]>();
@@ -101,8 +98,7 @@ export function useChat() {
   // Update loading state when current conversation's stream status changes
   useEffect(() => {
     if (conversationId) {
-      const stream = activeStreams.get(conversationId);
-      setIsLoading(stream?.isLoading || false);
+      setIsLoading(isConversationStreaming(conversationId));
     } else {
       setIsLoading(false);
     }
@@ -126,9 +122,9 @@ export function useChat() {
     setDeepResearchProgress(null);
 
     // Check if this conversation has an active stream
-    const activeStream = activeStreams.get(convId);
+    const activeStream = isConversationStreaming(convId);
     if (activeStream) {
-      setIsLoading(activeStream.isLoading);
+      setIsLoading(true);
     }
 
     // Check if we have cached messages for this conversation
@@ -198,7 +194,7 @@ export function useChat() {
 
   const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed') => {
     // Check if THIS conversation is currently loading (allow sending in other conversations)
-    const currentConvLoading = conversationId ? activeStreams.get(conversationId)?.isLoading : false;
+    const currentConvLoading = isConversationStreaming(conversationId);
     if (!content.trim() || currentConvLoading) return;
 
     const token = localStorage.getItem('token');
@@ -221,7 +217,7 @@ export function useChat() {
       const existingStream = activeStreams.get(currentConversationId);
       if (existingStream) {
         existingStream.abortController.abort();
-        activeStreams.delete(currentConversationId);
+        unregisterStream(currentConversationId);
       }
     }
 
@@ -257,17 +253,22 @@ export function useChat() {
           currentConversationId = convData.id;
           setConversationId(convData.id);
           currentConvIdRef.current = convData.id;
+          // Optimistically add new conversation to sidebar
+          addConversationToList({
+            id: convData.id,
+            title: convData.title || generateConversationTitle(content),
+          });
         } else {
           throw new Error('Failed to create conversation');
         }
+      } else {
+        // Existing conversation - move it to top of list
+        moveConversationToTop(currentConversationId);
       }
 
       // Register this stream in the global store
       if (currentConversationId) {
-        activeStreams.set(currentConversationId, {
-          abortController,
-          isLoading: true
-        });
+        registerStream(currentConversationId, abortController);
       }
 
       // Handle Deep Research mode differently - use streaming endpoint
@@ -611,7 +612,7 @@ export function useChat() {
     } finally {
       // Clean up the stream from activeStreams
       if (conversationId) {
-        activeStreams.delete(conversationId);
+        unregisterStream(conversationId);
       }
       // Only update isLoading if still on the same conversation
       if (currentConvIdRef.current === conversationId) {
@@ -780,7 +781,7 @@ export function useChat() {
       const stream = activeStreams.get(conversationId);
       if (stream) {
         stream.abortController.abort();
-        activeStreams.delete(conversationId);
+        unregisterStream(conversationId);
       }
     }
     setIsLoading(false);

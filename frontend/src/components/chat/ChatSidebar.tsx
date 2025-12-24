@@ -4,14 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useConversations, clearSWRCache } from '@/hooks/useSWRChat';
+import { useStreamingConversations } from '@/hooks/useStreamingState';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
-  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle
+  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2
 } from 'lucide-react';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
+  ? '' // Use relative path for production (proxied by Vercel)
   : 'http://localhost:8000';
 
 interface ChatSidebarProps {
@@ -162,7 +163,10 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   // SWR for conversation list - no token param needed (uses localStorage internally)
   const { conversations, isLoading: isLoadingHistory, isError, mutate: mutateConversations } = useConversations();
 
-  console.log('Sidebar Debug:', { conversations, isLoadingHistory, isError, length: conversations?.length });
+  // Track which conversations are currently streaming
+  const streamingConversations = useStreamingConversations();
+
+  console.log('Sidebar Debug:', { conversations, isLoadingHistory, isError, length: conversations?.length, streaming: Array.from(streamingConversations) });
 
   // Transform to ChatHistory format
   const chatHistory = useMemo(() =>
@@ -398,6 +402,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     const effectiveActiveId = currentChatId !== undefined ? currentChatId : activeChatId;
     const isActive = effectiveActiveId === chat.id;
     const isEditing = editingId === chat.id;
+    const isStreaming = streamingConversations.has(chat.id);
 
     return (
       <div key={chat.id} className="group relative">
@@ -407,6 +412,11 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             : 'text-foreground/80 hover:bg-[var(--surface-highlight)]/50'
             }`}
         >
+          {/* Streaming indicator */}
+          {isStreaming && (
+            <Loader2 size={14} className="mr-2 animate-spin text-indigo-500 flex-shrink-0" />
+          )}
+
           {isEditing ? (
             <input
               autoFocus
