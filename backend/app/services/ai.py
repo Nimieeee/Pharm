@@ -224,7 +224,8 @@ User Question: {message}"""
         """
         greeting_instruction = ""
         if user_name:
-            greeting_instruction = f"ADDRESSING PROTOCOL: When appropriate, address the user as '{user_name}' to maintain a professional yet personalized rapport."
+            print(f"👤 System Prompt: User name set to '{user_name}'")
+            greeting_instruction = f"ADDRESSING PROTOCOL: The user's name is '{user_name}'. You MUST address them by name (e.g., 'Hello {user_name}') in your greeting and when personalizing the conversation."
 
         # IDENTITY & CORE FUNCTION (Non-Negotiable)
         base_security_instructions = f"""
