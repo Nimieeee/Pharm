@@ -197,7 +197,9 @@ export function useChat() {
   };
 
   const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed') => {
-    if (!content.trim() || isLoading) return;
+    // Check if THIS conversation is currently loading (allow sending in other conversations)
+    const currentConvLoading = conversationId ? activeStreams.get(conversationId)?.isLoading : false;
+    if (!content.trim() || currentConvLoading) return;
 
     const token = localStorage.getItem('token');
 
@@ -418,7 +420,36 @@ export function useChat() {
             content: '',
             timestamp: new Date(),
           };
-          setMessages(prev => [...prev, assistantMessage]);
+
+          // Helper to update messages (only if still on same conversation)
+          const updateMessage = (content: string) => {
+            const newMsg = { ...assistantMessage, content };
+            // Always update the cache
+            const cached = conversationMessages.get(currentConversationId!) || [];
+            const existingIdx = cached.findIndex(m => m.id === assistantMessageId);
+            if (existingIdx >= 0) {
+              cached[existingIdx] = newMsg;
+            } else {
+              cached.push(newMsg);
+            }
+            conversationMessages.set(currentConversationId!, cached);
+
+            // Only update UI if still on this conversation
+            if (currentConvIdRef.current === currentConversationId) {
+              setMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId ? newMsg : msg
+              ));
+            }
+          };
+
+          // Only add to UI if still on same conversation
+          if (currentConvIdRef.current === currentConversationId) {
+            setMessages(prev => [...prev, assistantMessage]);
+          }
+          // Always add to cache
+          const cached = conversationMessages.get(currentConversationId!) || [];
+          cached.push(assistantMessage);
+          conversationMessages.set(currentConversationId!, cached);
 
           // Process SSE stream
           const reader = streamResponse.body.getReader();
@@ -464,12 +495,8 @@ export function useChat() {
 
                 // Add to content
                 fullContent += textContent;
-                // Update the message content in real-time
-                setMessages(prev => prev.map(msg =>
-                  msg.id === assistantMessageId
-                    ? { ...msg, content: fullContent }
-                    : msg
-                ));
+                // Update the message content in real-time (respects current conversation)
+                updateMessage(fullContent);
               }
             }
           }
@@ -491,11 +518,7 @@ export function useChat() {
                 textContent = data.replace(/\\n/g, '\n');
               }
               fullContent += textContent;
-              setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId
-                  ? { ...msg, content: fullContent }
-                  : msg
-              ));
+              updateMessage(fullContent);
             }
           }
 
@@ -586,9 +609,16 @@ export function useChat() {
 
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false);
+      // Clean up the stream from activeStreams
+      if (conversationId) {
+        activeStreams.delete(conversationId);
+      }
+      // Only update isLoading if still on the same conversation
+      if (currentConvIdRef.current === conversationId) {
+        setIsLoading(false);
+      }
     }
-  }, [conversationId, isLoading, uploadedFiles]);
+  }, [conversationId, uploadedFiles]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
