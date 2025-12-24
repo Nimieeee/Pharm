@@ -322,7 +322,8 @@ export function useChat() {
         let finalReport = '';
 
         if (reader) {
-          while (true) {
+          let isDone = false;
+          while (!isDone) {
             const { done, value } = await reader.read();
             if (done) break;
 
@@ -332,7 +333,10 @@ export function useChat() {
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6).trim();
-                if (data === '[DONE]') continue;
+                if (data === '[DONE]') {
+                  isDone = true;
+                  break;
+                }
 
                 try {
                   const progress = JSON.parse(data) as DeepResearchProgress;
@@ -464,8 +468,8 @@ export function useChat() {
           const decoder = new TextDecoder();
           let fullContent = '';
           let buffer = '';
-
-          while (true) {
+          let isDone = false;
+          while (!isDone) {
             const { done, value } = await reader.read();
             if (done) break;
 
@@ -480,7 +484,10 @@ export function useChat() {
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6);
-                if (data.trim() === '[DONE]') continue;
+                if (data.trim() === '[DONE]') {
+                  isDone = true;
+                  break;
+                }
 
                 // Skip any JSON log messages that might have leaked into the stream
                 if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
