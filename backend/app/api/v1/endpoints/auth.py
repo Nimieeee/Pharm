@@ -13,7 +13,7 @@ from supabase import Client
 from app.core.database import get_db
 from app.services.auth import AuthService
 from app.models.auth import Token, LoginRequest, RefreshTokenRequest
-from app.models.user import User, UserCreate
+from app.models.user import User, UserCreate, UserUpdate
 
 router = APIRouter()
 security = HTTPBearer()
