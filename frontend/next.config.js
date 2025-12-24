@@ -12,19 +12,19 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://164.68.122.165/api/:path*', // Proxy to Contabo VPS
+        destination: 'https://pharmgpt.164.68.122.165.sslip.io/api/:path*', // Proxy to SSL Backend
       },
       {
         source: '/docs',
-        destination: 'http://164.68.122.165/docs', // Proxy docs
+        destination: 'https://pharmgpt.164.68.122.165.sslip.io/docs', // Proxy docs
       },
       {
         source: '/openapi.json',
-        destination: 'http://164.68.122.165/openapi.json', // Proxy openapi
+        destination: 'https://pharmgpt.164.68.122.165.sslip.io/openapi.json', // Proxy openapi
       },
       {
         source: '/uploads/:path*',
-        destination: 'http://164.68.122.165/uploads/:path*', // Proxy uploads
+        destination: 'https://pharmgpt.164.68.122.165.sslip.io/uploads/:path*', // Proxy uploads
       },
     ]
   },
