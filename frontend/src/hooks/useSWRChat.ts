@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
@@ -7,7 +8,7 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
     : 'http://localhost:8000';
 
 /**
- * Get token from localStorage (stable, doesn't cause re-renders)
+ * Get token from localStorage
  */
 function getToken(): string | null {
     if (typeof window === 'undefined') return null;
@@ -15,12 +16,11 @@ function getToken(): string | null {
 }
 
 /**
- * Simple fetcher - no complex abort logic
+ * Simple fetcher with auth
  */
 async function fetcher<T>(url: string): Promise<T> {
     const token = getToken();
     if (!token) {
-        console.warn('⚠️ SWR Fetcher: No token found');
         throw new Error('Not authenticated');
     }
 
@@ -38,7 +38,7 @@ async function fetcher<T>(url: string): Promise<T> {
     }
 
     const data = await response.json();
-    console.log(`✅ SWR Fetcher Success (${url}):`, Array.isArray(data) ? `Array(${data.length})` : data);
+    console.log(`✅ Fetcher Success (${url}):`, Array.isArray(data) ? `Array(${data.length})` : typeof data);
     return data;
 }
 
@@ -50,31 +50,38 @@ export function clearSWRCache() {
 }
 
 /**
- * Hook for conversation list - SIMPLIFIED
- * Uses a stable cache key that doesn't change on re-render
+ * Hook for conversation list
+ * Uses stable cache key - only fetches after client-side hydration
  */
 export function useConversations() {
-    // Get token once for the cache key - use stable reference
-    const token = getToken();
+    // Track if we're on the client and have a token
+    const [isReady, setIsReady] = useState(false);
 
-    // Simple, stable cache key
-    const cacheKey = token ? 'conversations' : null;
+    useEffect(() => {
+        // Only set ready after hydration, when we can reliably check localStorage
+        const hasToken = !!getToken();
+        console.log('useConversations useEffect - hasToken:', hasToken);
+        setIsReady(hasToken);
+    }, []);
 
+    // Use stable cache key - only enabled when ready
     const { data, error, mutate, isLoading } = useSWR<any[]>(
-        cacheKey,
+        isReady ? 'conversations' : null,  // null key = don't fetch
         () => fetcher<any[]>('/api/v1/chat/conversations'),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: false,
-            dedupingInterval: 5000, // Reduced for debugging
-            onSuccess: (data) => console.log('SWR onSuccess:', data),
-            onError: (err) => console.error('SWR onError:', err)
+            dedupingInterval: 10000,
+            onSuccess: (data) => console.log('✅ SWR onSuccess - conversations:', data?.length),
+            onError: (err) => console.error('❌ SWR onError:', err)
         }
     );
 
+    console.log('useConversations return:', { isReady, dataLength: data?.length, isLoading, error: error?.message });
+
     return {
         conversations: data || [],
-        isLoading: isLoading,
+        isLoading: !isReady || isLoading,  // Loading if not ready OR SWR is loading
         isError: error,
         mutate,
     };
@@ -84,8 +91,14 @@ export function useConversations() {
  * Hook for conversation messages
  */
 export function useConversationMessages(conversationId: string | null) {
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        setIsReady(!!getToken());
+    }, []);
+
     const { data, error, mutate, isLoading } = useSWR(
-        conversationId ? `messages-${conversationId}` : null,
+        isReady && conversationId ? `messages-${conversationId}` : null,
         () => fetcher(`/api/v1/chat/conversations/${conversationId}/messages`),
         {
             revalidateOnFocus: false,
@@ -95,7 +108,7 @@ export function useConversationMessages(conversationId: string | null) {
 
     return {
         messages: data || [],
-        isLoading,
+        isLoading: !isReady || isLoading,
         isError: error,
         mutate,
     };
