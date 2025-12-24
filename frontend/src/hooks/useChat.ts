@@ -54,6 +54,15 @@ interface DeepResearchProgress {
   }>;
 }
 
+// Global store for active streams per conversation (persists across re-renders and conversation switches)
+const activeStreams = new Map<string, {
+  abortController: AbortController;
+  isLoading: boolean;
+}>();
+
+// Global store for messages per conversation (allows switching without losing streamed content)
+const conversationMessages = new Map<string, Message[]>();
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +72,8 @@ export function useChat() {
   const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const currentConvIdRef = useRef<string | null>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null); // Separate abort for uploads
 
   // Keep-alive ping to prevent HF Space cold starts (runs every 30 seconds)
   useEffect(() => {
@@ -81,16 +91,54 @@ export function useChat() {
     return () => clearInterval(interval);
   }, []);
 
-  // Load conversation messages - SIMPLIFIED
+  // Sync messages to global cache whenever they change
+  useEffect(() => {
+    if (conversationId && messages.length > 0) {
+      conversationMessages.set(conversationId, messages);
+    }
+  }, [messages, conversationId]);
+
+  // Update loading state when current conversation's stream status changes
+  useEffect(() => {
+    if (conversationId) {
+      const stream = activeStreams.get(conversationId);
+      setIsLoading(stream?.isLoading || false);
+    } else {
+      setIsLoading(false);
+    }
+  }, [conversationId]);
+
+  // Load conversation messages - with stream-aware switching
   const loadConversation = useCallback(async (convId: string) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
     console.log(`📖 Loading conversation: ${convId}`);
 
-    // Set state immediately
+    // Save current conversation's messages to cache before switching
+    if (currentConvIdRef.current && messages.length > 0) {
+      conversationMessages.set(currentConvIdRef.current, messages);
+    }
+
+    // Update refs and state
+    currentConvIdRef.current = convId;
     setConversationId(convId);
     setDeepResearchProgress(null);
+
+    // Check if this conversation has an active stream
+    const activeStream = activeStreams.get(convId);
+    if (activeStream) {
+      setIsLoading(activeStream.isLoading);
+    }
+
+    // Check if we have cached messages for this conversation
+    const cachedMessages = conversationMessages.get(convId);
+    if (cachedMessages && cachedMessages.length > 0) {
+      setMessages(cachedMessages);
+      console.log(`✅ Restored ${cachedMessages.length} cached messages`);
+      return; // Use cache, don't fetch
+    }
+
     setMessages([]);
     setIsLoadingConversation(true);
 
@@ -165,12 +213,19 @@ export function useChat() {
     setUploadedFiles([]); // Clear attachments after sending
     setIsLoading(true);
 
-    // Cancel any ongoing operations
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    // Only abort if there's an active stream in THIS conversation
+    let currentConversationId = conversationId;
+    if (currentConversationId) {
+      const existingStream = activeStreams.get(currentConversationId);
+      if (existingStream) {
+        existingStream.abortController.abort();
+        activeStreams.delete(currentConversationId);
+      }
     }
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+
+    // Create new abort controller for this stream
+    const abortController = new AbortController();
+    const signal = abortController.signal;
 
     try {
       if (!token) {
@@ -185,7 +240,6 @@ export function useChat() {
         return;
       }
 
-      let currentConversationId = conversationId;
       if (!currentConversationId) {
         const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
           method: 'POST',
@@ -200,9 +254,18 @@ export function useChat() {
           const convData = await convResponse.json();
           currentConversationId = convData.id;
           setConversationId(convData.id);
+          currentConvIdRef.current = convData.id;
         } else {
           throw new Error('Failed to create conversation');
         }
+      }
+
+      // Register this stream in the global store
+      if (currentConversationId) {
+        activeStreams.set(currentConversationId, {
+          abortController,
+          isLoading: true
+        });
       }
 
       // Handle Deep Research mode differently - use streaming endpoint
@@ -602,11 +665,11 @@ export function useChat() {
     const results: { fileName: string; status: 'success' | 'error'; error?: string }[] = [];
 
     // Create new AbortController for this upload session
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
     }
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+    uploadAbortRef.current = new AbortController();
+    const signal = uploadAbortRef.current.signal;
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -667,28 +730,32 @@ export function useChat() {
       console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
-      abortControllerRef.current = null;
+      uploadAbortRef.current = null;
     }
 
     return results;
   }, [conversationId]);
 
   const cancelUpload = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
+      uploadAbortRef.current = null;
       setIsUploading(false);
     }
   }, []);
 
   const stopGeneration = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+    // Stop the stream for the current conversation
+    if (conversationId) {
+      const stream = activeStreams.get(conversationId);
+      if (stream) {
+        stream.abortController.abort();
+        activeStreams.delete(conversationId);
+      }
     }
     setIsLoading(false);
     setDeepResearchProgress(null);
-  }, []);
+  }, [conversationId]);
 
   const editMessage = useCallback((messageId: string, newContent: string) => {
     setMessages(prev => prev.map(msg =>
