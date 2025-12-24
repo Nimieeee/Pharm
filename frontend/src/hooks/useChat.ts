@@ -211,13 +211,15 @@ export function useChat() {
     setUploadedFiles([]); // Clear attachments after sending
     setIsLoading(true);
 
+    // Track the conversation ID for this request (will be set if new conversation is created)
+    let streamConversationId = conversationId;
+
     // Only abort if there's an active stream in THIS conversation
-    let currentConversationId = conversationId;
-    if (currentConversationId) {
-      const existingStream = activeStreams.get(currentConversationId);
+    if (streamConversationId) {
+      const existingStream = activeStreams.get(streamConversationId);
       if (existingStream) {
         existingStream.abortController.abort();
-        unregisterStream(currentConversationId);
+        unregisterStream(streamConversationId);
       }
     }
 
@@ -238,7 +240,7 @@ export function useChat() {
         return;
       }
 
-      if (!currentConversationId) {
+      if (!streamConversationId) {
         const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
           method: 'POST',
           headers: {
@@ -250,7 +252,7 @@ export function useChat() {
 
         if (convResponse.ok) {
           const convData = await convResponse.json();
-          currentConversationId = convData.id;
+          streamConversationId = convData.id;
           setConversationId(convData.id);
           currentConvIdRef.current = convData.id;
           // Optimistically add new conversation to sidebar
@@ -263,12 +265,12 @@ export function useChat() {
         }
       } else {
         // Existing conversation - move it to top of list
-        moveConversationToTop(currentConversationId);
+        moveConversationToTop(streamConversationId);
       }
 
       // Register this stream in the global store
-      if (currentConversationId) {
-        registerStream(currentConversationId, abortController);
+      if (streamConversationId) {
+        registerStream(streamConversationId, abortController);
       }
 
       // Handle Deep Research mode differently - use streaming endpoint
@@ -294,7 +296,7 @@ export function useChat() {
           },
           body: JSON.stringify({
             question: content.trim(),
-            conversation_id: currentConversationId,
+            conversation_id: streamConversationId,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
           }),
           signal,
@@ -357,9 +359,9 @@ export function useChat() {
 
         // Re-fetch conversation to ensure we have the latest saved report
         let savedReport = finalReport;
-        if (currentConversationId) {
+        if (streamConversationId) {
           try {
-            const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/messages`, {
+            const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
               },
@@ -405,7 +407,7 @@ export function useChat() {
           },
           body: JSON.stringify({
             message: content.trim(),
-            conversation_id: currentConversationId,
+            conversation_id: streamConversationId,
             mode: mode,
             use_rag: true,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
@@ -426,17 +428,17 @@ export function useChat() {
           const updateMessage = (content: string) => {
             const newMsg = { ...assistantMessage, content };
             // Always update the cache
-            const cached = conversationMessages.get(currentConversationId!) || [];
+            const cached = conversationMessages.get(streamConversationId!) || [];
             const existingIdx = cached.findIndex(m => m.id === assistantMessageId);
             if (existingIdx >= 0) {
               cached[existingIdx] = newMsg;
             } else {
               cached.push(newMsg);
             }
-            conversationMessages.set(currentConversationId!, cached);
+            conversationMessages.set(streamConversationId!, cached);
 
             // Only update UI if still on this conversation
-            if (currentConvIdRef.current === currentConversationId) {
+            if (currentConvIdRef.current === streamConversationId) {
               setMessages(prev => prev.map(msg =>
                 msg.id === assistantMessageId ? newMsg : msg
               ));
@@ -444,13 +446,13 @@ export function useChat() {
           };
 
           // Only add to UI if still on same conversation
-          if (currentConvIdRef.current === currentConversationId) {
+          if (currentConvIdRef.current === streamConversationId) {
             setMessages(prev => [...prev, assistantMessage]);
           }
           // Always add to cache
-          const cached = conversationMessages.get(currentConversationId!) || [];
+          const cached = conversationMessages.get(streamConversationId!) || [];
           cached.push(assistantMessage);
-          conversationMessages.set(currentConversationId!, cached);
+          conversationMessages.set(streamConversationId!, cached);
 
           // Process SSE stream
           const reader = streamResponse.body.getReader();
@@ -524,9 +526,9 @@ export function useChat() {
           }
 
           // After streaming completes, re-fetch the message to ensure we have the final formatted version
-          if (currentConversationId) {
+          if (streamConversationId) {
             try {
-              const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/messages`, {
+              const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
                 headers: {
                   'Authorization': `Bearer ${token}`,
                 },
@@ -570,7 +572,7 @@ export function useChat() {
           },
           body: JSON.stringify({
             message: content.trim(),
-            conversation_id: currentConversationId,
+            conversation_id: streamConversationId,
             mode: mode,
             use_rag: true,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
@@ -610,12 +612,12 @@ export function useChat() {
 
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      // Clean up the stream from activeStreams
-      if (conversationId) {
-        unregisterStream(conversationId);
+      // Clean up the stream from activeStreams using the tracked ID
+      if (streamConversationId) {
+        unregisterStream(streamConversationId);
       }
       // Only update isLoading if still on the same conversation
-      if (currentConvIdRef.current === conversationId) {
+      if (currentConvIdRef.current === streamConversationId) {
         setIsLoading(false);
       }
     }
@@ -627,7 +629,7 @@ export function useChat() {
     setDeepResearchProgress(null); // Reset deep research UI
     // Clear from localStorage as well
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('currentConversationId');
+      localStorage.removeItem('streamConversationId');
     }
   }, []);
 
@@ -667,8 +669,8 @@ export function useChat() {
     }
 
     // Ensure we have a conversation
-    let currentConversationId = conversationId;
-    if (!currentConversationId) {
+    let streamConversationId = conversationId;
+    if (!streamConversationId) {
       try {
         const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
           method: 'POST',
@@ -681,7 +683,7 @@ export function useChat() {
 
         if (convResponse.ok) {
           const convData = await convResponse.json();
-          currentConversationId = convData.id;
+          streamConversationId = convData.id;
           setConversationId(convData.id);
         } else {
           throw new Error('Failed to create conversation');
@@ -709,12 +711,12 @@ export function useChat() {
         const file = files[i];
 
         try {
-          console.log(`📤 Uploading file: ${file.name} to conversation: ${currentConversationId}`);
+          console.log(`📤 Uploading file: ${file.name} to conversation: ${streamConversationId}`);
 
           const formData = new FormData();
           formData.append('file', file);
 
-          const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${currentConversationId}/documents`;
+          const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/documents`;
 
           const response = await fetch(uploadUrl, {
             method: 'POST',

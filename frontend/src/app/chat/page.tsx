@@ -27,6 +27,15 @@ function ChatContent() {
     }
   }, [conversationId]);
 
+  // Restore conversation on page load/refresh
+  useEffect(() => {
+    const savedConversationId = localStorage.getItem('currentConversationId');
+    if (savedConversationId && !conversationId && !hasInitialized) {
+      selectConversation(savedConversationId);
+      setHasInitialized(true);
+    }
+  }, [conversationId, hasInitialized, selectConversation]);
+
   useEffect(() => {
     if (initialQuery && !hasInitialized) {
       sendMessage(initialQuery, 'fast'); // Default to fast mode
