@@ -8,6 +8,11 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !
   ? '' // Use relative path for production (proxied by Vercel)
   : 'http://localhost:8000';
 
+// Direct backend URL for large file uploads (bypasses Vercel's 4.5MB limit)
+const UPLOAD_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'https://pharmgpt.164.68.122.165.sslip.io' // Direct HTTPS to backend for large uploads
+  : 'http://localhost:8000';
+
 type Mode = 'fast' | 'detailed' | 'deep_research';
 
 // Helper function to generate intelligent conversation title
@@ -716,7 +721,7 @@ export function useChat() {
           const formData = new FormData();
           formData.append('file', file);
 
-          const uploadUrl = `${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/documents`;
+          const uploadUrl = `${UPLOAD_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/documents`;
 
           const response = await fetch(uploadUrl, {
             method: 'POST',
