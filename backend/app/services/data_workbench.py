@@ -4,6 +4,7 @@ LangGraph-style agent for data visualization and analysis
 """
 
 import os
+import sys
 import json
 import httpx
 import asyncio
@@ -388,7 +389,7 @@ Return JSON: {"header_index": int, "numeric_columns": ["col_name1", "col_name2"]
             
             # Run Python worker
             process = await asyncio.create_subprocess_exec(
-                "python", str(self.python_script_path),
+                sys.executable, str(self.python_script_path),
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE

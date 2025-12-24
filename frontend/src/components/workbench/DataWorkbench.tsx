@@ -23,7 +23,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useRouter } from 'next/navigation';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
+  ? '' // Use relative path for production (proxied by Vercel)
   : 'http://localhost:8000';
 
 // ============================================================================
