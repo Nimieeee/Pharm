@@ -672,9 +672,19 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                 </button>
                 <button
                   onClick={() => router.push('/profile')}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
+                  className="w-full p-2.5 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
-                  <User size={20} strokeWidth={1.5} className="text-foreground-muted" />
+                  <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User size={14} strokeWidth={2} className="text-white" />
+                    )}
+                  </div>
                   <span className="text-sm text-foreground">Profile</span>
                 </button>
                 <button

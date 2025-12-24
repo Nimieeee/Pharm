@@ -13,7 +13,7 @@ import {
 import LongPressMenu, { useChatContextMenu } from './LongPressMenu';
 
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://toluwanimi465-pharmgpt-backend.hf.space'
+  ? '' // Use relative path for production (proxied by Vercel rewrites)
   : 'http://localhost:8000';
 
 interface ChatHistory {
@@ -258,10 +258,18 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
                 {user ? (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-highlight)]">
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-medium">
-                        {user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
-                      </span>
+                    <div className="w-10 h-10 rounded-full border-2 border-[var(--surface-highlight)] shadow-sm overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white text-sm font-medium">
+                          {user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      )}
                     </div>
                     {/* Name */}
                     <div className="flex-1 min-w-0">

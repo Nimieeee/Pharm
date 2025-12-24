@@ -22,6 +22,10 @@ const nextConfig = {
         source: '/openapi.json',
         destination: 'http://164.68.122.165/openapi.json', // Proxy openapi
       },
+      {
+        source: '/uploads/:path*',
+        destination: 'http://164.68.122.165/uploads/:path*', // Proxy uploads
+      },
     ]
   },
 }

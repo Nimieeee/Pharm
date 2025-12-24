@@ -96,18 +96,21 @@ export default function HomePage() {
   // This ensures backend is ready by the time user logs in
   // Aggressive backend warmup
   useEffect(() => {
-    const API_BASE_URL = 'https://toluwanimi465-pharmgpt-backend.hf.space';
+    const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+      ? '' // Use relative path for production (proxied by Vercel rewrites)
+      : 'http://localhost:8000';
+
     const warmup = async () => {
       // Fire multiple warmup requests
       const pings = [
         fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { }),
-        fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { }),
       ];
       await Promise.all(pings);
 
       // Second wave
       setTimeout(() => {
-        fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => { });
+        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { });
       }, 2000);
     };
     warmup();
