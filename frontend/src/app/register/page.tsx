@@ -49,8 +49,12 @@ export default function RegisterPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">P</span>
+          <div className="flex justify-center mb-4">
+            <img
+              src="/PharmGPT.png"
+              alt="PharmGPT Logo"
+              className="w-20 h-20 object-contain rounded-2xl shadow-lg"
+            />
           </div>
           <h1 className="text-2xl font-serif font-medium text-[var(--text-primary)]">Create account</h1>
           <p className="text-[var(--text-secondary)] mt-2">Get started with PharmGPT</p>
