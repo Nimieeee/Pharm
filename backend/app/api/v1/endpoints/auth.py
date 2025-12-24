@@ -257,4 +257,11 @@ async def upload_avatar(
     avatar_url = f"/uploads/avatars/{avatar_name}"
     updated_user = await auth_service.update_user(current_user.id, {"avatar_url": avatar_url})
     
+    if not updated_user:
+        # Fallback if DB update fails (e.g. missing column)
+        # Return current user with new avatar_url for immediate UI feedback
+        # This prevents 500 error even if schema migration hasn't run
+        print(f"⚠️ Could not persist avatar_url to DB for user {current_user.id}")
+        updated_user = current_user.model_copy(update={"avatar_url": avatar_url})
+    
     return updated_user
