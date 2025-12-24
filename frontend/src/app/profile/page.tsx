@@ -34,11 +34,17 @@ export default function ProfilePage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        // Redirect if not authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+        }
+
         if (user) {
             setFirstName(user.first_name || '');
             setLastName(user.last_name || '');
         }
-    }, [user]);
+    }, [user, router]);
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -132,7 +138,10 @@ export default function ProfilePage() {
                     </div>
 
                     <button
-                        onClick={logout}
+                        onClick={async () => {
+                            await logout();
+                            router.push('/login');
+                        }}
                         className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all flex items-center gap-2 text-sm font-medium"
                     >
                         <LogOut size={16} />

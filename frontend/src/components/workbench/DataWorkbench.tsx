@@ -264,14 +264,10 @@ export default function DataWorkbench() {
           </div>
           <h2 className="text-4xl font-serif font-bold text-[var(--text-primary)] mb-4">Coming Soon</h2>
           <p className="text-[var(--text-secondary)] mb-8 leading-relaxed">
-            The Data Analysis Workbench is currently undergoing final clinical trials for v2.0.
-            We're polishing the AI's ability to extract deeper insights from your research datasets.
+            The Data Analysis Workbench is currently under development. Check back later for updates.
           </p>
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-surface-highlight text-sm text-[var(--text-primary)] border border-[var(--border)]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              Finalizing Pixtral-Large Vision Node
-            </div>
+            {/* Feature status removed */}
             <button
               onClick={() => router.push('/chat')}
               className="mt-4 px-8 py-3 rounded-xl bg-foreground text-background font-bold btn-press hover:opacity-90 transition-all"
