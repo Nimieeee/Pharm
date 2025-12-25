@@ -236,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Auto-login after registration
-    await login(email, password);
+    // await login(email, password);
   };
 
   const logout = useCallback(() => {

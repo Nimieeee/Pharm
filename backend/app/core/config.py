@@ -79,6 +79,12 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@pharmgpt.com")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
     
+    # Email settings (Gmail SMTP)
+    SMTP_USER: str = os.getenv("SMTP_USER", "noreply.pharmgpt@gmail.com")
+    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD", "")
+    RESEND_API_KEY: Optional[str] = os.getenv("RESEND_API_KEY", "")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply.pharmgpt@gmail.com")
+    
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v):
