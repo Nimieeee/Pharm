@@ -670,6 +670,14 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   <span className="text-sm text-foreground">Data Workbench</span>
                 </button>
 
+                <button
+                  onClick={() => router.push('/support')}
+                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
+                >
+                  <HelpCircle size={20} strokeWidth={1.5} className="text-blue-500" />
+                  <span className="text-sm text-foreground">Help & Support</span>
+                </button>
+
                 {/* Theme Toggle Row */}
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="text-sm text-foreground-muted">Theme</span>
