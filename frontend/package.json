@@ -12,6 +12,7 @@
     "@langchain/core": "^0.2.0",
     "@langchain/mistralai": "^0.0.27",
     "@radix-ui/react-popover": "^1.1.15",
+    "@supabase/supabase-js": "^2.89.0",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^10.16.16",
     "lucide-react": "^0.294.0",

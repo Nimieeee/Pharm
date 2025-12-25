@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.models.user import User, UserCreate, UserInDB
 from app.models.auth import Token, TokenData
 from cachetools import TTLCache
+from supabase import Client as SupabaseClient
 
 # Cache user lookups for 60 seconds to avoid hitting DB on every request
 _user_cache = TTLCache(maxsize=500, ttl=60)
@@ -158,6 +159,67 @@ class AuthService:
             
         except Exception:
             return None
+
+    async def authenticate_google_user(self, email: str, google_id: str, first_name: str = "", last_name: str = "", avatar_url: str = "") -> UserInDB:
+        """
+        Authenticate or Register a user from Google Login.
+        
+        Verification of the Google token happens BEFORE calling this method
+        (via Supabase or direct validation). This method trusts the email is verified.
+        """
+        try:
+            # 1. Check if user already exists
+            existing_user = await self.get_user_by_email(email)
+            
+            if existing_user:
+                # If they exist, we just return them (linking is implicit by email)
+                # We need the full UserInDB object though (with password_hash)
+                result = self.db.table("users").select("*").eq("email", email).execute()
+                if result.data:
+                    user_data = result.data[0]
+                    # Update metadata if missing
+                    updates = {}
+                    if not user_data.get('avatar_url') and avatar_url:
+                        updates['avatar_url'] = avatar_url
+                    
+                    if updates:
+                        self.db.table("users").update(updates).eq("id", user_data['id']).execute()
+                        user_data.update(updates)
+                        
+                    return UserInDB(**user_data)
+            
+            # 2. If user does not exist, create them
+            # We generate a random high-entropy password since they won't use it
+            import secrets
+            import string
+            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+            random_pw = ''.join(secrets.choice(alphabet) for i in range(32))
+            
+            user_create = UserCreate(
+                email=email,
+                password=random_pw, # dummy password
+                first_name=first_name,
+                last_name=last_name,
+                avatar_url=avatar_url
+            )
+            
+            # Use existing register logic
+            # This handles hashing the dummy password and inserting
+            new_user = await self.register_user(user_create)
+            
+            # We need to return UserInDB for the endpoint to generate tokens
+            # Retch to include internal fields
+            result = self.db.table("users").select("*").eq("id", str(new_user.id)).execute()
+            if result.data:
+                 return UserInDB(**result.data[0])
+                 
+            raise Exception("Failed to retrieve new user")
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Google authentication failed: {str(e)}"
+            )
     
     async def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Get user by ID"""

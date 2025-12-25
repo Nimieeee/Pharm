@@ -60,3 +60,8 @@ class PasswordResetConfirm(BaseModel):
     """Password reset confirmation"""
     token: str
     new_password: str
+
+
+class GoogleLoginRequest(BaseModel):
+    """Google login request with Supabase token"""
+    access_token: str
