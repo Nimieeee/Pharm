@@ -40,9 +40,20 @@ function VerifyContent() {
             }
 
             setSuccess(true);
+
+            // Trigger confetti
+            import('canvas-confetti').then((confetti) => {
+                confetti.default({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#6366f1', '#8b5cf6', '#a855f7', '#ec4899']
+                });
+            });
+
             setTimeout(() => {
                 router.push('/login?verified=true');
-            }, 2000);
+            }, 2500);
 
         } catch (err: any) {
             setError(err.message);
