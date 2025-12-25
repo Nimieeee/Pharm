@@ -8,7 +8,7 @@ import { useStreamingConversations } from '@/hooks/useStreamingState';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
-  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User
+  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
@@ -650,6 +650,17 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
 
               {/* Footer Actions */}
               <div className="pt-4 border-t border-border space-y-2">
+
+                {/* @ts-ignore */}
+                {user?.is_admin && (
+                  <button
+                    onClick={() => router.push('/admin')}
+                    className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3 bg-red-500/10 text-red-500"
+                  >
+                    <ShieldAlert size={20} strokeWidth={1.5} />
+                    <span className="text-sm font-medium">Admin Panel</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => router.push('/workbench')}
