@@ -17,6 +17,7 @@ from app.models.user import User, UserCreate, UserInDB
 from app.models.auth import Token, TokenData
 from cachetools import TTLCache
 from supabase import Client as SupabaseClient
+from app.services.email import EmailService
 
 # Cache user lookups for 60 seconds to avoid hitting DB on every request
 _user_cache = TTLCache(maxsize=500, ttl=60)
@@ -27,6 +28,7 @@ class AuthService:
     
     def __init__(self, db: Client):
         self.db = db
+        self.email_service = EmailService()
     
     def hash_password(self, password: str) -> str:
         """Hash password using bcrypt"""
@@ -117,8 +119,8 @@ class AuthService:
             user_dict["verification_code"] = code
             user_dict["is_verified"] = False  # Default to unverified
 
-            # TODO: Send email with code
-            print(f"📧 [MOCK EMAIL] Verification code for {user_data.email}: {code}")
+            # Send email with code
+            self.email_service.send_verification_email(user_data.email, code)
             
             
             result = self.db.table("users").insert(user_dict).execute()
