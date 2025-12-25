@@ -15,6 +15,7 @@ class UserBase(BaseModel):
     last_name: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: bool = True
+    is_verified: bool = False
 
 
 class UserCreate(UserBase):
@@ -48,6 +49,8 @@ class UserInDB(UserBase):
     id: UUID
     password_hash: str
     is_admin: bool = False
+    is_verified: bool = False
+    verification_code: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -59,6 +62,7 @@ class User(UserBase):
     """User model for API responses"""
     id: UUID
     is_admin: bool = False
+    is_verified: bool = False
     created_at: datetime
     updated_at: datetime
     
@@ -74,6 +78,7 @@ class UserProfile(BaseModel):
     last_name: Optional[str] = None
     avatar_url: Optional[str] = None
     is_admin: bool = False
+    is_verified: bool = False
     is_active: bool = True
     created_at: datetime
     updated_at: datetime

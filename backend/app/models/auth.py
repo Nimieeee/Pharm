@@ -65,3 +65,9 @@ class PasswordResetConfirm(BaseModel):
 class GoogleLoginRequest(BaseModel):
     """Google login request with Supabase token"""
     access_token: str
+
+
+class VerifyEmailRequest(BaseModel):
+    """Email verification request"""
+    email: EmailStr
+    code: str

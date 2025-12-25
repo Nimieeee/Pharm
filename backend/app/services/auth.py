@@ -112,6 +112,15 @@ class AuthService:
             user_dict = user_data.dict(exclude={"password"})
             user_dict["password_hash"] = hashed_password
             
+            # Generate verification code
+            code = self.generate_verification_code()
+            user_dict["verification_code"] = code
+            user_dict["is_verified"] = False  # Default to unverified
+
+            # TODO: Send email with code
+            print(f"📧 [MOCK EMAIL] Verification code for {user_data.email}: {code}")
+            
+            
             result = self.db.table("users").insert(user_dict).execute()
             
             if not result.data:
@@ -150,6 +159,14 @@ class AuthService:
             # Verify password
             if not self.verify_password(password, user.password_hash):
                 return None
+            
+            # Check verification (skip for admins or specific legacy users if needed)
+            if not user.is_verified and not user.is_admin:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Email not verified"
+                )
+            
             
             # Pre-warm the cache so first authenticated request is fast
             cache_key = f"user:email:{email}"
@@ -395,3 +412,36 @@ class AuthService:
         except Exception as e:
             print(f"❌ Error creating admin user: {e}")
             raise
+
+    def generate_verification_code(self) -> str:
+        """Generate 6-digit code"""
+        import secrets
+        return "".join(secrets.choice("0123456789") for _ in range(6))
+
+    async def verify_user_email(self, email: str, code: str) -> bool:
+        """Verify user email with code"""
+        try:
+            # Get user including verification code (not in User model usually, so query raw)
+            result = self.db.table("users").select("*").eq("email", email).execute()
+            
+            if not result.data:
+                return False
+            
+            user_data = result.data[0]
+            
+            # Check code
+            # Allow "123456" as master code for testing if needed, or stick to strict
+            if user_data.get("verification_code") != code:
+                return False
+            
+            # Update to verified
+            self.db.table("users").update({
+                "is_verified": True,
+                "verification_code": None # Clear code
+            }).eq("id", user_data["id"]).execute()
+            
+            return True
+            
+        except Exception as e:
+            print(f"Verification error: {e}")
+            return False

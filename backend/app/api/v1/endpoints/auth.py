@@ -12,7 +12,7 @@ from supabase import Client
 
 from app.core.database import get_db
 from app.services.auth import AuthService
-from app.models.auth import Token, LoginRequest, RefreshTokenRequest, GoogleLoginRequest
+from app.models.auth import Token, LoginRequest, RefreshTokenRequest, GoogleLoginRequest, VerifyEmailRequest
 from app.models.user import User, UserCreate, UserUpdate
 from supabase import create_client, Client
 
@@ -105,71 +105,31 @@ async def refresh_token(
             detail="Could not refresh token"
         )
 
-@router.post("/google-login", response_model=Token)
-async def google_login(
-    login_data: GoogleLoginRequest,
+@router.post("/verify", status_code=status.HTTP_200_OK)
+async def verify_email(
+    verify_data: VerifyEmailRequest,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
-    Login with Google (via Supabase token)
-    
-    1. Verify Supabase JWT
-    2. Sync user to local database
-    3. Issue local JWT tokens
+    Verify email address with code
     """
     try:
-        # Create a temporary Supabase client to verify the token
-        # We use the ANON key for client-side token verification if needed, 
-        # or just trust the 'auth.users' verify which requires SERVICE role usually for admin tasks,
-        # but here we can just use jwt.decode if we have the secret. 
-        # Better approach: Use the Supabase 'auth.getUser(token)'
+        success = await auth_service.verify_user_email(verify_data.email, verify_data.code)
         
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_ANON_KEY")
-        
-        if not supabase_url or not supabase_key:
-            raise HTTPException(status_code=500, detail="Supabase configuration missing")
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid verification code"
+            )
             
-        supabase: Client = create_client(supabase_url, supabase_key)
-        
-        # Verify the token by asking Supabase for the user
-        user_response = supabase.auth.get_user(login_data.access_token)
-        
-        if not user_response.user:
-            raise HTTPException(status_code=401, detail="Invalid Google token")
-            
-        user = user_response.user
-        email = user.email
-        
-        if not email:
-            raise HTTPException(status_code=400, detail="Email not found in Google profile")
-
-        # Extract metadata
-        meta = user.user_metadata or {}
-        first_name = meta.get("full_name", "").split(" ")[0] if meta.get("full_name") else meta.get("first_name", "")
-        last_name = " ".join(meta.get("full_name", "").split(" ")[1:]) if meta.get("full_name") else meta.get("last_name", "")
-        avatar_url = meta.get("avatar_url", "")
-        
-        # Authenticate/sync with local DB
-        db_user = await auth_service.authenticate_google_user(
-            email=email,
-            google_id=user.id,
-            first_name=first_name, 
-            last_name=last_name,
-            avatar_url=avatar_url
-        )
-        
-        # Create backend tokens
-        tokens = await auth_service.create_tokens(db_user)
-        return tokens
+        return {"message": "Email verified successfully"}
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Google login error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Google login failed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Verification failed: {str(e)}"
         )
 
 @router.get("/me", response_model=User)
