@@ -1130,19 +1130,32 @@ Generate a comprehensive research report. Structure the sections intelligently b
         
         try:
             # Node A: Planning
+            logger.info(f"📍 Deep Research: Starting Planning Phase for question='{question[:50]}...'")
+            plan_start = datetime.now()
             state = await self._node_planner(state)
+            logger.info(f"✅ Deep Research: Planning Complete ({state.plan_overview[:50]}...) - Duration: {(datetime.now() - plan_start).total_seconds():.2f}s")
+            
             if state.error_message:
                 state.status = "error"
                 return state
             
             # Node B: Researching
+            logger.info(f"📍 Deep Research: Starting Research Phase with {len(state.steps)} steps")
+            research_start = datetime.now()
             state = await self._node_researcher(state)
+            logger.info(f"✅ Deep Research: Research Complete (Found {len(state.findings)} sources) - Duration: {(datetime.now() - research_start).total_seconds():.2f}s")
             
             # Node C: Reviewing
+            logger.info("📍 Deep Research: Starting Review Phase")
+            review_start = datetime.now()
             state = await self._node_reviewer(state)
+            logger.info(f"✅ Deep Research: Review Complete (Validated {len(state.citations)} citations) - Duration: {(datetime.now() - review_start).total_seconds():.2f}s")
             
             # Node D: Writing
+            logger.info("📍 Deep Research: Starting Writing Phase")
+            write_start = datetime.now()
             state = await self._node_writer(state)
+            logger.info(f"✅ Deep Research: Writing Complete - Duration: {(datetime.now() - write_start).total_seconds():.2f}s")
             
         except Exception as e:
             state.status = "error"
@@ -1165,6 +1178,9 @@ Generate a comprehensive research report. Structure the sections intelligently b
         
         try:
             # Node A: Planning
+            logger.info(f"📍 [Streaming] Deep Research: Starting Planning Phase")
+            plan_start = datetime.now()
+            
             yield json.dumps({
                 "type": "status",
                 "status": "planning",
@@ -1173,6 +1189,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             state = await self._node_planner(state)
+            logger.info(f"✅ [Streaming] Deep Research: Planning Complete - Duration: {(datetime.now() - plan_start).total_seconds():.2f}s")
             
             if state.error_message:
                 yield json.dumps({
@@ -1189,6 +1206,9 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             # Node B: Researching
+            logger.info(f"📍 [Streaming] Deep Research: Starting Research Phase with {len(state.steps)} steps")
+            research_start = datetime.now()
+            
             yield json.dumps({
                 "type": "status",
                 "status": "researching",
@@ -1197,6 +1217,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             state = await self._node_researcher(state)
+            logger.info(f"✅ [Streaming] Deep Research: Research Complete (Found {len(state.findings)} sources) - Duration: {(datetime.now() - research_start).total_seconds():.2f}s")
             
             yield json.dumps({
                 "type": "findings",
@@ -1206,6 +1227,9 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             # Node C: Reviewing
+            logger.info("📍 [Streaming] Deep Research: Starting Review Phase")
+            review_start = datetime.now()
+            
             yield json.dumps({
                 "type": "status",
                 "status": "reviewing",
@@ -1214,6 +1238,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             state = await self._node_reviewer(state)
+            logger.info(f"✅ [Streaming] Deep Research: Review Complete (Validated {len(state.citations)} citations) - Duration: {(datetime.now() - review_start).total_seconds():.2f}s")
             
             yield json.dumps({
                 "type": "citations",
@@ -1223,6 +1248,9 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             # Node D: Writing
+            logger.info("📍 [Streaming] Deep Research: Starting Writing Phase")
+            write_start = datetime.now()
+            
             yield json.dumps({
                 "type": "status",
                 "status": "writing",
@@ -1231,6 +1259,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
             })
             
             state = await self._node_writer(state)
+            logger.info(f"✅ [Streaming] Deep Research: Writing Complete - Duration: {(datetime.now() - write_start).total_seconds():.2f}s")
             
             # Final report with full APA citation data
             yield json.dumps({
