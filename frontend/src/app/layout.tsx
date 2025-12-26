@@ -91,6 +91,8 @@ export const viewport: Viewport = {
 
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
+import { Toaster } from 'sonner';
+
 export default function RootLayout({
   children,
 }: {
@@ -105,6 +107,7 @@ export default function RootLayout({
             <div className="min-h-screen transition-colors duration-300">
               {children}
             </div>
+            <Toaster position="top-center" richColors />
           </ThemeProvider>
         </AuthProvider>
       </body>
