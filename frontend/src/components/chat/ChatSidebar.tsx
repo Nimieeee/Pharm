@@ -66,60 +66,60 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <div className="space-y-4">
           {/* Account Info */}
           <div className="p-4 rounded-xl bg-surface-highlight">
-            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Account</p>
-            <p className="text-sm text-foreground">{user?.email || 'Not signed in'}</p>
-            {user?.first_name && (
-              <p className="text-xs text-foreground-muted mt-1">{user.first_name} {user.last_name}</p>
-            )}
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Account</p>
+              <button
+                onClick={() => { onClose(); router.push('/profile'); }}
+                className="text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors"
+                role="link"
+              >
+                Manage Profile
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg">
+                {user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">{user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}</p>
+                <p className="text-xs text-foreground-muted truncate max-w-[200px]">{user?.email}</p>
+              </div>
+            </div>
           </div>
 
-          {/* Theme Toggle */}
-          <div className="p-4 rounded-xl bg-surface-highlight flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">Theme</p>
-              <p className="text-xs text-foreground-muted">{theme === 'light' ? 'Light mode' : 'Dark mode'}</p>
-            </div>
+          {/* Help & Support (Moved from Sidebar) */}
+          <div className="p-4 rounded-xl bg-surface-highlight space-y-2">
+            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Help & Support</p>
             <button
-              onClick={toggleTheme}
-              className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center hover:bg-surface-hover transition-colors"
+              onClick={() => { onClose(); router.push('/support'); }}
+              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
             >
-              {theme === 'light' ? (
-                <Moon size={18} className="text-foreground-muted" />
-              ) : (
-                <Sun size={18} className="text-foreground-muted" />
-              )}
+              <div className="flex items-center gap-3">
+                <HelpCircle size={18} className="text-blue-500" />
+                <span className="text-sm text-foreground">Help Center</span>
+              </div>
+              <ChevronsRight size={14} className="text-foreground-muted" />
+            </button>
+            <button
+              onClick={() => { onClose(); router.push('/docs'); }}
+              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Book size={18} className="text-indigo-500" />
+                <span className="text-sm text-foreground">Documentation</span>
+              </div>
+              <ChevronsRight size={14} className="text-foreground-muted" />
             </button>
           </div>
 
           {/* App Info */}
           <div className="p-4 rounded-xl bg-surface-highlight">
             <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">About</p>
-            <p className="text-sm text-foreground">PharmGPT v2.0</p>
-            <p className="text-xs text-foreground-muted mt-1">AI-Powered Pharmacological Research Assistant</p>
-          </div>
-          {/* Help & Documentation */}
-          <div className="p-4 rounded-xl bg-surface-highlight space-y-2">
-            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Help & Support</p>
-            <button
-              onClick={() => { onClose(); router.push('/docs'); }}
-              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Book size={18} className="text-blue-500" />
-                <span className="text-sm text-foreground">Documentation</span>
-              </div>
-              <ChevronsRight size={14} className="text-foreground-muted" />
-            </button>
-            <button
-              onClick={() => { onClose(); router.push('/faq'); }}
-              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <HelpCircle size={18} className="text-teal-500" />
-                <span className="text-sm text-foreground">FAQ</span>
-              </div>
-              <ChevronsRight size={14} className="text-foreground-muted" />
-            </button>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-foreground">PharmGPT</p>
+              <span className="text-xs bg-surface px-2 py-1 rounded-md text-foreground-muted font-mono">v2.0.0</span>
+            </div>
+            <p className="text-xs text-foreground-muted mt-2">AI-Powered Pharmacological Research Assistant</p>
           </div>
         </div>
 
@@ -670,14 +670,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   <span className="text-sm text-foreground">Data Workbench</span>
                 </button>
 
-                <button
-                  onClick={() => router.push('/support')}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
-                >
-                  <HelpCircle size={20} strokeWidth={1.5} className="text-blue-500" />
-                  <span className="text-sm text-foreground">Help & Support</span>
-                </button>
-
                 {/* Theme Toggle Row */}
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="text-sm text-foreground-muted">Theme</span>
@@ -685,29 +677,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                 </div>
 
                 <button
-                  onClick={() => router.push('/profile')}
-                  className="w-full p-2.5 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
-                >
-                  <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    {user?.avatar_url ? (
-                      <img
-                        src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User size={14} strokeWidth={2} className="text-white" />
-                    )}
-                  </div>
-                  <span className="text-sm text-foreground">Profile</span>
-                </button>
-                <button
                   onClick={() => setShowSettings(true)}
                   className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
                   <Settings size={20} strokeWidth={1.5} className="text-foreground-muted" />
                   <span className="text-sm text-foreground">Settings</span>
                 </button>
+
                 {token && (
                   <button
                     onClick={handleSignOut}
