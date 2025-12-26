@@ -28,9 +28,10 @@ class EmbeddingCacheEntry:
 class SentenceTransformerEmbeddingsService:
     """Service for generating embeddings using local Sentence Transformers"""
     
+
     def __init__(self):
-        self.model_name = "all-MiniLM-L6-v2"  # Fast, good quality, 384 dimensions
-        self.embedding_dimensions = 384
+        self.model_name = "nomic-ai/nomic-embed-text-v1.5"
+        self.embedding_dimensions = 768  # Nomic default
         self.model = None
         self.cache = None
         self.cache_stats = {
@@ -50,14 +51,14 @@ class SentenceTransformerEmbeddingsService:
             logger.info(f"✅ Embedding cache initialized (max_size={settings.EMBEDDING_CACHE_MAX_SIZE}, ttl={settings.EMBEDDING_CACHE_TTL}s)")
         
         # Load model lazily on first use
-        logger.info(f"📦 Sentence Transformer service initialized (model will load on first use)")
+        logger.info(f"📦 Nomic Embed service initialized (model will load on first use)")
     
     def _load_model(self):
         """Load the sentence transformer model"""
         if self.model is None:
-            logger.info(f"🔄 Loading Sentence Transformer model: {self.model_name}")
+            logger.info(f"🔄 Loading Nomic model: {self.model_name}")
             try:
-                self.model = SentenceTransformer(self.model_name)
+                self.model = SentenceTransformer(self.model_name, trust_remote_code=True)
                 logger.info(f"✅ Model loaded successfully")
             except Exception as e:
                 logger.error(f"❌ Failed to load model: {e}")
@@ -122,8 +123,11 @@ class SentenceTransformerEmbeddingsService:
             self.cache_stats["model_calls"] += 1
             logger.debug(f"🔄 Generating local embedding for text (length={len(text)})")
             
+            # Add prefix for Nomic (search_query: for queries)
+            input_text = f"search_query: {text}"
+            
             # Encode returns numpy array, convert to list
-            embedding = self.model.encode(text, convert_to_tensor=False).tolist()
+            embedding = self.model.encode(input_text, convert_to_tensor=False).tolist()
             
             # Validate embedding
             if not embedding or len(embedding) != self.embedding_dimensions:
@@ -167,7 +171,8 @@ class SentenceTransformerEmbeddingsService:
                 embeddings.append(cached)
             else:
                 embeddings.append(None)  # Placeholder
-                texts_to_process.append(text)
+                # Add prefix for Nomic (search_document: for documents)
+                texts_to_process.append(f"search_document: {text}")
                 text_indices.append(i)
         
         # Process uncached texts in batch

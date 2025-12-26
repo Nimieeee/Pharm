@@ -36,6 +36,7 @@ pytesseract==0.3.10  # For OCR on images
 cachetools==5.3.2
 # Sentence Transformers for local embeddings (no API calls, no rate limits)
 sentence-transformers==2.2.2
+einops  # Required for Nomic embeddings
 torch==2.0.1
 transformers==4.30.2
 # RDKit for chemical structure parsing (optional - SDF files work without it)

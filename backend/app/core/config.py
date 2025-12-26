@@ -42,8 +42,9 @@ class Settings(BaseSettings):
     SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
     
     # Embedding settings - Using Mistral embeddings only
-    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "mistral")  # "sentence-transformers" or "mistral"
-    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # 1024 for Mistral
+    # Embedding settings - Using Local Nomic embeddings
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "local")  # "local" defaults to Nomic
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))  # 768 for Nomic
     
     # Mistral Embeddings settings (using API)
     MISTRAL_EMBED_MODEL: str = os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
