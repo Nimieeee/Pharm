@@ -7,10 +7,8 @@ import {
   BookOpen,
   ExternalLink,
   CheckCircle2,
-  Loader2,
   Search,
   ChevronRight,
-  FileText,
   AlertCircle
 } from "lucide-react";
 
@@ -56,7 +54,7 @@ const CitationRenderer = ({
             <button
               key={index}
               onClick={() => onCitationClick(id)}
-              className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-xs font-bold text-emerald-600 bg-emerald-50 rounded cursor-pointer hover:bg-emerald-100 hover:text-emerald-800 transition-colors border border-emerald-200 align-super dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-800/60"
+              className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-xs font-bold text-emerald-600 bg-emerald-50 rounded cursor-pointer hover:bg-emerald-100 hover:text-emerald-800 transition-colors border border-emerald-200 align-baseline dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-800/60"
               title={`Jump to Source ${id}`}
             >
               {id}
@@ -95,10 +93,10 @@ export default function DeepResearchUI({
   // Error state
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] bg-red-50 dark:bg-red-950/50 rounded-xl border border-red-200 dark:border-red-900">
+      <div className="flex items-center justify-center min-h-[400px] bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-900/50">
         <div className="text-center p-8">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">Research Error</h3>
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+          <h3 className="text-base font-semibold text-red-700 dark:text-red-400 mb-2">Research Error</h3>
           <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
         </div>
       </div>
@@ -106,94 +104,68 @@ export default function DeepResearchUI({
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-white dark:bg-black rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg">
+    <div className="flex flex-col h-full w-full bg-white dark:bg-black rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
 
-      {/* 1. Header / Status Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-black dark:to-slate-950">
-        <div className="flex items-center gap-3 flex-1">
-          <div className={`p-2.5 rounded-xl ${isLoading ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-                {isLoading ? "Deep Research Agent" : "Research Complete"}
-              </h3>
-              {isLoading && progressPercent > 0 && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full">
-                  {progressPercent}%
-                </span>
-              )}
+      {/* 1. Header (Only show when complete or has content, otherwise minimal loader handles it) */}
+      {!isLoading && (
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 rounded-md">
+              <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {isLoading ? progressStep : `${sources.length} sources analyzed`}
-            </p>
-            {/* Progress Bar */}
-            {isLoading && (
-              <div className="mt-2 w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                />
-              </div>
-            )}
+            <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
+              Research Complete
+            </h3>
           </div>
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="md:hidden p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500"
+          >
+            <BookOpen className="w-4 h-4" />
+          </button>
         </div>
+      )}
 
-        {/* Toggle Sidebar Button (Mobile) */}
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="md:hidden p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-        >
-          <BookOpen className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* 2. Main Content Area (Split View) */}
+      {/* 2. Main Content Area */}
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* LEFT PANEL: The Report */}
-        <div className={`flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth bg-white dark:bg-black ${sidebarCollapsed ? 'w-full' : ''}`}>
-          <article className="prose prose-slate dark:prose-invert max-w-none prose-headings:scroll-mt-20">
+        <div className={`flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth bg-white dark:bg-black ${sidebarCollapsed ? 'w-full' : ''}`}>
+          <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-img:rounded-xl">
             {isLoading && !reportContent ? (
               <LoadingState progress={progressStep} progressPercent={progressPercent} />
             ) : (
               <ReactMarkdown
                 components={{
-                  p: ({ children }) => {
-                    return (
-                      <p className="leading-relaxed text-slate-700 dark:text-slate-300 mb-4">
-                        {React.Children.map(children, (child) => {
-                          if (typeof child === "string") {
-                            return <CitationRenderer onCitationClick={handleCitationClick}>{child}</CitationRenderer>;
-                          }
-                          return child;
-                        })}
-                      </p>
-                    );
-                  },
+                  p: ({ children }) => (
+                    <p className="leading-relaxed text-slate-600 dark:text-slate-300 mb-4 font-normal">
+                      {React.Children.map(children, (child) => {
+                        if (typeof child === "string") {
+                          return <CitationRenderer onCitationClick={handleCitationClick}>{child}</CitationRenderer>;
+                        }
+                        return child;
+                      })}
+                    </p>
+                  ),
                   h1: ({ children }) => (
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-6 pb-3 border-b-2 border-emerald-500">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 pb-2 border-b border-slate-100 dark:border-slate-800/50">
                       {children}
                     </h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-xl md:text-2xl font-semibold text-slate-800 dark:text-slate-100 mt-10 mb-4 flex items-center gap-2">
-                      <span className="w-1 h-6 bg-emerald-500 rounded-full"></span>
+                    <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mt-8 mb-3 flex items-center gap-2">
                       {children}
                     </h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mt-6 mb-3">
+                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mt-6 mb-2">
                       {children}
                     </h3>
                   ),
-                  ul: ({ children }) => <ul className="list-disc pl-6 space-y-2 my-4 marker:text-emerald-500">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal pl-6 space-y-2 my-4 marker:text-emerald-500">{children}</ol>,
+                  ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5 my-3 marker:text-emerald-500/50 text-slate-600 dark:text-slate-300">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5 my-3 marker:text-emerald-500/50 text-slate-600 dark:text-slate-300">{children}</ol>,
                   li: ({ children }) => (
-                    <li className="text-slate-700 dark:text-slate-300 pl-1">
+                    <li className="pl-1">
                       {React.Children.map(children, (child) => {
                         if (typeof child === "string") {
                           return <CitationRenderer onCitationClick={handleCitationClick}>{child}</CitationRenderer>;
@@ -203,30 +175,29 @@ export default function DeepResearchUI({
                     </li>
                   ),
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-emerald-500 pl-4 py-2 my-6 bg-emerald-50 dark:bg-emerald-950/30 rounded-r-lg italic text-slate-600 dark:text-slate-300">
+                    <blockquote className="border-l-2 border-emerald-500 pl-4 py-1 my-4 bg-slate-50 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400 italic rounded-r text-sm">
                       {children}
                     </blockquote>
                   ),
                   code: ({ children, className }) => {
                     const isInline = !className;
                     if (isInline) {
-                      return <code className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-sm font-mono text-emerald-600 dark:text-emerald-400">{children}</code>;
+                      return <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[11px] font-mono text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700/50">{children}</code>;
                     }
                     return <code className={className}>{children}</code>;
                   },
-                  strong: ({ children }) => <strong className="font-semibold text-slate-900 dark:text-white">{children}</strong>,
                   a: ({ href, children }) => (
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 no-underline hover:underline inline-flex items-center gap-0.5 transition-colors"
                     >
                       {children}
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-2.5 h-2.5 opacity-70" />
                     </a>
                   ),
-                  hr: () => <hr className="my-8 border-slate-200 dark:border-slate-800" />,
+                  hr: () => <hr className="my-8 border-slate-100 dark:border-slate-800" />,
                 }}
               >
                 {reportContent}
@@ -239,42 +210,44 @@ export default function DeepResearchUI({
         <div className={`
           ${sidebarCollapsed ? 'hidden' : 'flex'} 
           md:flex
-          w-full md:w-80 lg:w-96
+          w-full md:w-72 lg:w-80
           absolute md:relative inset-0 md:inset-auto
           z-20 md:z-auto
-          border-l border-slate-200 dark:border-slate-800 
-          bg-slate-50 dark:bg-slate-950 
-          flex-col shadow-inner
+          border-l border-slate-100 dark:border-slate-800 
+          bg-slate-50/50 dark:bg-black 
+          flex-col
         `}>
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-black z-10 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-emerald-500" /> Source Map
-              <span className="ml-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs rounded-full">
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+            <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+              Sources
+              <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded text-[10px] min-w-[20px] text-center">
                 {sources.length}
               </span>
             </h4>
             <button
               onClick={() => setSidebarCollapsed(true)}
-              className="md:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+              className="md:hidden p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
             </button>
           </div>
 
           {/* Source Cards */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-950">
-            {sources.length === 0 && isLoading && (
-              <div className="text-center py-10 opacity-50">
-                <Search className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="text-xs text-slate-500">Gathering sources...</p>
-              </div>
-            )}
-
-            {sources.length === 0 && !isLoading && (
-              <div className="text-center py-10 opacity-50">
-                <FileText className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="text-xs text-slate-500">No sources found</p>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {sources.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-48 text-center opacity-40">
+                {isLoading ? (
+                  <div className="animate-pulse flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                    <div className="w-20 h-1.5 bg-slate-200 dark:bg-slate-800 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <BookOpen className="w-5 h-5 mb-2 text-slate-400" />
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wide">No sources cited</p>
+                  </>
+                )}
               </div>
             )}
 
@@ -282,86 +255,60 @@ export default function DeepResearchUI({
               <motion.div
                 key={source.id}
                 ref={(el) => { sidebarRefs.current[source.id] = el; }}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: source.id * 0.03 }}
                 className={`
-                  relative p-3 rounded-xl border text-sm transition-all duration-300 cursor-pointer group
+                  p-2.5 rounded-lg border text-sm transition-all duration-200 cursor-pointer group
                   ${activeSourceId === source.id
-                    ? 'bg-emerald-50 border-emerald-500 shadow-lg ring-2 ring-emerald-500/20 dark:bg-emerald-950/50 dark:border-emerald-500'
-                    : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md dark:bg-black dark:border-slate-800 dark:hover:border-emerald-700'
+                    ? 'bg-white dark:bg-slate-900 border-emerald-500/50 ring-1 ring-emerald-500/20 shadow-md transform scale-[1.02]'
+                    : 'bg-white dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800 hover:border-emerald-500/30'
                   }
                 `}
                 onClick={() => setActiveSourceId(activeSourceId === source.id ? null : source.id)}
               >
-                {/* ID Badge */}
-                <div className={`
-                  absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border shadow-sm
-                  ${activeSourceId === source.id
-                    ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-slate-100 text-slate-600 border-slate-200 group-hover:bg-emerald-100 group-hover:text-emerald-600 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:group-hover:bg-emerald-900 dark:group-hover:text-emerald-400'
-                  }
-                `}>
-                  {source.id}
+                <div className="flex items-start gap-2.5">
+                  <div className={`
+                      flex-shrink-0 w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold mt-0.5 transition-colors
+                      ${activeSourceId === source.id ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 group-hover:text-emerald-500'}
+                   `}>
+                    {source.id}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h5 className={`text-xs font-medium leading-snug line-clamp-2 mb-0.5 ${activeSourceId === source.id ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                      {source.title}
+                    </h5>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500">
+                      <span className="truncate max-w-[80px]">{source.source_type || "Web"}</span>
+                      {source.year && <span> {source.year}</span>}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Source Type Badge */}
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`
-                    px-2 py-0.5 text-xs font-medium rounded-full
-                    ${source.source_type === 'PubMed'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
-                      : source.source_type === 'Google Scholar'
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                    }
-                  `}>
-                    {source.source_type || "Web"}
-                  </span>
-                  {source.year && (
-                    <span className="text-xs text-slate-500 dark:text-slate-500">{source.year}</span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <h5 className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight mb-1 pr-4">
-                  {source.title}
-                </h5>
-
-                {/* Authors */}
-                {source.authors && (
-                  <p className="text-xs text-slate-500 dark:text-slate-500 mb-2 line-clamp-1">
-                    {source.authors}
-                  </p>
-                )}
-
-                {/* Snippet (Only show if active) */}
                 <AnimatePresence>
                   {activeSourceId === source.id && source.snippet && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <p className="text-xs text-slate-600 dark:text-slate-400 my-2 leading-relaxed bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                        &ldquo;{source.snippet}&rdquo;
-                      </p>
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed italic opacity-90">
+                          "{source.snippet}"
+                        </p>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:underline mt-2 opacity-80 hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" /> Open Source
+                        </a>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-                {/* Link */}
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300 mt-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View Source <ExternalLink className="w-3 h-3" />
-                </a>
               </motion.div>
             ))}
           </div>
@@ -371,76 +318,47 @@ export default function DeepResearchUI({
   );
 }
 
-// --- Sub-component: Loading State with Progress ---
+// --- Minimal Loading State ---
 function LoadingState({ progress, progressPercent }: { progress: string; progressPercent: number }) {
-  const steps = [
-    "Planning research strategy...",
-    "Searching PubMed database...",
-    "Querying Google Scholar...",
-    "Analyzing web sources...",
-    "Cross-referencing findings...",
-    "Synthesizing report..."
-  ];
-
-  const currentStepIndex = steps.findIndex(s => progress.toLowerCase().includes(s.split(" ")[0].toLowerCase()));
-  const activeIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
-
   return (
-    <div className="space-y-6">
-      {/* Animated Header Skeleton */}
-      <div className="space-y-2">
-        <div className="h-8 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-lg w-3/4 animate-pulse"></div>
-        <div className="h-4 bg-slate-100 dark:bg-slate-900 rounded w-1/2 animate-pulse"></div>
-      </div>
+    <div className="flex flex-col items-center justify-center h-full min-h-[400px] w-full max-w-md mx-auto px-4 animate-in fade-in duration-700">
 
+      {/* Search Icon with Pulse Ring */}
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse"></div>
+        <div className="relative w-16 h-16 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-800 flex items-center justify-center group">
+          <Search className="w-6 h-6 text-emerald-500 group-hover:scale-110 transition-transform duration-500" />
 
-      {/* Progress Card */}
-      <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-black border border-slate-200 dark:border-slate-800 rounded-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-            <Loader2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-slate-800 dark:text-slate-200">Deep Research in Progress</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-500">This may take 30-60 seconds</p>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {steps.map((step, index) => (
-            <div
-              key={step}
-              className={`
-                flex items-center gap-2 text-sm transition-all duration-300
-                ${index < activeIndex
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : index === activeIndex
-                    ? 'text-blue-600 dark:text-blue-400 font-medium'
-                    : 'text-slate-400 dark:text-slate-600'
-                }
-              `}
-            >
-              {index < activeIndex ? (
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-              ) : index === activeIndex ? (
-                <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
-              ) : (
-                <div className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-700 flex-shrink-0" />
-              )}
-              <span>{step}</span>
-            </div>
-          ))}
+          {/* Spinner Ring */}
+          <div className="absolute inset-0 -m-1 rounded-[1.2rem] border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
         </div>
       </div>
 
-      {/* Content Skeleton */}
-      <div className="space-y-4 pt-4">
-        <div className="h-6 bg-slate-200 dark:bg-slate-900 rounded w-1/3 animate-pulse"></div>
-        <div className="space-y-2">
-          <div className="h-4 bg-slate-100 dark:bg-slate-900 rounded w-full animate-pulse"></div>
-          <div className="h-4 bg-slate-100 dark:bg-slate-900 rounded w-5/6 animate-pulse"></div>
-          <div className="h-4 bg-slate-100 dark:bg-slate-900 rounded w-4/6 animate-pulse"></div>
-        </div>
+      {/* Primary Status */}
+      <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-2 text-center tracking-tight">
+        {progress || "Initializing research..."}
+      </h3>
+
+      {/* Secondary Progress Detail */}
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center font-light">
+        Processing biomedical data sources... <span className="font-mono text-emerald-600 dark:text-emerald-400 ml-1">{progressPercent}%</span>
+      </p>
+
+      {/* Sleek Progress Bar */}
+      <div className="w-full h-1 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden mb-8">
+        <motion.div
+          className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.max(progressPercent, 5)}%` }} // Always show a little
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
+
+      {/* Context Tags (Visual Flavor) */}
+      <div className="flex flex-wrap justify-center gap-2 opacity-60">
+        <span className="px-2 py-1 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">PubMed</span>
+        <span className="px-2 py-1 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">Clinical Trials</span>
+        <span className="px-2 py-1 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">Analysis</span>
       </div>
     </div>
   );
