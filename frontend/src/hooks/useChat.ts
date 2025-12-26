@@ -162,6 +162,14 @@ export function useChat() {
       } else if (response.status === 401) {
         localStorage.removeItem('token');
         console.log('❌ Token expired');
+      } else if (response.status === 404) {
+        console.log('❌ Conversation not found, resetting state');
+        setConversationId(null);
+        currentConvIdRef.current = null;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('currentConversationId');
+        }
+        setMessages([]);
       } else {
         console.log(`❌ Failed to load: HTTP ${response.status}`);
       }
@@ -619,6 +627,16 @@ export function useChat() {
       }
     } catch (error: any) {
       console.error('Chat error:', error);
+
+      // Handle "Conversation not found" by resetting state so user can start fresh
+      if (error.message && (error.message.includes('Conversation not found') || error.message.includes('404'))) {
+        console.warn('Conversation lost during send, resetting state');
+        setConversationId(null);
+        currentConvIdRef.current = null;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('currentConversationId');
+        }
+      }
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
