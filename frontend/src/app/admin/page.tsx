@@ -131,7 +131,7 @@ export default function AdminPage() {
     const fetchTickets = async () => {
         if (!token) return;
         try {
-            let url = `${API_BASE_URL}/api/v1/admin/requests`;
+            let url = `${API_BASE_URL}/api/v1/support/admin/requests`;
             if (ticketFilter !== 'all') {
                 if (ticketFilter === 'open') url += '?status=open';
                 else if (ticketFilter === 'resolved') url += '?status=resolved';
@@ -183,7 +183,7 @@ export default function AdminPage() {
         if (!confirm('Are you sure you want to delete this ticket? This cannot be undone.')) return;
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/admin/requests/${ticketId}`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/support/admin/requests/${ticketId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -205,7 +205,7 @@ export default function AdminPage() {
         if (!replyMessage.trim()) return;
         setIsSubmittingReply(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/admin/requests/${ticketId}/respond`, {
+            const res = await fetch(`${API_BASE_URL}/api/v1/support/admin/requests/${ticketId}/respond`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
