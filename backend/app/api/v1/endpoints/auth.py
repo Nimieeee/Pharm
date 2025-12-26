@@ -12,7 +12,7 @@ from supabase import Client
 
 from app.core.database import get_db
 from app.services.auth import AuthService
-from app.models.auth import Token, LoginRequest, RefreshTokenRequest, GoogleLoginRequest, VerifyEmailRequest
+from app.models.auth import Token, LoginRequest, RefreshTokenRequest, VerifyEmailRequest
 from app.models.user import User, UserCreate, UserUpdate
 from supabase import create_client, Client
 

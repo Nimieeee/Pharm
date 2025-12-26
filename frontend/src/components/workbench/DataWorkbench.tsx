@@ -257,12 +257,12 @@ export default function DataWorkbench() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center p-12 rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl max-w-lg mx-4"
+          className="text-center p-6 md:p-12 rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl max-w-lg mx-4"
         >
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/20">
             <Sparkles size={40} className="text-white animate-pulse" />
           </div>
-          <h2 className="text-4xl font-serif font-bold text-[var(--text-primary)] mb-4">Coming Soon</h2>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-[var(--text-primary)] mb-4">Coming Soon</h2>
           <p className="text-[var(--text-secondary)] mb-8 leading-relaxed">
             The Data Analysis Workbench is currently under development. Check back later for updates.
           </p>

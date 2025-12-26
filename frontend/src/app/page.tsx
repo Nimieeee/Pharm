@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play } from 'lucide-react';
+import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play, User } from 'lucide-react';
 import { GlassCard, GlassNavbar } from '@/components/ui/GlassCard';
 
 const container = {
@@ -69,7 +69,7 @@ const capabilities = [
 const faqs = [
   { q: "How accurate is the molecular analysis?", a: "PharmGPT uses state-of-the-art vision models (Pixtral) combined with biochemical databases to ensure high fidelity in structure recognition." },
   { q: "Is my research data secure?", a: "Yes. We offer self-hosted deployment options (Docker) ensuring your proprietary data never leaves your infrastructure." },
-  { q: "Can it ingest handwritten lab notes?", a: "Our vision capabilities can transcribe legible handwriting and integrate it into your knowledge base." }, // Fixed duplicate content in prompt
+  { q: "Can it ingest handwritten lab notes?", a: "Our vision capabilities can transcribe legible handwriting and integrate it into your knowledge base." },
   { q: "What is the token limit for RAG?", a: "We support context windows up to 128k tokens, allowing for analysis of extensive clinical trial reports." }
 ];
 
@@ -172,6 +172,13 @@ export default function HomePage() {
                   className="px-5 py-2.5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90"
                 >
                   Open Chat
+                </button>
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
+                  title="Profile"
+                >
+                  <User size={18} strokeWidth={1.5} className="text-foreground-muted" />
                 </button>
                 <button
                   onClick={logout}

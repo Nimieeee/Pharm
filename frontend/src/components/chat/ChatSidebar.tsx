@@ -77,8 +77,16 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg">
-                {user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg overflow-hidden shrink-0">
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
+                    alt={user.first_name || 'User'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'
+                )}
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">{user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}</p>

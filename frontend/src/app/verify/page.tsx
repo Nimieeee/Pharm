@@ -76,57 +76,14 @@ function VerifyContent() {
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="card-swiss border border-[var(--border)]">
+            <form onSubmit={handleSubmit} className="card-swiss border border-[var(--border)] p-6 md:p-8">
                 {error && (
                     <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
                         <AlertCircle size={20} strokeWidth={1.5} className="text-red-500 flex-shrink-0" />
                         <p className="text-sm text-red-500">{error}</p>
                     </div>
                 )}
-
-                {success && (
-                    <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
-                        <Check size={20} className="text-green-500 flex-shrink-0" />
-                        <p className="text-sm text-green-500">Verified! Redirecting...</p>
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                            Verification Code
-                        </label>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            placeholder="123456"
-                            required
-                            maxLength={6}
-                            className="w-full h-12 text-center text-2xl tracking-widest rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all font-mono"
-                        />
-                    </div>
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={isLoading || success || code.length < 6}
-                    className="w-full h-12 mt-6 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all disabled:opacity-50"
-                >
-                    {isLoading ? (
-                        <Loader2 size={20} strokeWidth={1.5} className="animate-spin" />
-                    ) : success ? (
-                        <>
-                            Verified
-                            <Check size={18} strokeWidth={1.5} />
-                        </>
-                    ) : (
-                        <>
-                            Verify Account
-                            <ArrowRight size={18} strokeWidth={1.5} />
-                        </>
-                    )}
-                </button>
+// ... (rest of form content) ...
             </form>
         </div>
     );
@@ -135,7 +92,7 @@ function VerifyContent() {
 export default function VerifyPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-atmospheric px-4 relative">
-            <ThemeToggle className="fixed top-8 right-8 z-50" />
+            <ThemeToggle className="fixed top-4 right-4 md:top-8 md:right-8 z-50" />
             <Suspense fallback={<Loader2 className="animate-spin" />}>
                 <VerifyContent />
             </Suspense>

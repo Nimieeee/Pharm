@@ -16,10 +16,17 @@ import {
     Loader2,
     RefreshCw,
     MoreVertical,
-    LifeBuoy
+    LifeBuoy,
+    Clock,
+    CheckCircle,
+    XCircle,
+    Send,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SystemStats {
     users: { total: number; active: number; new_this_month: number };
@@ -41,6 +48,17 @@ interface UserProfile {
     conversation_count: number;
 }
 
+interface SupportTicket {
+    id: string;
+    email: string;
+    subject: string;
+    message: string;
+    status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    created_at: string;
+    user?: { first_name: string; last_name: string; email: string };
+    admin_response?: string;
+}
+
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? ''
     : 'http://localhost:8000';
@@ -52,9 +70,17 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'support'>('overview');
     const [stats, setStats] = useState<SystemStats | null>(null);
     const [users, setUsers] = useState<UserProfile[]>([]);
+    const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isStatsLoading, setIsStatsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Support Ticket State
+    const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'resolved'>('all');
+    const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
+    const [replyMessage, setReplyMessage] = useState('');
+    const [replyStatus, setReplyStatus] = useState('resolved');
+    const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
     // Verify Admin Access
     useEffect(() => {
@@ -102,12 +128,34 @@ export default function AdminPage() {
         }
     };
 
-    // Fetch users when tab changes to users or search changes
-    useEffect(() => {
-        if (activeTab === 'users' && token) {
-            fetchUsers();
+    const fetchTickets = async () => {
+        if (!token) return;
+        try {
+            let url = `${API_BASE_URL}/api/v1/admin/requests`;
+            if (ticketFilter !== 'all') {
+                if (ticketFilter === 'open') url += '?status=open';
+                else if (ticketFilter === 'resolved') url += '?status=resolved';
+            }
+
+            const res = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setTickets(data);
+            }
+        } catch (err) {
+            console.error('Failed to load tickets', err);
         }
-    }, [activeTab, searchQuery, token]);
+    };
+
+    // Fetch data when tabs change
+    useEffect(() => {
+        if (!token) return;
+        if (activeTab === 'users') fetchUsers();
+        if (activeTab === 'support') fetchTickets();
+    }, [activeTab, searchQuery, ticketFilter, token]);
 
     const handleDeleteUser = async (userId: string, email: string) => {
         if (!confirm(`Are you sure you want to delete user ${email}? This action CANNOT be undone.`)) return;
@@ -128,6 +176,71 @@ export default function AdminPage() {
             }
         } catch (err) {
             alert('An error occurred while deleting user');
+        }
+    };
+
+    const handleDeleteTicket = async (ticketId: string) => {
+        if (!confirm('Are you sure you want to delete this ticket? This cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/admin/requests/${ticketId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                setTickets(prev => prev.filter(t => t.id !== ticketId));
+                fetchStats();
+            } else {
+                const err = await res.json();
+                alert(`Failed to delete ticket: ${err.detail}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error deleting ticket');
+        }
+    };
+
+    const handleReplyTicket = async (ticketId: string) => {
+        if (!replyMessage.trim()) return;
+        setIsSubmittingReply(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/admin/requests/${ticketId}/respond`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    response: replyMessage,
+                    status_update: replyStatus
+                })
+            });
+
+            if (res.ok) {
+                // Success
+                setReplyMessage('');
+                setExpandedTicketId(null);
+                fetchTickets(); // Refresh list
+                fetchStats();
+            } else {
+                alert('Failed to send response');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error sending response');
+        } finally {
+            setIsSubmittingReply(false);
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'open': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+            case 'in_progress': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+            case 'resolved': return 'text-green-500 bg-green-500/10 border-green-500/20';
+            case 'closed': return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
+            default: return 'text-gray-500 bg-gray-500/10';
         }
     };
 
@@ -158,8 +271,8 @@ export default function AdminPage() {
                     <button
                         onClick={() => setActiveTab('overview')}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'overview'
-                                ? 'bg-indigo-500/10 text-indigo-500 font-medium'
-                                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
+                            ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
                             }`}
                     >
                         <BarChart3 size={18} />
@@ -168,8 +281,8 @@ export default function AdminPage() {
                     <button
                         onClick={() => setActiveTab('users')}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'users'
-                                ? 'bg-indigo-500/10 text-indigo-500 font-medium'
-                                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
+                            ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
                             }`}
                     >
                         <Users size={18} />
@@ -178,8 +291,8 @@ export default function AdminPage() {
                     <button
                         onClick={() => setActiveTab('support')}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'support'
-                                ? 'bg-indigo-500/10 text-indigo-500 font-medium'
-                                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
+                            ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
                             }`}
                     >
                         <LifeBuoy size={18} />
@@ -206,6 +319,7 @@ export default function AdminPage() {
                             onClick={() => {
                                 fetchStats();
                                 if (activeTab === 'users') fetchUsers();
+                                if (activeTab === 'support') fetchTickets();
                             }}
                             className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-highlight)] rounded-full transition-colors"
                             disabled={isStatsLoading}
@@ -336,10 +450,158 @@ export default function AdminPage() {
                     )}
 
                     {activeTab === 'support' && (
-                        <div className="flex flex-col items-center justify-center h-64 text-center">
-                            <LifeBuoy size={48} className="text-[var(--text-secondary)] mb-4" />
-                            <h3 className="text-lg font-medium text-[var(--text-primary)]">Support System</h3>
-                            <p className="text-[var(--text-secondary)] mt-2">Ticket management system coming in Phase 2.</p>
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <button
+                                    onClick={() => setTicketFilter('all')}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${ticketFilter === 'all' ? 'bg-[var(--text-primary)] text-[var(--background)]' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                >
+                                    All Tickets
+                                </button>
+                                <button
+                                    onClick={() => setTicketFilter('open')}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${ticketFilter === 'open' ? 'bg-blue-500 text-white' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                >
+                                    Open
+                                </button>
+                                <button
+                                    onClick={() => setTicketFilter('resolved')}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${ticketFilter === 'resolved' ? 'bg-green-500 text-white' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                >
+                                    Resolved
+                                </button>
+                            </div>
+
+                            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
+                                {tickets.length === 0 ? (
+                                    <div className="p-12 text-center">
+                                        <LifeBuoy className="mx-auto text-[var(--text-secondary)] mb-4" size={48} />
+                                        <h3 className="text-lg font-medium text-[var(--text-primary)]">No tickets found</h3>
+                                        <p className="text-[var(--text-secondary)]">There are no support tickets matching your filter.</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-[var(--border)]">
+                                        {tickets.map((ticket) => (
+                                            <div key={ticket.id} className="transition-all hover:bg-[var(--surface-highlight)]/30">
+                                                <div
+                                                    onClick={() => setExpandedTicketId(expandedTicketId === ticket.id ? null : ticket.id)}
+                                                    className="p-6 cursor-pointer flex items-center justify-between group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`p-2 rounded-full ${getStatusColor(ticket.status)} bg-opacity-10 border-0`}>
+                                                            {ticket.status === 'open' && <AlertCircle size={20} />}
+                                                            {ticket.status === 'in_progress' && <Clock size={20} />}
+                                                            {ticket.status === 'resolved' && <CheckCircle size={20} />}
+                                                            {ticket.status === 'closed' && <XCircle size={20} />}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-1">
+                                                                <h3 className="font-medium text-[var(--text-primary)] text-lg">{ticket.subject}</h3>
+                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
+                                                                    {ticket.status.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-[var(--text-secondary)]">
+                                                                From: {ticket.email} • {new Date(ticket.created_at).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteTicket(ticket.id);
+                                                            }}
+                                                            className="p-2 text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all"
+                                                            title="Delete Ticket"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                        <ChevronDown
+                                                            size={20}
+                                                            className={`text-[var(--text-secondary)] transition-transform duration-300 ${expandedTicketId === ticket.id ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <AnimatePresence>
+                                                    {expandedTicketId === ticket.id && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="border-t border-[var(--border)] bg-[var(--surface-highlight)]/10"
+                                                        >
+                                                            <div className="p-6 space-y-6">
+                                                                <div className="bg-[var(--surface)] p-4 rounded-xl border border-[var(--border)]">
+                                                                    <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
+                                                                </div>
+
+                                                                {ticket.admin_response && (
+                                                                    <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20">
+                                                                        <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                                            <ShieldAlert size={12} />
+                                                                            Previous Response
+                                                                        </p>
+                                                                        <p className="text-sm text-[var(--text-primary)]">{ticket.admin_response}</p>
+                                                                    </div>
+                                                                )}
+
+                                                                {ticket.status !== 'closed' && (
+                                                                    <div className="bg-[var(--surface)] p-6 rounded-xl border border-[var(--border)] shadow-sm">
+                                                                        <h4 className="font-medium text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                                                                            <Send size={16} />
+                                                                            Reply to Ticket
+                                                                        </h4>
+                                                                        <textarea
+                                                                            value={replyMessage}
+                                                                            onChange={(e) => setReplyMessage(e.target.value)}
+                                                                            placeholder="Type your response here..."
+                                                                            className="w-full h-32 p-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 mb-4 resize-none"
+                                                                        />
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center gap-4">
+                                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                                    <input
+                                                                                        type="radio"
+                                                                                        name="status"
+                                                                                        checked={replyStatus === 'resolved'}
+                                                                                        onChange={() => setReplyStatus('resolved')}
+                                                                                        className="text-indigo-500 focus:ring-indigo-500"
+                                                                                    />
+                                                                                    <span className="text-sm text-[var(--text-primary)]">Mark Resolved</span>
+                                                                                </label>
+                                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                                    <input
+                                                                                        type="radio"
+                                                                                        name="status"
+                                                                                        checked={replyStatus === 'in_progress'}
+                                                                                        onChange={() => setReplyStatus('in_progress')}
+                                                                                        className="text-indigo-500 focus:ring-indigo-500"
+                                                                                    />
+                                                                                    <span className="text-sm text-[var(--text-primary)]">In Progress</span>
+                                                                                </label>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => handleReplyTicket(ticket.id)}
+                                                                                disabled={isSubmittingReply || !replyMessage.trim()}
+                                                                                className="px-6 py-2.5 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                                            >
+                                                                                {isSubmittingReply ? 'Sending...' : 'Send Response'}
+                                                                                {!isSubmittingReply && <Send size={16} />}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
