@@ -106,13 +106,13 @@ export default function HomePage() {
       // Fire multiple warmup requests
       const pings = [
         fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { }),
-        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { }),
       ];
       await Promise.all(pings);
 
       // Second wave
       setTimeout(() => {
-        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { });
+        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { });
       }, 2000);
     };
     warmup();

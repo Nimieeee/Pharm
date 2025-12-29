@@ -26,11 +26,11 @@ function LoginContent() {
     const warmup = async () => {
       const pings = [
         fetch(`${API_BASE_URL}/api/v1/`, { method: 'HEAD' }).catch(() => { }),
-        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { }),
       ];
       await Promise.all(pings);
       setTimeout(() => {
-        fetch(`${API_BASE_URL}/api/v1/health`, { method: 'GET' }).catch(() => { });
+        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { });
       }, 2000);
     };
     warmup();
