@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play, User } from 'lucide-react';
 import { GlassCard, GlassNavbar } from '@/components/ui/GlassCard';
+import { API_BASE_URL } from '@/config/api';
 
 const container = {
   hidden: { opacity: 0 },
@@ -96,7 +97,10 @@ export default function HomePage() {
   // This ensures backend is ready by the time user logs in
   // Aggressive backend warmup
   useEffect(() => {
-    const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
+    // Use centralized config to prevent Mixed Content errors
+    // const API_BASE_URL = ... (Imported from config/api now, but useEffect scope is tricky)
+    // Actually, just use the imported constant.
+
 
     const warmup = async () => {
       // Fire multiple warmup requests

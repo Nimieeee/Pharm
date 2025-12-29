@@ -59,9 +59,7 @@ interface SupportTicket {
     admin_response?: string;
 }
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? ''
-    : 'http://localhost:8000';
+import { API_BASE_URL } from '@/config/api';
 
 export default function AdminPage() {
     const { user, token } = useAuth();

@@ -22,9 +22,7 @@ import {
 import { useTheme } from '@/lib/theme-context';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? '' // Use relative path for production (proxied by Vercel)
-  : 'http://localhost:8000';
+import { API_BASE_URL } from '@/config/api';
 
 // ============================================================================
 // TYPES

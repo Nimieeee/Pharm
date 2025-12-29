@@ -7,9 +7,7 @@ import { useTheme } from '@/lib/theme-context';
 import { Check, ArrowRight, Loader2, AlertCircle, Moon, Sun } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? ''
-    : 'http://localhost:8000';
+import { API_BASE_URL } from '@/config/api';
 
 function VerifyContent() {
     const router = useRouter();

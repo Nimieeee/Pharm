@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
 
-const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
+import { API_BASE_URL } from '@/config/api';
 
 // Direct backend URL for large file uploads (bypasses Vercel's 4.5MB limit)
 const UPLOAD_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'

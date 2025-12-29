@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? '' // Use relative path for production (proxied by Vercel)
-    : 'http://localhost:8000';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Get token from localStorage

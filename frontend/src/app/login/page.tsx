@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
+import { API_BASE_URL } from '@/config/api';
 
 function LoginContent() {
   const router = useRouter();
