@@ -9,22 +9,23 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sep-quarterly-newark-swim.trycloudflare.com';
     return [
       {
         source: '/api/:path*',
-        destination: 'https://pharmgpt.164.68.122.165.sslip.io/api/:path*', // Proxy to SSL Backend
+        destination: `${backendUrl}/api/:path*`, // Proxy to Backend via Cloudflare Tunnel
       },
       {
         source: '/docs',
-        destination: 'https://pharmgpt.164.68.122.165.sslip.io/docs', // Proxy docs
+        destination: `${backendUrl}/docs`, // Proxy docs
       },
       {
         source: '/openapi.json',
-        destination: 'https://pharmgpt.164.68.122.165.sslip.io/openapi.json', // Proxy openapi
+        destination: `${backendUrl}/openapi.json`, // Proxy openapi
       },
       {
         source: '/uploads/:path*',
-        destination: 'https://pharmgpt.164.68.122.165.sslip.io/uploads/:path*', // Proxy uploads
+        destination: `${backendUrl}/uploads/:path*`, // Proxy uploads
       },
     ]
   },
