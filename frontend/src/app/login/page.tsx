@@ -10,9 +10,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? ''
-  : 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function LoginContent() {
   const router = useRouter();

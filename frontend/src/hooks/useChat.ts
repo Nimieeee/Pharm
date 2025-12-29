@@ -4,9 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? '' // Use relative path for production (proxied by Vercel)
-  : 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Direct backend URL for large file uploads (bypasses Vercel's 4.5MB limit)
 const UPLOAD_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'

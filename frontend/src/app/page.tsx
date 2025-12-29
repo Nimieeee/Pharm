@@ -96,9 +96,7 @@ export default function HomePage() {
   // This ensures backend is ready by the time user logs in
   // Aggressive backend warmup
   useEffect(() => {
-    const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? '' // Use relative path for production (proxied by Vercel rewrites)
-      : 'http://localhost:8000';
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     const warmup = async () => {
       // Fire multiple warmup requests
