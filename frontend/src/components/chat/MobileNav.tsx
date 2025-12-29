@@ -12,9 +12,7 @@ import {
 } from 'lucide-react';
 import LongPressMenu, { useChatContextMenu } from './LongPressMenu';
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? '' // Use relative path for production (proxied by Vercel rewrites)
-  : 'http://localhost:8000';
+const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
 
 interface ChatHistory {
   id: string;

@@ -96,7 +96,7 @@ export default function HomePage() {
   // This ensures backend is ready by the time user logs in
   // Aggressive backend warmup
   useEffect(() => {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
 
     const warmup = async () => {
       // Fire multiple warmup requests
