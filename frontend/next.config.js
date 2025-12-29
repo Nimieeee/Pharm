@@ -9,6 +9,7 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   async rewrites() {
+    // Force HTTPS for the default fallback
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sep-quarterly-newark-swim.trycloudflare.com';
     return [
       {
