@@ -11,8 +11,8 @@ import {
   MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
 
 interface ChatSidebarProps {
   isOpen: boolean;

@@ -8,7 +8,7 @@ import { API_BASE_URL } from '@/config/api';
 
 // Direct backend URL for large file uploads (bypasses Vercel's 4.5MB limit)
 const UPLOAD_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://pharmgpt.164.68.122.165.sslip.io' // Direct HTTPS to backend for large uploads
+  ? 'https://87-106-97-50.nip.io' // Direct HTTPS to backend for large uploads
   : 'http://localhost:8000';
 
 type Mode = 'fast' | 'detailed' | 'deep_research';

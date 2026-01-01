@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://87-106-97-50.nip.io',
   },
   experimental: {
     // Optimize package imports
@@ -10,7 +10,7 @@ const nextConfig = {
   },
   async rewrites() {
     // Force HTTPS for the default fallback
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sep-quarterly-newark-swim.trycloudflare.com';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://87-106-97-50.nip.io';
     return [
       {
         source: '/api/:path*',
@@ -33,3 +33,4 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+

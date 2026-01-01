@@ -11,8 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import LongPressMenu, { useChatContextMenu } from './LongPressMenu';
-
-const API_BASE_URL = 'https://sep-quarterly-newark-swim.trycloudflare.com';
+import { API_BASE_URL } from '@/config/api';
 
 interface ChatHistory {
   id: string;
