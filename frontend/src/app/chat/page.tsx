@@ -218,12 +218,37 @@ function ChatContent() {
 }
 
 function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string, mode?: Mode) => void, currentMode: Mode }) {
-  const suggestions = [
-    { text: 'What are the common drug interactions with Warfarin?', mode: 'detailed' as Mode },
-    { text: 'Explain the mechanism of action of SSRIs', mode: 'detailed' as Mode },
-    { text: 'Help me write a research manuscript introduction', mode: 'detailed' as Mode },
-    { text: 'Deep research: Current evidence for pembrolizumab in NSCLC', mode: 'deep_research' as Mode },
-  ];
+  const [suggestions, setSuggestions] = useState<{ text: string, mode: Mode }[]>([]);
+
+  useEffect(() => {
+    const suggestionPool = [
+      // Clinical & Pharmacology
+      { text: 'What are the common drug interactions with Warfarin?', mode: 'detailed' as Mode },
+      { text: 'Explain the mechanism of action of SSRIs', mode: 'detailed' as Mode },
+      { text: 'Compare ACE inhibitors vs ARBs in treating hypertension', mode: 'detailed' as Mode },
+      { text: 'List potential side effects of GLP-1 agonists', mode: 'detailed' as Mode },
+      { text: 'Analyze the structure-activity relationship of beta-lactams', mode: 'detailed' as Mode },
+
+      // Research & Writing
+      { text: 'Help me write a research manuscript introduction', mode: 'detailed' as Mode },
+      { text: 'Draft an abstract for a study on mRNA vaccine stability', mode: 'detailed' as Mode },
+      { text: 'Write a literature review on antibiotic resistance mechanisms', mode: 'detailed' as Mode },
+
+      // Regulatory & Industry
+      { text: 'Summarize the latest FDA guidelines for biosimilars', mode: 'detailed' as Mode },
+      { text: 'What are phase III trial requirements for orphan drugs?', mode: 'detailed' as Mode },
+
+      // Deep Research
+      { text: 'Deep research: Current evidence for pembrolizumab in NSCLC', mode: 'deep_research' as Mode },
+      { text: 'Deep research: Emerging CAR-T therapies for solid tumors', mode: 'deep_research' as Mode },
+      { text: 'Deep research: Long-term outcomes of gene therapy in hemophilia', mode: 'deep_research' as Mode },
+      { text: 'Deep research: AI applications in drug discovery 2024', mode: 'deep_research' as Mode },
+    ];
+
+    // Shuffle and pick 4
+    const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
+    setSuggestions(shuffled.slice(0, 4));
+  }, []);
 
   return (
     <motion.div
@@ -247,19 +272,26 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
         <br />
         <span className="text-xs opacity-70 mt-2 block">Current Mode: {currentMode === 'deep_research' ? 'Deep Research' : currentMode === 'detailed' ? 'Detailed' : 'Fast'}</span>
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto px-2 sm:px-4">
-        {suggestions.map((suggestion, i) => (
-          <motion.button
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * i, duration: 0.3 }}
-            onClick={() => onSuggestionClick(suggestion.text, suggestion.mode)}
-            className="p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-left text-xs sm:text-sm text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--surface-highlight)] transition-all"
-          >
-            {suggestion.text}
-          </motion.button>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto px-2 sm:px-4 min-h-[140px]">
+        {suggestions.length > 0 ? (
+          suggestions.map((suggestion, i) => (
+            <motion.button
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * i, duration: 0.3 }}
+              onClick={() => onSuggestionClick(suggestion.text, suggestion.mode)}
+              className="p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-left text-xs sm:text-sm text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--surface-highlight)] transition-all h-full"
+            >
+              {suggestion.text}
+            </motion.button>
+          ))
+        ) : (
+          // Loading skeletons while shuffling (prevents layout shift)
+          Array(4).fill(0).map((_, i) => (
+            <div key={i} className="h-16 rounded-xl bg-[var(--surface-highlight)] animate-pulse" />
+          ))
+        )}
       </div>
     </motion.div>
   );
