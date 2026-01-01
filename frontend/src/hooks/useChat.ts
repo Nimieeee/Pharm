@@ -656,10 +656,12 @@ export function useChat() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    currentConvIdRef.current = null;
     setDeepResearchProgress(null); // Reset deep research UI
     // Clear from localStorage as well
     if (typeof window !== 'undefined') {
       localStorage.removeItem('streamConversationId');
+      localStorage.removeItem('currentConversationId');
     }
   }, []);
 

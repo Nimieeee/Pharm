@@ -15,6 +15,7 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
   };
 
   const handleNewChat = () => {
+    localStorage.removeItem('currentConversationId');
     clearMessages();
   };
 
@@ -36,8 +37,6 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
           onNewChat={handleNewChat}
           currentChatId={conversationId}
         />
-
-
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
