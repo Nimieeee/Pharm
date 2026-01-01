@@ -12,6 +12,7 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 
 import confetti from 'canvas-confetti';
+import { SUGGESTION_POOL } from '@/config/suggestionPrompts';
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -217,37 +218,23 @@ function ChatContent() {
   );
 }
 
+
+
 function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string, mode?: Mode) => void, currentMode: Mode }) {
   const [suggestions, setSuggestions] = useState<{ text: string, mode: Mode }[]>([]);
 
   useEffect(() => {
-    const suggestionPool = [
-      // Clinical & Pharmacology
-      { text: 'What are the common drug interactions with Warfarin?', mode: 'detailed' as Mode },
-      { text: 'Explain the mechanism of action of SSRIs', mode: 'detailed' as Mode },
-      { text: 'Compare ACE inhibitors vs ARBs in treating hypertension', mode: 'detailed' as Mode },
-      { text: 'List potential side effects of GLP-1 agonists', mode: 'detailed' as Mode },
-      { text: 'Analyze the structure-activity relationship of beta-lactams', mode: 'detailed' as Mode },
+    // Efficiently select 4 random, unique suggestions from the large pool
+    const poolSize = SUGGESTION_POOL.length;
+    const selectedIndices = new Set<number>();
 
-      // Research & Writing
-      { text: 'Help me write a research manuscript introduction', mode: 'detailed' as Mode },
-      { text: 'Draft an abstract for a study on mRNA vaccine stability', mode: 'detailed' as Mode },
-      { text: 'Write a literature review on antibiotic resistance mechanisms', mode: 'detailed' as Mode },
+    while (selectedIndices.size < 4 && selectedIndices.size < poolSize) {
+      const randomIndex = Math.floor(Math.random() * poolSize);
+      selectedIndices.add(randomIndex);
+    }
 
-      // Regulatory & Industry
-      { text: 'Summarize the latest FDA guidelines for biosimilars', mode: 'detailed' as Mode },
-      { text: 'What are phase III trial requirements for orphan drugs?', mode: 'detailed' as Mode },
-
-      // Deep Research
-      { text: 'Deep research: Current evidence for pembrolizumab in NSCLC', mode: 'deep_research' as Mode },
-      { text: 'Deep research: Emerging CAR-T therapies for solid tumors', mode: 'deep_research' as Mode },
-      { text: 'Deep research: Long-term outcomes of gene therapy in hemophilia', mode: 'deep_research' as Mode },
-      { text: 'Deep research: AI applications in drug discovery 2024', mode: 'deep_research' as Mode },
-    ];
-
-    // Shuffle and pick 4
-    const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
-    setSuggestions(shuffled.slice(0, 4));
+    const randomSuggestions = Array.from(selectedIndices).map(index => SUGGESTION_POOL[index]);
+    setSuggestions(randomSuggestions);
   }, []);
 
   return (
