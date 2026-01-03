@@ -1,10 +1,7 @@
 
 // Centralized API Configuration
-// Production uses relative paths to leverage Vercel rewrites (proxies)
-// Local uses the dedicated development port
+// Hardcoded to HTTPS to prevent Mixed Content errors on Vercel
+// Port 443 is now open on the Lightsail firewall
 
-export const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? '' // Relative path for Vercel Rewrites proxy
-    : 'http://localhost:8000';
-
+export const API_BASE_URL = 'https://35-181-4-139.sslip.io';
 export const UPLOAD_BASE_URL = 'https://35-181-4-139.sslip.io';

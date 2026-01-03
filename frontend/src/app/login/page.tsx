@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-// Warmup uses relative paths - Vercel rewrites proxy to backend
+import { API_BASE_URL } from '@/config/api';
 
 function LoginContent() {
   const router = useRouter();
@@ -25,11 +25,11 @@ function LoginContent() {
   useEffect(() => {
     const warmup = async () => {
       const pings = [
-        fetch('/api/v1/health/', { method: 'GET' }).catch(() => { }),
+        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { }),
       ];
       await Promise.all(pings);
       setTimeout(() => {
-        fetch('/api/v1/health/', { method: 'GET' }).catch(() => { });
+        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { });
       }, 2000);
     };
     warmup();
@@ -58,7 +58,7 @@ function LoginContent() {
       // Pre-fetch conversations
       const token = localStorage.getItem('token');
       if (token) {
-        fetch('/api/v1/chat/conversations', {
+        fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => { });
       }
