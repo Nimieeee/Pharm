@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://87-106-97-50.nip.io',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://35-181-4-139.sslip.io',
   },
   experimental: {
     // Optimize package imports
@@ -10,7 +10,7 @@ const nextConfig = {
   },
   async rewrites() {
     // Force HTTPS for the default fallback
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://87-106-97-50.nip.io';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://35-181-4-139.sslip.io';
     return [
       {
         source: '/api/:path*',
