@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { API_BASE_URL } from '@/config/api';
 
 interface User {
   id: string;
@@ -27,18 +28,16 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   isLoading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: () => {},
+  login: async () => { },
+  register: async () => { },
+  logout: () => { },
   refreshToken: async () => false,
-  checkUser: async () => {},
+  checkUser: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? '' // Use relative path (proxied by Vercel rewrites)
-  : 'http://localhost:8000';
+// API Base URL is now imported from @/config/api for consistency
 
 // Helper to decode JWT and check expiration
 function isTokenExpired(token: string): boolean {
@@ -114,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Refresh 5 minutes before expiration
     const refreshTime = expiration - Date.now() - 5 * 60 * 1000;
-    
+
     if (refreshTime > 0) {
       const timer = setTimeout(async () => {
         console.log('Auto-refreshing token...');
@@ -141,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Authorization': `Bearer ${authToken}`,
         },
       });
-      
+
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -203,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email.trim(), password }),
     });
 
     if (!response.ok) {
