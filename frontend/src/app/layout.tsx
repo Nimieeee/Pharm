@@ -76,6 +76,9 @@ export const metadata: Metadata = {
     description: 'Intelligent pharmacological research assistant powered by AI',
     type: 'website',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
