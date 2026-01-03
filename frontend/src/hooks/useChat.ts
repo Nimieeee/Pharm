@@ -4,9 +4,10 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
 
-import { API_BASE_URL } from '@/config/api';
+// Use relative paths for API calls - Vercel rewrites will proxy to backend
+// This avoids CORS issues and works with the firewall configuration
 
-// Direct backend URL for large file uploads (bypasses Vercel's 4.5MB limit)
+// Direct backend URL for large file uploads ONLY (bypasses Vercel's 4.5MB limit)
 const UPLOAD_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? 'https://35-181-4-139.sslip.io' // Direct HTTPS to backend for large uploads
   : 'http://localhost:8000';
@@ -79,7 +80,7 @@ export function useChat() {
   useEffect(() => {
     const pingBackend = async () => {
       try {
-        await fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
+        await fetch(`/`, { method: 'HEAD' }).catch(() => { });
       } catch { }
     };
 
@@ -142,7 +143,7 @@ export function useChat() {
     setIsLoadingConversation(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
+      const response = await fetch(`/api/v1/chat/conversations/${convId}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
@@ -185,7 +186,7 @@ export function useChat() {
 
   const createConversation = async (token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+      const response = await fetch(`/api/v1/chat/conversations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +253,7 @@ export function useChat() {
       }
 
       if (!streamConversationId) {
-        const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+        const convResponse = await fetch(`/api/v1/chat/conversations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -381,7 +382,7 @@ export function useChat() {
         let savedReport = finalReport;
         if (streamConversationId) {
           try {
-            const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
+            const messagesResponse = await fetch(`/api/v1/chat/conversations/${streamConversationId}/messages`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
               },
@@ -419,7 +420,7 @@ export function useChat() {
       let useStreaming = true;
 
       try {
-        const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
+        const streamResponse = await fetch(`/api/v1/ai/chat/stream`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -551,7 +552,7 @@ export function useChat() {
           // After streaming completes, re-fetch the message to ensure we have the final formatted version
           if (streamConversationId) {
             try {
-              const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
+              const messagesResponse = await fetch(`/api/v1/chat/conversations/${streamConversationId}/messages`, {
                 headers: {
                   'Authorization': `Bearer ${token}`,
                 },
@@ -587,7 +588,7 @@ export function useChat() {
 
       // Fallback to non-streaming
       if (!useStreaming) {
-        const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
+        const response = await fetch(`/api/v1/ai/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -671,7 +672,7 @@ export function useChat() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${conversationId}`, {
+      const response = await fetch(`/api/v1/chat/conversations/${conversationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -704,7 +705,7 @@ export function useChat() {
     let streamConversationId = conversationId;
     if (!streamConversationId) {
       try {
-        const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+        const convResponse = await fetch(`/api/v1/chat/conversations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

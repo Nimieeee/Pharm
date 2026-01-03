@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play, User } from 'lucide-react';
 import { GlassCard, GlassNavbar } from '@/components/ui/GlassCard';
-import { API_BASE_URL } from '@/config/api';
+// Warmup uses relative paths - Vercel rewrites proxy to backend
 
 const container = {
   hidden: { opacity: 0 },
@@ -103,16 +103,15 @@ export default function HomePage() {
 
 
     const warmup = async () => {
-      // Fire multiple warmup requests
+      // Fire multiple warmup requests using relative paths (Vercel proxies /api/* to backend)
       const pings = [
-        fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { }),
-        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { }),
+        fetch('/api/v1/health/', { method: 'GET' }).catch(() => { }),
       ];
       await Promise.all(pings);
 
       // Second wave
       setTimeout(() => {
-        fetch(`${API_BASE_URL}/api/v1/health/`, { method: 'GET' }).catch(() => { });
+        fetch('/api/v1/health/', { method: 'GET' }).catch(() => { });
       }, 2000);
     };
     warmup();

@@ -8,6 +8,7 @@ import os
 import shutil
 from uuid import uuid4
 from typing import Optional
+import pathlib
 from supabase import Client
 
 from app.core.database import get_db
@@ -267,13 +268,24 @@ async def upload_avatar(
         extension = ".png"
     
     avatar_name = f"{current_user.id}_{uuid4().hex[:8]}{extension}"
-    avatar_path = os.path.join("uploads", "avatars", avatar_name)
+    
+    # Use absolute path relative to project root
+    # auth.py is in app/api/v1/endpoints/ -> 4 levels deep from app/, 5 from root
+    current_file = pathlib.Path(__file__).resolve()
+    project_root = current_file.parents[4]
+    upload_dir = project_root / "uploads" / "avatars"
+    
+    # Ensure directory exists
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    avatar_path = upload_dir / avatar_name
     
     # Save file
     try:
         with open(avatar_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
+        print(f"❌ Error saving avatar to {avatar_path}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Could not save image: {str(e)}"

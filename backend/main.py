@@ -11,6 +11,7 @@ import os
 import shutil
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.core.config import settings
 from app.api.v1.api import api_router
@@ -66,6 +67,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Add proxy headers middleware for correct HTTPS redirects behind Cloudflare
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

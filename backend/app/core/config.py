@@ -15,7 +15,8 @@ class Settings(BaseSettings):
         env_file=".env",
         case_sensitive=True,
         # Prevent JSON parsing for string fields
-        env_parse_none_str='null'
+        env_parse_none_str='null',
+        extra='ignore'
     )
     
     # Basic app settings

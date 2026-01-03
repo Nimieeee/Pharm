@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 
-import { API_BASE_URL } from '@/config/api';
+// Use relative paths - Vercel rewrites will proxy to backend
 
 /**
  * Get token from localStorage
@@ -23,7 +23,8 @@ async function fetcher<T>(url: string): Promise<T> {
     }
 
     console.log(`🚀 fetching: ${url}`);
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    // Use relative path - Vercel rewrites proxy /api/* to backend
+    const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
     });
 
