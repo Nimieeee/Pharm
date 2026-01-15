@@ -355,11 +355,8 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
       </div>
 
       {/* Context Tags (Visual Flavor) */}
-      <div className="flex flex-wrap justify-center gap-2 opacity-60">
-        <span className="px-2 py-1 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">PubMed</span>
-        <span className="px-2 py-1 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">Clinical Trials</span>
-        <span className="px-2 py-1 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">Analysis</span>
-      </div>
+      {/* Context Tags (Visual Flavor) - REMOVED per user request to avoid hardcoded values */}
+
     </div>
   );
 }

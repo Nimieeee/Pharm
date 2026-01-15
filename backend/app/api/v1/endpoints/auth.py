@@ -269,37 +269,39 @@ async def upload_avatar(
     
     avatar_name = f"{current_user.id}_{uuid4().hex[:8]}{extension}"
     
-    # Use absolute path relative to project root
-    # auth.py is in app/api/v1/endpoints/ -> 4 levels deep from app/, 5 from root
-    current_file = pathlib.Path(__file__).resolve()
-    project_root = current_file.parents[4]
-    upload_dir = project_root / "uploads" / "avatars"
-    
-    # Ensure directory exists
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    avatar_path = upload_dir / avatar_name
-    
-    # Save file
     try:
-        with open(avatar_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Upload to Supabase Storage
+        file_content = await file.read()
+        res = auth_service.db.storage.from_("avatars").upload(
+            path=avatar_name,
+            file=file_content,
+            file_options={"content-type": file.content_type}
+        )
+        
+        # Construct Public URL
+        # Retrieve SUPABASE_URL from settings or env
+        supabase_url = os.getenv("SUPABASE_URL")
+        if not supabase_url:
+             # Fallback to settings if env not reliable in this context?
+             # But settings is imported from app.core.config
+             from app.core.config import settings
+             supabase_url = settings.SUPABASE_URL
+             
+        # Remove trailing slash if present
+        supabase_url = supabase_url.rstrip("/")
+        avatar_url = f"{supabase_url}/storage/v1/object/public/avatars/{avatar_name}"
+        
     except Exception as e:
-        print(f"❌ Error saving avatar to {avatar_path}: {e}")
+        print(f"❌ Error uploading avatar to Supabase: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Could not save image: {str(e)}"
+            detail=f"Could not upload image: {str(e)}"
         )
     
     # Update user avatar_url
-    # Use relative URL so it works regardless of domain
-    avatar_url = f"/uploads/avatars/{avatar_name}"
     updated_user = await auth_service.update_user(current_user.id, {"avatar_url": avatar_url})
     
     if not updated_user:
-        # Fallback if DB update fails (e.g. missing column)
-        # Return current user with new avatar_url for immediate UI feedback
-        # This prevents 500 error even if schema migration hasn't run
         print(f"⚠️ Could not persist avatar_url to DB for user {current_user.id}")
         updated_user = current_user.model_copy(update={"avatar_url": avatar_url})
     

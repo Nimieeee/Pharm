@@ -384,8 +384,15 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   };
 
   // Group chats
-  const pinnedChats = chatHistory.filter((c: ChatHistory) => c.is_pinned && !c.is_archived);
-  const unpinnedChats = chatHistory.filter((c: ChatHistory) => !c.is_pinned && !c.is_archived);
+  const filteredHistory = useMemo(() => {
+    if (!searchQuery.trim()) return chatHistory;
+    return chatHistory.filter((chat: ChatHistory) =>
+      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [chatHistory, searchQuery]);
+
+  const pinnedChats = filteredHistory.filter((c: ChatHistory) => c.is_pinned && !c.is_archived);
+  const unpinnedChats = filteredHistory.filter((c: ChatHistory) => !c.is_pinned && !c.is_archived);
 
   const groupedChats = unpinnedChats.reduce((acc: Record<string, ChatHistory[]>, chat: ChatHistory) => {
     const category = getRelativeDateCategory(chat.created_at);

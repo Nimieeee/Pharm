@@ -991,7 +991,7 @@ async def deep_research_stream(
             final_report = ""
             citations_count = 0
             
-            async for update in research_service.run_research_streaming(
+            async for update in research_service.run_miroflow_research(
                 question=request.question,
                 user_id=current_user.id
             ):

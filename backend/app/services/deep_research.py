@@ -8,7 +8,7 @@ import json
 import httpx
 import asyncio
 import xml.etree.ElementTree as ET
-from typing import Optional, Dict, Any, List, TypedDict
+from typing import Optional, Dict, Any, List, TypedDict, AsyncGenerator
 from dataclasses import dataclass, field
 from uuid import UUID
 from datetime import datetime
@@ -501,6 +501,156 @@ class DeepResearchService:
         self.tools = ResearchTools()
         self.mistral_api_key = settings.MISTRAL_API_KEY
         self.mistral_base_url = "https://api.mistral.ai/v1"
+        self.miroflow_path = "/var/www/MiroFlow"
+        self.venv_python = "/home/ubuntu/.local/bin/uv"
+
+    async def run_miroflow_research(self, question: str, user_id: UUID) -> AsyncGenerator[str, None]:
+        """
+        Runs MiroFlow deep research and yields output line by line as SSE events.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Default config - can be made dynamic
+        config_file = "agent_quickstart_reading"
+        
+        # Check if MiroFlow exists
+        if not os.path.exists(self.miroflow_path):
+             yield json.dumps({"type": "error", "message": "MiroFlow not found on server."})
+             return
+
+        # Prepare environment variables
+        env = os.environ.copy()
+        # Map Mistral to OpenAI schema for MiroFlow
+        env["OPENAI_API_KEY"] = self.mistral_api_key or env.get("MISTRAL_API_KEY", "")
+        env["OPENAI_BASE_URL"] = "https://api.mistral.ai/v1"
+        # Ensure Tools keys are present
+        env["TAVILY_API_KEY"] = env.get("TAVILY_API_KEY", "")
+        env["SERP_API_KEY"] = env.get("SERP_API_KEY", "")
+        
+        # Override model via Hydra syntax if possible, or assume env var suffices?
+        # We'll add Hydra overrides to the command
+        
+        
+        # Determine UV path (fallback to just 'uv' if not sure, but try explicit first)
+        uv_path = "/home/ubuntu/.local/bin/uv"
+        if not os.path.exists(uv_path):
+            uv_path = "uv"
+
+        cmd = [
+            uv_path, "run", "main.py", "trace",
+            f"--config_file_name={config_file}",
+            f"--task={question}",
+            "main_agent.llm.provider_class=GPTOpenAIClient",
+            "main_agent.llm.model_name=mistral-large-latest",
+            "+main_agent.llm.openai_api_key=${oc.env:OPENAI_API_KEY}",
+            "+main_agent.llm.openai_base_url=${oc.env:OPENAI_BASE_URL}"
+        ]
+        
+        logger.info(f"🚀 Starting Deep Research (MiroFlow) with Mistral: {question}")
+        logger.info(f"📂 CWD: {self.miroflow_path}")
+        logger.info(f"⚙️ Command: {' '.join(cmd)}")
+        
+        yield json.dumps({"type": "status", "status": "initializing", "message": "Initializing Research Agent (Mistral)..."})
+        
+        try:
+            process = await asyncio.create_subprocess_exec(
+                cmd[0], *cmd[1:], # Unpack args properly
+                # "llm.provider=openai", # Assuming default is openai or consistent
+                cwd=self.miroflow_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env
+            )
+
+            # Regex patterns for parsing
+            import re
+            re_step = re.compile(r"Step\s+(\d+)/(\d+)", re.IGNORECASE)
+            re_source = re.compile(r"(https?://\S+)") # Naive URL extractor
+            re_thinking = re.compile(r"(Thinking|Action|Observation):\s*(.*)", re.IGNORECASE)
+
+            final_report_buffer = []
+
+            if process.stdout:
+                async for line in process.stdout:
+                    decoded = line.decode().strip()
+                    if not decoded:
+                        continue
+                        
+                    # 1. Parse Progress (Step X/Y)
+                    step_match = re_step.search(decoded)
+                    if step_match:
+                        current_step, total_steps = step_match.groups()
+                        percent = int((int(current_step) / int(total_steps)) * 100)
+                        yield json.dumps({
+                            "type": "status",
+                            "status": "researching",
+                            "message": f"Step {current_step}/{total_steps}: Processing...",
+                            "progress": percent
+                        })
+                    
+                    # 2. Parse Sources (Any URL in text)
+                    # Note: this is heuristic. Ideally MiroFlow outputs "Source: <url>"
+                    # We filter out internal/uninteresting URLs if needed
+                    url_match = re_source.search(decoded)
+                    if url_match:
+                        url = url_match.group(1)
+                        if "api.mistral.ai" not in url and "openai" not in url:
+                             yield json.dumps({
+                                "type": "citations",
+                                "citations": [{
+                                    "id": hash(url) % 1000, # Fake ID for now
+                                    "title": "Web Source", # Placeholder until title extraction
+                                    "url": url,
+                                    "snippet": decoded[:100] + "...",
+                                    "source_type": "Web"
+                                }]
+                            })
+
+                    # 3. Parse Thinking/Action
+                    action_match = re_thinking.search(decoded)
+                    if action_match:
+                        action_type, action_text = action_match.groups()
+                        yield json.dumps({
+                            "type": "status",
+                            "status": "researching",
+                            "message": f"{action_type}: {action_text[:50]}...",
+                        })
+
+                    # 4. Accumulate Final Report (heuristic)
+                    # If we see a large block of text at the end, it's likely the report.
+                    # For now, just stream everything as debug info too
+                    # yield json.dumps({"type": "progress", "message": decoded})
+                    
+                    # Capture everything to final buffer just in case
+                    final_report_buffer.append(decoded)
+
+            # Wait for completion
+            await process.wait()
+            
+            # Read stderr if failure
+            if process.returncode != 0:
+                err = ""
+                if process.stderr:
+                    err_bytes = await process.stderr.read()
+                    err = err_bytes.decode()
+                yield json.dumps({"type": "error", "message": f"MiroFlow failed: {err}"})
+            else:
+                # Try to extract the Markdown report from the buffer
+                # Look for the last "Answer:" or just join the last N lines?
+                # For now, simple join
+                full_log = "\n".join(final_report_buffer)
+                yield json.dumps({
+                    "type": "complete", 
+                    "report": full_log,
+                    "status": "complete"
+                })
+
+
+        except Exception as e:
+            logger.error(f"Research failed: {e}")
+            yield json.dumps({"type": "error", "message": str(e)})
+
     
     async def _call_llm(self, system_prompt: str, user_prompt: str, json_mode: bool = False, max_tokens: int = 4000) -> str:
         """

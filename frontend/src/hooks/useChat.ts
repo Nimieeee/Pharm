@@ -352,12 +352,21 @@ export function useChat() {
                   const progress = JSON.parse(data) as DeepResearchProgress;
 
                   // Accumulate state for better UI experience
+                  let currentCitations = accumulatedState.citations || [];
+                  if (progress.citations && progress.citations.length > 0) {
+                    // Merge new citations avoiding duplicates by URL
+                    const newCitations = progress.citations.filter(
+                      nc => !currentCitations.some(ec => ec.url === nc.url)
+                    );
+                    currentCitations = [...currentCitations, ...newCitations];
+                  }
+
                   accumulatedState = {
                     ...accumulatedState,
                     ...progress,
-                    // Preserve accumulated data
+                    // Preserve and update accumulated data
                     steps: progress.steps || accumulatedState.steps,
-                    citations: progress.citations || accumulatedState.citations,
+                    citations: currentCitations,
                     plan_overview: progress.plan_overview || accumulatedState.plan_overview,
                   };
 
