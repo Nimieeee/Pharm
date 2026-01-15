@@ -42,6 +42,34 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Refs for click-outside detection
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
+  const desktopBtnRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Handle click outside to close attach menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!showAttachMenu) return;
+      const target = event.target as Node;
+
+      const isDesktop = desktopMenuRef.current?.contains(target) || desktopBtnRef.current?.contains(target);
+      const isMobile = mobileMenuRef.current?.contains(target) || mobileBtnRef.current?.contains(target);
+
+      if (!isDesktop && !isMobile) {
+        setShowAttachMenu(false);
+      }
+    };
+
+    if (showAttachMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAttachMenu]);
+
   const { sidebarOpen } = useSidebar();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,6 +321,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
               <div className="absolute left-3 top-1/2 -translate-y-1/2 z-[51]">
                 <div className="relative">
                   <button
+                    ref={desktopBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
                     disabled={isUploading}
@@ -315,36 +344,27 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                   {/* Attach Menu Dropdown - Desktop (Upload Only) */}
                   <AnimatePresence>
                     {showAttachMenu && (
-                      <>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="fixed inset-0 z-[45]"
-                          onClick={() => setShowAttachMenu(false)}
-                          onTouchEnd={() => setShowAttachMenu(false)}
-                        />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
-                          className="absolute bottom-full left-0 mb-4 w-56 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
+                      <motion.div
+                        ref={desktopMenuRef}
+                        initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
+                        className="absolute bottom-full left-0 mb-4 w-56 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
                         >
-                          <button
-                            type="button"
-                            onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
-                            className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
-                              <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
-                            </div>
-                            <div className="text-left">
-                              <span className="text-sm font-medium block">Upload File</span>
-                              <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
-                            </div>
-                          </button>
-                        </motion.div>
-                      </>
+                          <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
+                            <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
+                          </div>
+                          <div className="text-left">
+                            <span className="text-sm font-medium block">Upload File</span>
+                            <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
+                          </div>
+                        </button>
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -456,6 +476,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
               <div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-[51]">
                 <div className="relative">
                   <button
+                    ref={mobileBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
                     disabled={isUploading}
@@ -477,63 +498,54 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
                   <AnimatePresence>
                     {showAttachMenu && (
-                      <>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="fixed inset-0 z-[45]"
-                          onClick={() => setShowAttachMenu(false)}
-                          onTouchEnd={() => setShowAttachMenu(false)}
-                        />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
-                          className="absolute bottom-full left-0 mb-4 w-64 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
+                      <motion.div
+                        ref={mobileMenuRef}
+                        initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
+                        className="absolute bottom-full left-0 mb-4 w-64 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
                         >
-                          <button
-                            type="button"
-                            onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
-                            className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
-                              <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
-                            </div>
-                            <div className="text-left">
-                              <span className="text-sm font-medium block">Upload File</span>
-                              <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
-                            </div>
-                          </button>
+                          <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
+                            <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
+                          </div>
+                          <div className="text-left">
+                            <span className="text-sm font-medium block">Upload File</span>
+                            <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
+                          </div>
+                        </button>
 
-                          <div className="h-px bg-[var(--border)]/50 my-1 mx-2" />
+                        <div className="h-px bg-[var(--border)]/50 my-1 mx-2" />
 
-                          {modes.map((m) => {
-                            const Icon = m.icon;
-                            const isActive = mode === m.id;
-                            return (
-                              <button
-                                key={m.id}
-                                type="button"
-                                onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isActive
-                                  ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
-                                  : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50'
-                                  }`}
-                              >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-[var(--accent)]/20' : 'bg-[var(--surface-highlight)]'
-                                  }`}>
-                                  <Icon size={16} strokeWidth={1.5} />
-                                </div>
-                                <div className="text-left">
-                                  <p className="text-sm font-medium">{m.label}</p>
-                                  <p className="text-[10px] text-[var(--text-secondary)]">{m.desc}</p>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      </>
+                        {modes.map((m) => {
+                          const Icon = m.icon;
+                          const isActive = mode === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isActive
+                                ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
+                                : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50'
+                                }`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-[var(--accent)]/20' : 'bg-[var(--surface-highlight)]'
+                                }`}>
+                                <Icon size={16} strokeWidth={1.5} />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-medium">{m.label}</p>
+                                <p className="text-[10px] text-[var(--text-secondary)]">{m.desc}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
