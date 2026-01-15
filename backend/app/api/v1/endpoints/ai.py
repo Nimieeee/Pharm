@@ -14,17 +14,52 @@ from app.core.security import get_current_user
 from app.services.ai import AIService
 from app.services.chat import ChatService
 from app.services.enhanced_rag import EnhancedRAGService
-
 from app.services.deep_research import DeepResearchService
 from app.services.image_gen import ImageGenerationService
+from app.models.user import User
+from app.models.conversation import MessageCreate
+from app.models.document import DocumentUploadResponse, DocumentSearchRequest, DocumentSearchResponse
+from app.security import LLMSecurityGuard, SecurityViolationException, get_hardened_prompt
+import logging
+import json
 
-# ... imports ...
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# Initialize security guard (singleton)
+security_guard = LLMSecurityGuard()
 
 
-class ImageGenerationRequest(BaseModel):
-    """Image generation request model"""
-    prompt: str
+class ChatRequest(BaseModel):
+    """Chat request model"""
+    message: str
     conversation_id: UUID
+    mode: str = "detailed"  # "fast" or "detailed"
+    use_rag: bool = True
+    metadata: Dict[str, Any] = {}
+
+
+class ChatResponse(BaseModel):
+    """Chat response model"""
+    response: str
+    conversation_id: UUID
+    mode: str
+    context_used: bool
+
+
+def get_ai_service(db: Client = Depends(get_db)) -> AIService:
+    """Get AI service"""
+    return AIService(db)
+
+
+def get_chat_service(db: Client = Depends(get_db)) -> ChatService:
+    """Get chat service"""
+    return ChatService(db)
+
+
+def get_rag_service(db: Client = Depends(get_db)) -> EnhancedRAGService:
+    """Get enhanced RAG service"""
+    return EnhancedRAGService(db)
 
 
 def get_deep_research_service(db: Client = Depends(get_db)) -> DeepResearchService:
@@ -35,6 +70,12 @@ def get_deep_research_service(db: Client = Depends(get_db)) -> DeepResearchServi
 def get_image_gen_service() -> ImageGenerationService:
     """Get image generation service"""
     return ImageGenerationService()
+
+
+class ImageGenerationRequest(BaseModel):
+    """Image generation request model"""
+    prompt: str
+    conversation_id: UUID
 
 
 @router.post("/image-generation")
@@ -51,7 +92,6 @@ async def generate_image(
     print(f"📝 Prompt: {request.prompt}")
     
     try:
-        # Use a simpler prompt for the logs
         logger.info(f"Generating image for user {current_user.id} with prompt: {request.prompt}")
         
         # Call the image generation service
@@ -59,31 +99,32 @@ async def generate_image(
         
         # Save the interaction to chat history
         # 1. Save user prompt
-        chat_service.create_message(
+        await chat_service.add_message(
             MessageCreate(
                 conversation_id=request.conversation_id,
                 content=f"/image {request.prompt}",
                 role="user"
-            )
+            ),
+            current_user
         )
         
         # 2. Save assistant response (image URL)
-        # result['content'] contains the markdown image like ![image](https://...)
         assistant_message = result.get("content", "")
         if not assistant_message:
              assistant_message = "Failed to generate image content."
              
-        chat_service.create_message(
+        await chat_service.add_message(
             MessageCreate(
                 conversation_id=request.conversation_id,
                 content=assistant_message,
                 role="assistant"
-            )
+            ),
+            current_user
         )
         
         return {
             "status": "success",
-            "image_url": assistant_message, # Frontend might need parsing or just render markdown
+            "image_url": assistant_message,
             "markdown": assistant_message
         }
         
@@ -93,7 +134,6 @@ async def generate_image(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Image generation failed: {str(e)}"
         )
-
 
 
 @router.post("/chat", response_model=ChatResponse)
