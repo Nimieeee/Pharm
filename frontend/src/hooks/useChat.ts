@@ -107,6 +107,39 @@ export function useChat() {
     }
   }, [conversationId]);
 
+  // Image Generation Service Call
+  const generateImage = async (prompt: string, convId: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Authentication required');
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/ai/image-generation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          prompt,
+          conversation_id: convId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Image generation failed');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Image generation error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load conversation messages - with stream-aware switching
   const loadConversation = useCallback(async (convId: string) => {
     const token = localStorage.getItem('token');
@@ -282,6 +315,61 @@ export function useChat() {
       // Register this stream in the global store
       if (streamConversationId) {
         registerStream(streamConversationId, abortController);
+      }
+
+      // Handle Image Generation Command
+      if (content.trim().startsWith('/image')) {
+        const prompt = content.replace('/image', '').trim();
+        if (prompt && streamConversationId) {
+          try {
+            // Add assistant placeholder
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: '_Generating image..._',
+              timestamp: new Date(),
+            };
+
+            // Optimistically add to UI if current
+            if (currentConvIdRef.current === streamConversationId) {
+              setMessages(prev => [...prev, assistantMessage]);
+            }
+
+            const result = await generateImage(prompt, streamConversationId);
+
+            // Update with actual result
+            const finalMessage: Message = {
+              ...assistantMessage,
+              content: result.markdown || result.image_url || 'Image generated.'
+            };
+
+            // Update UI
+            if (currentConvIdRef.current === streamConversationId) {
+              setMessages(prev => prev.map(m => m.id === assistantMessage.id ? finalMessage : m));
+            }
+
+            // Update Cache
+            const cached = conversationMessages.get(streamConversationId) || [];
+            cached.push(finalMessage);
+            conversationMessages.set(streamConversationId, cached);
+
+            setIsLoading(false);
+            return; // Success
+          } catch (error) {
+            console.error('Image generation error:', error);
+            const errorMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: 'Failed to generate image. Please try again.',
+              timestamp: new Date(),
+            };
+            if (currentConvIdRef.current === streamConversationId) {
+              setMessages(prev => prev.filter(m => m.content !== '_Generating image..._').concat(errorMessage));
+            }
+            setIsLoading(false);
+            return;
+          }
+        }
       }
 
       // Handle Deep Research mode differently - use streaming endpoint

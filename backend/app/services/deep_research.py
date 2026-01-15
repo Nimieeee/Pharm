@@ -4,6 +4,7 @@ LangGraph-style autonomous research agent for biomedical literature review
 """
 
 import os
+import logging
 import json
 import httpx
 import asyncio
@@ -15,6 +16,9 @@ from datetime import datetime
 from supabase import Client
 
 from app.core.config import settings
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -155,9 +159,7 @@ class ResearchTools:
                             last_name = author.find("LastName")
                             if last_name is not None:
                                 authors.append(last_name.text)
-                        author_str = ", ".join(authors[:3])
-                        if len(authors) > 3:
-                            author_str += " et al."
+                        author_str = ", ".join(authors)
                         
                         # Extract journal
                         journal_elem = article_data.find(".//Journal/Title")
@@ -527,9 +529,10 @@ class DeepResearchService:
         # Ensure Tools keys are present
         env["TAVILY_API_KEY"] = env.get("TAVILY_API_KEY", "")
         env["SERP_API_KEY"] = env.get("SERP_API_KEY", "")
-        
-        # Override model via Hydra syntax if possible, or assume env var suffices?
-        # We'll add Hydra overrides to the command
+        env["SERPER_API_KEY"] = env.get("SERPER_API_KEY", "")
+        env["SERPER_API_KEY"] = env.get("SERPER_API_KEY", "")
+        # Ensure PATH is inherited/set so npx can be found
+        env["PATH"] = os.environ.get("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
         
         
         # Determine UV path (fallback to just 'uv' if not sure, but try explicit first)
@@ -539,10 +542,12 @@ class DeepResearchService:
 
         cmd = [
             uv_path, "run", "main.py", "trace",
-            f"--config_file_name={config_file}",
+            f"--config_file_name=agent_quickstart_search",
             f"--task={question}",
             "main_agent.llm.provider_class=GPTOpenAIClient",
             "main_agent.llm.model_name=mistral-large-latest",
+            "main_agent.max_turns=15",
+            "main_agent.tool_config=[tool-searching]",
             "+main_agent.llm.openai_api_key=${oc.env:OPENAI_API_KEY}",
             "+main_agent.llm.openai_base_url=${oc.env:OPENAI_BASE_URL}"
         ]
@@ -551,7 +556,7 @@ class DeepResearchService:
         logger.info(f"📂 CWD: {self.miroflow_path}")
         logger.info(f"⚙️ Command: {' '.join(cmd)}")
         
-        yield json.dumps({"type": "status", "status": "initializing", "message": "Initializing Research Agent (Mistral)..."})
+        yield json.dumps({"type": "status", "status": "initializing", "message": "Initializing Research Agent..."})
         
         try:
             process = await asyncio.create_subprocess_exec(
@@ -1122,13 +1127,10 @@ Return as JSON: {{"queries": ["query1", "query2"]}}"""
                     if not any(c.title == f.title for c in state.citations):
                         pubmed_data = getattr(f, '_pubmed_data', None)
                         
-                        # Filter out Web/DDG results that look like academic papers but lack metadata
-                        # This prevents "Title Only" citations for scientific sources
-                        if not pubmed_data and f.source in ["Web", "DuckDuckGo"]:
-                            # Heuristic: Long titles or academic keywords usually imply a paper
-                            is_likely_paper = len(f.title) > 60 or any(w in f.title.lower() for w in ["study", "analysis", "effect of", "role of", "clinical", "mechanism"])
-                            if is_likely_paper:
-                                continue
+                        # NOTE: Previously had a filter here that skipped web sources if they
+                        # looked like academic papers but lacked metadata. This was TOO aggressive
+                        # and resulted in 0 citations. Most useful sources are from web anyway.
+                        # Relaxed to allow all sources through - let the LLM writer decide quality.
 
                         citation = Citation(
                             id=citation_id,
@@ -1394,7 +1396,20 @@ Generate a comprehensive research report. Structure the sections intelligently b
                 "type": "citations",
                 "count": len(state.citations),
                 "message": f"Validated {len(state.citations)} citations",
-                "progress": 80
+                "progress": 80,
+                "citations": [
+                    {
+                        "id": c.id, 
+                        "title": c.title, 
+                        "url": c.url, 
+                        "source": c.source,
+                        "source_type": c.source,  # PubMed, Google Scholar, or Web
+                        "authors": c.authors or "",
+                        "year": c.year or "",
+                        "snippet": c.abstract[:200] + "..." if c.abstract and len(c.abstract) > 200 else (c.abstract or "")
+                    }
+                    for c in state.citations
+                ]
             })
             
             # Node D: Writing
