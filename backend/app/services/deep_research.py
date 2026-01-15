@@ -1371,11 +1371,26 @@ Generate a comprehensive research report. Structure the sections intelligently b
             state = await self._node_researcher(state)
             logger.info(f"✅ [Streaming] Deep Research: Research Complete (Found {len(state.findings)} sources) - Duration: {(datetime.now() - research_start).total_seconds():.2f}s")
             
+            # Send findings WITH preliminary citations so sources appear immediately
+            preliminary_citations = []
+            for i, f in enumerate(state.findings[:30]):  # Preview first 30 sources
+                preliminary_citations.append({
+                    "id": i + 1,
+                    "title": f.title,
+                    "url": f.url,
+                    "source": f.source,
+                    "source_type": f.source,
+                    "authors": "",  # Will be enriched in review phase
+                    "year": "",
+                    "snippet": f.raw_content[:200] + "..." if len(f.raw_content) > 200 else f.raw_content
+                })
+            
             yield json.dumps({
                 "type": "findings",
                 "count": len(state.findings),
                 "message": f"Found {len(state.findings)} relevant sources",
-                "progress": 60
+                "progress": 60,
+                "citations": preliminary_citations  # Send sources immediately!
             })
             
             # Node C: Reviewing
@@ -1385,7 +1400,7 @@ Generate a comprehensive research report. Structure the sections intelligently b
             yield json.dumps({
                 "type": "status",
                 "status": "reviewing",
-                "message": "Analyzing and validating sources...",
+                "message": "Processing biomedical data sources...",
                 "progress": 70
             })
             
