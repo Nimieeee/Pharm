@@ -9,7 +9,8 @@ import {
   CheckCircle2,
   Search,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 
 // --- Types ---
@@ -78,17 +79,33 @@ export default function DeepResearchUI({
   error
 }: DeepResearchProps) {
   const [activeSourceId, setActiveSourceId] = useState<number | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Detect mobile for sidebar default state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
   const sidebarRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   const handleCitationClick = (id: number) => {
     setActiveSourceId(id);
+    // On mobile, keep sidebar collapsed but show the specific source somehow? 
+    // Actually, on mobile we WANT to see the source, so we should expand and scroll.
     setSidebarCollapsed(false);
     const element = sidebarRefs.current[id];
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   };
+
+  // Handle window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarCollapsed(false);
+      } else {
+        setSidebarCollapsed(true);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Error state
   if (error) {
@@ -106,28 +123,52 @@ export default function DeepResearchUI({
   return (
     <div className="flex flex-col h-full w-full bg-white dark:bg-black rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
 
-      {/* 1. Header (Only show when complete or has content, otherwise minimal loader handles it) */}
-      {!isLoading && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <div className="p-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 rounded-md">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+      {/* 1. Header (Always show toggle on mobile) */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm sticky top-0 z-30">
+        <div className="flex items-center gap-2">
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+              <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
+                Researching...
+              </h3>
             </div>
-            <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
-              Research Complete
-            </h3>
-          </div>
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="md:hidden p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500"
-          >
-            <BookOpen className="w-4 h-4" />
-          </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 rounded-md">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </div>
+              <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
+                Research Complete
+              </h3>
+            </div>
+          )}
         </div>
-      )}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="flex md:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-sm transition-all active:scale-95"
+          title={sidebarCollapsed ? "View Sources" : "Hide Sources"}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          {sidebarCollapsed ? "Sources" : "Close"}
+        </button>
+      </div>
 
       {/* 2. Main Content Area */}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative min-h-[500px]">
+
+        {/* Mobile Backdrop */}
+        <AnimatePresence>
+          {!sidebarCollapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarCollapsed(true)}
+              className="md:hidden absolute inset-0 bg-black/40 backdrop-blur-[2px] z-10"
+            />
+          )}
+        </AnimatePresence>
 
         {/* LEFT PANEL: The Report */}
         <div className={`flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth bg-white dark:bg-black ${sidebarCollapsed ? 'w-full' : ''}`}>
@@ -207,16 +248,25 @@ export default function DeepResearchUI({
         </div>
 
         {/* RIGHT PANEL: The Source Map Sidebar */}
-        <div className={`
-          ${sidebarCollapsed ? 'hidden' : 'flex'} 
-          md:flex
-          w-full md:w-72 lg:w-80
-          absolute md:relative inset-0 md:inset-auto
-          z-20 md:z-auto
-          border-l border-slate-100 dark:border-slate-800 
-          bg-slate-50/50 dark:bg-black 
-          flex-col
-        `}>
+        <motion.div
+          initial={false}
+          animate={{
+            x: sidebarCollapsed ? "100%" : 0,
+            opacity: sidebarCollapsed ? 0 : 1
+          }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          className={`
+            fixed md:relative inset-y-0 right-0 md:inset-auto
+            ${sidebarCollapsed ? 'pointer-events-none' : 'pointer-events-auto'} 
+            md:pointer-events-auto
+            flex
+            w-[85%] sm:w-80 md:w-72 lg:w-80
+            z-20 md:z-auto
+            border-l border-slate-100 dark:border-slate-800 
+            bg-white dark:bg-black 
+            flex-col shadow-2xl md:shadow-none
+          `}
+        >
           {/* Sidebar Header */}
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-sm">
             <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
@@ -227,9 +277,9 @@ export default function DeepResearchUI({
             </h4>
             <button
               onClick={() => setSidebarCollapsed(true)}
-              className="md:hidden p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"
+              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition-colors"
             >
-              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
@@ -312,7 +362,7 @@ export default function DeepResearchUI({
               </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

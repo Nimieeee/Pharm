@@ -53,7 +53,7 @@ class MultiProviderService:
                 base_url="https://api.mistral.ai/v1",
                 models={
                     "fast": "mistral-small-latest",
-                    "detailed": "mistral-medium-latest",
+                    "detailed": "mistral-large-latest",
                     "deep_research": "mistral-large-latest",
                 },
                 headers={
@@ -72,8 +72,8 @@ class MultiProviderService:
                 base_url="https://api.groq.com/openai/v1",
                 models={
                     "fast": "llama-3.1-8b-instant",
-                    "detailed": "qwen/qwen3-32b",
-                    "deep_research": "qwen/qwen3-32b",
+                    "detailed": "llama-3.3-70b-versatile",
+                    "deep_research": "llama-3.3-70b-versatile",
                 },
                 headers={
                     "Authorization": f"Bearer {groq_key}",
