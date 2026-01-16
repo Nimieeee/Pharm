@@ -135,8 +135,13 @@ class MultiProviderService:
             provider = await self.get_next_provider()
             model = provider.models.get(mode, provider.models["detailed"])
             
+            # Use longer timeout for detailed/research modes (larger models)
+            timeout = 120.0 if mode in ["detailed", "research", "deep_research"] else 60.0
+            
+            print(f"🔄 Attempting {provider.name.value} with model {model} (timeout: {timeout}s)")
+            
             try:
-                async with httpx.AsyncClient(timeout=60.0) as client:
+                async with httpx.AsyncClient(timeout=timeout) as client:
                     async with client.stream(
                         "POST",
                         f"{provider.base_url}/chat/completions",

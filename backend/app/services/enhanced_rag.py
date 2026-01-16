@@ -773,8 +773,15 @@ class EnhancedRAGService:
             )
             
             if not chunks:
-                logger.info("No relevant context found for query")
-                return ""
+                # 🔍 FALLBACK: Try to get recent chunks directly if similarity search fails
+                logger.warning(f"⚠️ Similarity search returned 0 chunks for conversation {conversation_id}, trying fallback...")
+                chunks = await self._get_recent_chunks(conversation_id, user_id, max_chunks)
+                
+                if not chunks:
+                    logger.info("📭 No document chunks found at all - conversation has no uploaded documents")
+                    return ""
+                else:
+                    logger.info(f"✅ Fallback retrieved {len(chunks)} recent chunks")
             
             # Organize chunks by document and similarity
             documents = {}
