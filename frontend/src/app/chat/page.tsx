@@ -268,7 +268,7 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * i, duration: 0.3 }}
-              onClick={() => onSuggestionClick(suggestion.text, suggestion.mode)}
+              onClick={() => onSuggestionClick(suggestion.text, currentMode)}
               className="p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-left text-xs sm:text-sm text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--surface-highlight)] transition-all h-full"
             >
               {suggestion.text}
