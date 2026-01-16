@@ -4,7 +4,7 @@ API v1 router configuration
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, chat, ai, admin, support, health, workbench
+from app.api.v1.endpoints import auth, chat, ai, admin, support, health, workbench, lab_report
 
 api_router = APIRouter()
 
@@ -16,3 +16,4 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(support.router, prefix="/support", tags=["support"])
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(workbench.router, prefix="/workbench", tags=["workbench"])
+api_router.include_router(lab_report.router, prefix="/lab-report", tags=["lab-report"])
