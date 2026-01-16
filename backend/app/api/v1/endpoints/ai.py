@@ -375,6 +375,105 @@ async def chat_stream(
                 media_type="text/event-stream"
             )
         
+        # =====================================================================
+        # PREFIX DETECTION: "Lab:" and "Deep Research:"
+        # =====================================================================
+        original_message = chat_request.message.strip()
+        effective_mode = chat_request.mode
+        lab_report_mode = False
+        
+        # Check for "Lab:" prefix → trigger lab report generation
+        if original_message.lower().startswith("lab:"):
+            lab_report_mode = True
+            # Remove prefix and clean up the message
+            chat_request.message = original_message[4:].strip()
+            logger.info(f"🧪 Lab Report mode triggered via 'Lab:' prefix")
+        
+        # Check for "Deep Research:" prefix → switch to deep_research mode
+        elif original_message.lower().startswith("deep research:"):
+            effective_mode = "deep_research"
+            chat_request.message = original_message[14:].strip()
+            logger.info(f"🔬 Deep Research mode triggered via 'Deep Research:' prefix")
+        
+        # =====================================================================
+        # HANDLE LAB REPORT MODE (Special case - generates structured report)
+        # =====================================================================
+        if lab_report_mode:
+            from app.services.lab_report import LabReportService
+            from app.services.enhanced_rag import EnhancedRAGService
+            
+            # Save user message first
+            user_message = MessageCreate(
+                conversation_id=chat_request.conversation_id,
+                role="user",
+                content=original_message,
+                metadata=chat_request.metadata
+            )
+            await chat_service.add_message(user_message, current_user)
+            
+            async def lab_report_stream():
+                try:
+                    lab_service = LabReportService()
+                    rag_service = EnhancedRAGService(ai_service.supabase)
+                    
+                    yield f"data: {json.dumps({'text': '📝 **Generating Lab Report...**\\n\\n'})}\n\n"
+                    
+                    # Get RAG context for uploaded documents
+                    data_context = ""
+                    try:
+                        context = await rag_service.get_conversation_context(
+                            query=chat_request.message,
+                            conversation_id=chat_request.conversation_id,
+                            user_id=current_user.id,
+                            max_chunks=20
+                        )
+                        if context:
+                            data_context = context
+                            yield f"data: {json.dumps({'text': '📄 Found uploaded document context...\\n'})}\n\n"
+                    except Exception as e:
+                        logger.warning(f"RAG fetch failed: {e}")
+                    
+                    yield f"data: {json.dumps({'text': '🔬 Analyzing data and generating sections...\\n\\n'})}\n\n"
+                    
+                    # Generate the lab report
+                    result = await lab_service.generate_report(
+                        experiment_type=chat_request.message,
+                        data_context=data_context or chat_request.message,
+                        methodology="Standard laboratory procedures as described in the provided materials.",
+                        user_instructions=None
+                    )
+                    
+                    if result.get("error"):
+                        yield f"data: {json.dumps({'text': f'❌ Error: {result[\"error\"]}'})}\n\n"
+                    else:
+                        # Stream the full report
+                        full_report = result.get("full_report", "No report generated")
+                        yield f"data: {json.dumps({'text': full_report})}\n\n"
+                    
+                    # Save assistant message
+                    assistant_message = MessageCreate(
+                        conversation_id=chat_request.conversation_id,
+                        role="assistant",
+                        content=result.get("full_report", "Lab report generation completed."),
+                        metadata={"mode": "lab_report", "lab_report": True}
+                    )
+                    await chat_service.add_message(assistant_message, current_user)
+                    
+                except Exception as e:
+                    logger.error(f"Lab report generation failed: {e}")
+                    yield f"data: {json.dumps({'text': f'❌ Lab report generation failed: {str(e)}'})}\n\n"
+                
+                yield "data: [DONE]\n\n"
+            
+            return StreamingResponse(
+                lab_report_stream(),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+            )
+        
+        # Use effective_mode (may have been changed by prefix detection)
+        chat_request.mode = effective_mode
+        
         # Add user message to conversation
         print(f"💾 Saving user message...")
         msg_start = time.time()

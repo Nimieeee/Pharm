@@ -295,10 +295,46 @@ The conclusion should:
         return state
     
     async def _generate_references(self, state: LabReportState) -> LabReportState:
-        """Generate references list based on citations used."""
+        """Generate references list using Serper API for real academic sources."""
         state.status = "generating_references"
         
-        # Collect all generated text to find citations
+        # Import Serper service
+        from app.services.serper import SerperService
+        serper = SerperService()
+        
+        # Build search query from experiment type and key terms
+        search_query = f"{state.experiment_type} pharmacology methodology"
+        
+        try:
+            # Fetch real academic references from Google Scholar
+            references_data = await serper.get_references_for_topic(
+                topic=search_query,
+                include_scholar=True,
+                include_news=False,
+                include_patents=False,
+                max_total=8
+            )
+            
+            if references_data:
+                state.references = [
+                    {"text": ref.get("citation_text", ref.get("title", ""))}
+                    for ref in references_data
+                ]
+                logger.info(f"📚 Fetched {len(state.references)} real references from Serper")
+            else:
+                # Fallback to LLM-generated references if Serper fails
+                logger.warning("⚠️ Serper returned no results, using LLM fallback")
+                state.references = await self._generate_references_fallback(state)
+                
+        except Exception as e:
+            logger.error(f"Serper reference search failed: {e}")
+            # Fallback to LLM-generated references
+            state.references = await self._generate_references_fallback(state)
+        
+        return state
+    
+    async def _generate_references_fallback(self, state: LabReportState) -> List[Dict[str, str]]:
+        """Fallback: Generate references using LLM when Serper is unavailable."""
         all_text = "\n".join([
             state.introduction or "",
             state.discussion or ""
@@ -318,18 +354,15 @@ Format each reference on a new line. Include 5-8 references total."""
             prompt
         )
         
-        # Parse references into list
         references = []
         for line in response.strip().split("\n"):
             line = line.strip()
             if line and not line.startswith("#"):
-                # Remove numbering if present
                 if line[0].isdigit() and "." in line[:3]:
                     line = line.split(".", 1)[1].strip()
                 references.append({"text": line})
         
-        state.references = references
-        return state
+        return references
     
     def _format_report(self, state: LabReportState) -> Dict[str, Any]:
         """Format the complete report as a dictionary."""
