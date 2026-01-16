@@ -445,6 +445,44 @@ class EnhancedRAGService:
                 file_info=file_info
             )
     
+    async def store_text_as_memory(
+        self,
+        text: str,
+        conversation_id: UUID,
+        user_id: UUID,
+        source: str = "system_memory",
+        metadata: Dict[str, Any] = None
+    ) -> bool:
+        """
+        Store a text block (like image analysis) as a persistent memory chunk in the vector DB.
+        """
+        try:
+            from langchain_core.documents import Document
+            
+            # Create a document
+            doc = Document(
+                page_content=text,
+                metadata={
+                    "source": source,
+                    "user_id": str(user_id),
+                    "conversation_id": str(conversation_id),
+                    "created_at": time.time(),
+                    **(metadata or {})
+                }
+            )
+            
+            # Use internal chunk storage logic
+            return await self._process_and_store_chunk(
+                chunk=doc,
+                filename=source,
+                conversation_id=conversation_id,
+                user_id=user_id,
+                chunk_index=int(time.time()), # Use timestamp as unique index
+            )
+        except Exception as e:
+            logger.error(f"❌ Failed to store text memory: {e}")
+            return False
+
     async def _process_and_store_chunk(
         self, 
         chunk: Document, 
