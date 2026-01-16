@@ -395,16 +395,20 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-20 border-t border-border bg-surface/20" >
-        <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12">
-          <div className="col-span-2 lg:col-span-2">
+        <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-3 gap-12">
+          <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <span className="text-white text-sm font-bold">P</span>
+              <div className="w-8 h-8 relative rounded-xl overflow-hidden">
+                <img
+                  src="/PharmGPT.png"
+                  alt="PharmGPT Logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="font-serif font-bold text-xl text-foreground">PharmGPT</span>
             </div>
             <p className="text-foreground-muted max-w-xs mb-6">
-              Pioneering the future of pharmaceutical intelligence with autonomous AI agents.
+              Pioneering the future of pharmacological intelligence with autonomous AI agents.
             </p>
             <p className="text-xs text-foreground-muted">
               © 2025 PharmGPT. All rights reserved.
@@ -413,28 +417,16 @@ export default function HomePage() {
           <div>
             <h4 className="font-bold text-foreground mb-6">Product</h4>
             <ul className="space-y-4 text-foreground-muted text-sm">
-              <li className="hover:text-foreground cursor-pointer">Deep Research</li>
-              <li className="hover:text-foreground cursor-pointer">Data Workbench</li>
-              <li className="hover:text-foreground cursor-pointer">Clinical Intelligence</li>
-              <li className="hover:text-foreground cursor-pointer">Enterprise API</li>
+              <li onClick={() => router.push('/chat')} className="hover:text-foreground cursor-pointer transition-colors">Deep Research</li>
+              <li onClick={() => router.push('/workbench')} className="hover:text-foreground cursor-pointer transition-colors">Data Workbench</li>
+              <li onClick={() => router.push('/lab-report')} className="hover:text-foreground cursor-pointer transition-colors">Lab Reports</li>
             </ul>
           </div>
           <div>
             <h4 className="font-bold text-foreground mb-6">Resources</h4>
             <ul className="space-y-4 text-foreground-muted text-sm">
-              <li className="hover:text-foreground cursor-pointer">Documentation</li>
-              <li className="hover:text-foreground cursor-pointer">API Reference</li>
-              <li className="hover:text-foreground cursor-pointer">Case Studies</li>
-              <li className="hover:text-foreground cursor-pointer">Community</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-foreground mb-6">Legal</h4>
-            <ul className="space-y-4 text-foreground-muted text-sm">
-              <li className="hover:text-foreground cursor-pointer">Privacy Policy</li>
-              <li className="hover:text-foreground cursor-pointer">Terms of Service</li>
-              <li className="hover:text-foreground cursor-pointer">Security</li>
-              <li className="hover:text-foreground cursor-pointer">Compliance</li>
+              <li onClick={() => router.push('/docs')} className="hover:text-foreground cursor-pointer transition-colors">Documentation</li>
+              <li onClick={() => router.push('/faq')} className="hover:text-foreground cursor-pointer transition-colors">FAQ</li>
             </ul>
           </div>
         </div>
