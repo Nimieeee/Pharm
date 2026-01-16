@@ -420,6 +420,28 @@ class AuthService:
         import secrets
         return "".join(secrets.choice("0123456789") for _ in range(6))
 
+    async def verify_user_email(self, email: str, code: str) -> bool:
+        """Verify user email with code"""
+        try:
+            # Get user including verification code (not in User model usually, so query raw)
+            result = self.db.table("users").select("*").eq("email", email).execute()
+            
+            if not result.data:
+                return False
+            
+            user_data = result.data[0]
+            
+            # Check code
+            # Allow "123456" as master code for testing if needed, or stick to strict
+            if user_data.get("verification_code") != code:
+                return False
+            
+            # Update to verified
+            self.db.table("users").update({
+                "is_verified": True,
+                "verification_code": None # Clear code
+            }).eq("id", user_data["id"]).execute()
+            
             return True
             
         except Exception as e:
