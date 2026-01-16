@@ -419,7 +419,6 @@ export default function HomePage() {
             <ul className="space-y-4 text-foreground-muted text-sm">
               <li onClick={() => router.push('/chat')} className="hover:text-foreground cursor-pointer transition-colors">Deep Research</li>
               <li onClick={() => router.push('/workbench')} className="hover:text-foreground cursor-pointer transition-colors">Data Workbench</li>
-              <li onClick={() => router.push('/lab-report')} className="hover:text-foreground cursor-pointer transition-colors">Lab Reports</li>
             </ul>
           </div>
           <div>

@@ -546,7 +546,7 @@ class EnhancedDocumentLoader:
             total_text = sum(len(doc.page_content.strip()) for doc in documents)
             avg_text_per_page = total_text / len(documents) if documents else 0
             
-            is_scanned = avg_text_per_page < 50
+            is_scanned = avg_text_per_page < 500
             
             if not is_scanned:
                 logger.info(f"📄 PDF {filename} has sufficient text ({avg_text_per_page:.0f} chars/page). Using standard extraction.")
