@@ -144,3 +144,54 @@ class EmailService:
         except Exception as e:
             print(f"❌ Failed to send re-engagement email: {e}")
             return False
+
+    def send_password_reset_email(self, to_email: str, reset_link: str) -> bool:
+        """Send password reset link via email"""
+        if not self.enabled:
+            print(f"📧 [MOCK EMAIL] Password Reset to: {to_email} | Link: {reset_link}")
+            return True
+
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = "Reset your PharmGPT Password"
+            msg["From"] = f"PharmGPT <{self.smtp_user}>"
+            msg["To"] = to_email
+
+            html = f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #18181b; margin: 0;">PharmGPT</h1>
+                </div>
+                <h2 style="color: #18181b; margin-bottom: 16px;">Reset your password</h2>
+                <p style="color: #71717a; font-size: 16px; line-height: 1.6;">
+                    We received a request to reset your password. Click the button below to choose a new password:
+                </p>
+                <div style="text-align: center; margin: 32px 0;">
+                    <a href="{reset_link}" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Reset Password</a>
+                </div>
+                <p style="color: #71717a; font-size: 14px;">
+                    This link will expire in 30 minutes. If you didn't request a password reset, you can safely ignore this email.
+                </p>
+                <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 32px;">
+                    If the button doesn't work, copy and paste this link into your browser:<br>
+                    <a href="{reset_link}" style="color: #6366f1;">{reset_link}</a>
+                </p>
+            </div>
+            """
+            
+            text = f"Reset your PharmGPT password by visiting this link:\n{reset_link}\n\nThis link expires in 30 minutes."
+            
+            msg.attach(MIMEText(text, "plain"))
+            msg.attach(MIMEText(html, "html"))
+
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_user, self.smtp_password)
+                server.sendmail(self.smtp_user, to_email, msg.as_string())
+            
+            print(f"✅ Password reset email sent to {to_email}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to send password reset email: {e}")
+            return False

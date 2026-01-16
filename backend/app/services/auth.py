@@ -420,30 +420,88 @@ class AuthService:
         import secrets
         return "".join(secrets.choice("0123456789") for _ in range(6))
 
-    async def verify_user_email(self, email: str, code: str) -> bool:
-        """Verify user email with code"""
-        try:
-            # Get user including verification code (not in User model usually, so query raw)
-            result = self.db.table("users").select("*").eq("email", email).execute()
-            
-            if not result.data:
-                return False
-            
-            user_data = result.data[0]
-            
-            # Check code
-            # Allow "123456" as master code for testing if needed, or stick to strict
-            if user_data.get("verification_code") != code:
-                return False
-            
-            # Update to verified
-            self.db.table("users").update({
-                "is_verified": True,
-                "verification_code": None # Clear code
-            }).eq("id", user_data["id"]).execute()
-            
             return True
             
         except Exception as e:
             print(f"Verification error: {e}")
             return False
+
+    async def request_password_reset(self, email: str, frontend_url: str = "https://pharmgpt.app") -> bool:
+        """
+        Initiate password reset flow:
+        1. Verify email exists
+        2. Generate reset token
+        3. Send email with link
+        """
+        user = await self.get_user_by_email(email)
+        if not user:
+            # Silent failure to prevent user enumeration
+            print(f"⚠️ Password reset requested for non-existent email: {email}")
+            return True
+            
+        # Create reset token (short lived - 30 mins)
+        token_data = {
+            "sub": str(user.id),
+            "email": user.email,
+            "type": "reset"
+        }
+        
+        # Create token valid for 30 minutes
+        expiry = timedelta(minutes=30)
+        reset_token = self.create_access_token(token_data, expires_delta=expiry)
+        
+        # Build link (assume frontend route /reset-password?token=...)
+        # Handle trailing slash in base url
+        base_url = frontend_url.rstrip("/")
+        link = f"{base_url}/reset-password?token={reset_token}"
+        
+        # Send email
+        return self.email_service.send_password_reset_email(email, link)
+
+    async def reset_password(self, token: str, new_password: str) -> bool:
+        """
+        Reset user password using token
+        """
+        try:
+            # Verify token explicitly checking for 'reset' type
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            
+            if payload.get("type") != "reset":
+                raise HTTPException(status_code=400, detail="Invalid token type")
+                
+            user_id = payload.get("sub")
+            if not user_id:
+                raise HTTPException(status_code=400, detail="Invalid token")
+                
+            # Hash new password
+            hashed_password = self.hash_password(new_password)
+            
+            # Update user
+            updates = {"password_hash": hashed_password}
+            
+            # Also verify user if they weren't verified (recovering account implies ownership)
+            # Fetch user first to check status
+            # existing = await self.get_user_by_id(UUID(user_id))
+            # if existing and not existing.is_verified:
+            #     updates["is_verified"] = True
+            
+            self.db.table("users").update(updates).eq("id", user_id).execute()
+            
+            # Invalidate cache
+            # We need email for cache key, easiest to just clear by ID if we could, 
+            # but our cache is by email. Let's just create a method to clear cache by ID or skip it.
+            # Ideally fetch user to get email.
+            user = await self.get_user_by_id(UUID(user_id))
+            if user:
+                cache_key = f"user:email:{user.email}"
+                _user_cache.pop(cache_key, None)
+                
+            return True
+            
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=400, detail="Reset link has expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=400, detail="Invalid reset link")
+        except Exception as e:
+            print(f"Password reset error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to reset password")

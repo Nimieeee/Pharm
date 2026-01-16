@@ -14,6 +14,20 @@ from supabase import Client
 from app.core.database import get_db
 from app.services.auth import AuthService
 from app.models.auth import Token, LoginRequest, RefreshTokenRequest, VerifyEmailRequest
+from pydantic import BaseModel, EmailStr, validator
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+    
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
 from app.models.user import User, UserCreate, UserUpdate
 from supabase import create_client, Client
 
@@ -333,3 +347,35 @@ async def delete_profile(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete account"
         )
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Request password reset email.
+    Always returns 200 to prevent email enumeration.
+    """
+    # Use environment variable for frontend URL, or default to localhost/production URL
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    
+    await auth_service.request_password_reset(
+        email=request.email,
+        frontend_url=frontend_url
+    )
+    return {"message": "If an account exists with this email, a reset link has been sent."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    request: ResetPasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Reset password using token from email.
+    """
+    await auth_service.reset_password(
+        token=request.token,
+        new_password=request.new_password
+    )
+    return {"message": "Password successfully reset. You can now login with your new password."}

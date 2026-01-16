@@ -133,6 +133,11 @@ function LoginContent() {
                 className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
               />
             </div>
+            <div className="flex justify-end mt-2">
+              <Link href="/forgot-password" className="text-sm text-indigo-500 hover:text-indigo-600 transition-colors">
+                Forgot password?
+              </Link>
+            </div>
           </div>
         </div>
 
