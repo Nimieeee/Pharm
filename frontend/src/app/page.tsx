@@ -37,13 +37,7 @@ const capabilities = [
     icon: Globe,
     gradient: "from-blue-500/10 to-cyan-500/10"
   },
-  {
-    title: "Real-time Docking",
-    desc: "Predict binding affinities instantly.",
-    className: "md:col-span-1",
-    icon: Database,
-    gradient: "from-purple-500/10 to-pink-500/10"
-  },
+
   {
     title: "Clinical Trials",
     desc: "Track global patient recruitment.",
@@ -68,7 +62,7 @@ const capabilities = [
 ];
 
 const faqs = [
-  { q: "How accurate is the molecular analysis?", a: "PharmGPT uses state-of-the-art vision models (Pixtral) combined with biochemical databases to ensure high fidelity in structure recognition." },
+
   { q: "Is my research data secure?", a: "Yes. We offer self-hosted deployment options (Docker) ensuring your proprietary data never leaves your infrastructure." },
   { q: "Can it ingest handwritten lab notes?", a: "Our vision capabilities can transcribe legible handwriting and integrate it into your knowledge base." },
   { q: "What is the token limit for RAG?", a: "We support context windows up to 128k tokens, allowing for analysis of extensive clinical trial reports." }
