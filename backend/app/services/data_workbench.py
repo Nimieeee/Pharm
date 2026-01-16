@@ -40,6 +40,7 @@ class WorkbenchState:
     file_name: str
     style_description: Optional[str] = None
     style_image_base64: Optional[str] = None
+    chart_instructions: Optional[str] = None
     style_config: Optional[StyleConfig] = None
     plotting_code: Optional[str] = None
     result_image_base64: Optional[str] = None
@@ -213,6 +214,17 @@ Context: You have a pandas DataFrame called `df` already loaded.
 
 Goal: Write Python code to create an insightful visualization of the data.
 
+Chart Type Selection:
+- If user provides specific instructions, follow them exactly
+- If no instructions given, AUTOMATICALLY choose the best chart type based on data:
+  * Time series data (dates) → Line chart
+  * Categorical vs Numeric → Bar chart
+  * Two numeric columns → Scatter plot
+  * Single numeric column → Histogram
+  * Proportions/percentages → Pie chart
+  * Multiple categories comparison → Grouped bar chart
+  * Correlation analysis → Heatmap
+
 Style Instructions:
 - Apply the provided style_config using plt.rcParams and sns.set_palette
 - If background is dark (luminance < 0.5), use white text colors
@@ -224,13 +236,23 @@ CRITICAL CONSTRAINTS:
 - Return ONLY the Python code block, no explanations
 - The code must be self-contained and executable"""
 
+        # Build user prompt with optional instructions
+        user_instructions = ""
+        if state.chart_instructions:
+            user_instructions = f"""\n\nUser Chart Instructions:
+{state.chart_instructions}
+
+Follow these instructions exactly when creating the visualization."""
+        else:
+            user_instructions = """\n\nNo specific chart instructions provided. Analyze the data structure and AUTOMATICALLY choose the most appropriate and insightful visualization type."""
+
         user_prompt = f"""Data Preview:
 {preview}
 
 Style Configuration:
-{style_json}
+{style_json}{user_instructions}
 
-Generate Python visualization code for this data. Choose appropriate chart types based on the columns."""
+Generate Python visualization code for this data."""
 
         response = await self._call_llm(system_prompt, user_prompt, json_mode=False)
         
@@ -466,7 +488,8 @@ Focus on:
         file_path: str,
         file_name: str,
         style_description: Optional[str] = None,
-        style_image_base64: Optional[str] = None
+        style_image_base64: Optional[str] = None,
+        chart_instructions: Optional[str] = None
     ) -> Dict[str, Any]:
         """Run the full analysis workflow."""
         
@@ -474,7 +497,8 @@ Focus on:
             file_path=file_path,
             file_name=file_name,
             style_description=style_description,
-            style_image_base64=style_image_base64
+            style_image_base64=style_image_base64,
+            chart_instructions=chart_instructions
         )
         
         try:

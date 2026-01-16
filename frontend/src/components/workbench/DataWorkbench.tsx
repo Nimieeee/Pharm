@@ -103,7 +103,7 @@ export default function DataWorkbench() {
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [preview, setPreview] = useState<DataPreview | null>(null);
-  const [activeTab, setActiveTab] = useState<'visualization' | 'analysis' | 'data'>('visualization');
+  const [chartInstructions, setChartInstructions] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Sheet Selection
@@ -217,6 +217,11 @@ export default function DataWorkbench() {
       formData.append('style_description', finalStyleDesc);
     }
 
+    // Add chart instructions if provided
+    if (chartInstructions.trim()) {
+      formData.append('chart_instructions', chartInstructions);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/workbench/analyze`, {
         method: 'POST',
@@ -231,7 +236,6 @@ export default function DataWorkbench() {
       }
 
       setResult(data);
-      setActiveTab('visualization');
     } catch (err: any) {
       setError(err.message || 'Analysis failed');
     } finally {
@@ -531,143 +535,73 @@ export default function DataWorkbench() {
           </div>
 
           {/* ============================================================ */}
-          {/* RIGHT PANEL - Results */}
+          {/* RIGHT PANEL - Visualization Results */}
           {/* ============================================================ */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden">
-            {/* Tabs */}
-            <div className="flex border-b border-[var(--border)]">
-              {[
-                { id: 'visualization', label: 'Visualization', icon: BarChart3 },
-                { id: 'analysis', label: 'Analysis', icon: FileText },
-                { id: 'data', label: 'Raw Data', icon: Table }
-              ].map(tab => (
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={20} className="text-[var(--accent)]" />
+                <h3 className="font-medium text-[var(--text-primary)]">Visualization</h3>
+              </div>
+              {result?.image && (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
+                  onClick={downloadImage}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg hover:border-indigo-500/50 transition-colors"
                 >
-                  <tab.icon size={16} />
-                  {tab.label}
+                  <Download size={14} />
+                  Download
                 </button>
-              ))}
+              )}
             </div>
 
-            {/* Tab Content */}
-            <div className="p-6 min-h-[400px]">
+            {/* Chart Instructions */}
+            <div className="px-6 py-4 border-b border-[var(--border)]">
+              <label className="text-sm text-[var(--text-secondary)] mb-2 block">
+                Chart Instructions (optional)
+              </label>
+              <textarea
+                value={chartInstructions}
+                onChange={(e) => setChartInstructions(e.target.value)}
+                placeholder="e.g., 'Create a bar chart comparing sales by region' or 'Plot a line graph of temperature over time'"
+                rows={2}
+                className="w-full px-4 py-3 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-indigo-500 resize-none text-sm"
+              />
+              <p className="text-xs text-[var(--text-secondary)] mt-2">
+                Leave empty to auto-detect the best chart type from your data
+              </p>
+            </div>
+
+            {/* Visualization Content */}
+            <div className="p-6 min-h-[350px]">
               <AnimatePresence mode="wait">
-                {/* Visualization Tab */}
-                {activeTab === 'visualization' && (
-                  <motion.div
-                    key="viz"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    {result?.image ? (
-                      <div className="space-y-4">
-                        <img
-                          src={`data:image/png;base64,${result.image}`}
-                          alt="Visualization"
-                          className="w-full rounded-xl border border-[var(--border)]"
-                        />
-                        <button
-                          onClick={downloadImage}
-                          className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg hover:border-indigo-500/50 transition-colors"
-                        >
-                          <Download size={16} />
-                          Download PNG
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-64 text-[var(--text-secondary)]">
-                        <BarChart3 size={48} className="mb-4 opacity-30" />
-                        <p>Upload data and click Analyze to generate visualization</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Analysis Tab */}
-                {activeTab === 'analysis' && (
-                  <motion.div
-                    key="analysis"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="prose prose-sm dark:prose-invert max-w-none"
-                  >
-                    {result?.analysis ? (
-                      <div
-                        className="text-[var(--text-primary)]"
-                        dangerouslySetInnerHTML={{
-                          __html: result.analysis
-                            .replace(/^### /gm, '<h3>')
-                            .replace(/^## /gm, '<h2>')
-                            .replace(/^# /gm, '<h1>')
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                            .replace(/\n/g, '<br/>')
-                        }}
+                <motion.div
+                  key={result?.image ? 'result' : 'empty'}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  {result?.image ? (
+                    <div className="space-y-4">
+                      <img
+                        src={`data:image/png;base64,${result.image}`}
+                        alt="Visualization"
+                        className="w-full rounded-xl border border-[var(--border)]"
                       />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-64 text-[var(--text-secondary)]">
-                        <FileText size={48} className="mb-4 opacity-30" />
-                        <p>Analysis will appear here after processing</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Data Tab */}
-                {activeTab === 'data' && (
-                  <motion.div
-                    key="data"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    {preview ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-[var(--border)]">
-                              {preview.columns.map(col => (
-                                <th
-                                  key={col}
-                                  className="px-3 py-2 text-left font-medium text-[var(--text-primary)]"
-                                >
-                                  {col}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {preview.sample.map((row, i) => (
-                              <tr key={i} className="border-b border-[var(--border)]">
-                                {preview.columns.map(col => (
-                                  <td
-                                    key={col}
-                                    className="px-3 py-2 text-[var(--text-secondary)]"
-                                  >
-                                    {String(row[col] ?? '')}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-64 text-[var(--text-secondary)]">
-                        <Table size={48} className="mb-4 opacity-30" />
-                        <p>Upload a data file to preview</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
+                      {result.error && (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                          <p className="text-sm text-amber-600 dark:text-amber-400">{result.error}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-64 text-[var(--text-secondary)]">
+                      <BarChart3 size={48} className="mb-4 opacity-30" />
+                      <p className="text-center">Upload data and click Analyze to generate visualization</p>
+                      <p className="text-xs mt-2 opacity-60">The AI will auto-detect the best chart type</p>
+                    </div>
+                  )}
+                </motion.div>
               </AnimatePresence>
             </div>
           </div>

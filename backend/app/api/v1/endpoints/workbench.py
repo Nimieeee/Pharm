@@ -47,6 +47,7 @@ def get_workbench_service() -> DataWorkbenchService:
 async def analyze_data(
     data_file: UploadFile = File(...),
     style_description: Optional[str] = Form(None),
+    chart_instructions: Optional[str] = Form(None),
     style_image: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_user),
     workbench_service: DataWorkbenchService = Depends(get_workbench_service)
@@ -106,7 +107,8 @@ async def analyze_data(
             file_path=data_path,
             file_name=data_file.filename or "data",
             style_description=style_description,
-            style_image_base64=style_image_base64
+            style_image_base64=style_image_base64,
+            chart_instructions=chart_instructions
         )
         
         logger.info(f"✅ Analysis complete: status={result['status']}")
