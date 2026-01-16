@@ -74,6 +74,17 @@ async def login(
                 detail="Incorrect email or password"
             )
         
+        # Update last_login timestamp
+        try:
+            from app.core.database import get_db
+            from datetime import datetime
+            db = get_db()
+            db.table("users").update({
+                "last_login": datetime.utcnow().isoformat()
+            }).eq("id", str(user.id)).execute()
+        except Exception as e:
+            print(f"⚠️ Failed to update last_login: {e}")
+        
         # Create tokens
         tokens = await auth_service.create_tokens(user)
         return tokens

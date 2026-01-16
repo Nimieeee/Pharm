@@ -122,7 +122,7 @@ User Question: {message}"""
             if mode == "fast":
                 model_name = "mistral-small-latest"
             elif mode == "detailed":
-                model_name = "mistral-medium-latest"
+                model_name = "mistral-large-latest"
             elif mode == "research":
                 model_name = "mistral-large-latest"
             else:

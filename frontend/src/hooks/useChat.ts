@@ -789,11 +789,16 @@ export function useChat() {
     }
   }, [conversationId]);
 
+  const cancelledUploadsRef = useRef<Set<string>>(new Set());
+
+  const removeFile = useCallback((fileName: string) => {
+    cancelledUploadsRef.current.add(fileName);
+    setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
+  }, []);
+
   const uploadFiles = useCallback(async (files: FileList) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      // If not logged in, we can't upload. 
-      // In a real app, we might want to trigger a login modal or return an error.
       return [{ fileName: 'General', status: 'error', error: 'Please sign in to upload files.' }];
     }
 
@@ -826,18 +831,18 @@ export function useChat() {
     setIsUploading(true);
     const results: { fileName: string; status: 'success' | 'error'; error?: string }[] = [];
 
-    // Create new AbortController for this upload session
-    if (uploadAbortRef.current) {
-      uploadAbortRef.current.abort();
+    // Create new AbortController for this upload session if one doesn't exist
+    if (!uploadAbortRef.current) {
+      uploadAbortRef.current = new AbortController();
     }
-    uploadAbortRef.current = new AbortController();
     const signal = uploadAbortRef.current.signal;
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        if (signal.aborted) break;
-
-        const file = files[i];
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (cancelledUploadsRef.current.has(file.name)) {
+          console.log(`🚫 Upload cancelled before start: ${file.name}`);
+          return;
+        }
 
         try {
           console.log(`📤 Uploading file: ${file.name} to conversation: ${streamConversationId}`);
@@ -856,16 +861,25 @@ export function useChat() {
             signal,
           });
 
+          if (cancelledUploadsRef.current.has(file.name)) {
+            console.log(`🚫 Upload cancelled after finish: ${file.name}`);
+            return;
+          }
+
           if (response.ok) {
             console.log(`✅ Upload success: ${file.name}`);
 
             // Add to uploaded files state for display
             const fileSizeKB = (file.size / 1024).toFixed(1);
-            setUploadedFiles(prev => [...prev, {
-              name: file.name,
-              size: `${fileSizeKB} KB`,
-              type: file.type
-            }]);
+            setUploadedFiles(prev => {
+              if (prev.some(f => f.name === file.name)) return prev;
+
+              return [...prev, {
+                name: file.name,
+                size: `${fileSizeKB} KB`,
+                type: file.type
+              }];
+            });
 
             results.push({ fileName: file.name, status: 'success' });
           } else {
@@ -880,10 +894,17 @@ export function useChat() {
             results.push({ fileName: file.name, status: 'error', error: errorDetail });
           }
         } catch (error: any) {
+          if (error.name === 'AbortError' || cancelledUploadsRef.current.has(file.name)) {
+            console.log(`Upload cancelled: ${file.name}`);
+            return;
+          }
           console.error(`❌ Upload exception:`, error);
           results.push({ fileName: file.name, status: 'error', error: error.message || 'Network error' });
         }
-      }
+      });
+
+      await Promise.all(uploadPromises);
+
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Upload cancelled');
@@ -892,7 +913,6 @@ export function useChat() {
       console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
-      uploadAbortRef.current = null;
     }
 
     return results;
@@ -902,10 +922,10 @@ export function useChat() {
     if (uploadAbortRef.current) {
       uploadAbortRef.current.abort();
       uploadAbortRef.current = null;
-      setIsUploading(false);
     }
+    setIsUploading(false);
+    cancelledUploadsRef.current.clear();
   }, []);
-
   const stopGeneration = useCallback(() => {
     // Stop the stream for the current conversation
     if (conversationId) {
@@ -943,6 +963,7 @@ export function useChat() {
     deleteConversation,
     uploadFiles,
     cancelUpload,
+    removeFile,
     editMessage,
     deleteMessage,
     conversationId,

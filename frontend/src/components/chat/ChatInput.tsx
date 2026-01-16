@@ -15,6 +15,7 @@ interface ChatInputProps {
   onStop?: () => void;
   onFileUpload?: (files: FileList) => Promise<any>;
   onCancelUpload?: () => void;
+  onRemoveFile?: (fileName: string) => void;
   isLoading: boolean;
   isUploading?: boolean;
   mode: Mode;
@@ -34,7 +35,7 @@ const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
   { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
 ];
 
-export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
+export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload, onRemoveFile, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -155,8 +156,13 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
   const removeAttachment = (id: string) => {
     const attachment = attachments.find(a => a.id === id);
-    if (attachment?.status === 'uploading' && onCancelUpload) {
-      onCancelUpload();
+    if (attachment) {
+      // Call the new removeFile function if provided
+      if (onRemoveFile) {
+        onRemoveFile(attachment.file.name);
+      }
+      // Fallback for backward compatibility or if no specific removal logic needed on backend
+      // (but we added logic to backend/hook so we should rely on it)
     }
     setAttachments(prev => prev.filter(a => a.id !== id));
   };

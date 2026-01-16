@@ -26,6 +26,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     print("✅ Database initialized")
     
+    # Start the background scheduler
+    from app.services.scheduler import start_scheduler, stop_scheduler
+    start_scheduler()
+    
     # Warmup: Pre-initialize services to avoid cold-start on first request
     try:
         from app.services.embeddings import embeddings_service
@@ -37,6 +41,7 @@ async def lifespan(app: FastAPI):
     
     yield
     # Shutdown
+    stop_scheduler()
     print("🛑 Shutting down PharmGPT Backend API...")
 
 
