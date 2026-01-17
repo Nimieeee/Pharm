@@ -239,7 +239,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
       const formData = new FormData();
       formData.append('file', audioBlob, 'recording.webm');
 
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('token');
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       // Ensure HTTPS to prevent Mixed Content errors
       if (apiUrl.startsWith('http://')) {
