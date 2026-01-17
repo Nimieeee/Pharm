@@ -930,6 +930,65 @@ class EnhancedRAGService:
             logger.error(f"❌ Error deleting documents: {e}")
             return False
     
+    async def get_recent_image_analyses(
+        self,
+        conversation_id: UUID,
+        filenames: List[str] = None,
+        limit: int = 10
+    ) -> str:
+        """
+        Get recent image analyses stored in vector DB for a conversation.
+        
+        Args:
+            conversation_id: Conversation UUID
+            filenames: Optional list of filenames to filter by
+            limit: Maximum number of analyses to return
+            
+        Returns:
+            Formatted string containing all image analyses
+        """
+        try:
+            # Query document_chunks for image analyses in this conversation
+            query = self.db.table("document_chunks").select("content, metadata").eq(
+                "conversation_id", str(conversation_id)
+            ).order("created_at", desc=True).limit(limit)
+            
+            result = query.execute()
+            
+            if not result.data:
+                logger.info(f"📭 No image analyses found for conversation {conversation_id}")
+                return ""
+            
+            # Filter for image analyses and optionally by filename
+            analyses = []
+            for chunk in result.data:
+                metadata = chunk.get("metadata", {})
+                
+                # Check if this is an image analysis chunk
+                if metadata.get("type") == "image_analysis":
+                    content = chunk.get("content", "")
+                    if content:
+                        analyses.append(content)
+                        continue
+                
+                # Also check source field for image uploads
+                source = metadata.get("source", "")
+                if "image_upload" in source or any(source.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']):
+                    content = chunk.get("content", "")
+                    if content and ("Visual Content Analysis" in content or "image" in content.lower()[:100]):
+                        analyses.append(content)
+            
+            if analyses:
+                logger.info(f"🖼️ Found {len(analyses)} image analyses for conversation {conversation_id}")
+                return "\n\n".join(analyses)
+            
+            logger.info(f"📭 No image analyses matched criteria for conversation {conversation_id}")
+            return ""
+            
+        except Exception as e:
+            logger.error(f"❌ Error fetching image analyses: {e}")
+            return ""
+
     async def get_service_health(self) -> Dict[str, Any]:
         """Get comprehensive health status of the enhanced RAG service"""
         health = {
