@@ -240,7 +240,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
       formData.append('file', audioBlob, 'recording.webm');
 
       const token = localStorage.getItem('auth_token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      // Ensure HTTPS to prevent Mixed Content errors
+      if (apiUrl.startsWith('http://')) {
+        apiUrl = apiUrl.replace('http://', 'https://');
+      }
 
       const response = await fetch(`${apiUrl}/api/v1/audio/transcribe`, {
         method: 'POST',
