@@ -1,229 +1,96 @@
 # PharmGPT - AI-Powered Pharmacology Assistant
 
-A modern web application designed for pharmacology and medical queries, featuring RAG (Retrieval-Augmented Generation) capabilities, user authentication, multi-conversation support, and specialized pharmacology expertise.
+A modern AI pharmacology assistant featuring deep research capabilities, document analysis, lab report generation, and specialized pharmaceutical expertise.
 
-## 🚀 Modern Web Application
+## 🌐 Live Application
 
-Complete web application with:
-- **React Frontend** (deployed on Netlify)
-- **FastAPI Backend** (deployed on Render) 
-- **User Authentication** with JWT tokens
-- **Admin Panel** for system management
-- **Support System** for user assistance
-- **Secure Deployment** configuration
+- **Frontend**: [pharmgpt.app](https://pharmgpt.app) (Vercel)
+- **Backend**: Private VPS (deployed separately)
 
 ## ✨ Features
 
-- **⚕️ Pharmacology Expertise**: Specialized system prompts for pharmacology and medical queries
-- **📚 RAG System**: LangChain + Mistral embeddings + Supabase pgvector for optimized document processing and search
-- **💬 Multi-Conversation**: Manage multiple chat sessions with separate knowledge bases
-- **🌙 Modern UI**: Dark mode interface with responsive design and accessibility features
-- **🗄️ Persistent Storage**: Supabase backend for conversations, messages, and document chunks
-- **🔍 Vector Search**: HNSW-indexed semantic search with Mistral embeddings (1024 dimensions)
-- **📱 Responsive Design**: Works seamlessly across mobile, tablet, and desktop
+### Core Capabilities
+- **💬 AI Chat**: Intelligent pharmacology assistant with multiple modes (Fast, Detailed, Deep Research)
+- **📚 Document RAG**: Upload PDFs, images, and documents for context-aware responses
+- **🔬 Lab Report Generation**: Generate structured laboratory reports from data
+- **🔍 Deep Research**: Comprehensive multi-source research with citations
+- **🖼️ Image Analysis**: Pixtral-powered vision analysis for uploaded images
+- **📊 Data Workbench**: Analyze and visualize data with AI assistance
 
-## 🚀 Quick Start
+### Technical Features
+- **User Authentication**: JWT-based secure authentication
+- **Multi-Conversation**: Manage multiple chat sessions with separate knowledge bases
+- **Vector Search**: HNSW-indexed semantic search with Mistral embeddings
+- **Real-time Streaming**: Server-Sent Events for streaming responses
+- **Mobile Responsive**: Full mobile and tablet support
 
-### Web Application (Recommended)
+## 🚀 Frontend Development
 
-The new web application provides a modern, secure, and scalable solution:
+This repository contains the **Next.js frontend** only.
 
-1. **Frontend (React + Netlify)**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-2. **Backend (FastAPI + Render)**
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   python main.py
-   ```
+### Local Development
 
-3. **Database Setup**
-   - Create a Supabase project
-   - Run migrations from `backend/migrations/`
-   - Configure environment variables
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
+The app will be available at `http://localhost:3000`
 
-### Demo Credentials
+### Environment Variables
 
-For testing the deployed application:
-- **Admin**: admin@pharmgpt.com / admin123
-- **User**: Register a new account to test user features
-
-## 📋 Configuration
-
-### Environment Variables (.env)
+Create `frontend/.env.local`:
 
 ```env
-# Supabase Configuration
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# AI Model APIs
-MISTRAL_API_KEY=your_mistral_api_key
-
-# Enhanced RAG Configuration
-USE_MISTRAL_EMBEDDINGS=true
-USE_LANGCHAIN_LOADERS=true
-ENABLE_EMBEDDING_CACHE=true
-LANGCHAIN_CHUNK_SIZE=1500
-LANGCHAIN_CHUNK_OVERLAP=300
-
-# Optional
-GROQ_API_KEY=your_groq_api_key  # Optional for fast model
+NEXT_PUBLIC_API_URL=https://your-backend-api.com
 ```
 
-### Streamlit Secrets (.streamlit/secrets.toml)
+### Deployment
 
-```toml
-SUPABASE_URL = "your_supabase_project_url"
-SUPABASE_ANON_KEY = "your_supabase_anon_key"
-MISTRAL_API_KEY = "your_mistral_api_key"
-GROQ_API_KEY = "your_groq_api_key"
-```
+The frontend is deployed to **Vercel**:
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to `master`
 
-## 🗄️ Database Schema
+## 📱 Application Modes
 
-The application uses Supabase with the following tables:
-
-- **`conversations`**: Multi-conversation management
-- **`messages`**: Chat history with metadata
-- **`document_chunks`**: RAG document storage with vector embeddings
-
-Key features:
-- Vector similarity search using pgvector extension
-- Conversation-scoped document knowledge bases
-- Message metadata for enhanced context
-
-## 🤖 AI Models & Capabilities
-
-### Primary Model: Mistral Medium
-- **Purpose**: Detailed pharmacology responses
-- **Specialization**: Drug interactions, mechanisms, clinical applications
-- **System Prompt**: Specialized for pharmacology expertise
-
-
-### RAG System
-- **Framework**: LangChain with Supabase pgvector integration
-- **Embeddings**: Mistral embeddings (1024 dimensions) with caching
-- **Indexing**: HNSW + IVFFlat for optimized similarity search
-- **Chunking**: LangChain RecursiveCharacterTextSplitter with overlap
-- **Search**: Vector similarity with user isolation and metadata filtering
-- **Formats**: PDF, DOCX, TXT support with enhanced error handling
-
-## 📱 Application Variants
-
-### 1. Full Application (`simple_app.py`)
-- Multi-conversation management
-- Document upload and RAG
-- Model switching
-- Persistent chat history
-- Advanced error handling
-
-### 2. Minimal Interface (`minimal_app.py`)
-- Streamlined chat interface
-- Fast streaming responses
-- Single conversation mode
-- Lightweight and responsive
-
-### 3. Database Setup (`setup_database.py`)
-- Schema validation
-- Migration assistance
-- Development utilities
+| Mode | Description | Model |
+|------|-------------|-------|
+| **Fast** | Quick responses for simple queries | Mistral Small |
+| **Detailed** | Comprehensive, in-depth answers | Mistral Large |
+| **Deep Research** | Multi-source research with citations | Mistral Large + Web Search |
+| **Lab Report** | Structured laboratory reports | Mistral Large |
 
 ## 🔧 Project Structure
 
 ```
-├── frontend/                   # React frontend application
-│   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   ├── pages/            # Page components
-│   │   ├── contexts/         # React contexts (Auth, etc.)
-│   │   └── lib/              # Utilities and API client
-│   ├── package.json
-│   └── netlify.toml          # Netlify deployment config
-├── backend/                   # FastAPI backend application
-│   ├── app/
-│   │   ├── api/v1/endpoints/ # API endpoints
-│   │   ├── core/             # Core configuration
-│   │   ├── models/           # Pydantic models
-│   │   └── services/         # Business logic services
-│   ├── migrations/           # Database migrations
-│   ├── main.py              # FastAPI application entry point
-│   ├── requirements.txt     # Python dependencies
-│   └── render.yaml          # Render deployment config
-├── .kiro/specs/             # Development specifications
-├── DEPLOYMENT.md            # Deployment guide
-├── PharmGPT.png            # Application logo
-└── README.md               # This file
+frontend/
+├── src/
+│   ├── app/              # Next.js App Router pages
+│   ├── components/       # Reusable UI components
+│   │   ├── chat/        # Chat interface components
+│   │   ├── ui/          # Common UI components
+│   │   └── workbench/   # Data workbench components
+│   ├── contexts/        # React contexts (Auth, Chat)
+│   ├── hooks/           # Custom React hooks
+│   └── lib/             # Utilities and API client
+├── public/              # Static assets
+├── package.json
+└── next.config.js
 ```
 
-## 🚀 Deployment Options
+## 🎨 UI Features
 
-### Streamlit Cloud
-1. Fork this repository
-2. Connect to Streamlit Cloud
-3. Add secrets in dashboard
-4. Deploy automatically
-
-### Local Development
-```bash
-pip install -r requirements.txt
-cp .env.example .env
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml
-streamlit run simple_app.py
-```
-
-### Docker (Optional)
-```bash
-docker build -t pharmgpt .
-docker run -p 8501:8501 --env-file .env pharmgpt
-```
-
-## 🎯 Use Cases
-
-### Pharmacology Research
-- Drug interaction analysis
-- Mechanism of action explanations
-- Clinical trial information
-- Regulatory guidance
-
-### Medical Education
-- Pharmacokinetics and pharmacodynamics
-- Therapeutic classifications
-- Adverse effect profiles
-- Dosing guidelines
-
-### Document Analysis
-- Research paper analysis
-- Clinical protocol review
-- Regulatory document processing
-- Literature synthesis
-
-## 🛠️ Advanced Features
-
-### Error Handling
-- Graceful API failure recovery
-- Database connection fallbacks
-- User-friendly error messages
-- Comprehensive logging
-
-### Performance Optimization
-- Parallel document processing
-- Efficient vector search
-- Streaming responses
-- Caching strategies
-
-### Security & Privacy
-- Input sanitization
-- XSS protection
-- Secure API key management
-- Data encryption at rest
+- **Dark Mode**: Elegant dark theme optimized for readability
+- **Glassmorphism**: Modern glass-effect design elements
+- **Smooth Animations**: Framer Motion powered transitions
+- **Responsive Design**: Mobile-first approach
+- **Accessibility**: ARIA labels and keyboard navigation
 
 ## 🤝 Contributing
 
@@ -235,47 +102,10 @@ docker run -p 8501:8501 --env-file .env pharmgpt
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support & Troubleshooting
-
-### Common Issues
-- **API Key Errors**: Verify keys in `.env` and `secrets.toml`
-- **Database Connection**: Check Supabase URL and credentials
-- **Import Errors**: Ensure all dependencies are installed
-- **Schema Issues**: Run the complete SQL schema in Supabase
-
-### Getting Help
-1. Check error messages for specific guidance
-2. Verify environment configuration
-3. Review database schema setup
-4. Test with minimal app first
-
-## 🎯 Roadmap
-
-### Completed ✅
-- [x] User authentication and profiles
-- [x] Modern web application architecture
-- [x] API endpoints for external integration
-- [x] Admin panel for system management
-- [x] Support system for user assistance
-- [x] Secure deployment configuration
-
-### In Progress 🚧
-- [ ] Complete chat interface implementation
-- [ ] Advanced document management features
-- [ ] Real-time notifications
-- [ ] Enhanced admin analytics
-
-### Planned 📋
-- [ ] Multi-language support
-- [ ] Voice input/output capabilities
-- [ ] Mobile application
-- [ ] Advanced AI model integration
-- [ ] Enterprise features
+This project is proprietary. All rights reserved.
 
 ---
 
 **Built with ❤️ for the pharmacology and medical community**
 
-*Powered by Streamlit, Supabase, Mistral AI, and modern ML technologies*
+*Powered by Next.js, Vercel, and Mistral AI*

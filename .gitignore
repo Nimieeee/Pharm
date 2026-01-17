@@ -155,5 +155,33 @@ backend/.env
 backend/.env.local
 backend/.env.production
 
+# Backend folder (deployed separately)
+backend/
+
+# Deployment configs (sensitive)
+deployment/
+
+# Font files
+GT Super Display Regular/
+GT Super Display Regular Italic/
+Sohne-Font-Family/
+Tiempos-Font/
+Untitled Sans Regular/
+
+# Misc files not needed in repo
+LandmarksBuildingAnAppWithLiquidGlass/
+nextjs-pharmgpt/
+gpt_openai_client.py
+ai sdk.txt
+pharmgpt-backend.env
+renderr.env
+render.yaml
+runtime.txt
+sample_data.csv
+test_live_defense.py
+vps_logs.txt
+vps_logs_full.txt
+
 # Kiro IDE
 .kiro/
+
