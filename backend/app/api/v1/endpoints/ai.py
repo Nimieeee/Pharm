@@ -350,6 +350,10 @@ async def chat_stream(
         images = chat_request.metadata.get("images", [])
         attachments = chat_request.metadata.get("attachments", [])
         
+        # DEBUG: Log metadata to understand what's being received
+        print(f"📋 DEBUG metadata: {chat_request.metadata}")
+        print(f"📋 DEBUG images: {images}, attachments: {attachments}")
+        
         # Initialize RAG service for image analysis operations
         from app.services.enhanced_rag import EnhancedRAGService
         rag_service = EnhancedRAGService(ai_service.supabase)
