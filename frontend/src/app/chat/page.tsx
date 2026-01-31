@@ -13,7 +13,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useTranslation } from '@/hooks/use-translation';
 
 import confetti from 'canvas-confetti';
-import { SUGGESTION_POOL } from '@/config/suggestionPrompts';
+import { getSuggestionPool } from '@/config/suggestionPrompts';
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -225,11 +225,12 @@ function ChatContent() {
 
 function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string, mode?: Mode) => void, currentMode: Mode }) {
   const [suggestions, setSuggestions] = useState<{ text: string, mode: Mode }[]>([]);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     // Efficiently select 4 random, unique suggestions from the large pool
-    const poolSize = SUGGESTION_POOL.length;
+    const pool = getSuggestionPool(language as any);
+    const poolSize = pool.length;
     const selectedIndices = new Set<number>();
 
     while (selectedIndices.size < 4 && selectedIndices.size < poolSize) {
@@ -237,9 +238,9 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
       selectedIndices.add(randomIndex);
     }
 
-    const randomSuggestions = Array.from(selectedIndices).map(index => SUGGESTION_POOL[index]);
+    const randomSuggestions = Array.from(selectedIndices).map(index => pool[index]);
     setSuggestions(randomSuggestions);
-  }, []);
+  }, [language]);
 
   const getModeLabel = (m: Mode) => {
     switch (m) {
