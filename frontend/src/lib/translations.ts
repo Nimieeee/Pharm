@@ -61,7 +61,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'email_not_verified': 'Email not verified',
         'email_not_verified_desc': 'We\'ve sent a new code. Please verify your email to continue.',
 
-        'email_not_verified_desc': 'We\'ve sent a new code. Please verify your email to continue.',
+
 
         // Chat Interface
         'how_can_i_help': 'How can I help you today?',

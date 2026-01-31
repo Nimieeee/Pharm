@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/lib/auth-context';
+import { useTheme } from '@/lib/theme-context';
 import { useTranslation } from '@/hooks/use-translation';
 
 interface MobileNavProps {
@@ -29,7 +30,9 @@ export default function MobileNav({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
-  const { user, signOut, theme, toggleTheme } = useAuth();
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const signOut = logout;
   const { t } = useTranslation();
 
   const handleSignOut = () => {
@@ -89,11 +92,13 @@ export default function MobileNav({
               <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-sm">
-                    {user?.name?.[0] || 'U'}
+                    {user?.first_name?.[0] || user?.email?.[0] || 'U'}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-[var(--text-primary)]">{user?.name}</span>
-                    <span className="text-[10px] text-[var(--text-secondary)] font-mono">{user?.role || 'User'}</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">
+                      {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.email || 'User'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)] font-mono">{user?.is_admin ? 'Admin' : 'User'}</span>
                   </div>
                 </div>
                 <button
@@ -157,8 +162,8 @@ export default function MobileNav({
                           setIsOpen(false);
                         }}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${currentConversationId === conv.id
-                            ? 'bg-[var(--surface-highlight)] text-[var(--text-primary)] font-medium'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]/50'
+                          ? 'bg-[var(--surface-highlight)] text-[var(--text-primary)] font-medium'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]/50'
                           }`}
                       >
                         <MessageSquare size={16} className="shrink-0" />

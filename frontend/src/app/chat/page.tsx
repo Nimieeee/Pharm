@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
-import { openMobileNav } from '@/components/chat/MobileNav';
+
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput, { Mode } from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
