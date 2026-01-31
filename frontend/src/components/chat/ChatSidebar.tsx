@@ -5,6 +5,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useConversations, clearSWRCache } from '@/hooks/useSWRChat';
 import { useStreamingConversations } from '@/hooks/useStreamingState';
+import { useTranslation } from '@/hooks/use-translation';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
@@ -40,6 +41,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   if (!isOpen) return null;
 
@@ -52,7 +54,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         className="w-full max-w-md mx-4 p-6 rounded-2xl bg-surface border border-border shadow-xl"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-serif font-medium text-foreground">Settings</h2>
+          <h2 className="text-lg font-serif font-medium text-foreground">{t('settings')}</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg bg-surface-highlight flex items-center justify-center hover:bg-surface-hover transition-colors"
@@ -65,13 +67,13 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {/* Account Info */}
           <div className="p-4 rounded-xl bg-surface-highlight">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Account</p>
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">{t('account')}</p>
               <button
                 onClick={() => { onClose(); router.push('/profile'); }}
                 className="text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors"
                 role="link"
               >
-                Manage Profile
+                {t('manage_profile')}
               </button>
             </div>
             <div className="flex items-center gap-3">
@@ -95,14 +97,14 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* Help & Support (Moved from Sidebar) */}
           <div className="p-4 rounded-xl bg-surface-highlight space-y-2">
-            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Help & Support</p>
+            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">{t('help_support')}</p>
             <button
               onClick={() => { onClose(); router.push('/support'); }}
               className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
             >
               <div className="flex items-center gap-3">
                 <HelpCircle size={18} className="text-blue-500" />
-                <span className="text-sm text-foreground">Help Center</span>
+                <span className="text-sm text-foreground">{t('help_center')}</span>
               </div>
               <ChevronsRight size={14} className="text-foreground-muted" />
             </button>
@@ -112,7 +114,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             >
               <div className="flex items-center gap-3">
                 <Book size={18} className="text-indigo-500" />
-                <span className="text-sm text-foreground">Documentation</span>
+                <span className="text-sm text-foreground">{t('documentation')}</span>
               </div>
               <ChevronsRight size={14} className="text-foreground-muted" />
             </button>
@@ -120,7 +122,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* App Info */}
           <div className="p-4 rounded-xl bg-surface-highlight">
-            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">About</p>
+            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">{t('about')}</p>
             <div className="flex justify-between items-center">
               <p className="text-sm text-foreground">PharmGPT</p>
               <span className="text-xs bg-surface px-2 py-1 rounded-md text-foreground-muted font-mono">v2.0.0</span>
@@ -133,7 +135,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           onClick={onClose}
           className="w-full mt-6 py-3 rounded-xl bg-foreground text-background font-medium text-sm hover:opacity-90 transition-opacity"
         >
-          Done
+          {t('done')}
         </button>
       </motion.div>
     </div>
@@ -141,16 +143,16 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 }
 
 // Helper to categorize dates
-const getRelativeDateCategory = (dateString: string) => {
+const getRelativeDateCategory = (dateString: string, t: (key: string) => string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - date.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays <= 1 && now.getDate() === date.getDate()) return 'Today';
-  if (diffDays <= 2) return 'Yesterday';
-  if (diffDays <= 7) return 'Previous 7 Days';
-  if (diffDays <= 30) return 'Previous 30 Days';
+  if (diffDays <= 1 && now.getDate() === date.getDate()) return t('today');
+  if (diffDays <= 2) return t('yesterday');
+  if (diffDays <= 7) return t('previous_7_days');
+  if (diffDays <= 30) return t('previous_30_days');
 
   return date.toLocaleString('default', { month: 'long' });
 };
@@ -159,6 +161,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
+  const { t } = useTranslation();
   const [showArchived, setShowArchived] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -395,13 +398,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const unpinnedChats = filteredHistory.filter((c: ChatHistory) => !c.is_pinned && !c.is_archived);
 
   const groupedChats = unpinnedChats.reduce((acc: Record<string, ChatHistory[]>, chat: ChatHistory) => {
-    const category = getRelativeDateCategory(chat.created_at);
+    const category = getRelativeDateCategory(chat.created_at, t);
     if (!acc[category]) acc[category] = [];
     acc[category].push(chat);
     return acc;
   }, {} as Record<string, ChatHistory[]>);
 
-  const categoryOrder = ['Today', 'Yesterday', 'Previous 7 Days', 'Previous 30 Days'];
+  const categoryOrder = [t('today'), t('yesterday'), t('previous_7_days'), t('previous_30_days')];
   const sortedCategories = Object.keys(groupedChats).sort((a, b) => {
     const indexA = categoryOrder.indexOf(a);
     const indexB = categoryOrder.indexOf(b);
@@ -476,42 +479,42 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Pin size={14} className="text-foreground-muted" />
-                    {chat.is_pinned ? 'Unpin' : 'Pin'}
+                    {chat.is_pinned ? t('unpin') : t('pin')}
                   </button>
                   <button
                     onClick={() => { setEditingId(chat.id); setEditTitle(chat.title); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Pencil size={14} className="text-foreground-muted" />
-                    Rename
+                    {t('rename')}
                   </button>
                   <button
                     onClick={() => { handleClone(chat.id); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Copy size={14} className="text-foreground-muted" />
-                    Clone
+                    {t('clone')}
                   </button>
                   <button
                     onClick={() => { handleArchive(chat.id, !!chat.is_archived); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Archive size={14} className="text-foreground-muted" />
-                    Archive
+                    {t('archive')}
                   </button>
                   <button
                     onClick={() => { handleDownload(chat); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
                   >
                     <Download size={14} className="text-foreground-muted" />
-                    Download
+                    {t('download')}
                   </button>
                   <button
                     onClick={() => { handleDelete(chat.id); setOpenPopoverId(null); }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
                   >
                     <Trash2 size={14} />
-                    Delete
+                    {t('delete')}
                   </button>
                 </div>
               </RadixPopover.Content>
@@ -592,13 +595,13 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   className="w-full h-10 px-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-all"
                 >
                   <Plus size={18} strokeWidth={2} />
-                  New Chat
+                  {t('new_chat')}
                 </button>
 
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search chats..."
+                    placeholder={t('search_chats')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full h-9 pl-9 pr-4 rounded-lg bg-[var(--surface-highlight)] dark:bg-zinc-800/50 border border-[var(--border)] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all"
@@ -622,23 +625,23 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   </div>
                 ) : isError ? (
                   <div className="flex flex-col items-center justify-center py-6 px-2 text-center text-foreground-muted space-y-2">
-                    <p className="text-sm">Could not load chats</p>
+                    <p className="text-sm">{t('could_not_load')}</p>
                     <button
                       onClick={() => mutateConversations()}
                       className="text-xs px-3 py-1.5 bg-indigo-500/10 text-indigo-500 rounded-md hover:bg-indigo-500/20 transition-colors"
                     >
-                      Retry
+                      {t('retry')}
                     </button>
                   </div>
                 ) : chatHistory.length === 0 ? (
-                  <p className="text-sm text-foreground-muted px-2">No conversations yet. Start a new chat!</p>
+                  <p className="text-sm text-foreground-muted px-2">{t('no_chats')}</p>
                 ) : (
                   <>
                     {/* Pinned Chats */}
                     {pinnedChats.length > 0 && (
                       <div className="mb-6">
                         <p className="text-xs font-medium text-foreground-muted px-3 py-2 mb-1 flex items-center gap-1">
-                          <Pin size={10} /> Pinned
+                          <Pin size={10} /> {t('pinned')}
                         </p>
                         <div className="space-y-1">
                           {pinnedChats.map(renderChatItem)}
@@ -671,7 +674,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3 bg-red-500/10 text-red-500"
                   >
                     <ShieldAlert size={20} strokeWidth={1.5} />
-                    <span className="text-sm font-medium">Admin Panel</span>
+                    <span className="text-sm font-medium">{t('admin_panel')}</span>
                   </button>
                 )}
 
@@ -680,12 +683,12 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
                   <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
-                  <span className="text-sm text-foreground">Data Workbench</span>
+                  <span className="text-sm text-foreground">{t('data_workbench')}</span>
                 </button>
 
                 {/* Theme Toggle Row */}
                 <div className="flex items-center justify-between px-3 py-2">
-                  <span className="text-sm text-foreground-muted">Theme</span>
+                  <span className="text-sm text-foreground-muted">{t('theme')}</span>
                   <ThemeToggle />
                 </div>
 
@@ -694,7 +697,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
                 >
                   <Settings size={20} strokeWidth={1.5} className="text-foreground-muted" />
-                  <span className="text-sm text-foreground">Settings</span>
+                  <span className="text-sm text-foreground">{t('settings')}</span>
                 </button>
 
                 {token && (
@@ -703,7 +706,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     className="w-full p-3 rounded-xl text-left hover:bg-red-500/10 transition-colors flex items-center gap-3"
                   >
                     <LogOut size={20} strokeWidth={1.5} className="text-red-500" />
-                    <span className="text-sm text-red-500">Sign Out</span>
+                    <span className="text-sm text-red-500">{t('sign_out')}</span>
                   </button>
                 )}
 
@@ -719,7 +722,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         )}
       </AnimatePresence>
 
-      {/* Collapsed Toggle Button */}
       {/* Collapsed Toggle Button */}
       {!isOpen && (
         <button

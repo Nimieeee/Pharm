@@ -25,10 +25,12 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 
 import { API_BASE_URL } from '@/config/api';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function ProfilePage() {
     const { user, token, logout, checkUser } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { t } = useTranslation();
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -166,7 +168,7 @@ export default function ProfilePage() {
                         >
                             <ArrowLeft size={18} className="text-[var(--text-secondary)]" />
                         </button>
-                        <h1 className="text-3xl font-serif font-bold text-[var(--text-primary)]">Profile Settings</h1>
+                        <h1 className="text-3xl font-serif font-bold text-[var(--text-primary)]">{t('profile_settings')}</h1>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -191,7 +193,7 @@ export default function ProfilePage() {
                             className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all flex items-center gap-2 text-sm font-medium"
                         >
                             <LogOut size={16} />
-                            Sign Out
+                            {t('sign_out')}
                         </button>
                     </div>
                 </div>
@@ -252,16 +254,16 @@ export default function ProfilePage() {
                         <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-3xl">
                             <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4 flex items-center gap-2">
                                 <CheckCircle2 size={16} className="text-emerald-500" />
-                                Account Status
+                                {t('account_status')}
                             </h3>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-[var(--text-secondary)]">Verification</span>
-                                    <span className="text-xs font-bold text-emerald-500 uppercase">Verified</span>
+                                    <span className="text-sm text-[var(--text-secondary)]">{t('verification')}</span>
+                                    <span className="text-xs font-bold text-emerald-500 uppercase">{t('verified')}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-[var(--text-secondary)]">2FA</span>
-                                    <span className="text-xs font-bold text-[var(--text-secondary)] uppercase">Disabled</span>
+                                    <span className="text-sm text-[var(--text-secondary)]">{t('2fa')}</span>
+                                    <span className="text-xs font-bold text-[var(--text-secondary)] uppercase">{t('disabled')}</span>
                                 </div>
                             </div>
                         </div>
@@ -272,12 +274,12 @@ export default function ProfilePage() {
                         <form onSubmit={handleUpdateProfile} className="p-8 bg-[var(--surface)] border border-[var(--border)] rounded-3xl">
                             <h3 className="text-lg font-serif font-medium text-[var(--text-primary)] mb-6 flex items-center gap-2">
                                 <User size={20} className="text-indigo-500" />
-                                Personal Information
+                                {t('personal_info')}
                             </h3>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[var(--text-secondary)]">First Name</label>
+                                    <label className="text-sm font-medium text-[var(--text-secondary)]">{t('first_name')}</label>
                                     <input
                                         type="text"
                                         value={firstName}
@@ -287,7 +289,7 @@ export default function ProfilePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[var(--text-secondary)]">Last Name</label>
+                                    <label className="text-sm font-medium text-[var(--text-secondary)]">{t('last_name')}</label>
                                     <input
                                         type="text"
                                         value={lastName}
@@ -297,7 +299,7 @@ export default function ProfilePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[var(--text-secondary)]">Email Address</label>
+                                    <label className="text-sm font-medium text-[var(--text-secondary)]">{t('email_address')}</label>
                                     <div className="relative">
                                         <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-50" />
                                         <input
@@ -310,7 +312,7 @@ export default function ProfilePage() {
                                     <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest mt-1">Email cannot be changed manually</p>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[var(--text-secondary)]">AI Language</label>
+                                    <label className="text-sm font-medium text-[var(--text-secondary)]">{t('ai_language')}</label>
                                     <div className="relative">
                                         <Globe size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-50" />
                                         <select
@@ -339,7 +341,7 @@ export default function ProfilePage() {
                                             className="flex items-center gap-2 text-emerald-500 text-sm font-medium"
                                         >
                                             <CheckCircle2 size={16} />
-                                            Changes saved successfully
+                                            {t('success_message')}
                                         </motion.div>
                                     )}
                                     {error && (
@@ -360,22 +362,22 @@ export default function ProfilePage() {
                                     className="ml-auto flex items-center gap-2 px-8 py-3 rounded-xl bg-foreground text-background font-bold btn-press disabled:opacity-50 transition-all hover:opacity-90"
                                 >
                                     {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                    Save Changes
+                                    {t('save_changes')}
                                 </button>
                             </div>
                         </form>
 
                         {/* Notification/Preferences placeholder */}
                         <div className="p-8 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 rounded-3xl">
-                            <h3 className="font-serif font-medium text-[var(--text-primary)] mb-2">Security & Privacy</h3>
+                            <h3 className="font-serif font-medium text-[var(--text-primary)] mb-2">{t('security_privacy')}</h3>
                             <p className="text-sm text-[var(--text-secondary)] mb-4">
-                                Manage your experimental data access and session security.
+                                {t('security_desc')}
                             </p>
                             <button
                                 onClick={() => router.push('/docs')}
                                 className="text-sm font-medium text-indigo-500 hover:underline"
                             >
-                                Learn more about our data protection protocol →
+                                {t('data_protocol')} →
                             </button>
                         </div>
 
@@ -383,10 +385,10 @@ export default function ProfilePage() {
                         <div className="p-8 mt-6 bg-red-500/5 border border-red-500/20 rounded-3xl">
                             <h3 className="font-serif font-medium text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
                                 <AlertCircle size={20} />
-                                Danger Zone
+                                {t('danger_zone')}
                             </h3>
                             <p className="text-sm text-[var(--text-secondary)] mb-6">
-                                Once you delete your account, there is no going back. Please be certain.
+                                {t('delete_warning')}
                             </p>
                             <button
                                 onClick={handleDeleteAccount}
@@ -394,7 +396,7 @@ export default function ProfilePage() {
                                 className="px-6 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-all btn-press flex items-center gap-2 disabled:opacity-50"
                             >
                                 {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                                Delete Account
+                                {t('delete_account')}
                             </button>
                         </div>
                     </div>

@@ -65,6 +65,14 @@ function LoginContent() {
 
       router.push('/chat');
     } catch (err: any) {
+      if (err.message === 'EMAIL_NOT_VERIFIED') {
+        toast.info('Email not verified', {
+          description: "We've sent a new code. Please verify your email to continue.",
+          duration: 5000,
+        });
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
