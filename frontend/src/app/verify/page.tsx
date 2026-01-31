@@ -9,6 +9,64 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 import { API_BASE_URL } from '@/config/api';
 
+function ResendButton({ email }: { email: string }) {
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [cooldown, setCooldown] = useState(0);
+
+    const handleResend = async () => {
+        if (!email) return;
+        setLoading(true);
+        setMessage('');
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/auth/verify/resend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            if (!res.ok) throw new Error('Failed to send code');
+
+            setMessage('Code sent!');
+            setCooldown(60);
+
+            // Countdown timer
+            const interval = setInterval(() => {
+                setCooldown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+        } catch (err) {
+            setMessage('Failed to send');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="text-center mt-6">
+            <p className="text-sm text-[var(--text-secondary)]">
+                Didn't receive the code?{' '}
+                <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={loading || cooldown > 0}
+                    className="text-[var(--primary)] hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {loading ? 'Sending...' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
+                </button>
+            </p>
+            {message && <p className="text-xs text-green-500 mt-2">{message}</p>}
+        </div>
+    );
+}
+
 function VerifyContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -81,7 +139,32 @@ function VerifyContent() {
                         <p className="text-sm text-red-500">{error}</p>
                     </div>
                 )}
-// ... (rest of form content) ...
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                            Verification Code
+                        </label>
+                        <input
+                            type="text"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            required
+                            placeholder="Enter 6-digit code"
+                            className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all text-center tracking-[0.5em] text-lg font-mono"
+                            maxLength={6}
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading || code.length !== 6}
+                        className="w-full h-12 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Verify Email'}
+                    </button>
+
+                    <ResendButton email={email} />
+                </div>
             </form>
         </div>
     );
