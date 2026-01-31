@@ -1,126 +1,70 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/lib/theme-context';
-import { useAuth } from '@/lib/auth-context';
 import {
-  Menu, X, Plus, Moon, Sun, Settings, LogOut, BarChart3,
-  Search, Image, FolderKanban, MessageSquare, ChevronRight,
-  Sparkles
+  Menu, X, Plus, MessageSquare, LayoutGrid, Calendar,
+  Search, Moon, Sun, Settings, LogOut, User, Folder
 } from 'lucide-react';
-import LongPressMenu, { useChatContextMenu } from './LongPressMenu';
-import { API_BASE_URL } from '@/config/api';
-
-interface ChatHistory {
-  id: string;
-  title: string;
-  date: string;
-}
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface MobileNavProps {
-  onSelectConversation?: (id: string) => void;
-  onNewChat?: () => void;
-  onDeleteConversation?: (id: string) => void;
+  conversations: any[];
+  currentConversationId: string | null;
+  onNewChat: () => void;
+  onSelectConversation: (id: string) => void;
+  onDeleteConversation: (id: string, e: React.MouseEvent) => void;
 }
 
-export default function MobileNav({ onSelectConversation, onNewChat, onDeleteConversation }: MobileNavProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
-  const { user, token, logout } = useAuth();
+export default function MobileNav({
+  conversations,
+  currentConversationId,
+  onNewChat,
+  onSelectConversation,
+  onDeleteConversation
+}: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Fetch conversation history when user is logged in
-  useEffect(() => {
-    if (token) {
-      fetchConversationHistory();
-    } else {
-      setChatHistory([]);
-    }
-  }, [token]);
-
-  const fetchConversationHistory = async () => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const conversations = await response.json();
-        const formattedHistory = conversations.map((conv: any) => {
-          const date = new Date(conv.created_at);
-          const today = new Date();
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-
-          let dateStr = 'Older';
-          if (date.toDateString() === today.toDateString()) {
-            dateStr = 'Today';
-          } else if (date.toDateString() === yesterday.toDateString()) {
-            dateStr = 'Yesterday';
-          }
-
-          return {
-            id: conv.id,
-            title: conv.title || 'Untitled Chat',
-            date: dateStr,
-          };
-        });
-        setChatHistory(formattedHistory);
-      }
-    } catch (error) {
-      console.error('Failed to fetch conversation history:', error);
-    }
-  };
+  const router = useRouter();
+  const { user, signOut, theme, toggleTheme } = useAuth();
+  const { t } = useTranslation();
 
   const handleSignOut = () => {
-    logout();
-    setIsOpen(false);
+    signOut();
     router.push('/login');
   };
 
-  const handleDeleteChat = async (chatId: string) => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${chatId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        setChatHistory(prev => prev.filter(c => c.id !== chatId));
-        onDeleteConversation?.(chatId);
-      }
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
-    }
-  };
-
-  // Filter chats based on search
-  const filteredChats = chatHistory.filter(chat =>
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = conversations.filter(conv =>
+    conv.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Navigation items
-  const navItems = [
-    { id: 'chat', label: 'New Chat', icon: MessageSquare, onClick: () => { onNewChat?.(); setIsOpen(false); router.push('/chat'); } },
-    { id: 'workbench', label: 'Data Workbench', icon: BarChart3, onClick: () => { setIsOpen(false); router.push('/workbench'); } },
-  ];
 
   return (
     <>
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Top Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)] z-50 flex items-center justify-between px-4">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="w-10 h-10 -ml-2 flex items-center justify-center text-[var(--text-primary)]"
+        >
+          <Menu size={24} />
+        </button>
+
+        <div className="font-semibold text-lg text-[var(--text-primary)]">
+          PharmGPT
+        </div>
+
+        <button
+          onClick={onNewChat}
+          className="w-10 h-10 -mr-2 flex items-center justify-center text-[var(--accent)]"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
+
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -130,193 +74,150 @@ export default function MobileNav({ onSelectConversation, onNewChat, onDeleteCon
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="md:hidden fixed inset-0 z-[99] bg-black/50 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
             />
 
-            {/* Drawer - Slide from Left */}
-            <motion.aside
+            {/* Menu Content */}
+            <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 z-[100] w-[85vw] max-w-[320px] bg-[var(--surface)] flex flex-col"
+              className="md:hidden fixed inset-y-0 left-0 w-[80%] max-w-[320px] bg-[var(--surface)] z-[61] shadow-2xl flex flex-col"
             >
-              {/* Header with Search */}
-              <div className="p-4 border-b border-[var(--border)]">
-                <div className="flex items-center justify-between mb-4">
-                  <button
-                    onClick={() => { setIsOpen(false); router.push('/'); }}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 relative rounded-xl overflow-hidden">
-                      <img
-                        src="/PharmGPT.png"
-                        alt="PharmGPT Logo"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="font-serif font-medium text-[var(--text-primary)]">PharmGPT</span>
-                  </button>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="w-8 h-8 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center"
-                  >
-                    <X size={16} className="text-[var(--text-secondary)]" />
-                  </button>
+              {/* Header */}
+              <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-sm">
+                    {user?.name?.[0] || 'U'}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">{user?.name}</span>
+                    <span className="text-[10px] text-[var(--text-secondary)] font-mono">{user?.role || 'User'}</span>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)]"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-                {/* Search Bar - Rounded Pill */}
+              {/* Main Navigation */}
+              <div className="p-4 space-y-2">
+                <button
+                  onClick={() => {
+                    onNewChat();
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/20"
+                >
+                  <Plus size={18} />
+                  <span className="font-medium text-sm">{t('new_chat')}</span>
+                </button>
+
+                <Link
+                  href="/workbench"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors"
+                >
+                  <LayoutGrid size={18} />
+                  <span className="font-medium text-sm">{t('workbench')}</span>
+                </Link>
+              </div>
+
+              {/* Search */}
+              <div className="px-4 pb-2">
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
                   <input
                     type="text"
+                    placeholder="Search chats..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search chats..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-full bg-[var(--surface-highlight)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+                    className="w-full h-9 pl-9 pr-4 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
                   />
                 </div>
               </div>
 
-              {/* Navigation Items */}
-              <div className="p-4 space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={item.onClick}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface-highlight)] transition-colors"
-                    >
-                      <Icon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                      <span className="text-sm font-medium text-[var(--text-primary)]">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Chat History */}
-              <div className="flex-1 overflow-y-auto px-4">
+              {/* Chat List */}
+              <div className="flex-1 overflow-y-auto px-4 py-2">
                 <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-2">
-                  Recent Chats
+                  {t('recent_chats')}
                 </p>
+
                 <div className="space-y-1">
-                  {filteredChats.length === 0 ? (
-                    <p className="text-sm text-[var(--text-secondary)] px-2">
-                      {searchQuery ? 'No chats found' : 'Chat history will appear here'}
-                    </p>
-                  ) : (
-                    filteredChats.map((chat) => (
-                      <LongPressMenu
-                        key={chat.id}
-                        items={useChatContextMenu(
-                          undefined,
-                          undefined,
-                          undefined,
-                          () => handleDeleteChat(chat.id)
-                        )}
+                  {filteredConversations.length > 0 ? (
+                    filteredConversations.map(conv => (
+                      <button
+                        key={conv.id}
+                        onClick={() => {
+                          onSelectConversation(conv.id);
+                          setIsOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${currentConversationId === conv.id
+                            ? 'bg-[var(--surface-highlight)] text-[var(--text-primary)] font-medium'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]/50'
+                          }`}
                       >
-                        <button
-                          onClick={() => {
-                            onSelectConversation?.(chat.id);
-                            setIsOpen(false);
-                          }}
-                          className="w-full p-3 rounded-xl text-left hover:bg-[var(--surface-highlight)] transition-colors group"
-                        >
-                          <p className="text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--accent)]">
-                            {chat.title}
-                          </p>
-                          <p className="text-xs text-[var(--text-secondary)] mt-0.5">{chat.date}</p>
-                        </button>
-                      </LongPressMenu>
+                        <MessageSquare size={16} className="shrink-0" />
+                        <span className="truncate text-sm flex-1">{conv.title}</span>
+                      </button>
                     ))
+                  ) : (
+                    <div className="p-8 text-center text-[var(--text-secondary)] flex flex-col items-center gap-3">
+                      <Folder size={24} strokeWidth={1.5} className="opacity-50" />
+                      <p className="text-sm">{t('no_chats_found')}</p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Footer - User Profile */}
-              <div className="p-4 border-t border-[var(--border)]">
-                {/* Theme Toggle */}
+              {/* Footer */}
+              <div className="p-4 border-t border-[var(--border)] space-y-2">
                 <button
                   onClick={toggleTheme}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface-highlight)] transition-colors mb-2"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors"
                 >
-                  {theme === 'light' ? (
-                    <Moon size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                  ) : (
-                    <Sun size={20} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
-                  )}
-                  <span className="text-sm text-[var(--text-primary)]">
-                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                  {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                  <span className="font-medium text-sm">
+                    {theme === 'dark' ? t('dark_mode') : t('light_mode')}
                   </span>
                 </button>
 
-                {/* User Profile Row */}
+                <Link
+                  href="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors"
+                >
+                  <User size={18} />
+                  <span className="font-medium text-sm">{t('profile')}</span>
+                </Link>
+
                 {user ? (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-highlight)]">
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full border-2 border-[var(--surface-highlight)] shadow-sm overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      {user.avatar_url ? (
-                        <img
-                          src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white text-sm font-medium">
-                          {user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
-                        </span>
-                      )}
-                    </div>
-                    {/* Name */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                        {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.email}
-                      </p>
-                      <p className="text-xs text-[var(--text-secondary)] truncate">{user.email}</p>
-                    </div>
-                    {/* Settings / Sign Out */}
-                    <button
-                      onClick={handleSignOut}
-                      className="w-8 h-8 rounded-full hover:bg-[var(--surface)] flex items-center justify-center transition-colors"
-                    >
-                      <LogOut size={16} className="text-[var(--text-secondary)]" />
-                    </button>
-                  </div>
-                ) : (
                   <button
-                    onClick={() => { setIsOpen(false); router.push('/login'); }}
-                    className="w-full p-3 rounded-xl bg-[var(--text-primary)] text-[var(--background)] text-sm font-medium"
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
                   >
-                    Sign In
+                    <LogOut size={18} />
+                    <span className="font-medium text-sm">Sign Out</span>
                   </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
+                  >
+                    <User size={18} />
+                    <span className="font-medium text-sm">{t('sign_in')}</span>
+                  </Link>
                 )}
               </div>
-            </motion.aside>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
-
-      {/* Export the toggle function for external use */}
-      <MobileNavTrigger onOpen={() => setIsOpen(true)} />
     </>
   );
-}
-
-// Separate component to expose the trigger
-function MobileNavTrigger({ onOpen }: { onOpen: () => void }) {
-  // Store the onOpen function in a global context or use a ref
-  useEffect(() => {
-    (window as any).__openMobileNav = onOpen;
-    return () => {
-      delete (window as any).__openMobileNav;
-    };
-  }, [onOpen]);
-
-  return null;
-}
-
-// Helper to open mobile nav from outside
-export function openMobileNav() {
-  (window as any).__openMobileNav?.();
 }

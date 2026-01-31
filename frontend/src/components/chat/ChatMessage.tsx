@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Copy, Check, RefreshCw, ExternalLink, FileText } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
+import { useTranslation } from '@/hooks/use-translation';
 
 export interface Message {
   id: string;
@@ -38,6 +39,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+  const { t } = useTranslation();
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -62,7 +64,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   };
 
   const handleDelete = () => {
-    if (confirm('Delete this message?') && onDelete) {
+    if (confirm(t('delete_confirm')) && onDelete) {
       onDelete(message.id);
     }
   };
@@ -105,13 +107,13 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
                 onClick={handleSaveEdit}
                 className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
               >
-                Save
+                {t('save')}
               </button>
               <button
                 onClick={handleCancelEdit}
                 className="px-3 py-1 bg-surface-highlight text-foreground rounded-lg text-xs hover:opacity-90 transition-opacity"
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -128,7 +130,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
           <button
             onClick={handleCopy}
             className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors"
-            title="Copy message"
+            title={t('copy')}
           >
             {copied ? (
               <Check size={14} strokeWidth={1.5} className="text-emerald-500" />
@@ -140,7 +142,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
             onClick={handleEdit}
             disabled={!onEdit}
             className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Edit message"
+            title={t('edit')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg>
           </button>
@@ -148,7 +150,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
             onClick={handleDelete}
             disabled={!onDelete}
             className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Delete message"
+            title="Delete"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
           </button>
@@ -201,7 +203,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
           <button
             onClick={handleCopy}
             className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors group"
-            title="Copy message"
+            title={t('copy')}
           >
             {copied ? (
               <Check size={14} strokeWidth={1.5} className="text-emerald-500" />
@@ -213,7 +215,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
             <button
               onClick={onRegenerate}
               className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors group"
-              title="Regenerate response"
+              title={t('regenerate')}
             >
               <RefreshCw size={14} strokeWidth={1.5} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
             </button>
@@ -229,7 +231,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
         <div className="mt-4 p-4 bg-[var(--surface-highlight)] rounded-xl border border-border">
           <p className="text-xs font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
             <FileText size={14} />
-            References ({message.citations.length})
+            {t('references')} ({message.citations.length})
           </p>
           <div className="space-y-2.5">
             {message.citations.map((citation) => {

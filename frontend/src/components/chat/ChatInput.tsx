@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useTranslation } from '@/hooks/use-translation';
 
 export type Mode = 'fast' | 'detailed' | 'deep_research';
 
@@ -30,13 +31,15 @@ interface Attachment {
   error?: string;
 }
 
-const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
-  { id: 'fast', label: 'Fast', icon: Zap, desc: 'Quick answers' },
-  { id: 'detailed', label: 'Detailed', icon: BookOpen, desc: 'Comprehensive' },
-  { id: 'deep_research', label: 'Deep Research', icon: Search, desc: 'PubMed literature review' },
-];
-
 export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload, onRemoveFile, isLoading, isUploading = false, mode, setMode }: ChatInputProps) {
+  const { t } = useTranslation();
+
+  const modes: { id: Mode; label: string; icon: typeof Zap; desc: string }[] = [
+    { id: 'fast', label: t('mode_fast'), icon: Zap, desc: 'Quick answers' },
+    { id: 'detailed', label: t('mode_detailed'), icon: BookOpen, desc: 'Comprehensive' },
+    { id: 'deep_research', label: t('mode_research'), icon: Search, desc: 'PubMed literature review' },
+  ];
+
   const [message, setMessage] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -99,7 +102,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
     // 1. Validation: Max 5 files at once
     if (files.length > 5) {
-      alert("You can only upload up to 5 files at a time.");
+      alert(t('upload_limit'));
       return;
     }
 
@@ -109,7 +112,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
     Array.from(files).forEach(file => {
       if (file.size > MAX_SIZE) {
-        alert(`File '${file.name}' exceeds the 20MB limit.`);
+        alert(t('file_too_large'));
       } else {
         validFiles.push(file);
       }
@@ -153,7 +156,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
       // Mark all new attachments as error if the whole call failed
       setAttachments(prev => prev.map(att =>
         newAttachments.find(na => na.id === att.id)
-          ? { ...att, status: 'error', error: 'Upload failed' }
+          ? { ...att, status: 'error', error: t('upload_error') }
           : att
       ));
     }
@@ -219,10 +222,10 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
       mediaRecorder.start();
       setIsRecording(true);
-      toast.info('Recording... Click again to stop');
+      toast.info(t('recording_start'));
     } catch (error) {
       console.error('Error starting recording:', error);
-      toast.error('Could not access microphone. Please allow microphone access.');
+      toast.error(t('mic_error'));
     }
   };
 
@@ -258,7 +261,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
       if (data.success && data.text) {
         setMessage(prev => prev ? `${prev} ${data.text}` : data.text);
-        toast.success('Transcription complete');
+        toast.success(t('transcription_done'));
         // Focus textarea
         textareaRef.current?.focus();
       } else {
@@ -454,8 +457,8 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                             <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
                           </div>
                           <div className="text-left">
-                            <span className="text-sm font-medium block">Upload File</span>
-                            <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
+                            <span className="text-sm font-medium block">{t('upload_file')}</span>
+                            <span className="text-[10px] text-[var(--text-secondary)]">{t('supported_files')}</span>
                           </div>
                         </button>
                       </motion.div>
@@ -470,7 +473,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                 value={message}
                 onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
-                placeholder={`Ask anything in ${currentMode.label} mode...`}
+                placeholder={t('ask_placeholder').replace('{mode}', currentMode.label)}
                 disabled={isLoading}
                 rows={1}
                 className="w-full py-[18px] pl-16 pr-28 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-base"
@@ -491,7 +494,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                       ? 'bg-[var(--surface-highlight)] text-[var(--accent)]'
                       : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
-                  title={isRecording ? 'Stop recording' : isTranscribing ? 'Transcribing...' : 'Voice input'}
+                  title={isRecording ? t('stop_recording') : isTranscribing ? 'Transcribing...' : t('voice_input')}
                 >
                   {isTranscribing ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -509,7 +512,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     onClick={onStop}
                     whileTap={{ scale: 0.95 }}
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-all"
-                    title="Stop generating"
+                    title={t('stop_gen')}
                   >
                     <Square size={14} fill="currentColor" />
                   </motion.button>
@@ -532,7 +535,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
           <div className="text-center mt-2">
             <p className="text-[10px] text-[var(--text-secondary)]">
-              PharmGPT can make mistakes. Consider checking important information.
+              {t('ai_disclaimer')}
             </p>
           </div>
         </form>
@@ -632,8 +635,8 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                             <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
                           </div>
                           <div className="text-left">
-                            <span className="text-sm font-medium block">Upload File</span>
-                            <span className="text-[10px] text-[var(--text-secondary)]">PDF, DOCX, CSV, Images</span>
+                            <span className="text-sm font-medium block">{t('upload_file')}</span>
+                            <span className="text-[10px] text-[var(--text-secondary)]">{t('supported_files')}</span>
                           </div>
                         </button>
 
@@ -680,7 +683,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Message..."
+                placeholder={t('message_placeholder')}
                 disabled={isLoading}
                 className="w-full py-3 pl-12 pr-12 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm text-center"
               />
@@ -693,7 +696,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     onClick={onStop}
                     whileTap={{ scale: 0.95 }}
                     className="w-9 h-9 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-all"
-                    title="Stop generating"
+                    title={t('stop_gen')}
                   >
                     <Square size={12} fill="currentColor" />
                   </motion.button>

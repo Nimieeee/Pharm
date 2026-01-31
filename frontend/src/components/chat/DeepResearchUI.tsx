@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
 
 // --- Types ---
 
@@ -82,6 +83,7 @@ export default function DeepResearchUI({
   // Detect mobile for sidebar default state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
   const sidebarRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const { t } = useTranslation();
 
   const handleCitationClick = (id: number) => {
     setActiveSourceId(id);
@@ -130,7 +132,7 @@ export default function DeepResearchUI({
             <div className="flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
               <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
-                Researching...
+                {t('researching')}
               </h3>
             </div>
           ) : (
@@ -139,7 +141,7 @@ export default function DeepResearchUI({
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
               <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
-                Research Complete
+                {t('research_complete')}
               </h3>
             </div>
           )}
@@ -147,10 +149,10 @@ export default function DeepResearchUI({
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="flex md:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-sm transition-all active:scale-95"
-          title={sidebarCollapsed ? "View Sources" : "Hide Sources"}
+          title={sidebarCollapsed ? t('sources') : t('close')}
         >
           <BookOpen className="w-3.5 h-3.5" />
-          {sidebarCollapsed ? "Sources" : "Close"}
+          {sidebarCollapsed ? t('sources') : t('close')}
         </button>
       </div>
 
@@ -270,7 +272,7 @@ export default function DeepResearchUI({
           {/* Sidebar Header */}
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-sm">
             <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-              Sources
+              {t('sources')}
               <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded text-[10px] min-w-[20px] text-center">
                 {sources.length}
               </span>
@@ -295,7 +297,7 @@ export default function DeepResearchUI({
                 ) : (
                   <>
                     <BookOpen className="w-5 h-5 mb-2 text-slate-400" />
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wide">No sources cited</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('no_sources')}</p>
                   </>
                 )}
               </div>
@@ -353,7 +355,7 @@ export default function DeepResearchUI({
                           className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:underline mt-2 opacity-80 hover:opacity-100"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <ExternalLink className="w-2.5 h-2.5" /> Open Source
+                          <ExternalLink className="w-2.5 h-2.5" /> {t('open_source')}
                         </a>
                       </div>
                     </motion.div>
@@ -370,6 +372,8 @@ export default function DeepResearchUI({
 
 // --- Minimal Loading State ---
 function LoadingState({ progress, progressPercent }: { progress: string; progressPercent: number }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[400px] w-full max-w-md mx-auto px-4 animate-in fade-in duration-700">
 
@@ -386,12 +390,12 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
 
       {/* Primary Status */}
       <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-2 text-center tracking-tight">
-        {progress || "Initializing research..."}
+        {progress || t('initializing_research')}
       </h3>
 
       {/* Secondary Progress Detail */}
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center font-light">
-        Processing biomedical data sources... <span className="font-mono text-emerald-600 dark:text-emerald-400 ml-1">{progressPercent}%</span>
+        {t('processing_sources')} <span className="font-mono text-emerald-600 dark:text-emerald-400 ml-1">{progressPercent}%</span>
       </p>
 
       {/* Sleek Progress Bar */}

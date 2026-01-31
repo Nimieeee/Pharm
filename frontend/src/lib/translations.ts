@@ -61,6 +61,8 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'email_not_verified': 'Email not verified',
         'email_not_verified_desc': 'We\'ve sent a new code. Please verify your email to continue.',
 
+        'email_not_verified_desc': 'We\'ve sent a new code. Please verify your email to continue.',
+
         // Chat Interface
         'how_can_i_help': 'How can I help you today?',
         'empty_state_desc': 'Ask about drug interactions, research writing, or upload documents for analysis.',
@@ -69,6 +71,48 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'mode_fast': 'Fast',
         'mode_detailed': 'Detailed',
         'mode_research': 'Deep Research',
+
+        // Chat Input & Actions
+        'upload_limit': 'You can only upload up to 5 files at a time.',
+        'file_too_large': 'File exceeds the 20MB limit.',
+        'upload_error': 'Upload failed',
+        'recording_start': 'Recording... Click again to stop',
+        'mic_error': 'Could not access microphone',
+        'transcription_done': 'Transcription complete',
+        'upload_file': 'Upload File',
+        'supported_files': 'PDF, DOCX, CSV, Images',
+        'ask_placeholder': 'Ask anything in {mode} mode...',
+        'message_placeholder': 'Message...',
+        'ai_disclaimer': 'PharmGPT can make mistakes. Consider checking important information.',
+        'stop_gen': 'Stop generating',
+
+        // Navigation & History
+        'dark_mode': 'Dark Mode',
+        'light_mode': 'Light Mode',
+        'sign_in': 'Sign In',
+        'no_chats_found': 'No chats found',
+        'history_empty': 'Chat history will appear here',
+        'recent_chats': 'Recent Chats',
+        'clear_history': 'Clear History',
+
+        // Deep Research
+        'researching': 'Researching...',
+        'research_complete': 'Research Complete',
+        'sources': 'Sources',
+        'close': 'Close',
+        'open_source': 'Open Source',
+        'no_sources': 'No sources cited',
+        'initializing_research': 'Initializing research...',
+        'processing_sources': 'Processing biomedical data sources...',
+
+        // Chat Message
+        'copy': 'Copy',
+        'edit': 'Edit',
+        'regenerate': 'Regenerate',
+        'delete_confirm': 'Delete this message?',
+        'save': 'Save',
+        'cancel': 'Cancel',
+        'references': 'References',
     },
     es: {
         // Sidebar
@@ -137,6 +181,48 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'mode_fast': 'Rápido',
         'mode_detailed': 'Detallado',
         'mode_research': 'Investigación profunda',
+
+        // Chat Input & Actions
+        'upload_limit': 'Solo puedes subir hasta 5 archivos a la vez.',
+        'file_too_large': 'El archivo excede el límite de 20MB.',
+        'upload_error': 'Error de subida',
+        'recording_start': 'Grabando... Clic de nuevo para detener',
+        'mic_error': 'No se pudo acceder al micrófono',
+        'transcription_done': 'Transcripción completa',
+        'upload_file': 'Subir archivo',
+        'supported_files': 'PDF, DOCX, CSV, Imágenes',
+        'ask_placeholder': 'Pregunta cualquier cosa en modo {mode}...',
+        'message_placeholder': 'Mensaje...',
+        'ai_disclaimer': 'PharmGPT puede cometer errores. Verifica la información importante.',
+        'stop_gen': 'Detener generación',
+
+        // Navigation & History
+        'dark_mode': 'Modo Oscuro',
+        'light_mode': 'Modo Claro',
+        'sign_in': 'Iniciar Sesión',
+        'no_chats_found': 'No se encontraron chats',
+        'history_empty': 'El historial aparecerá aquí',
+        'recent_chats': 'Chats Recientes',
+        'clear_history': 'Borrar Historial',
+
+        // Deep Research
+        'researching': 'Investigando...',
+        'research_complete': 'Investigación Completada',
+        'sources': 'Fuentes',
+        'close': 'Cerrar',
+        'open_source': 'Abrir Fuente',
+        'no_sources': 'Sin fuentes citadas',
+        'initializing_research': 'Iniciando investigación...',
+        'processing_sources': 'Procesando fuentes de datos biomédicos...',
+
+        // Chat Message
+        'copy': 'Copiar',
+        'edit': 'Editar',
+        'regenerate': 'Regenerar',
+        'delete_confirm': '¿Eliminar este mensaje?',
+        'save': 'Guardar',
+        'cancel': 'Cancelar',
+        'references': 'Referencias',
     },
     fr: {
         'new_chat': 'Nouvelle discussion',
@@ -200,6 +286,48 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'mode_fast': 'Rapide',
         'mode_detailed': 'Détaillé',
         'mode_research': 'Recherche approfondie',
+
+        // Chat Input & Actions
+        'upload_limit': 'Maximum 5 fichiers à la fois.',
+        'file_too_large': 'Le fichier dépasse 20 Mo.',
+        'upload_error': 'Échec du téléchargement',
+        'recording_start': 'Enregistrement... Cliquez pour arrêter',
+        'mic_error': 'Accès au micro refusé',
+        'transcription_done': 'Transcription terminée',
+        'upload_file': 'Télécharger un fichier',
+        'supported_files': 'PDF, DOCX, CSV, Images',
+        'ask_placeholder': 'Demandez n\'importe quoi en mode {mode}...',
+        'message_placeholder': 'Message...',
+        'ai_disclaimer': 'PharmGPT peut faire des erreurs. Vérifiez les infos importantes.',
+        'stop_gen': 'Arrêter',
+
+        // Navigation & History
+        'dark_mode': 'Mode Sombre',
+        'light_mode': 'Mode Clair',
+        'sign_in': 'Se connecter',
+        'no_chats_found': 'Aucun chat trouvé',
+        'history_empty': 'L\'historique apparaîtra ici',
+        'recent_chats': 'Chats récents',
+        'clear_history': 'Effacer l\'historique',
+
+        // Deep Research
+        'researching': 'Recherche en cours...',
+        'research_complete': 'Recherche terminée',
+        'sources': 'Sources',
+        'close': 'Fermer',
+        'open_source': 'Ouvrir la source',
+        'no_sources': 'Aucune source citée',
+        'initializing_research': 'Initialisation...',
+        'processing_sources': 'Traitement des données biomédicales...',
+
+        // Chat Message
+        'copy': 'Copier',
+        'edit': 'Modifier',
+        'regenerate': 'Régénérer',
+        'delete_confirm': 'Supprimer ce message ?',
+        'save': 'Enregistrer',
+        'cancel': 'Annuler',
+        'references': 'Références',
     },
     de: {
         'new_chat': 'Neuer Chat',
@@ -263,6 +391,48 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'mode_fast': 'Schnell',
         'mode_detailed': 'Detailliert',
         'mode_research': 'Tiefenrecherche',
+
+        // Chat Input & Actions
+        'upload_limit': 'Maximal 5 Dateien gleichzeitig.',
+        'file_too_large': 'Datei ist größer als 20MB.',
+        'upload_error': 'Upload fehlgeschlagen',
+        'recording_start': 'Aufnahme... Klicken zum Stoppen',
+        'mic_error': 'Kein Zugriff auf Mikrofon',
+        'transcription_done': 'Transkription abgeschlossen',
+        'upload_file': 'Datei hochladen',
+        'supported_files': 'PDF, DOCX, CSV, Bilder',
+        'ask_placeholder': 'Fragen Sie etwas im {mode}-Modus...',
+        'message_placeholder': 'Nachricht...',
+        'ai_disclaimer': 'PharmGPT kann Fehler machen. Überprüfen Sie wichtige Infos.',
+        'stop_gen': 'Generierung stoppen',
+
+        // Navigation & History
+        'dark_mode': 'Dunkelmodus',
+        'light_mode': 'Heller Modus',
+        'sign_in': 'Anmelden',
+        'no_chats_found': 'Keine Chats gefunden',
+        'history_empty': 'Verlauf wird hier angezeigt',
+        'recent_chats': 'Kürzliche Chats',
+        'clear_history': 'Verlauf löschen',
+
+        // Deep Research
+        'researching': 'Recherchiere...',
+        'research_complete': 'Recherche abgeschlossen',
+        'sources': 'Quellen',
+        'close': 'Schließen',
+        'open_source': 'Quelle öffnen',
+        'no_sources': 'Keine Quellen zitiert',
+        'initializing_research': 'Initialisiere...',
+        'processing_sources': 'Verarbeite biomedizinische Daten...',
+
+        // Chat Message
+        'copy': 'Kopieren',
+        'edit': 'Bearbeiten',
+        'regenerate': 'Neu generieren',
+        'delete_confirm': 'Nachricht löschen?',
+        'save': 'Speichern',
+        'cancel': 'Abbrechen',
+        'references': 'Referenzen',
     },
     pt: {
         'new_chat': 'Nova Conversa',
@@ -326,6 +496,48 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'mode_fast': 'Rápido',
         'mode_detailed': 'Detalhado',
         'mode_research': 'Pesquisa Profunda',
+
+        // Chat Input & Actions
+        'upload_limit': 'Máximo de 5 arquivos por vez.',
+        'file_too_large': 'Arquivo excede 20MB.',
+        'upload_error': 'Falha no envio',
+        'recording_start': 'Gravando... Clique para parar',
+        'mic_error': 'Sem acesso ao microfone',
+        'transcription_done': 'Transcrição concluída',
+        'upload_file': 'Carregar Arquivo',
+        'supported_files': 'PDF, DOCX, CSV, Imagens',
+        'ask_placeholder': 'Pergunte algo no modo {mode}...',
+        'message_placeholder': 'Mensagem...',
+        'ai_disclaimer': 'PharmGPT pode cometer erros. Verifique informações importantes.',
+        'stop_gen': 'Parar geração',
+
+        // Navigation & History
+        'dark_mode': 'Modo Escuro',
+        'light_mode': 'Modo Claro',
+        'sign_in': 'Entrar',
+        'no_chats_found': 'Nenhum chat encontrado',
+        'history_empty': 'O histórico aparecerá aqui',
+        'recent_chats': 'Chats Recentes',
+        'clear_history': 'Limpar Histórico',
+
+        // Deep Research
+        'researching': 'Pesquisando...',
+        'research_complete': 'Pesquisa Concluída',
+        'sources': 'Fontes',
+        'close': 'Fechar',
+        'open_source': 'Abrir Fonte',
+        'no_sources': 'Sem fontes citadas',
+        'initializing_research': 'Inicializando...',
+        'processing_sources': 'Processando dados biomédicos...',
+
+        // Chat Message
+        'copy': 'Copiar',
+        'edit': 'Editar',
+        'regenerate': 'Regenerar',
+        'delete_confirm': 'Apagar esta mensagem?',
+        'save': 'Guardar',
+        'cancel': 'Cancelar',
+        'references': 'Referências',
     },
     zh: {
         'new_chat': '新对话',
@@ -389,5 +601,47 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'mode_fast': '快速',
         'mode_detailed': '详细',
         'mode_research': '深度研究',
+
+        // Chat Input & Actions
+        'upload_limit': '一次最多上传5个文件。',
+        'file_too_large': '文件超过20MB限制。',
+        'upload_error': '上传失败',
+        'recording_start': '录音中... 再次点击停止',
+        'mic_error': '无法访问麦克风',
+        'transcription_done': '转录完成',
+        'upload_file': '上传文件',
+        'supported_files': 'PDF, DOCX, CSV, 图片',
+        'ask_placeholder': '在 {mode} 模式下提问...',
+        'message_placeholder': '输入消息...',
+        'ai_disclaimer': 'PharmGPT 可能会犯错。请核实重要信息。',
+        'stop_gen': '停止生成',
+
+        // Navigation & History
+        'dark_mode': '深色模式',
+        'light_mode': '浅色模式',
+        'sign_in': '登录',
+        'no_chats_found': '未找到对话',
+        'history_empty': '聊天记录将显示在这里',
+        'recent_chats': '最近对话',
+        'clear_history': '清除历史',
+
+        // Deep Research
+        'researching': '正在研究...',
+        'research_complete': '研究完成',
+        'sources': '来源',
+        'close': '关闭',
+        'open_source': '打开来源',
+        'no_sources': '未引用来源',
+        'initializing_research': '正在初始化...',
+        'processing_sources': '正在处理生物医学数据...',
+
+        // Chat Message
+        'copy': '复制',
+        'edit': '编辑',
+        'regenerate': '重新生成',
+        'delete_confirm': '删除此消息？',
+        'save': '保存',
+        'cancel': '取消',
+        'references': '参考资料',
     }
 };
