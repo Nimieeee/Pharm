@@ -10,6 +10,7 @@ import ChatInput, { Mode } from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useTranslation } from '@/hooks/use-translation';
 
 import confetti from 'canvas-confetti';
 import { SUGGESTION_POOL } from '@/config/suggestionPrompts';
@@ -20,6 +21,7 @@ function ChatContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, deleteMessage } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
+  const { t } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
 
@@ -195,7 +197,7 @@ function ChatContent() {
                 <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '300ms' }} />
-                <span className="text-xs text-[var(--text-secondary)] ml-2">Thinking...</span>
+                <span className="text-xs text-[var(--text-secondary)] ml-2">{t('thinking')}</span>
               </div>
             </motion.div>
           )}
@@ -223,6 +225,7 @@ function ChatContent() {
 
 function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (msg: string, mode?: Mode) => void, currentMode: Mode }) {
   const [suggestions, setSuggestions] = useState<{ text: string, mode: Mode }[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Efficiently select 4 random, unique suggestions from the large pool
@@ -237,6 +240,14 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
     const randomSuggestions = Array.from(selectedIndices).map(index => SUGGESTION_POOL[index]);
     setSuggestions(randomSuggestions);
   }, []);
+
+  const getModeLabel = (m: Mode) => {
+    switch (m) {
+      case 'deep_research': return t('mode_research');
+      case 'detailed': return t('mode_detailed');
+      default: return t('mode_fast');
+    }
+  };
 
   return (
     <motion.div
@@ -253,12 +264,12 @@ function EmptyState({ onSuggestionClick, currentMode }: { onSuggestionClick: (ms
         />
       </div>
       <h2 className="text-xl md:text-2xl font-serif font-medium text-[var(--text-primary)] mb-3">
-        How can I help you today?
+        {t('how_can_i_help')}
       </h2>
       <p className="text-[var(--text-secondary)] mb-8 max-w-md mx-auto text-sm md:text-base">
-        Ask about drug interactions, research writing, or upload documents for analysis.
+        {t('empty_state_desc')}
         <br />
-        <span className="text-xs opacity-70 mt-2 block">Current Mode: {currentMode === 'deep_research' ? 'Deep Research' : currentMode === 'detailed' ? 'Detailed' : 'Fast'}</span>
+        <span className="text-xs opacity-70 mt-2 block">{t('current_mode')}: {getModeLabel(currentMode)}</span>
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto px-2 sm:px-4 min-h-[140px]">
         {suggestions.length > 0 ? (

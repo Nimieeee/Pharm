@@ -60,6 +60,15 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'login_failed': 'Login failed',
         'email_not_verified': 'Email not verified',
         'email_not_verified_desc': 'We\'ve sent a new code. Please verify your email to continue.',
+
+        // Chat Interface
+        'how_can_i_help': 'How can I help you today?',
+        'empty_state_desc': 'Ask about drug interactions, research writing, or upload documents for analysis.',
+        'current_mode': 'Current Mode',
+        'thinking': 'Thinking...',
+        'mode_fast': 'Fast',
+        'mode_detailed': 'Detailed',
+        'mode_research': 'Deep Research',
     },
     es: {
         // Sidebar
@@ -119,6 +128,15 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'login_failed': 'Error de inicio de sesión',
         'email_not_verified': 'Correo no verificado',
         'email_not_verified_desc': 'Hemos enviado un nuevo código. Por favor verifica tu correo para continuar.',
+
+        // Chat Interface
+        'how_can_i_help': '¿Cómo puedo ayudarte hoy?',
+        'empty_state_desc': 'Pregunta sobre interacciones farmacológicas, redacción de investigaciones o sube documentos.',
+        'current_mode': 'Modo actual',
+        'thinking': 'Pensando...',
+        'mode_fast': 'Rápido',
+        'mode_detailed': 'Detallado',
+        'mode_research': 'Investigación profunda',
     },
     fr: {
         'new_chat': 'Nouvelle discussion',
@@ -173,6 +191,15 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'login_failed': 'Échec de connexion',
         'email_not_verified': 'Email non vérifié',
         'email_not_verified_desc': 'Nouveau code envoyé. Vérifiez votre email.',
+
+        // Chat Interface
+        'how_can_i_help': 'Comment puis-je vous aider aujourd\'hui ?',
+        'empty_state_desc': 'Interrogez sur les interactions médicamenteuses, la rédaction ou téléchargez des documents.',
+        'current_mode': 'Mode actuel',
+        'thinking': 'Réflexion...',
+        'mode_fast': 'Rapide',
+        'mode_detailed': 'Détaillé',
+        'mode_research': 'Recherche approfondie',
     },
     de: {
         'new_chat': 'Neuer Chat',
@@ -227,6 +254,15 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'login_failed': 'Anmeldung fehlgeschlagen',
         'email_not_verified': 'E-Mail nicht verifiziert',
         'email_not_verified_desc': 'Neuer Code gesendet. Bitte E-Mail prüfen.',
+
+        // Chat Interface
+        'how_can_i_help': 'Wie kann ich Ihnen heute helfen?',
+        'empty_state_desc': 'Fragen Sie nach Wechselwirkungen, Forschungstexten oder laden Sie Dokumente hoch.',
+        'current_mode': 'Aktueller Modus',
+        'thinking': 'Denkt nach...',
+        'mode_fast': 'Schnell',
+        'mode_detailed': 'Detailliert',
+        'mode_research': 'Tiefenrecherche',
     },
     pt: {
         'new_chat': 'Nova Conversa',
@@ -281,6 +317,15 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'login_failed': 'Falha no login',
         'email_not_verified': 'Email não verificado',
         'email_not_verified_desc': 'Novo código enviado. Verifique seu email.',
+
+        // Chat Interface
+        'how_can_i_help': 'Como posso ajudar hoje?',
+        'empty_state_desc': 'Pergunte sobre interações medicamentosas, redação de pesquisas ou envie documentos.',
+        'current_mode': 'Modo atual',
+        'thinking': 'Pensando...',
+        'mode_fast': 'Rápido',
+        'mode_detailed': 'Detalhado',
+        'mode_research': 'Pesquisa Profunda',
     },
     zh: {
         'new_chat': '新对话',
@@ -335,5 +380,14 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'login_failed': '登录失败',
         'email_not_verified': '邮箱未验证',
         'email_not_verified_desc': '新代码已发送，请查收邮件。',
+
+        // Chat Interface
+        'how_can_i_help': '今天我可以为您做什么？',
+        'empty_state_desc': '询问药物相互作用、研究写作或上传文档进行分析。',
+        'current_mode': '当前模式',
+        'thinking': '思考中...',
+        'mode_fast': '快速',
+        'mode_detailed': '详细',
+        'mode_research': '深度研究',
     }
 };
