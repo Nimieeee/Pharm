@@ -11,6 +11,7 @@ interface User {
   avatar_url?: string;
   is_admin: boolean;
   created_at: string;
+  language?: string;
 }
 
 interface AuthContextType {

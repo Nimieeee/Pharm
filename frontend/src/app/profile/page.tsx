@@ -16,7 +16,8 @@ import {
     Trash2,
     AlertCircle,
     Moon,
-    Sun
+    Sun,
+    Globe
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/lib/theme-context';
@@ -33,6 +34,7 @@ export default function ProfilePage() {
 
     const [firstName, setFirstName] = useState(user?.first_name || '');
     const [lastName, setLastName] = useState(user?.last_name || '');
+    const [language, setLanguage] = useState(user?.language || 'en');
     const [isUpdating, setIsUpdating] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -49,6 +51,7 @@ export default function ProfilePage() {
         if (user) {
             setFirstName(user.first_name || '');
             setLastName(user.last_name || '');
+            setLanguage(user.language || 'en');
         }
     }, [user, router]);
 
@@ -69,7 +72,8 @@ export default function ProfilePage() {
                 },
                 body: JSON.stringify({
                     first_name: firstName,
-                    last_name: lastName
+                    last_name: lastName,
+                    language: language
                 })
             });
 
@@ -292,7 +296,7 @@ export default function ProfilePage() {
                                         placeholder="Your last name"
                                     />
                                 </div>
-                                <div className="space-y-2 sm:col-span-2">
+                                <div className="space-y-2">
                                     <label className="text-sm font-medium text-[var(--text-secondary)]">Email Address</label>
                                     <div className="relative">
                                         <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-50" />
@@ -304,6 +308,24 @@ export default function ProfilePage() {
                                         />
                                     </div>
                                     <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest mt-1">Email cannot be changed manually</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[var(--text-secondary)]">AI Language</label>
+                                    <div className="relative">
+                                        <Globe size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-50" />
+                                        <select
+                                            value={language}
+                                            onChange={(e) => setLanguage(e.target.value)}
+                                            className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-all font-medium appearance-none"
+                                        >
+                                            <option value="en">English</option>
+                                            <option value="es">Spanish (Español)</option>
+                                            <option value="fr">French (Français)</option>
+                                            <option value="de">German (Deutsch)</option>
+                                            <option value="pt">Portuguese (Português)</option>
+                                            <option value="zh">Chinese (中文)</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
