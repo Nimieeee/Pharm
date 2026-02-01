@@ -156,7 +156,7 @@ backend/.env.local
 backend/.env.production
 
 # Backend folder (deployed separately)
-backend/
+# backend/
 
 # Deployment configs (sensitive)
 deployment/

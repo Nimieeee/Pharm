@@ -1,0 +1,51 @@
+fastapi==0.100.1
+uvicorn[standard]==0.23.2
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+email-validator==2.1.0
+PyJWT==2.8.0
+passlib==1.7.4
+bcrypt==4.0.1
+python-multipart==0.0.6
+supabase==2.9.0
+# mistralai for Conversations API with tools (web_search, code_interpreter, image_generation)
+mistralai>=1.2.0
+python-docx==1.1.0
+python-pptx==0.6.23
+openpyxl==3.1.2
+pandas==2.0.3
+aiofiles==23.2.1
+# httpx will be auto-resolved by supabase and mistralai
+psycopg2-binary==2.9.9
+setuptools>=65.0.0
+wheel>=0.37.0
+# LangChain and related dependencies - using compatible versions
+langchain>=0.1.0,<0.2.0
+langchain-community>=0.0.10,<0.3.0
+langchain-core>=0.1.28,<0.2.0
+langchain-text-splitters>=0.0.1,<0.1.0
+# Document processing
+pypdf==3.17.4
+pdfplumber==0.10.3
+PyPDF2==3.0.1
+docx2txt==0.8
+unstructured==0.10.30  # For PowerPoint and other document types
+Pillow==10.4.0  # For image processing
+pytesseract==0.3.10  # For OCR on images
+# Caching and utilities
+cachetools==5.3.2
+# Sentence Transformers for local embeddings (no API calls, no rate limits)
+sentence-transformers==2.2.2
+einops  # Required for Nomic embeddings
+torch==2.0.1
+transformers==4.30.2
+# RDKit for chemical structure parsing (optional - SDF files work without it)
+rdkit-pypi==2022.9.5
+pdf2image==1.17.0
+# Data visualization
+matplotlib==3.7.2
+seaborn==0.12.2
+numpy>=1.24.0
+scipy>=1.10.0
+# Scheduler for background tasks
+apscheduler>=3.10.0
