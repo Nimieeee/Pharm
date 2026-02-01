@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Book, Code, Layers, Shield, Search, FileText, Image, MessageSquare } from 'lucide-react';
+import { Book, Code, Shield, Search, FileText, Image, MessageSquare } from 'lucide-react';
 
 export default function DocsPage() {
     return (
@@ -16,7 +16,6 @@ export default function DocsPage() {
                         <a href="#getting-started" className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Getting Started</a>
                         <a href="#deep-research" className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Deep Research</a>
                         <a href="#multimodal" className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Multimodal Analysis</a>
-                        <a href="#data-workbench" className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Data Workbench</a>
                         <a href="#security" className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">Security & Privacy</a>
                     </nav>
                 </div>
@@ -53,7 +52,6 @@ export default function DocsPage() {
                             <ul className="list-disc pl-5 space-y-2">
                                 <li><strong>Chat Window:</strong> The central area where you interact with the AI.</li>
                                 <li><strong>Sidebar:</strong> Access your chat history, pinned conversations, and settings.</li>
-                                <li><strong>Data Workbench:</strong> A dedicated space for managing your uploaded files and datasets.</li>
                             </ul>
 
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">2. Chat Modes</h3>
@@ -170,81 +168,6 @@ export default function DocsPage() {
                         </div>
                     </section>
 
-                    {/* Data Workbench */}
-                    <section id="data-workbench" className="scroll-mt-24">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                <Layers className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                            </div>
-                            <h2 className="text-2xl font-bold">Data Workbench</h2>
-                        </div>
-                        <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
-                            <p>
-                                The Data Workbench is an <strong>AI-Powered Data Analyst</strong> embedded directly inside PharmGPT. It allows users to upload raw, messy research data and instantly turn it into clean, interactive visualizations without needing to write code or use Excel formulas.
-                            </p>
-                            <p>
-                                Unlike standard file uploads (which just read text), the Workbench is designed to understand structure and visualize quantitative data.
-                            </p>
-
-                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Key Capabilities</h3>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white mb-2">1. Universal "Smart" Ingestion</h4>
-                                    <p className="text-sm mb-2">It doesn't just accept perfect CSVs. It uses an intelligent parsing layer to read files humans actually use:</p>
-                                    <ul className="list-disc pl-5 text-sm space-y-1">
-                                        <li><strong>Excel (.xlsx):</strong> Detects multi-sheet workbooks and asks which sheet to analyze. Automatically skips "metadata rows" (like logos/titles) to find the actual header.</li>
-                                        <li><strong>PDFs & Word Docs:</strong> Scans unstructured documents for tables, extracts them, and converts them into structured dataframes.</li>
-                                        <li><strong>CSVs:</strong> Handles different delimiters and encoding issues automatically.</li>
-                                    </ul>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white mb-2">2. Automated Data Cleaning</h4>
-                                    <p className="text-sm mb-2">Before plotting, the Workbench "sanitizes" the data:</p>
-                                    <ul className="list-disc pl-5 text-sm space-y-1">
-                                        <li><strong>Unit Stripping:</strong> Converts text like "$5,000" or "1,200 mg" into pure numbers (5000, 1200) so they can be plotted.</li>
-                                        <li><strong>Error Handling:</strong> Intelligently handles missing values (NaN) or infinite values so the graph doesn't crash.</li>
-                                        <li><strong>Normalization:</strong> Standardizes column names to make them machine-readable.</li>
-                                    </ul>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white mb-2">3. Intelligent Auto-Plotting</h4>
-                                    <p className="text-sm mb-2">The system analyzes the data types in your columns to decide the best visualization:</p>
-                                    <ul className="list-disc pl-5 text-sm space-y-1">
-                                        <li><strong>Time Series Detected?</strong> → Draws a Line Chart (e.g., Patient vitals over 24 hours).</li>
-                                        <li><strong>Categorical Data?</strong> → Draws a Bar Chart (e.g., Side effect frequency across different drugs).</li>
-                                        <li><strong>Correlations?</strong> → Draws a Scatter Plot (e.g., Dosage vs. Efficacy).</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Example Use Cases</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-lg border border-orange-100 dark:border-orange-800">
-                                    <strong className="block text-orange-800 dark:text-orange-300 mb-1">Clinical Trial Analysis</strong>
-                                    <p className="text-xs">Upload a PDF report. The Workbench extracts the "Adverse Events" table and plots a bar chart comparing Placebo vs. Treatment groups.</p>
-                                </div>
-                                <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-lg border border-orange-100 dark:border-orange-800">
-                                    <strong className="block text-orange-800 dark:text-orange-300 mb-1">Lab Results</strong>
-                                    <p className="text-xs">Upload an Excel sheet of patient blood work (PK/PD data). It cleans headers and plots the concentration-time curve.</p>
-                                </div>
-                                <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-lg border border-orange-100 dark:border-orange-800">
-                                    <strong className="block text-orange-800 dark:text-orange-300 mb-1">Comparative Research</strong>
-                                    <p className="text-xs">Upload a CSV of drug pricing or molecular weights. The Workbench visualizes outliers immediately.</p>
-                                </div>
-                            </div>
-
-                            <h3 className="text-lg font-semibold mt-6 mb-3 text-gray-900 dark:text-white">How it Works (User Flow)</h3>
-                            <ol className="list-decimal pl-5 space-y-2">
-                                <li><strong>Upload:</strong> Click (+) &rarr; Select "Data Workbench". Drop a PDF, Excel, or CSV file.</li>
-                                <li><strong>Scan:</strong> The system shows "Scanning document for tables...".</li>
-                                <li><strong>Verify:</strong> (If multiple tables/sheets exist) You select the specific dataset you want.</li>
-                                <li><strong>Visualize:</strong> The chart appears instantly in the chat stream, fully interactive (zoom, hover for details).</li>
-                            </ol>
-                        </div>
-                    </section>
 
                     {/* Security */}
                     <section id="security" className="scroll-mt-24">

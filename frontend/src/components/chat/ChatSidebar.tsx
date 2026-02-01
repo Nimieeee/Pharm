@@ -8,7 +8,7 @@ import { useStreamingConversations } from '@/hooks/useStreamingState';
 import { useTranslation } from '@/hooks/use-translation';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
-  ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, BarChart3, LogOut, X,
+  ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, LogOut, X,
   MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -677,13 +677,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   </button>
                 )}
 
-                <button
-                  onClick={() => router.push('/workbench')}
-                  className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3"
-                >
-                  <BarChart3 size={20} strokeWidth={1.5} className="text-[var(--accent)]" />
-                  <span className="text-sm text-foreground">{t('data_workbench')}</span>
-                </button>
 
                 {/* Theme Toggle Row */}
                 <div className="flex items-center justify-between px-3 py-2">

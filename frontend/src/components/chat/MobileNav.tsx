@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, Plus, MessageSquare, LayoutGrid, Calendar,
+  Menu, X, Plus, MessageSquare, Calendar,
   Search, Moon, Sun, Settings, LogOut, User, Folder
 } from 'lucide-react';
 import Link from 'next/link';
@@ -122,14 +122,6 @@ export default function MobileNav({
                   <span className="font-medium text-sm">{t('new_chat')}</span>
                 </button>
 
-                <Link
-                  href="/workbench"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors"
-                >
-                  <LayoutGrid size={18} />
-                  <span className="font-medium text-sm">{t('workbench')}</span>
-                </Link>
               </div>
 
               {/* Search */}
