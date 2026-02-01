@@ -685,11 +685,32 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                 }}
                 placeholder={t('message_placeholder')}
                 disabled={isLoading}
-                className="w-full py-3 pl-12 pr-12 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm text-center"
+                className="w-full py-3 pl-12 pr-24 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none text-sm text-center"
               />
 
-              {/* Right: Send/Stop Button */}
-              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center z-10">
+              {/* Right: Mic + Send/Stop Buttons */}
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
+                {/* Mobile Mic Button */}
+                <motion.button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={isLoading || isTranscribing}
+                  whileTap={{ scale: 0.95 }}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isRecording
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : isTranscribing
+                      ? 'bg-[var(--surface-highlight)] text-[var(--accent)] dark:bg-[#2A2A2A]'
+                      : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] dark:hover:bg-[#2A2A2A]'
+                    }`}
+                >
+                  {isTranscribing ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff size={16} />
+                  ) : (
+                    <Mic size={16} />
+                  )}
+                </motion.button>
                 {isLoading ? (
                   <motion.button
                     type="button"
