@@ -21,7 +21,7 @@ function ChatContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, deleteMessage } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
 
@@ -98,7 +98,7 @@ function ChatContent() {
     if (selectedMode !== mode) {
       setMode(selectedMode);
     }
-    sendMessage(message, selectedMode);
+    sendMessage(message, selectedMode, language);
   };
 
   return (

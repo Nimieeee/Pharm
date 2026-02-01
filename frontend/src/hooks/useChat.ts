@@ -236,7 +236,7 @@ export function useChat() {
     }
   };
 
-  const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed') => {
+  const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed', language: string = 'en') => {
     // Check if THIS conversation is currently loading (allow sending in other conversations)
     const currentConvLoading = isConversationStreaming(conversationId);
     if (!content.trim() || currentConvLoading) return;
@@ -397,6 +397,7 @@ export function useChat() {
             question: content.trim(),
             conversation_id: streamConversationId,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
+            language: language,
           }),
           signal,
         });
@@ -528,6 +529,7 @@ export function useChat() {
             mode: mode,
             use_rag: true,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
+            language: language,
           }),
           signal,
         });
@@ -696,6 +698,7 @@ export function useChat() {
             mode: mode,
             use_rag: true,
             metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
+            language: language,
           }),
           signal,
         });
