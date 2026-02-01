@@ -115,7 +115,6 @@ export function useConversations() {
         }
     );
 
-    console.log('useConversations return:', { isReady, dataLength: data?.length, isLoading, error: error?.message });
 
     return {
         conversations: data || [],

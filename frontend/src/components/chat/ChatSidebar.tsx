@@ -176,7 +176,6 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   // Track which conversations are currently streaming
   const streamingConversations = useStreamingConversations();
 
-  console.log('Sidebar Debug:', { conversations, isLoadingHistory, isError, length: conversations?.length, streaming: Array.from(streamingConversations) });
 
   // Transform to ChatHistory format
   const chatHistory = useMemo(() =>
