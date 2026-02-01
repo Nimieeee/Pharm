@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { useTheme } from '@/lib/theme-context';
-import { User, Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun, Check, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 
@@ -20,9 +20,34 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    digit: false
+  });
+
+  const checkPassword = (val: string) => {
+    setPassword(val);
+    setPasswordCriteria({
+      length: val.length >= 8,
+      uppercase: /[A-Z]/.test(val),
+      lowercase: /[a-z]/.test(val),
+      digit: /[0-9]/.test(val)
+    });
+  };
+
+  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!isPasswordValid) {
+      setError('Please ensure all password requirements are met.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -34,6 +59,13 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
+    <div className={`flex items-center gap-2 text-xs transition-colors ${met ? 'text-green-500' : 'text-[var(--text-secondary)]'}`}>
+      {met ? <Check size={12} strokeWidth={3} /> : <div className="w-3 h-3 rounded-full border border-[var(--border)]" />}
+      <span>{text}</span>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-atmospheric px-4 py-12 relative">
@@ -135,23 +167,26 @@ export default function RegisterPage() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 8 chars, uppercase, lowercase, digit"
+                  onChange={(e) => checkPassword(e.target.value)}
+                  placeholder="Create a strong password"
                   required
                   minLength={8}
                   className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
                 />
               </div>
-              <p className="text-xs text-[var(--text-secondary)] mt-2">
-                Must contain uppercase, lowercase, and a number
-              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <PasswordRequirement met={passwordCriteria.length} text="8+ characters" />
+                <PasswordRequirement met={passwordCriteria.uppercase} text="Uppercase letter" />
+                <PasswordRequirement met={passwordCriteria.lowercase} text="Lowercase letter" />
+                <PasswordRequirement met={passwordCriteria.digit} text="Number" />
+              </div>
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full h-12 mt-6 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all disabled:opacity-50"
+            disabled={isLoading || !isPasswordValid}
+            className="w-full h-12 mt-6 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <Loader2 size={20} strokeWidth={1.5} className="animate-spin" />
