@@ -206,29 +206,46 @@ class ResearchTools:
         # Try Tavily first if API key is available
         if self.tavily_api_key:
             try:
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                async with httpx.AsyncClient(timeout=45.0) as client:
                     response = await client.post(
                         "https://api.tavily.com/search",
                         json={
                             "api_key": self.tavily_api_key,
                             "query": query,
                             "search_depth": "advanced",
-                            "max_results": max_results,
-                            "include_domains": [
-                                "fda.gov", "nih.gov", "clinicaltrials.gov",
-                                "drugs.com", "medscape.com", "nature.com",
-                                "sciencedirect.com", "springer.com"
-                            ]
+                            "include_answer": "advanced",
+                            "max_results": 20,
+                            "include_images": True,
+                            "include_favicon": False
                         }
                     )
                     
                     if response.status_code == 200:
                         data = response.json()
+                        
+                        # Process generated answer as a special high-value result
+                        answer = data.get("answer", "")
+                        if answer:
+                            results.append({
+                                "title": "💡 AI Research Summary (Tavily)",
+                                "snippet": answer,
+                                "url": "https://tavily.com",
+                                "source": "Tavily Intelligence",
+                                "type": "answer"
+                            })
+                            
+                        # Process images
+                        images = data.get("images", [])
+                        # We can optionally store these or return separately, 
+                        # for now appended to snippets or processed if we change signature
+                        # results.extend([{"type": "image", "url": img} for img in images[:3]])
+
                         for result in data.get("results", []):
                             results.append({
                                 "title": result.get("title", ""),
                                 "snippet": result.get("content", ""),
-                                "url": result.get("url", "")
+                                "url": result.get("url", ""),
+                                "source": "Tavily"
                             })
                         return results
                         
