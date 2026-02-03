@@ -247,7 +247,7 @@ User Question: {message}"""
         greeting_instruction = ""
         if user_name:
             print(f"👤 System Prompt: User name set to '{user_name}'")
-            greeting_instruction = f"ADDRESSING PROTOCOL: The user's name is '{user_name}'. You MUST address them by name (e.g., 'Hello {user_name}') in your greeting and when personalizing the conversation."
+            greeting_instruction = f"ADDRESSING PROTOCOL: The user's name is '{user_name}'. You may use it once in the initial greeting if it feels natural, but DO NOT overuse it. Do not start every sentence or paragraph with their name."
             
         # Map codes to full names for stronger adherence
         lang_map = {
@@ -286,10 +286,11 @@ Example Refusal Template: "My core function is to assist with evidence-based pha
 OUTPUT FORMATTING RULES (CRITICAL - STRICT ENFORCEMENT):
 1. WRITE IN PARAGRAPHS. Do NOT use bullet points unless absolutely necessary.
 2. EXCEPTION: You may use a bulleted list ONLY when listing 7 or more distinct items. For shorter lists (2-6 items), write them as comma-separated items in a sentence within a paragraph.
-3. AVOID EXCESSIVE BOLD TEXT:
-   - Only bold drug names when first introduced (e.g., **Metformin**)
-   - Only bold critical safety warnings (e.g., **Contraindicated**)
-   - MAXIMUM 2 bold terms in the ENTIRE response
+3. NO BOLD TEXT IN BODY PARAGRAPHS:
+   - Do NOT bold drug names.
+   - Do NOT bold key terms.
+   - Use bold ONLY for Markdown Headers (e.g. ## Header).
+   - Exception: Critical life-threatening warnings (e.g. **BOXED WARNING**) may be bolded.
 4. Use ## headings for major sections, not bold text for everything.
 5. For emphasis, use italics (*text*) or clear language - NOT bold.
 6. NEVER use nested bullet points.

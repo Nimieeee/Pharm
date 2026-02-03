@@ -421,9 +421,8 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={desktopBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    disabled={isUploading}
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isUploading
-                      ? 'bg-[var(--accent)]/20 cursor-not-allowed'
+                      ? 'bg-[var(--surface-highlight)] cursor-wait'
                       : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
                       }`}
                   >
@@ -600,9 +599,8 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={mobileBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    disabled={isUploading}
                     className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isUploading
-                      ? 'bg-[var(--accent)]/20 cursor-not-allowed'
+                      ? 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A] cursor-wait'
                       : 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]'
                       }`}
                   >
