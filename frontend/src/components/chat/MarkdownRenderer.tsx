@@ -443,6 +443,12 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
     displayContent = repairIncompleteMarkdown(displayContent);
   }
 
+  // 3. Preprocess LaTeX delimiters for KaTeX
+  // Replace \[ ... \] with $$ ... $$
+  displayContent = displayContent.replace(/\\\[([\s\S]*?)\\\]/g, '$$$1$$');
+  // Replace \( ... \) with $ ... $
+  displayContent = displayContent.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
+
   // 3. Deep Research specific handling
   const isDeepResearch = mode === 'deep_research';
 
