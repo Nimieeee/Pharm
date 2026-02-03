@@ -63,7 +63,7 @@ class ChatService:
         """Get all conversations for user - simple and fast"""
         start = time.time()
         try:
-            result = self.db.table("conversations").select("id, title, user_id, created_at, updated_at, is_pinned, is_archived")\
+            result = self.db.table("conversations").select("id, title, user_id, created_at, updated_at, is_pinned, is_archived, title_translations")\
                 .eq("user_id", str(user.id))\
                 .order("updated_at", desc=True)\
                 .limit(50)\
@@ -81,7 +81,8 @@ class ChatService:
                     is_archived=r.get("is_archived", False),
                     message_count=0,
                     document_count=0,
-                    last_activity=r["updated_at"]
+                    last_activity=r["updated_at"],
+                    title_translations=r.get("title_translations")
                 ))
             
             # Optimization: Pre-warm the conversation cache if needed or just log
@@ -307,6 +308,7 @@ class ChatService:
                     role=r["role"],
                     content=r["content"],
                     metadata=r.get("metadata", {}),
+                    translations=r.get("translations"),
                     created_at=r["created_at"]
                 ))
             

@@ -49,6 +49,7 @@ class Conversation(ConversationBase):
     message_count: int = 0
     document_count: int = 0
     last_activity: Optional[datetime] = None
+    title_translations: Optional[Dict[str, str]] = None  # Pre-generated title translations
     
     class Config:
         from_attributes = True
@@ -59,6 +60,7 @@ class MessageBase(BaseModel):
     role: str  # 'user' or 'assistant'
     content: str
     metadata: Dict[str, Any] = {}
+    translations: Optional[Dict[str, str]] = None  # Pre-generated translations {lang_code: text}
 
 
 class MessageCreate(MessageBase):

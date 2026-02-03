@@ -26,6 +26,7 @@ interface ChatSidebarProps {
 interface ChatHistory {
   id: string;
   title: string;
+  title_translations?: Record<string, string>;  // Pre-generated title translations
   date: string;
   created_at: string;
   is_pinned?: boolean;
@@ -161,7 +162,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();  // Get current language for title translations
   const [showArchived, setShowArchived] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,6 +183,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     conversations.map((conv: any) => ({
       id: conv.id,
       title: conv.title || 'Untitled Chat',
+      title_translations: conv.title_translations,
       date: new Date(conv.created_at).toLocaleDateString(),
       created_at: conv.created_at,
       is_pinned: conv.is_pinned,
@@ -447,7 +449,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
               className="flex-1 text-left truncate"
               onClick={() => handleSelectConversation(chat.id)}
             >
-              {chat.title}
+              {chat.title_translations?.[language] || chat.title}
             </button>
           )}
 

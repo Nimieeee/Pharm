@@ -16,6 +16,7 @@ from app.services.chat import ChatService
 from app.services.enhanced_rag import EnhancedRAGService
 from app.services.deep_research import DeepResearchService
 from app.services.image_gen import ImageGenerationService
+from app.services.translation_service import TranslationService
 from app.models.user import User
 from app.models.conversation import MessageCreate
 from app.models.document import DocumentUploadResponse, DocumentSearchRequest, DocumentSearchResponse
@@ -585,11 +586,22 @@ async def chat_stream(
                 metadata={
                     "mode": chat_request.mode,
                     "rag_used": chat_request.use_rag,
-                    "streaming": True
+                    "streaming": True,
+                    "source_language": chat_request.language
                 }
             )
             
-            await chat_service.add_message(assistant_message, current_user)
+            saved_assistant_msg = await chat_service.add_message(assistant_message, current_user)
+            
+            # Queue background translation for assistant message
+            if saved_assistant_msg:
+                translation_service = TranslationService(db)
+                await translation_service.queue_message_translation(
+                    message_id=saved_assistant_msg.id,
+                    content=full_response,
+                    source_language=chat_request.language
+                )
+            
             yield "data: [DONE]\n\n"
         
         return StreamingResponse(

@@ -10,6 +10,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  translations?: Record<string, string>;  // Pre-generated translations {lang_code: content}
   citations?: Array<{
     id: number;
     title: string;
@@ -39,7 +40,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -184,7 +185,9 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
     return cleaned.trim();
   };
 
-  const displayContent = cleanContent(message.content);
+  // Get displayed content - use translation if available, fallback to original
+  const translatedContent = message.translations?.[language] || message.content;
+  const displayContent = cleanContent(translatedContent);
 
   return (
     <article className="py-5 sm:py-6 w-full pl-2 sm:pl-0">
