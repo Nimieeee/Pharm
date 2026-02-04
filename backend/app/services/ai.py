@@ -196,6 +196,10 @@ class AIService:
             inputs = [{"role": "user", "content": full_message}]
             
             # System instructions
+            user_first_name = getattr(user, 'first_name', None)
+            system_instructions = self._get_system_prompt(
+                mode, 
+                user_name=user_first_name,
                 language=getattr(user, 'language', 'en')
             )
             
