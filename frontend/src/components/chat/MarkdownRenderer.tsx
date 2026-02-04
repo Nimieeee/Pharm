@@ -250,10 +250,31 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
     return { headers, rows };
   }, []);
 
+  // Helper: Escape content for CSV
+  const escapeCSV = (str: string) => {
+    if (!str) return '';
+    // If contains quote, comma or newline, wrap in quotes and escape internal quotes
+    if (/[,"\n\r]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  // Helper: Escape content for TSV
+  const escapeTSV = (str: string) => {
+    if (!str) return '';
+    // For TSV, simpler approach: replace tabs with spaces to preserve structure
+    // as TSV quoting support varies widely.
+    return str.replace(/\t/g, ' ').replace(/[\n\r]/g, ' ');
+  };
+
   const copyAsCSV = useCallback(async () => {
     if (isAnimating) return;
     const { headers, rows } = getTableData();
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const csv = [
+      headers.map(escapeCSV).join(','),
+      ...rows.map(r => r.map(escapeCSV).join(','))
+    ].join('\n');
     await navigator.clipboard.writeText(csv);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -263,7 +284,10 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
   const copyAsTSV = useCallback(async () => {
     if (isAnimating) return;
     const { headers, rows } = getTableData();
-    const tsv = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+    const tsv = [
+      headers.map(escapeTSV).join('\t'),
+      ...rows.map(r => r.map(escapeTSV).join('\t'))
+    ].join('\n');
     await navigator.clipboard.writeText(tsv);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -281,7 +305,36 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
   const downloadCSV = useCallback(() => {
     if (isAnimating) return;
     const { headers, rows } = getTableData();
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    // Re-use logic: Need to ensure escapeCSV is accessible. 
+    // Since this is a separate replace block, I cannot assume I can see the previous block's diff immediately during generation if I wanted to rely on it being there. 
+    // BUT, the file is modified sequentially.
+    // However, I need to make sure `escapeCSV` is defined in the component scope. 
+    // In the previous step, I defined `escapeCSV` inside `EnhancedTable`.
+    // So I can just call it here.
+
+    // Helper again just in case (or rely on scope? No, `escapeCSV` was defined inside the component in the previous patch which was inserted at line 253. `EnhancedTable` starts much earlier. Correct.)
+    // Wait, scope: `downloadCSV` is defined at line 281 (original).
+    // `escapeCSV` was defined at the top of the replacement block which started at 253.
+    // Yes, it is in valid scope.
+
+    // To be safe and clean, I'll just rewrite the helper if TS complains, but it should be fine.
+    // Actually, looking at the previous patch: I defined `const escapeCSV = ...` before `copyAsCSV`. 
+    // `downloadCSV` is defined AFTER `copyAsHTML`, which is AFTER `copyAsTSV`...
+    // So yes, it is in scope.
+
+    const escapeCSVLocal = (str: string) => {
+      if (!str) return '';
+      if (/[,"\n\r]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const csv = [
+      headers.map(escapeCSVLocal).join(','),
+      ...rows.map(r => r.map(escapeCSVLocal).join(','))
+    ].join('\n');
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
