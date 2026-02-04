@@ -562,55 +562,74 @@ async def chat_stream(
         # Generate streaming response
         async def generate_stream():
             full_response = ""
+            is_complete = False
             
-            async for chunk in ai_service.generate_streaming_response(
-                message=chat_request.message,
-                conversation_id=chat_request.conversation_id,
-                user=current_user,
-                mode=chat_request.mode,
-                use_rag=chat_request.use_rag,
-                additional_context=image_context_str,
-                language_override=chat_request.language
-            ):
-                full_response += chunk
-                # Use JSON encoding to properly preserve all characters including newlines
-                # This is the most reliable way to send text over SSE
-                encoded_chunk = json.dumps({"text": chunk})
-                yield f"data: {encoded_chunk}\n\n"
+            try:
+                async for chunk in ai_service.generate_streaming_response(
+                    message=chat_request.message,
+                    conversation_id=chat_request.conversation_id,
+                    user=current_user,
+                    mode=chat_request.mode,
+                    use_rag=chat_request.use_rag,
+                    additional_context=image_context_str,
+                    language_override=chat_request.language
+                ):
+                    full_response += chunk
+                    # Use JSON encoding to properly preserve all characters including newlines
+                    # This is the most reliable way to send text over SSE
+                    encoded_chunk = json.dumps({"text": chunk})
+                    yield f"data: {encoded_chunk}\n\n"
+                    
+                    # Explicitly yield to event loop to allow cancellation to be processed
+                    await asyncio.sleep(0)
+                
+                is_complete = True
+                yield "data: [DONE]\n\n"
+                
+            except asyncio.CancelledError:
+                print(f"🚫 Stream cancelled by user for conversation {chat_request.conversation_id}")
+                # Do NOT save the message
+                return
             
-            # Add complete response to conversation
-            assistant_message = MessageCreate(
-                conversation_id=chat_request.conversation_id,
-                role="assistant",
-                content=full_response,
-                metadata={
-                    "mode": chat_request.mode,
-                    "rag_used": chat_request.use_rag,
-                    "streaming": True,
-                    "source_language": chat_request.language
-                }
-            )
+            except Exception as e:
+                print(f"❌ Error in streaming response: {e}")
+                error_chunk = json.dumps({"text": f"\n\n[Error: {str(e)}]"})
+                yield f"data: {error_chunk}\n\n"
+                return
             
-            saved_assistant_msg = await chat_service.add_message(assistant_message, current_user)
-            
-            # Queue background translation for assistant message
-            if saved_assistant_msg:
-                translation_service = TranslationService(db)
-                await translation_service.queue_message_translation(
-                    message_id=saved_assistant_msg.id,
+            # Add complete response to conversation ONLY if complete
+            if is_complete and full_response:
+                assistant_message = MessageCreate(
+                    conversation_id=chat_request.conversation_id,
+                    role="assistant",
                     content=full_response,
-                    source_language=chat_request.language
+                    metadata={
+                        "mode": chat_request.mode,
+                        "rag_used": chat_request.use_rag,
+                        "streaming": True,
+                        "source_language": chat_request.language
+                    }
                 )
-            
-            yield "data: [DONE]\n\n"
+                
+                saved_assistant_msg = await chat_service.add_message(assistant_message, current_user)
+                
+                # Queue background translation for assistant message
+                if saved_assistant_msg:
+                    translation_service = TranslationService(db)
+                    await translation_service.queue_message_translation(
+                        message_id=saved_assistant_msg.id,
+                        content=full_response,
+                        source_language=chat_request.language
+                    )
         
         return StreamingResponse(
             generate_stream(),
-            media_type="text/plain",
+            media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "Content-Type": "text/event-stream"
+                "Content-Type": "text/event-stream",
+                "X-Accel-Buffering": "no"  # Disable Nginx buffering
             }
         )
         
