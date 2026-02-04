@@ -94,7 +94,8 @@ class ChatService:
                 conversations.append(conv_obj)
                 
                 # Check if title translation needed
-                if target_lang != 'en' and (not conv_obj.title_translations or target_lang not in conv_obj.title_translations):
+                # CRITICAL FIX: Allow translation even for English ('en') if translation is missing
+                if (not conv_obj.title_translations or target_lang not in conv_obj.title_translations):
                     convs_needing_translation.append(conv_obj)
             
             # Run translations in parallel (if any)
@@ -365,11 +366,17 @@ class ChatService:
                 except Exception as e:
                     print(f"❌ DEBUG: Failed to create Message object: {e} | Data: {r}")
                 
-                # Check if translation needed (skip if English or already present)
-                if target_lang != 'en' and (not msg_obj.translations or target_lang not in msg_obj.translations):
+                # Check if translation needed
+                # CRITICAL FIX: Allow translation even for English ('en') if translation is missing
+                # This ensures foreign messages are translated back to English.
+                if (not msg_obj.translations or target_lang not in msg_obj.translations):
                     messages_needing_translation.append(msg_obj)
             
             print(f"🔍 DEBUG: Loop finished. Messages: {len(messages)}")
+            if len(messages) == 0 and result.data:
+                print("❌ CRITICAL: Result data existed but messages list is empty?!")
+            elif len(messages) < len(result.data or []):
+                 print(f"⚠️ WARNING: Dropped {len(result.data) - len(messages)} messages during processing")
 
             # Run translations in parallel (if any)
             if messages_needing_translation:
