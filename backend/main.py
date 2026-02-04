@@ -64,9 +64,17 @@ for origin in settings.ALLOWED_ORIGINS:
         continue
     allowed_origins.append(origin)
 
+# Explicitly add production domains to ensure they work even if regex fails
+allowed_origins.extend([
+    "https://pharmgpt.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://pharmgpt-frontend.vercel.app"
+])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_origins=allowed_origins, # Do not use ["*"] with allow_credentials=True
     allow_origin_regex=r"https://.*\.(netlify|vercel)\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
