@@ -311,6 +311,55 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
     setShowMenu(false);
   }, [getTableData, isAnimating]);
 
+  const copyForWord = useCallback(async () => {
+    if (isAnimating || !tableRef.current) return;
+
+    // Create a clone to manipulate styles without affecting the UI
+    const clone = tableRef.current.cloneNode(true) as HTMLElement;
+
+    // Inject inline styles for MS Word compatibility
+    clone.style.borderCollapse = 'collapse';
+    clone.style.width = '100%';
+    clone.style.fontFamily = 'Arial, sans-serif';
+    clone.style.fontSize = '12px'; // Standard Word table font size
+
+    const ths = clone.querySelectorAll('th');
+    ths.forEach(th => {
+      th.style.border = '1px solid #000'; // Word prefers stark borders
+      th.style.padding = '8px';
+      th.style.backgroundColor = '#f0f0f0';
+      th.style.fontWeight = 'bold';
+      th.style.textAlign = 'left';
+    });
+
+    const tds = clone.querySelectorAll('td');
+    tds.forEach(td => {
+      td.style.border = '1px solid #000';
+      td.style.padding = '8px';
+      td.style.verticalAlign = 'top';
+    });
+
+    const htmlObj = new Blob([clone.outerHTML], { type: 'text/html' });
+    const textObj = new Blob([clone.innerText], { type: 'text/plain' });
+
+    const data = [new ClipboardItem({
+      "text/html": htmlObj,
+      "text/plain": textObj
+    })];
+
+    try {
+      await navigator.clipboard.write(data);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy for Word:', err);
+      // Fallback
+      await navigator.clipboard.writeText(clone.outerHTML);
+    }
+
+    setShowMenu(false);
+  }, [isAnimating]);
+
   return (
     <div className="my-4 relative group">
       {/* Floating toolbar */}
@@ -325,6 +374,7 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
           />
           {showMenu && (
             <div className="absolute top-full right-0 mt-1 w-32 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden z-30">
+              <button onClick={copyForWord} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)] font-medium text-[var(--accent)]">Copy for Word</button>
               <button onClick={copyAsCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as CSV</button>
               <button onClick={copyAsTSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as TSV</button>
               <button onClick={copyAsHTML} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as HTML</button>
