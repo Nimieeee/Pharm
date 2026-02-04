@@ -69,9 +69,16 @@ class ChatService:
                 .limit(50)\
                 .execute()
             
+            # --- TRANSLATION LOGIC ---
+            from app.services.translation import translation_service
+            import asyncio
+            
+            target_lang = getattr(user, 'language', 'en')
             conversations = []
+            convs_needing_translation = []
+
             for r in result.data or []:
-                conversations.append(Conversation(
+                conv_obj = Conversation(
                     id=r["id"],
                     title=r["title"],
                     user_id=r["user_id"],
@@ -82,10 +89,40 @@ class ChatService:
                     message_count=0,
                     document_count=0,
                     last_activity=r["updated_at"],
-                    title_translations=r.get("title_translations")
-                ))
+                    title_translations=r.get("title_translations") or {}
+                )
+                conversations.append(conv_obj)
+                
+                # Check if title translation needed
+                if target_lang != 'en' and (not conv_obj.title_translations or target_lang not in conv_obj.title_translations):
+                    convs_needing_translation.append(conv_obj)
             
-            # Optimization: Pre-warm the conversation cache if needed or just log
+            # Run translations in parallel (if any)
+            if convs_needing_translation:
+                print(f"🌍 Translating {len(convs_needing_translation)} titles to {target_lang}...")
+                
+                async def translate_title_and_update(conv):
+                    try:
+                        translated_title = await translation_service.translate_text(conv.title, target_lang)
+                        if translated_title:
+                            # Update in memory
+                            if not conv.title_translations: conv.title_translations = {}
+                            conv.title_translations[target_lang] = translated_title
+                            
+                            # Persist to DB asynchronously
+                            self.db.table("conversations").update({
+                                "title_translations": conv.title_translations
+                            }).eq("id", str(conv.id)).execute()
+                    except Exception as e:
+                        print(f"⚠️ Title translation task error: {e}")
+                
+                # Create tasks
+                translation_tasks = [translate_title_and_update(c) for c in convs_needing_translation]
+                try:
+                    await asyncio.gather(*translation_tasks)
+                except Exception as e:
+                    print(f"❌ Gather error: {e}")
+
             print(f"✅ get_user_conversations: {(time.time()-start)*1000:.0f}ms, count={len(conversations)}")
             return conversations
             
