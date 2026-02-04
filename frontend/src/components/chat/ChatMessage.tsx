@@ -41,9 +41,38 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const { t, language } = useTranslation();
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
+    if (!contentRef.current) {
+      // Fallback for user messages or if ref is missing
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+
+    try {
+      // Create a blob with the rendered HTML content
+      // We clone it to add inline styles for Word if needed, but the rendered output usually suffices 
+      // if it's copied as text/html.
+      const htmlContent = contentRef.current.outerHTML;
+      const textContent = contentRef.current.innerText; // Get visual text, not raw markdown
+
+      const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+      const textBlob = new Blob([textContent], { type: 'text/plain' });
+
+      const data = [new ClipboardItem({
+        'text/html': htmlBlob,
+        'text/plain': textBlob
+      })];
+
+      await navigator.clipboard.write(data);
+    } catch (e) {
+      console.warn('Rich copy failed, falling back to text', e);
+      await navigator.clipboard.writeText(message.content);
+    }
+
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -192,7 +221,10 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   return (
     <article className="py-5 sm:py-6 w-full pl-2 sm:pl-0">
       {/* AI Response - Editorial style, transparent background */}
-      <div className="text-[var(--text-primary)] leading-relaxed w-full">
+      <div
+        ref={contentRef}
+        className="text-[var(--text-primary)] leading-relaxed w-full"
+      >
         <MarkdownRenderer
           content={displayContent}
           isAnimating={isStreaming}
