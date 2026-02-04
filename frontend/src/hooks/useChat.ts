@@ -940,6 +940,18 @@ export function useChat() {
         stream.abortController.abort();
         unregisterStream(conversationId);
       }
+
+      // Remove the partial assistant message from UI
+      setMessages(prev => {
+        if (prev.length > 0) {
+          const lastMsg = prev[prev.length - 1];
+          // Only remove if it's an assistant message (the one being streamed)
+          if (lastMsg.role === 'assistant') {
+            return prev.slice(0, -1);
+          }
+        }
+        return prev;
+      });
     }
     setIsLoading(false);
     setDeepResearchProgress(null);
