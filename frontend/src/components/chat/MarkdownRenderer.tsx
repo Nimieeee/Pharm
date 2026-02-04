@@ -1,113 +1,57 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
+import React, { useState, useRef, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
-import {
-  Copy, Check, Download, ExternalLink, Maximize2, X,
-  FileCode, Table as TableIcon, Image as ImageIcon
-} from 'lucide-react';
+import { Copy, Check, Download, ExternalLink } from 'lucide-react';
+import 'katex/dist/katex.min.css';
 
-// Types
 interface MarkdownRendererProps {
   content: string;
   isAnimating?: boolean;
   className?: string;
+  onCodeBlockCopy?: (code: string) => void;
 }
 
-interface ActionButtonProps {
-  onClick: () => void;
-  disabled?: boolean;
-  icon: React.ReactNode;
-  successIcon?: React.ReactNode;
-  title: string;
-  showSuccess?: boolean;
-}
-
-// Action Button with hover effects
-function ActionButton({ onClick, disabled, icon, successIcon, title, showSuccess }: ActionButtonProps) {
+// Custom UI Components
+function ActionButton({ onClick, disabled, icon, successIcon, title, showSuccess }: any) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      className={`p-1.5 rounded-lg transition-all duration-200 ${showSuccess
+        ? 'bg-emerald-500/10 text-emerald-500'
+        : 'hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+        }`}
       title={title}
-      className={`
-        p-1.5 rounded-md backdrop-blur-md transition-all duration-200
-        bg-white/80 dark:bg-[#1e1e1e]/80
-        border border-[var(--border)]
-        hover:bg-[var(--accent)] hover:text-white hover:scale-105
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-        ${showSuccess ? 'bg-emerald-500 text-white' : ''}
-      `}
     >
-      {showSuccess && successIcon ? successIcon : icon}
+      {showSuccess ? (successIcon || icon) : icon}
     </button>
   );
 }
 
-// Interactive overlay wrapper
-function InteractiveOverlay({
-  children,
-  position = 'top-right',
-  disabled = false
-}: {
-  children: React.ReactNode;
-  position?: 'top-right' | 'bottom-right';
-  disabled?: boolean;
-}) {
-  const positionClasses = position === 'top-right'
-    ? 'top-2 right-2'
-    : 'bottom-2 right-2';
+function InteractiveOverlay({ children, position = 'top-right', title, disabled }: any) {
+  const posClasses = {
+    'top-right': 'top-2 right-2',
+    'bottom-right': 'bottom-2 right-2',
+  }[position as string] || 'top-2 right-2';
 
   return (
-    <div className={`
-      absolute ${positionClasses} flex gap-1 z-10
-      opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100
-      transition-opacity duration-200
-      ${disabled ? 'pointer-events-none' : ''}
-    `} style={{ opacity: typeof window !== 'undefined' && window.innerWidth < 768 ? 1 : undefined }}>
+    <div className={`absolute ${posClasses} z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 bg-[var(--surface)]/80 backdrop-blur-sm p-1 rounded-lg border border-[var(--border)] shadow-sm`}>
+      {title && <span className="text-xs px-2 py-1 text-[var(--text-secondary)] font-medium">{title}</span>}
       {children}
     </div>
   );
 }
 
-// Code Block with enhanced features
-function EnhancedCodeBlock({
-  children,
-  className,
-  isAnimating
-}: {
-  children: string;
-  className?: string;
-  isAnimating?: boolean;
-}) {
+// Enhanced Code Block
+function EnhancedCodeBlock({ children, className, isAnimating }: { children: React.ReactNode; className?: string; isAnimating?: boolean }) {
   const [copied, setCopied] = useState(false);
-  const [isMermaid, setIsMermaid] = useState(false);
-  const [mermaidSvg, setMermaidSvg] = useState<string>('');
-  const [showFullscreen, setShowFullscreen] = useState(false);
-  const mermaidRef = useRef<HTMLDivElement>(null);
-
+  const code = String(children);
   const language = className?.replace('language-', '') || '';
-  const code = String(children).replace(/\n$/, '');
-
-  // Detect and render Mermaid diagrams
-  useEffect(() => {
-    if (language === 'mermaid' && code) {
-      setIsMermaid(true);
-      import('mermaid').then((mermaid) => {
-        mermaid.default.initialize({
-          startOnLoad: false,
-          theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default'
-        });
-        mermaid.default.render('mermaid-' + Math.random().toString(36).substr(2, 9), code)
-          .then(({ svg }) => setMermaidSvg(svg))
-          .catch(console.error);
-      });
-    }
-  }, [language, code]);
 
   const handleCopy = useCallback(async () => {
     if (isAnimating) return;
@@ -116,106 +60,17 @@ function EnhancedCodeBlock({
     setTimeout(() => setCopied(false), 2000);
   }, [code, isAnimating]);
 
-  const handleDownload = useCallback(() => {
-    if (isAnimating) return;
-    const ext = language || 'txt';
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `code.${ext}`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [code, language, isAnimating]);
-
-  const handleDownloadSvg = useCallback(() => {
-    if (!mermaidSvg || isAnimating) return;
-    const blob = new Blob([mermaidSvg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'diagram.svg';
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [mermaidSvg, isAnimating]);
-
-  // Mermaid diagram rendering
-  if (isMermaid && mermaidSvg) {
-    return (
-      <>
-        <div className="my-4 relative group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 bg-[var(--surface-highlight)] border-b border-[var(--border)]">
-            <span className="text-xs font-medium text-[var(--text-secondary)]">Mermaid Diagram</span>
-          </div>
-          <div
-            ref={mermaidRef}
-            className="p-4 overflow-auto flex justify-center"
-            dangerouslySetInnerHTML={{ __html: mermaidSvg }}
-          />
-          <InteractiveOverlay disabled={isAnimating}>
-            <ActionButton
-              onClick={() => setShowFullscreen(true)}
-              disabled={isAnimating}
-              icon={<Maximize2 size={14} />}
-              title="Fullscreen"
-            />
-            <ActionButton
-              onClick={handleDownloadSvg}
-              disabled={isAnimating}
-              icon={<Download size={14} />}
-              title="Download SVG"
-            />
-            <ActionButton
-              onClick={handleCopy}
-              disabled={isAnimating}
-              icon={<Copy size={14} />}
-              successIcon={<Check size={14} />}
-              title="Copy source"
-              showSuccess={copied}
-            />
-          </InteractiveOverlay>
-        </div>
-
-        {/* Fullscreen Modal */}
-        {showFullscreen && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-            <div className="relative bg-[var(--surface)] rounded-2xl max-w-[90vw] max-h-[90vh] overflow-auto p-6">
-              <button
-                onClick={() => setShowFullscreen(false)}
-                className="absolute top-4 right-4 p-2 rounded-lg bg-[var(--surface-highlight)] hover:bg-[var(--border)]"
-              >
-                <X size={20} />
-              </button>
-              <div dangerouslySetInnerHTML={{ __html: mermaidSvg }} />
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  // Regular code block
   return (
-    <div className="my-4 relative group rounded-xl border border-[var(--border)] bg-[var(--surface-highlight)] overflow-hidden">
+    <div className="relative group my-4 rounded-xl border border-[var(--border)] bg-[var(--surface-highlight)] overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-[var(--surface)] border-b border-[var(--border)]">
-        <div className="flex items-center gap-2">
-          <FileCode size={14} className="text-[var(--text-secondary)]" />
-          <span className="text-xs font-medium text-[var(--text-secondary)]">{language || 'code'}</span>
-        </div>
-        <div className="flex gap-1">
+        <span className="text-xs font-mono text-[var(--text-secondary)] uppercase">{language || 'text'}</span>
+        <div className="flex items-center gap-1">
           <ActionButton
             onClick={handleCopy}
             disabled={isAnimating}
-            icon={<Copy size={14} />}
-            successIcon={<Check size={14} />}
+            icon={copied ? <Check size={14} /> : <Copy size={14} />}
             title="Copy code"
             showSuccess={copied}
-          />
-          <ActionButton
-            onClick={handleDownload}
-            disabled={isAnimating}
-            icon={<Download size={14} />}
-            title={`Download as .${language || 'txt'}`}
           />
         </div>
       </div>
@@ -290,15 +145,6 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
             title="Copy"
             showSuccess={copied}
           />
-
-              <button onClick={copyAsCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as CSV</button>
-              <button onClick={copyAsTSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as TSV</button>
-              <button onClick={copyAsHTML} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as HTML</button>
-              <hr className="border-[var(--border)]" />
-              <button onClick={downloadCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Download CSV</button>
-              <button onClick={downloadMarkdown} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Download MD</button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -307,7 +153,7 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
           {children}
         </table>
       </div>
-    </div >
+    </div>
   );
 }
 
