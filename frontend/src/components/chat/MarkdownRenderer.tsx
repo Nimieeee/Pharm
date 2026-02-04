@@ -229,140 +229,7 @@ function EnhancedCodeBlock({
 // Enhanced Table with export options
 function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; isAnimating?: boolean }) {
   const [copied, setCopied] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
   const tableRef = useRef<HTMLTableElement>(null);
-
-  const getTableData = useCallback(() => {
-    if (!tableRef.current) return { headers: [] as string[], rows: [] as string[][] };
-    const headers: string[] = [];
-    const rows: string[][] = [];
-
-    const headerCells = tableRef.current.querySelectorAll('thead th');
-    headerCells.forEach(cell => headers.push(cell.textContent || ''));
-
-    const bodyRows = tableRef.current.querySelectorAll('tbody tr');
-    bodyRows.forEach(row => {
-      const rowData: string[] = [];
-      row.querySelectorAll('td').forEach(cell => rowData.push(cell.textContent || ''));
-      rows.push(rowData);
-    });
-
-    return { headers, rows };
-  }, []);
-
-  // Helper: Escape content for CSV
-  const escapeCSV = (str: string) => {
-    if (!str) return '';
-    // If contains quote, comma or newline, wrap in quotes and escape internal quotes
-    if (/[,"\n\r]/.test(str)) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  };
-
-  // Helper: Escape content for TSV
-  const escapeTSV = (str: string) => {
-    if (!str) return '';
-    // For TSV, simpler approach: replace tabs with spaces to preserve structure
-    // as TSV quoting support varies widely.
-    return str.replace(/\t/g, ' ').replace(/[\n\r]/g, ' ');
-  };
-
-  const copyAsCSV = useCallback(async () => {
-    if (isAnimating) return;
-    const { headers, rows } = getTableData();
-    const csv = [
-      headers.map(escapeCSV).join(','),
-      ...rows.map(r => r.map(escapeCSV).join(','))
-    ].join('\n');
-    await navigator.clipboard.writeText(csv);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    setShowMenu(false);
-  }, [getTableData, isAnimating]);
-
-  const copyAsTSV = useCallback(async () => {
-    if (isAnimating) return;
-    const { headers, rows } = getTableData();
-    const tsv = [
-      headers.map(escapeTSV).join('\t'),
-      ...rows.map(r => r.map(escapeTSV).join('\t'))
-    ].join('\n');
-    await navigator.clipboard.writeText(tsv);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    setShowMenu(false);
-  }, [getTableData, isAnimating]);
-
-  const copyAsHTML = useCallback(async () => {
-    if (isAnimating || !tableRef.current) return;
-    await navigator.clipboard.writeText(tableRef.current.outerHTML);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    setShowMenu(false);
-  }, [isAnimating]);
-
-  const downloadCSV = useCallback(() => {
-    if (isAnimating) return;
-    const { headers, rows } = getTableData();
-    // Re-use logic: Need to ensure escapeCSV is accessible. 
-    // Since this is a separate replace block, I cannot assume I can see the previous block's diff immediately during generation if I wanted to rely on it being there. 
-    // BUT, the file is modified sequentially.
-    // However, I need to make sure `escapeCSV` is defined in the component scope. 
-    // In the previous step, I defined `escapeCSV` inside `EnhancedTable`.
-    // So I can just call it here.
-
-    // Helper again just in case (or rely on scope? No, `escapeCSV` was defined inside the component in the previous patch which was inserted at line 253. `EnhancedTable` starts much earlier. Correct.)
-    // Wait, scope: `downloadCSV` is defined at line 281 (original).
-    // `escapeCSV` was defined at the top of the replacement block which started at 253.
-    // Yes, it is in valid scope.
-
-    // To be safe and clean, I'll just rewrite the helper if TS complains, but it should be fine.
-    // Actually, looking at the previous patch: I defined `const escapeCSV = ...` before `copyAsCSV`. 
-    // `downloadCSV` is defined AFTER `copyAsHTML`, which is AFTER `copyAsTSV`...
-    // So yes, it is in scope.
-
-    const escapeCSVLocal = (str: string) => {
-      if (!str) return '';
-      if (/[,"\n\r]/.test(str)) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    };
-
-    const csv = [
-      headers.map(escapeCSVLocal).join(','),
-      ...rows.map(r => r.map(escapeCSVLocal).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'table.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    setShowMenu(false);
-  }, [getTableData, isAnimating]);
-
-  const downloadMarkdown = useCallback(() => {
-    if (isAnimating) return;
-    const { headers, rows } = getTableData();
-    const separator = headers.map(() => '---').join(' | ');
-    const md = [
-      `| ${headers.join(' | ')} |`,
-      `| ${separator} |`,
-      ...rows.map(r => `| ${r.join(' | ')} |`)
-    ].join('\n');
-    const blob = new Blob([md], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'table.md';
-    a.click();
-    URL.revokeObjectURL(url);
-    setShowMenu(false);
-  }, [getTableData, isAnimating]);
 
   const copyForWord = useCallback(async () => {
     if (isAnimating || !tableRef.current) return;
@@ -409,8 +276,6 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
       // Fallback
       await navigator.clipboard.writeText(clone.outerHTML);
     }
-
-    setShowMenu(false);
   }, [isAnimating]);
 
   return (
@@ -419,15 +284,13 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
       <div className="absolute -top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
         <div className="relative">
           <ActionButton
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={copyForWord}
             disabled={isAnimating}
             icon={copied ? <Check size={14} /> : <Copy size={14} />}
-            title="Copy table"
+            title="Copy"
             showSuccess={copied}
           />
-          {showMenu && (
-            <div className="absolute top-full right-0 mt-1 w-32 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden z-30">
-              <button onClick={copyForWord} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)] font-medium text-[var(--accent)]">Copy for Word</button>
+
               <button onClick={copyAsCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as CSV</button>
               <button onClick={copyAsTSV} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as TSV</button>
               <button onClick={copyAsHTML} className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-highlight)]">Copy as HTML</button>
@@ -444,7 +307,7 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
           {children}
         </table>
       </div>
-    </div>
+    </div >
   );
 }
 
