@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Copy, Check, RefreshCw, ExternalLink, FileText } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useTranslation } from '@/hooks/use-translation';
