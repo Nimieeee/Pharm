@@ -196,11 +196,13 @@ class AIService:
             inputs = [{"role": "user", "content": full_message}]
             
             # System instructions
-            system_instructions = self._get_system_prompt(
-                mode, 
-                user_name=user.first_name if user else None,
                 language=getattr(user, 'language', 'en')
             )
+            
+            # --- DEBUG LOGGING ---
+            print(f"🐛 DEBUG (Sync): System Prompt Preview: {system_instructions[:200]}...")
+            print(f"🐛 DEBUG (Sync): Full Message: {full_message[:200]}...")
+            # ---------------------
             
             # --- CUSTOM TOOL HANDLING LOOP ---
             # Ideally we use 'tools' param in chat.complete for Mistral, but Conversations API manages its own state
