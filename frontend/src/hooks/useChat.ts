@@ -168,11 +168,13 @@ export function useChat() {
     if (cachedMessages && cachedMessages.length > 0) {
       setMessages(cachedMessages);
       console.log(`✅ Restored ${cachedMessages.length} cached messages`);
-      return; // Use cache, don't fetch
+      // return; // REMOVED: Always fetch latest to support language switching
     }
 
-    setMessages([]);
-    setIsLoadingConversation(true);
+    if (!cachedMessages || cachedMessages.length === 0) {
+      setMessages([]);
+      setIsLoadingConversation(true);
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
