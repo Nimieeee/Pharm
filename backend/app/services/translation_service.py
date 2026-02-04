@@ -50,6 +50,9 @@ class TranslationService:
         if target_language == source_language:
             return text
             
+        if not text or text.strip() == "" or "No response generated" in text:
+            return text
+            
         target_name = LANGUAGE_NAMES.get(target_language, target_language)
         source_name = LANGUAGE_NAMES.get(source_language, source_language)
         
@@ -134,7 +137,7 @@ class TranslationService:
                         "Content-Type": "application/json"
                     },
                     json={
-                        "model": "mistral-small-latest",
+                        "model": "mistral-large-latest",
                         "messages": messages,
                         "temperature": 0.1,
                         "max_tokens": 8000
