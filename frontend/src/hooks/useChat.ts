@@ -185,6 +185,7 @@ export function useChat() {
           id: msg.id,
           role: msg.role,
           content: msg.content,
+          translations: msg.translations || undefined,
           timestamp: new Date(msg.created_at),
           attachments: msg.metadata?.attachments || undefined,
         }));

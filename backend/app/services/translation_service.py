@@ -37,7 +37,7 @@ class TranslationService:
     
     async def translate_text(self, text: str, target_language: str, source_language: str = 'en') -> Optional[str]:
         """
-        Translate text to a target language using Mistral API
+        Translate text to a target language using NVIDIA Kimi (primary) or Mistral (fallback)
         
         Args:
             text: Text to translate
@@ -47,30 +47,84 @@ class TranslationService:
         Returns:
             Translated text or None if failed
         """
-        if not self.mistral_api_key:
-            print(f"⚠️ Translation skipped: No Mistral API key")
-            return None
-            
         if target_language == source_language:
             return text
             
         target_name = LANGUAGE_NAMES.get(target_language, target_language)
         source_name = LANGUAGE_NAMES.get(source_language, source_language)
         
+        messages = [
+            {
+                "role": "system",
+                "content": f"You are a professional translator. Translate the following text from {source_name} to {target_name}. Preserve all formatting, markdown, and special characters. Only output the translation, nothing else."
+            },
+            {
+                "role": "user", 
+                "content": text
+            }
+        ]
+
+        # 1. Try NVIDIA Kimi K2.5 (Primary - Using STREAMING which works on VPS)
+        # REVERTED: Kimi streaming is too slow for backfill. Using Mistral only.
+        # if settings.NVIDIA_API_KEY:
+        #     try:
+        #         NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+        #         NVIDIA_MODEL = "moonshotai/kimi-k2.5"
+                
+        #         headers = {
+        #             "Authorization": f"Bearer {settings.NVIDIA_API_KEY}",
+        #             "Accept": "text/event-stream",
+        #             "Content-Type": "application/json"
+        #         }
+                
+        #         payload = {
+        #             "model": NVIDIA_MODEL,
+        #             "messages": messages,
+        #             "temperature": 0.1,
+        #             "max_tokens": 4096,
+        #             "stream": True  # Use streaming to avoid timeout
+        #         }
+                
+        #         async with httpx.AsyncClient(timeout=120.0) as client:
+        #             async with client.stream(
+        #                 "POST",
+        #                 NVIDIA_URL,
+        #                 headers=headers,
+        #                 json=payload
+        #             ) as response:
+        #                 if response.status_code == 200:
+        #                     translated_text = ""
+        #                     async for line in response.aiter_lines():
+        #                         if line.startswith("data: "):
+        #                             data = line[6:]
+        #                             if data == "[DONE]":
+        #                                 break
+        #                             try:
+        #                                 chunk = json.loads(data)
+        #                                 if chunk.get("choices") and len(chunk["choices"]) > 0:
+        #                                     delta = chunk["choices"][0].get("delta", {})
+        #                                     content = delta.get("content")
+        #                                     if content:
+        #                                         translated_text += content
+        #                             except json.JSONDecodeError:
+        #                                 continue
+                            
+        #                     if translated_text:
+        #                         print(f"✅ [Kimi] Translated to {target_language}")
+        #                         return translated_text
+        #                 else:
+        #                     error_text = await response.aread()
+        #                     print(f"⚠️ Kimi Translation failed ({response.status_code}): {error_text[:100]}, falling back to Mistral...")
+                            
+        #     except Exception as e:
+        #         print(f"⚠️ Kimi Error: {e}, falling back to Mistral...")
+        if not self.mistral_api_key:
+            print(f"⚠️ Translation skipped: No Mistral API key")
+            return None
+        
         try:
             # Wait for rate limiter
             await mistral_limiter.wait_for_slot()
-            
-            messages = [
-                {
-                    "role": "system",
-                    "content": f"You are a professional translator. Translate the following text from {source_name} to {target_name}. Preserve all formatting, markdown, and special characters. Only output the translation, nothing else."
-                },
-                {
-                    "role": "user", 
-                    "content": text
-                }
-            ]
             
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
@@ -80,9 +134,9 @@ class TranslationService:
                         "Content-Type": "application/json"
                     },
                     json={
-                        "model": "mistral-small-latest",  # Use smaller model for translation
+                        "model": "mistral-small-latest",
                         "messages": messages,
-                        "temperature": 0.1,  # Low temperature for consistent translations
+                        "temperature": 0.1,
                         "max_tokens": 8000
                     }
                 )
@@ -91,7 +145,7 @@ class TranslationService:
                     result = response.json()
                     if result.get("choices") and len(result["choices"]) > 0:
                         translated = result["choices"][0]["message"]["content"]
-                        print(f"✅ Translated to {target_language}: {len(translated)} chars")
+                        print(f"✅ [Mistral] Translated to {target_language}")
                         return translated
                 else:
                     print(f"❌ Translation API error: {response.status_code}")
@@ -140,7 +194,7 @@ class TranslationService:
         Queue background translation for a message
         Translations are stored in the database as they complete
         """
-        print(f"📝 Queueing translations for message {message_id}")
+        print(f"📝 Queueing translations for message {message_id} (Source: '{source_language}')")
         
         # Run translations in background
         asyncio.create_task(

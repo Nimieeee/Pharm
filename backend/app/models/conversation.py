@@ -5,7 +5,7 @@ Conversation data models and schemas
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class ConversationBase(BaseModel):
@@ -54,6 +54,19 @@ class Conversation(ConversationBase):
     class Config:
         from_attributes = True
 
+    @field_validator('title_translations', mode='before')
+    @classmethod
+    def parse_title_translations(cls, v: Any) -> Optional[Dict[str, str]]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return {}
+        return v
+
 
 class MessageBase(BaseModel):
     """Base message model"""
@@ -61,6 +74,19 @@ class MessageBase(BaseModel):
     content: str
     metadata: Dict[str, Any] = {}
     translations: Optional[Dict[str, str]] = None  # Pre-generated translations {lang_code: text}
+
+    @field_validator('translations', mode='before')
+    @classmethod
+    def parse_translations(cls, v: Any) -> Optional[Dict[str, str]]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return {}
+        return v
 
 
 class MessageCreate(MessageBase):

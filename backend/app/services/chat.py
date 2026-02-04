@@ -286,7 +286,7 @@ class ChatService:
             return None
     
     async def get_conversation_messages(self, conversation_id: UUID, user: User, limit: Optional[int] = None) -> List[Message]:
-        """Get messages for a conversation"""
+        """Get messages for a conversation, translating if needed"""
         start = time.time()
         try:
             query = self.db.table("messages").select("*")\
@@ -300,18 +300,69 @@ class ChatService:
             result = query.execute()
             
             messages = []
-            for r in result.data or []:
-                messages.append(Message(
-                    id=r["id"],
-                    conversation_id=r["conversation_id"],
-                    user_id=r["user_id"],
-                    role=r["role"],
-                    content=r["content"],
-                    metadata=r.get("metadata", {}),
-                    translations=r.get("translations"),
-                    created_at=r["created_at"]
-                ))
             
+            # --- TRANSLATION LOGIC ---
+            from app.services.translation import translation_service
+            import asyncio
+            
+            target_lang = getattr(user, 'language', 'en')
+            print(f"🔍 DEBUG translation: target_lang={target_lang}, user.id={user.id}")
+            tasks = []
+            messages_needing_translation = []
+            
+            print(f"🔍 DEBUG: Entering loop with {len(result.data)} items. Type: {type(result.data)}")
+            for i, r in enumerate(result.data or []):
+                print(f"  > Processing item {i}")
+                try:
+                    msg_obj = Message(
+                        id=r["id"],
+                        conversation_id=r["conversation_id"],
+                        role=r["role"],
+                        content=r["content"],
+                        metadata=r.get("metadata", {}),
+                        translations=r.get("translations") or {},  # Ensure dict
+                        created_at=r["created_at"]
+                    )
+                    messages.append(msg_obj)
+                    print(f"  > Appended. Messages count: {len(messages)}")
+                except Exception as e:
+                    print(f"❌ DEBUG: Failed to create Message object: {e} | Data: {r}")
+                
+                # Check if translation needed (skip if English or already present)
+                if target_lang != 'en' and (not msg_obj.translations or target_lang not in msg_obj.translations):
+                    messages_needing_translation.append(msg_obj)
+            
+            print(f"🔍 DEBUG: Loop finished. Messages: {len(messages)}")
+
+            # Run translations in parallel (if any)
+            if messages_needing_translation:
+                print(f"🌍 Translating {len(messages_needing_translation)} messages to {target_lang}...")
+                
+                async def translate_and_update(msg):
+                    try:
+                        translated_text = await translation_service.translate_text(msg.content, target_lang)
+                        if translated_text:
+                            # Update in memory
+                            if not msg.translations: msg.translations = {}
+                            msg.translations[target_lang] = translated_text
+                            
+                            # Persist to DB asynchronously
+                            self.db.table("messages").update({
+                                "translations": msg.translations
+                            }).eq("id", str(msg.id)).execute()
+                    except Exception as e:
+                        print(f"⚠️ Translation task error: {e}")
+                
+                # Create tasks
+                translation_tasks = [translate_and_update(m) for m in messages_needing_translation]
+                # Allow up to 2 seconds for translations, otherwise return originals (don't block forever)
+                # Actually, user wants them changed. Let's wait.
+                try:
+                    await asyncio.gather(*translation_tasks)
+                except Exception as e:
+                    print(f"❌ Gather error: {e}")
+                print(f"✅ Translations complete")
+
             print(f"✅ get_conversation_messages: {(time.time()-start)*1000:.0f}ms, count={len(messages)}")
             return messages
             
