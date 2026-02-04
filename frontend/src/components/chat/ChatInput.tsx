@@ -421,20 +421,13 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={desktopBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isUploading
-                      ? 'bg-[var(--surface-highlight)] cursor-wait'
-                      : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
-                      }`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] hover:bg-[var(--border)]`}
                   >
-                    {isUploading ? (
-                      <Loader2 size={18} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
-                    ) : (
-                      <Plus
-                        size={20}
-                        strokeWidth={2}
-                        className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
-                      />
-                    )}
+                    <Plus
+                      size={20}
+                      strokeWidth={2}
+                      className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
+                    />
                   </button>
 
                   {/* Attach Menu Dropdown - Desktop (Upload Only) */}
@@ -599,20 +592,13 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={mobileBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isUploading
-                      ? 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A] cursor-wait'
-                      : 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]'
-                      }`}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]`}
                   >
-                    {isUploading ? (
-                      <Loader2 size={16} strokeWidth={1.5} className="text-[var(--accent)] animate-spin" />
-                    ) : (
-                      <Plus
-                        size={18}
-                        strokeWidth={2}
-                        className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
-                      />
-                    )}
+                    <Plus
+                      size={18}
+                      strokeWidth={2}
+                      className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
+                    />
                   </button>
 
                   <AnimatePresence>
