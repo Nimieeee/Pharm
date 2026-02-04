@@ -54,6 +54,7 @@ async def inspect():
         for msg in messages:
             print(f"[{msg['role']}] {msg['created_at']}")
             print(f"Content Preview: {msg['content'][:100]}...")
+            print(f"Translations: {msg.get('translations')}")
             print(f"Metadata: {msg.get('metadata')}")
             print("-" * 40)
             
