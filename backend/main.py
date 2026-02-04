@@ -74,8 +74,8 @@ allowed_origins.extend([
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins, # Do not use ["*"] with allow_credentials=True
-    allow_origin_regex=r"https://.*\.(netlify|vercel)\.app",
+    allow_origins=[], # Use regex for everything to allow credentials
+    allow_origin_regex=r".*", # ALLOW EVERYTHING FOR DEBUGGING
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
