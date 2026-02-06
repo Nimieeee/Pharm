@@ -123,10 +123,10 @@ export default function DeepResearchUI({
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-white dark:bg-black rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+    <div className="flex flex-col h-full w-full bg-surface rounded-xl overflow-hidden border border-border shadow-sm transition-all duration-300">
 
       {/* 1. Header (Always show toggle on mobile) */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm sticky top-0 z-30">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="flex items-center gap-2">
           {isLoading ? (
             <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ export default function DeepResearchUI({
         </AnimatePresence>
 
         {/* LEFT PANEL: The Report */}
-        <div className={`flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth bg-white dark:bg-black ${sidebarCollapsed ? 'w-full' : ''}`}>
+        <div className={`flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth bg-surface ${sidebarCollapsed ? 'w-full' : ''}`}>
           <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-img:rounded-xl">
             {isLoading && !reportContent ? (
               <LoadingState progress={progressStep} progressPercent={progressPercent} />
@@ -218,7 +218,7 @@ export default function DeepResearchUI({
                     </li>
                   ),
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-emerald-500 pl-4 py-1 my-4 bg-slate-50 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400 italic rounded-r text-sm">
+                    <blockquote className="border-l-2 border-emerald-500 pl-4 py-1 my-4 bg-surface-highlight text-foreground-muted italic rounded-r text-sm">
                       {children}
                     </blockquote>
                   ),
@@ -265,12 +265,12 @@ export default function DeepResearchUI({
             w-[85%] sm:w-80 md:w-72 lg:w-80
             z-20 md:z-auto
             border-l border-slate-100 dark:border-slate-800 
-            bg-white dark:bg-black 
+            bg-surface 
             flex-col shadow-2xl md:shadow-none
           `}
         >
           {/* Sidebar Header */}
-          <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-surface/50 backdrop-blur-sm">
             <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
               {t('sources')}
               <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded text-[10px] min-w-[20px] text-center">
@@ -312,8 +312,8 @@ export default function DeepResearchUI({
                 className={`
                   p-2.5 rounded-lg border text-sm transition-all duration-200 cursor-pointer group
                   ${activeSourceId === source.id
-                    ? 'bg-white dark:bg-slate-900 border-emerald-500/50 ring-1 ring-emerald-500/20 shadow-md transform scale-[1.02]'
-                    : 'bg-white dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800 hover:border-emerald-500/30'
+                    ? 'bg-white dark:bg-surface border-emerald-500/50 ring-1 ring-emerald-500/20 shadow-md transform scale-[1.02]'
+                    : 'bg-surface/40 border-border hover:border-emerald-500/30'
                   }
                 `}
                 onClick={() => setActiveSourceId(activeSourceId === source.id ? null : source.id)}
@@ -380,7 +380,7 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
       {/* Search Icon with Pulse Ring */}
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse"></div>
-        <div className="relative w-16 h-16 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-800 flex items-center justify-center group">
+        <div className="relative w-16 h-16 bg-white dark:bg-surface rounded-2xl shadow-lg border border-slate-100 dark:border-border flex items-center justify-center group">
           <Search className="w-6 h-6 text-emerald-500 group-hover:scale-110 transition-transform duration-500" />
 
           {/* Spinner Ring */}

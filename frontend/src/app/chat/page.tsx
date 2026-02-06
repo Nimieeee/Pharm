@@ -115,7 +115,7 @@ function ChatContent() {
 
         {/* PharmGPT Pill - Absolutely centered (pixel-perfect) */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/10 shadow-lg select-none whitespace-nowrap pointer-events-auto">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/80 backdrop-blur-md border border-[var(--border)] shadow-lg select-none whitespace-nowrap pointer-events-auto">
             <span className="text-xs font-medium text-[var(--text-primary)] tracking-tight">PharmGPT</span>
             <span className="text-[10px] text-[var(--text-secondary)] opacity-70">v2.0</span>
           </div>
