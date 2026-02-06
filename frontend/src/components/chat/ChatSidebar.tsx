@@ -125,7 +125,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="p-4 rounded-xl bg-surface-highlight">
             <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">{t('about')}</p>
             <div className="flex justify-between items-center">
-              <p className="text-sm text-foreground">PharmGPT</p>
+              <p className="text-sm text-foreground">Benchside</p>
               <span className="text-xs bg-surface px-2 py-1 rounded-md text-foreground-muted font-mono">v2.0.0</span>
             </div>
             <p className="text-xs text-foreground-muted mt-2">AI-Powered Pharmacological Research Assistant</p>
@@ -739,7 +739,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                 {/* Signature */}
                 <div className="pt-4 pb-2 text-center">
                   <p className="text-[10px] tracking-[0.2em] text-muted-foreground/40 font-bold uppercase">
-                    PharmGPT
+                    BENCHSIDE
                   </p>
                 </div>
               </div>
