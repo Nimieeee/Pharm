@@ -22,7 +22,9 @@ import {
     XCircle,
     Send,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Menu,
+    X
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
@@ -79,6 +81,9 @@ export default function AdminPage() {
     const [replyMessage, setReplyMessage] = useState('');
     const [replyStatus, setReplyStatus] = useState('resolved');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+    // Mobile Sidebar State
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Verify Admin Access
     useEffect(() => {
@@ -242,6 +247,58 @@ export default function AdminPage() {
         }
     };
 
+    const SidebarContent = () => (
+        <>
+            <div className="mb-8">
+                <h1 className="text-xl font-serif font-bold text-[var(--text-primary)] flex items-center gap-2">
+                    <ShieldAlert className="text-red-500" />
+                    Admin Panel
+                </h1>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">System Management</p>
+            </div>
+
+            <nav className="space-y-2 flex-1">
+                <button
+                    onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'overview'
+                        ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
+                        }`}
+                >
+                    <BarChart3 size={18} />
+                    Overview
+                </button>
+                <button
+                    onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'users'
+                        ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
+                        }`}
+                >
+                    <Users size={18} />
+                    User Management
+                </button>
+                <button
+                    onClick={() => { setActiveTab('support'); setSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'support'
+                        ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
+                        }`}
+                >
+                    <LifeBuoy size={18} />
+                    Support Tickets
+                </button>
+            </nav>
+
+            <div className="mt-auto pt-6 border-t border-[var(--border)]">
+                <Link href="/chat" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] hover:text-[var(--text-primary)] transition-colors">
+                    <MessageSquare size={18} />
+                    Back to Chat
+                </Link>
+            </div>
+        </>
+    );
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
@@ -254,64 +311,50 @@ export default function AdminPage() {
     if (!user || !user.is_admin) return null;
 
     return (
-        <div className="min-h-screen bg-[var(--background)] flex">
-            {/* Sidebar */}
+        <div className="min-h-screen bg-[var(--background)] flex relative">
+            {/* Mobile Sidebar Overlay */}
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSidebarOpen(false)}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90] md:hidden"
+                        />
+                        <motion.aside
+                            initial={{ x: -280 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -280 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed top-0 left-0 bottom-0 w-[280px] z-[100] bg-[var(--surface)] border-r border-[var(--border)] p-6 flex flex-col md:hidden shadow-2xl"
+                        >
+                            <SidebarContent />
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Desktop Sidebar */}
             <aside className="w-64 border-r border-[var(--border)] bg-[var(--surface)] p-6 flex flex-col hidden md:flex">
-                <div className="mb-8">
-                    <h1 className="text-xl font-serif font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <ShieldAlert className="text-red-500" />
-                        Admin Panel
-                    </h1>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">System Management</p>
-                </div>
-
-                <nav className="space-y-2 flex-1">
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'overview'
-                            ? 'bg-indigo-500/10 text-indigo-500 font-medium'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
-                            }`}
-                    >
-                        <BarChart3 size={18} />
-                        Overview
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'users'
-                            ? 'bg-indigo-500/10 text-indigo-500 font-medium'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
-                            }`}
-                    >
-                        <Users size={18} />
-                        User Management
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('support')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'support'
-                            ? 'bg-indigo-500/10 text-indigo-500 font-medium'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
-                            }`}
-                    >
-                        <LifeBuoy size={18} />
-                        Support Tickets
-                    </button>
-                </nav>
-
-                <div className="mt-auto pt-6 border-t border-[var(--border)]">
-                    <Link href="/chat" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] hover:text-[var(--text-primary)] transition-colors">
-                        <MessageSquare size={18} />
-                        Back to Chat
-                    </Link>
-                </div>
+                <SidebarContent />
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
-                <header className="h-16 border-b border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between px-8">
-                    <h2 className="text-lg font-medium text-[var(--text-primary)] capitalize">
-                        {activeTab.replace('_', ' ')}
-                    </h2>
+            <main className="flex-1 overflow-y-auto h-screen">
+                <header className="h-16 border-b border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between px-4 md:px-8">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="p-2 -ml-2 text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] rounded-lg md:hidden"
+                        >
+                            <Menu size={24} />
+                        </button>
+                        <h2 className="text-lg font-medium text-[var(--text-primary)] capitalize">
+                            {activeTab.replace('_', ' ')}
+                        </h2>
+                    </div>
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => {
@@ -331,7 +374,7 @@ export default function AdminPage() {
                     </div>
                 </header>
 
-                <div className="p-8">
+                <div className="p-4 md:p-8">
                     {activeTab === 'overview' && stats && (
                         <div className="space-y-8">
                             {/* Stats Grid */}
@@ -382,62 +425,64 @@ export default function AdminPage() {
                             </div>
 
                             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-[var(--surface-highlight)] border-b border-[var(--border)]">
-                                        <tr>
-                                            <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">User</th>
-                                            <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Role</th>
-                                            <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Conversations</th>
-                                            <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Joined</th>
-                                            <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[var(--border)]">
-                                        {users.map((u) => (
-                                            <tr key={u.id} className="hover:bg-[var(--surface-highlight)]/50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-medium text-xs">
-                                                            {u.first_name?.[0] || u.email[0].toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-[var(--text-primary)]">{u.first_name} {u.last_name}</p>
-                                                            <p className="text-xs text-[var(--text-secondary)]">{u.email}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {u.is_admin ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-500">
-                                                            <ShieldAlert size={12} /> Admin
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
-                                                            User
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-[var(--text-secondary)]">
-                                                    {u.conversation_count}
-                                                </td>
-                                                <td className="px-6 py-4 text-[var(--text-secondary)] text-sm">
-                                                    {new Date(u.created_at).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    {!u.is_admin && (
-                                                        <button
-                                                            onClick={() => handleDeleteUser(u.id, u.email)}
-                                                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                            title="Delete User"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    )}
-                                                </td>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left min-w-[800px]">
+                                        <thead className="bg-[var(--surface-highlight)] border-b border-[var(--border)]">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">User</th>
+                                                <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Role</th>
+                                                <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Conversations</th>
+                                                <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Joined</th>
+                                                <th className="px-6 py-4 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider text-right">Actions</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-[var(--border)]">
+                                            {users.map((u) => (
+                                                <tr key={u.id} className="hover:bg-[var(--surface-highlight)]/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-medium text-xs">
+                                                                {u.first_name?.[0] || u.email[0].toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-medium text-[var(--text-primary)]">{u.first_name} {u.last_name}</p>
+                                                                <p className="text-xs text-[var(--text-secondary)]">{u.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {u.is_admin ? (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-500">
+                                                                <ShieldAlert size={12} /> Admin
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
+                                                                User
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-[var(--text-secondary)]">
+                                                        {u.conversation_count}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-[var(--text-secondary)] text-sm">
+                                                        {new Date(u.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {!u.is_admin && (
+                                                            <button
+                                                                onClick={() => handleDeleteUser(u.id, u.email)}
+                                                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                                title="Delete User"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                                 {users.length === 0 && (
                                     <div className="p-8 text-center text-[var(--text-secondary)]">
                                         No users found.
@@ -449,7 +494,7 @@ export default function AdminPage() {
 
                     {activeTab === 'support' && (
                         <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
+                            <div className="flex flex-wrap items-center gap-3 mb-6">
                                 <button
                                     onClick={() => setTicketFilter('all')}
                                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${ticketFilter === 'all' ? 'bg-[var(--text-primary)] text-[var(--background)]' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
@@ -483,34 +528,34 @@ export default function AdminPage() {
                                             <div key={ticket.id} className="transition-all hover:bg-[var(--surface-highlight)]/30">
                                                 <div
                                                     onClick={() => setExpandedTicketId(expandedTicketId === ticket.id ? null : ticket.id)}
-                                                    className="p-6 cursor-pointer flex items-center justify-between group"
+                                                    className="p-6 cursor-pointer flex flex-col md:flex-row md:items-center justify-between group gap-4"
                                                 >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`p-2 rounded-full ${getStatusColor(ticket.status)} bg-opacity-10 border-0`}>
+                                                    <div className="flex items-start md:items-center gap-4">
+                                                        <div className={`p-2 rounded-full ${getStatusColor(ticket.status)} bg-opacity-10 border-0 flex-shrink-0`}>
                                                             {ticket.status === 'open' && <AlertCircle size={20} />}
                                                             {ticket.status === 'in_progress' && <Clock size={20} />}
                                                             {ticket.status === 'resolved' && <CheckCircle size={20} />}
                                                             {ticket.status === 'closed' && <XCircle size={20} />}
                                                         </div>
                                                         <div>
-                                                            <div className="flex items-center gap-3 mb-1">
+                                                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
                                                                 <h3 className="font-medium text-[var(--text-primary)] text-lg">{ticket.subject}</h3>
                                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
                                                                     {ticket.status.toUpperCase()}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-sm text-[var(--text-secondary)]">
+                                                            <p className="text-sm text-[var(--text-secondary)] break-all">
                                                                 From: {ticket.email} • {new Date(ticket.created_at).toLocaleString()}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-3 ml-12 md:ml-0">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeleteTicket(ticket.id);
                                                             }}
-                                                            className="p-2 text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all"
+                                                            className="p-2 text-[var(--text-secondary)] md:opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all"
                                                             title="Delete Ticket"
                                                         >
                                                             <Trash2 size={18} />
@@ -558,7 +603,7 @@ export default function AdminPage() {
                                                                             className="w-full h-32 p-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 mb-4 resize-none"
                                                                         />
                                                                         <div className="flex items-center justify-between">
-                                                                            <div className="flex items-center gap-4">
+                                                                            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                                                                                 <label className="flex items-center gap-2 cursor-pointer">
                                                                                     <input
                                                                                         type="radio"
