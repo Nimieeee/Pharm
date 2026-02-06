@@ -4,12 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
 
-import { API_BASE_URL } from '@/config/api';
-
-// Direct backend URL for large file uploads ONLY (bypasses Vercel's 4.5MB limit)
-const UPLOAD_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://15-237-208-231.sslip.io' // Direct HTTPS to backend for large uploads
-  : 'http://localhost:8000';
+import { API_BASE_URL, UPLOAD_BASE_URL } from '@/config/api';
 
 type Mode = 'fast' | 'detailed' | 'deep_research';
 

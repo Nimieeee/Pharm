@@ -9,7 +9,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, LogOut, X,
-  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert
+  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert, PanelLeft
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { API_BASE_URL } from '@/config/api';
@@ -558,10 +558,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                   <div className="flex items-center gap-2">
                     {/* Mobile Toggle */}
                     <button
-                      onClick={onToggle}
                       className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
                     >
-                      <ChevronsLeft size={20} strokeWidth={1.5} />
+                      <PanelLeft size={20} strokeWidth={1.5} />
                     </button>
 
                     <button
@@ -583,7 +582,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     onClick={onToggle}
                     className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
                   >
-                    <ChevronsLeft size={20} strokeWidth={1.5} />
+                    <PanelLeft size={20} strokeWidth={1.5} />
                   </button>
                 </div>
 
@@ -720,9 +719,9 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-surface border border-border items-center justify-center hover:bg-surface-hover transition-colors btn-press shadow-lg"
+          className="hidden md:flex fixed left-4 top-4 z-40 w-10 h-10 rounded-xl bg-transparent items-center justify-center hover:bg-surface-highlight/50 transition-colors btn-press text-foreground-muted"
         >
-          <ChevronsRight size={16} strokeWidth={1.5} className="text-foreground-muted" />
+          <PanelLeft size={24} strokeWidth={1.5} />
         </button>
       )}
 

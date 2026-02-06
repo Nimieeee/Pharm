@@ -10,9 +10,9 @@
      ============================================ */
 
   /* Background - Main app background */
-  --background: #FDFCF8;
-  /* Warm Cream */
-  --background-rgb: 253, 252, 248;
+  --background: #faf9f5;
+  /* Warm Paper */
+  --background-rgb: 250, 249, 245;
 
   /* Surface - Sidebars, Cards, Inputs */
   --surface: #FFFFFF;
@@ -53,10 +53,10 @@
      DARK THEME - Semantic Layered System (Zinc)
      ============================================ */
 
-  /* Background - Rich deep gray, NOT pure black */
-  --background: #09090B;
-  /* Zinc-950 */
-  --background-rgb: 9, 9, 11;
+  /* Background - Rich warm dark */
+  --background: #262624;
+  /* Warm Dark */
+  --background-rgb: 38, 38, 36;
 
   /* Surface - Slightly lighter than background for hierarchy */
   --surface: #18181B;
