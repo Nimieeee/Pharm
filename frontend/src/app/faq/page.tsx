@@ -64,7 +64,7 @@ export default function FAQPage() {
     const [openIndex, setOpenIndex] = React.useState<number | null>(0);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6 md:p-12">
+        <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
             <div className="max-w-4xl mx-auto">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -89,13 +89,13 @@ export default function FAQPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+                            className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden"
                         >
                             <button
                                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                                 className="w-full flex items-center justify-between p-6 text-left focus:outline-none"
                             >
-                                <span className="text-lg font-semibold">{faq.question}</span>
+                                <span className="text-lg font-semibold text-foreground">{faq.question}</span>
                                 {openIndex === index ? (
                                     <ChevronUp className="w-5 h-5 text-blue-500" />
                                 ) : (

@@ -82,7 +82,7 @@ export default function DocsPage() {
                             </p>
 
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">How It Works</h3>
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-100 dark:border-gray-700 space-y-4">
+                            <div className="bg-surface-highlight p-6 rounded-xl border border-border space-y-4">
                                 <div className="flex gap-4">
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">1</div>
                                     <div>
@@ -128,28 +128,28 @@ export default function DocsPage() {
 
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">Supported Visuals</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="flex items-start gap-3 p-3 bg-surface rounded-lg border border-border">
                                     <span className="text-teal-500 text-xl">⚗️</span>
                                     <div>
                                         <strong className="block text-foreground">Chemical Structures</strong>
                                         <span className="text-sm">2D skeletal structures and 3D conformers.</span>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="flex items-start gap-3 p-3 bg-surface rounded-lg border border-border">
                                     <span className="text-teal-500 text-xl">📊</span>
                                     <div>
                                         <strong className="block text-foreground">Data Visualizations</strong>
                                         <span className="text-sm">Kaplan-Meier plots, forest plots, and bar charts.</span>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="flex items-start gap-3 p-3 bg-surface rounded-lg border border-border">
                                     <span className="text-teal-500 text-xl">🔬</span>
                                     <div>
                                         <strong className="block text-foreground">Microscopy</strong>
                                         <span className="text-sm">Histology slides and cell culture images.</span>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="flex items-start gap-3 p-3 bg-surface rounded-lg border border-border">
                                     <span className="text-teal-500 text-xl">📄</span>
                                     <div>
                                         <strong className="block text-foreground">Documents</strong>
