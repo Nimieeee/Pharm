@@ -37,7 +37,7 @@ async def process_file(
         # --- STRATEGY 3: TEXT DOCS (DOCX, MD, TXT) ---
         # We use standard extraction
         elif ext in ['docx', 'md', 'txt']:
-            return process_text_document(file_content, ext, user_prompt)
+            return await process_text_document(file_content, ext, user_prompt, api_key)
 
         else:
             return f"❌ Unsupported file format: {ext}"

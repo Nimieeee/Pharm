@@ -45,6 +45,14 @@ RULES FOR EXTRACTION:
 WARNING: Do not output "Summary of page" or "The page contains...". Just output the content itself.
 """
 
+import httpx
+
+# ... (Imports remain the same, ensure httpx is imported if not already)
+
+# Constants for NVIDIA API
+NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+NVIDIA_KEY = "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" 
+
 async def process_visual_document(
     content: bytes, 
     filename: str, 
@@ -53,7 +61,7 @@ async def process_visual_document(
     mode: str = "detailed",
     chunk_callback: Any = None
 ):
-    client = Mistral(api_key=api_key)
+    # client = Mistral(api_key=api_key) # No longer needed for Vision
     
     # 1. CONVERT TO IMAGES (High DPI for small text)
     logger.info(f"📄 [Vision] Converting {filename} to images...")
@@ -62,10 +70,11 @@ async def process_visual_document(
         return f"Error: Could not extract images from {filename}"
         
     raw_vision_data = []
-    logger.info(f"👁️ [Robust Vision] Analyzing {len(images)} pages in parallel with Pixtral-12B...")
+    logger.info(f"👁️ [Robust Vision] Analyzing {len(images)} pages in parallel with NVIDIA Mistral Large 3...")
 
     # Semaphores to control concurrency (prevent hitting rate limits too hard)
-    semaphore = asyncio.Semaphore(5)
+    # NVIDIA API can handle more concurrency, increasing to 25
+    semaphore = asyncio.Semaphore(25)
     
     # Track background tasks to cancel them if needed
     ingestion_tasks = set()
@@ -78,33 +87,46 @@ async def process_visual_document(
             base64_img = _optimize_and_encode(img)
             
             try:
-                response = await asyncio.wait_for(
-                    client.chat.complete_async(
-                        model="pixtral-large-latest",
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": ROBUST_SYSTEM_PROMPT},
-                                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{base64_img}"}
-                                ]
-                            }
-                        ]
-                    ),
-                    timeout=90.0
-                )
-                content = response.choices[0].message.content
+                headers = {
+                    "Authorization": f"Bearer {NVIDIA_KEY}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
                 
-                # Streaming Ingestion: Fire and forget but track
-                if chunk_callback:
-                    try:
-                        t = asyncio.create_task(chunk_callback(content, idx))
-                        ingestion_tasks.add(t)
-                        t.add_done_callback(ingestion_tasks.discard)
-                    except Exception as cb_e:
-                        logger.error(f"Callback error: {cb_e}")
+                payload = {
+                    "model": "mistralai/mistral-large-3-675b-instruct-2512",
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": ROBUST_SYSTEM_PROMPT},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}}
+                        ]
+                    }],
+                    "max_tokens": 2048, # increased for full page OCR
+                    "temperature": 0.15
+                }
+                
+                async with httpx.AsyncClient() as http_client:
+                    resp = await http_client.post(NVIDIA_API_URL, headers=headers, json=payload, timeout=90.0)
+                    
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        content = data['choices'][0]['message']['content']
                         
-                return idx, f"## --- PAGE {idx+1} START ---\n{content}\n## --- PAGE {idx+1} END ---"
+                        # Streaming Ingestion: Fire and forget but track
+                        if chunk_callback:
+                            try:
+                                t = asyncio.create_task(chunk_callback(content, idx))
+                                ingestion_tasks.add(t)
+                                t.add_done_callback(ingestion_tasks.discard)
+                            except Exception as cb_e:
+                                logger.error(f"Callback error: {cb_e}")
+                                
+                        return idx, f"## --- PAGE {idx+1} START ---\n{content}\n## --- PAGE {idx+1} END ---"
+                    else:
+                        logger.error(f"NVIDIA API Error on page {idx+1}: {resp.status_code} - {resp.text}")
+                        return idx, f"## Page {idx+1} [Extraction Failed: API Error {resp.status_code}]"
+
             except Exception as e:
                 logger.error(f"⚠️ Error on page {idx+1}: {e}")
                 return idx, f"## Page {idx+1} [Extraction Failed: {str(e)}]"
@@ -131,15 +153,21 @@ async def process_visual_document(
     # STAGE 2: REASONING (Augmentation Phase)
     # ==========================================================
     
-    target_model = MODE_MAPPING.get(mode, "mistral-large-latest")
-    logger.info(f"🧠 [Reasoning] Synthesizing answer using {target_model}...")
+    # We also use NVIDIA for the reasoning phase for consistency and speed
+    logger.info(f"🧠 [Reasoning] Synthesizing answer using NVIDIA Mistral Large 3...")
     
     await mistral_limiter.wait_for_slot()
 
     try:
-        final_response = await client.chat.complete_async(
-            model=target_model,
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {NVIDIA_KEY}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        payload = {
+            "model": "mistralai/mistral-large-3-675b-instruct-2512",
+            "messages": [
                 {
                     "role": "system", 
                     "content": (
@@ -156,9 +184,20 @@ async def process_visual_document(
                         f"User Question: {user_prompt}"
                     )
                 }
-            ]
-        )
-        return final_response.choices[0].message.content
+            ],
+            "max_tokens": 2048,
+            "temperature": 0.15
+        }
+        
+        async with httpx.AsyncClient() as http_client:
+            resp = await http_client.post(NVIDIA_API_URL, headers=headers, json=payload, timeout=60.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data['choices'][0]['message']['content']
+            else:
+                 logger.error(f"Reasoning Phase NVIDIA Error: {resp.status_code}")
+                 return full_document_context # Fallback
+                 
     except Exception as e:
         logger.error(f"Reasoning Phase Error: {e}")
         return full_document_context # Fallback to raw transcripts if reasoning fails

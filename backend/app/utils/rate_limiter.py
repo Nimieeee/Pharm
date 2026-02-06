@@ -36,4 +36,4 @@ class RateLimiter:
 
 # Default instance for Mistral API (Aligned with 1 req/sec limit)
 # Optimized burst to handle rapid RAG + Generation sequences
-mistral_limiter = RateLimiter(calls_per_second=1.0, burst=5)
+mistral_limiter = RateLimiter(calls_per_second=5.0, burst=10)

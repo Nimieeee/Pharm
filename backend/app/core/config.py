@@ -44,9 +44,8 @@ class Settings(BaseSettings):
     SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
     
     # Embedding settings - Using Mistral embeddings only
-    # Embedding settings - Using Local Nomic embeddings
-    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "local")  # "local" defaults to Nomic
-    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))  # 768 for Nomic
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "mistral")  # "mistral" is default
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))  # 1024 for Mistral
     
     # Mistral Embeddings settings (using API)
     MISTRAL_EMBED_MODEL: str = os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
@@ -55,7 +54,7 @@ class Settings(BaseSettings):
     MISTRAL_TIMEOUT: int = int(os.getenv("MISTRAL_TIMEOUT", "30"))
     
     # LangChain settings
-    # Optimized chunk size for best quality and speed with Cohere
+    # Optimized chunk size for best quality and speed
     LANGCHAIN_CHUNK_SIZE: int = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "1000"))
     LANGCHAIN_CHUNK_OVERLAP: int = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "200"))
     LANGCHAIN_CACHE_ENABLED: bool = os.getenv("LANGCHAIN_CACHE_ENABLED", "true").lower() == "true"

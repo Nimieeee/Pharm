@@ -449,6 +449,11 @@ LOGGING_CONFIG = {
             'level': 'DEBUG' if settings.DEBUG else 'INFO',
             'propagate': False
         },
+        'app.api': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG' if settings.DEBUG else 'INFO',
+            'propagate': False
+        },
         'app.services.document_loaders': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG' if settings.DEBUG else 'INFO',

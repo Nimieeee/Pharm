@@ -4,7 +4,7 @@ AI Chat API endpoints
 
 from typing import Dict, Any, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from supabase import Client
@@ -23,6 +23,7 @@ from app.models.document import DocumentUploadResponse, DocumentSearchRequest, D
 from app.security import LLMSecurityGuard, SecurityViolationException, get_hardened_prompt
 import logging
 import json
+import asyncio
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -316,6 +317,7 @@ async def chat(
 @router.post("/chat/stream")
 async def chat_stream(
     chat_request: ChatRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     ai_service: AIService = Depends(get_ai_service),
     chat_service: ChatService = Depends(get_chat_service)
@@ -559,50 +561,17 @@ async def chat_stream(
             # We pass this as additional_context now, not appending to message
             pass 
         
-        # Generate streaming response
-        async def generate_stream():
-            full_response = ""
-            is_complete = False
+        # Define background task for saving and translating
+        async def post_stream_processing(response_text: str, is_final: bool):
+            if not is_final or not response_text:
+                return
             
             try:
-                async for chunk in ai_service.generate_streaming_response(
-                    message=chat_request.message,
-                    conversation_id=chat_request.conversation_id,
-                    user=current_user,
-                    mode=chat_request.mode,
-                    use_rag=chat_request.use_rag,
-                    additional_context=image_context_str,
-                    language_override=chat_request.language
-                ):
-                    full_response += chunk
-                    # Use JSON encoding to properly preserve all characters including newlines
-                    # This is the most reliable way to send text over SSE
-                    encoded_chunk = json.dumps({"text": chunk})
-                    yield f"data: {encoded_chunk}\n\n"
-                    
-                    # Explicitly yield to event loop to allow cancellation to be processed
-                    await asyncio.sleep(0)
-                
-                is_complete = True
-                yield "data: [DONE]\n\n"
-                
-            except asyncio.CancelledError:
-                print(f"🚫 Stream cancelled by user for conversation {chat_request.conversation_id}")
-                # Do NOT save the message
-                return
-            
-            except Exception as e:
-                print(f"❌ Error in streaming response: {e}")
-                error_chunk = json.dumps({"text": f"\n\n[Error: {str(e)}]"})
-                yield f"data: {error_chunk}\n\n"
-                return
-            
-            # Add complete response to conversation ONLY if complete
-            if is_complete and full_response:
+                print(f"📡 [BG] Saving assistant message for conv {chat_request.conversation_id}...")
                 assistant_message = MessageCreate(
                     conversation_id=chat_request.conversation_id,
                     role="assistant",
-                    content=full_response,
+                    content=response_text,
                     metadata={
                         "mode": chat_request.mode,
                         "rag_used": chat_request.use_rag,
@@ -613,14 +582,66 @@ async def chat_stream(
                 
                 saved_assistant_msg = await chat_service.add_message(assistant_message, current_user)
                 
-                # Queue background translation for assistant message
                 if saved_assistant_msg:
-                    translation_service = TranslationService(db)
+                    print(f"✅ [BG] Message saved (id={saved_assistant_msg.id}). Queuing translation...")
+                    translation_service = TranslationService(ai_service.db)
                     await translation_service.queue_message_translation(
                         message_id=saved_assistant_msg.id,
-                        content=full_response,
+                        content=response_text,
                         source_language=chat_request.language
                     )
+            except Exception as bg_err:
+                print(f"❌ [BG] Error in post-stream processing: {bg_err}")
+
+        # Generate streaming response
+        async def generate_stream():
+            full_response = ""
+            is_complete = False
+            chunk_count = 0
+            
+            try:
+                print(f"🎬 Starting stream for conv {chat_request.conversation_id}")
+                async for chunk in ai_service.generate_streaming_response(
+                    message=chat_request.message,
+                    conversation_id=chat_request.conversation_id,
+                    user=current_user,
+                    mode=chat_request.mode,
+                    use_rag=chat_request.use_rag,
+                    additional_context=image_context_str,
+                    language_override=chat_request.language
+                ):
+                    full_response += chunk
+                    chunk_count += 1
+                    
+                    # Periodic logging to show activity in logs (every 50 chunks)
+                    if chunk_count % 50 == 0:
+                        print(f"  ⚡ Produced {chunk_count} chunks for {chat_request.conversation_id}...")
+
+                    encoded_chunk = json.dumps({"text": chunk})
+                    yield f"data: {encoded_chunk}\n\n"
+                    
+                    await asyncio.sleep(0) # Yield for other tasks
+                
+                print(f"🏁 Stream production complete. Total chunks: {chunk_count}")
+                is_complete = True
+                yield "data: [DONE]\n\n"
+                
+                # Hand off saving tasks to background
+                background_tasks.add_task(post_stream_processing, full_response, is_complete)
+                
+            except asyncio.CancelledError:
+                print(f"🚫 Stream cancelled by user for conversation {chat_request.conversation_id}")
+                return
+            
+            except Exception as e:
+                print(f"❌ CRITICAL error in streaming response: {e}")
+                import traceback
+                traceback.print_exc()
+                error_chunk = json.dumps({"text": f"\n\n[System Error: {str(e)}]"})
+                yield f"data: {error_chunk}\n\n"
+                return
+            finally:
+                print(f"👋 Stream for {chat_request.conversation_id} finished production.")
         
         return StreamingResponse(
             generate_stream(),

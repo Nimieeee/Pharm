@@ -77,7 +77,6 @@ export const metadata: Metadata = {
     url: 'https://benchside.ai',
     title: 'Benchside - AI Pharmacological Assistant',
     description: 'Intelligent pharmacological research assistant powered by AI',
-    type: 'website',
   },
   other: {
     'mobile-web-app-capable': 'yes',

@@ -3,24 +3,18 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
-# Load .env file directly using absolute path
-ENV_PATH = "/var/www/pharmgpt-backend/.env"
-if os.path.exists(ENV_PATH):
-    with open(ENV_PATH) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, value = line.split("=", 1)
-                os.environ.setdefault(key.strip(), value.strip())
-
+from app.core.config import settings
 
 class EmailService:
     def __init__(self):
         self.smtp_host = "smtp.gmail.com"
         self.smtp_port = 587
-        self.smtp_user = os.getenv("SMTP_USER", "noreply.pharmgpt@gmail.com")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
+        self.smtp_user = settings.SMTP_USER
+        self.smtp_password = settings.SMTP_PASSWORD
+        
+        # Clean the password in case it has quotes from a manual .env loader
+        if self.smtp_password:
+            self.smtp_password = self.smtp_password.strip("'\"")
         
         if not self.smtp_password:
             print("⚠️ SMTP_PASSWORD not found. Emails will be logged only.")
@@ -124,18 +118,19 @@ class EmailService:
 
         try:
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = "We miss you at PharmGPT! 💊"
-            msg["From"] = f"PharmGPT <{self.smtp_user}>"
+            msg["Subject"] = "We miss you at Benchside! 💊"
+            msg["From"] = f"Benchside <{self.smtp_user}>"
             msg["To"] = to_email
 
             html = f"""
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #18181b; margin: 0;">PharmGPT</h1>
-                </div>
-                <h2 style="color: #18181b; margin-bottom: 16px;">Hey {first_name}, we miss you! 👋</h2>
-                <p style="color: #71717a; font-size: 16px; line-height: 1.6;">
-                    It's been a while since you last visited PharmGPT. We've been busy adding new features and improvements to help with your pharmacology research!
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="color: #18181b; margin: 0;">Benchside</h1>
+                        </div>
+                        <p>Hi there,</p>
+                        <p>It's been a while since you last visited Benchside. We've been busy adding new features and improvements to help with your pharmacology research!</p>
                 </p>
                 <p style="color: #71717a; font-size: 16px; line-height: 1.6;">
                     Here's what's new:
@@ -146,7 +141,7 @@ class EmailService:
                     <li>⚡ <strong>Faster Responses</strong> – Improved AI performance</li>
                 </ul>
                 <div style="text-align: center; margin: 32px 0;">
-                    <a href="https://pharmgpt.vercel.app/chat" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                    <a href="https://benchside.vercel.app/chat" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
                         Continue Your Research →
                     </a>
                 </div>

@@ -35,34 +35,50 @@ class ResearchService:
                 cwd=self.miroflow_path,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env={**os.environ} # Pass current env (with API keys hopefully)
+                # Pass current host environment variables to ensure API keys are present
+                env={**os.environ, "PYTHONUNBUFFERED": "1"}
             )
 
             # Yield initial status
             yield self._format_sse({"type": "status", "status": "started", "message": "Initializing research agent..."})
 
+            full_stdout = []
+            last_activity = asyncio.get_event_loop().time()
+
+            # Read stdout line by line
             if process.stdout:
-                async for line in process.stdout:
+                while True:
+                    try:
+                        line = await asyncio.wait_for(process.stdout.readline(), timeout=5.0)
+                    except asyncio.TimeoutError:
+                        # Send keep-alive if no output for 5 seconds
+                        if process.returncode is not None:
+                            break # Process finished
+                        yield self._format_sse({"type": "ping", "message": "Researching..."})
+                        continue
+
+                    if not line:
+                        break
+
                     decoded = line.decode().strip()
                     if not decoded:
                         continue
-                        
+                    
+                    full_stdout.append(decoded)
                     logger.debug(f"RESEARCH STDOUT: {decoded}")
-                    
-                    # Parse MiroFlow output to user-friendly messages
-                    # MiroFlow outputs logs. We can try to heuristic parse them.
-                    # For now, just forward relevant lines or generic "Thinking"
-                    
+                    last_activity = asyncio.get_event_loop().time() # Update activity timestamp
+
+                    # Heuristic parsing for UI feedback
                     if "Thinking" in decoded or "Action" in decoded:
-                         yield self._format_sse({
+                        safe_msg = decoded[:150] + "..." if len(decoded) > 150 else decoded
+                        yield self._format_sse({
                              "type": "progress", 
-                             "message": decoded[:100] + "..." 
+                             "message": safe_msg 
                          })
-                    elif "Answer" in decoded:
-                        # This might be the final answer
+                    elif "Answer" in decoded or "Final" in decoded:
                          yield self._format_sse({
                              "type": "progress", 
-                             "message": "Generating final answer..." 
+                             "message": "Generating final report..." 
                          })
 
             # Wait for completion
@@ -75,18 +91,24 @@ class ResearchService:
                     logger.error(f"RESEARCH STDERR: {err.decode()}")
 
             if process.returncode == 0:
-                # In a real impl, we'd parse the actual output file or the final stdout block
-                # For this MVP, we might assume the last stdout was the answer or check the log file
+                # Attempt to extract the final markdown report from the accumulated stdout
+                # MiroFlow usually prints the final answer at the end
+                final_report = "\n".join(full_stdout)  # Fallback to everything
+                
+                # Simple heuristic: try to find the last large block of text or specific marker
+                # For now, we return the full log which might be messy, but debuggable.
+                # Ideally, MiroFlow updates should write to a known output file we can read.
+                
                 yield self._format_sse({
                     "type": "complete", 
-                    "report": "Research completed. (Output parsing to be implemented based on actual log format)"
+                    "report": final_report
                 })
             else:
-                 yield self._format_sse({"type": "error", "message": "Research process failed."})
+                 yield self._format_sse({"type": "error", "message": f"Research process failed with code {process.returncode}"})
 
         except Exception as e:
-            logger.error(f"Research failed: {e}")
-            yield self._format_sse({"type": "error", "message": str(e)})
+            logger.error(f"Research logging error: {e}", exc_info=True)
+            yield self._format_sse({"type": "error", "message": f"Internal error: {str(e)}"})
 
     def _format_sse(self, data: dict) -> str:
         return f"data: {json.dumps(data)}\n\n"

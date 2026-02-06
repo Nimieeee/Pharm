@@ -1,6 +1,6 @@
 {
-    "name": "PharmGPT - AI Pharmaceutical Assistant",
-    "short_name": "PharmGPT",
+    "name": "Benchside - AI Pharmaceutical Assistant",
+    "short_name": "Benchside",
     "description": "Intelligent pharmacological research assistant powered by AI. Analyze drug interactions, clinical data, and research documents.",
     "start_url": "/",
     "display": "standalone",

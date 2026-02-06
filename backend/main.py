@@ -1,6 +1,6 @@
 """
-PharmGPT Backend API
-FastAPI application for the PharmGPT web application
+Benchside Backend API
+FastAPI application for the Benchside web application
 """
 
 from fastapi import FastAPI, HTTPException
@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.core.config import settings
+from app.core.logging_config import setup_logging
 from app.api.v1.api import api_router
 from app.core.database import init_db
 
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
     print("🚀 Starting PharmGPT Backend API...")
+    setup_logging()
     await init_db()
     print("✅ Database initialized")
     
@@ -74,10 +76,10 @@ allowed_origins.extend([
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[], # Use regex for everything to allow credentials
-    allow_origin_regex=r".*", # ALLOW EVERYTHING FOR DEBUGGING
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://pharmgpt.*\.vercel\.app", # Support preview branches
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

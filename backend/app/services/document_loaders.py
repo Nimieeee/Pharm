@@ -1059,7 +1059,7 @@ class EnhancedDocumentLoader:
     async def _load_image(self, file_path: str, filename: str) -> List[Document]:
         """
         Load image document - creates a document with image path for embedding
-        The actual image embedding will be handled by Cohere's multimodal embeddings
+        The actual image embedding will be handled by the embeddings service (if supported) or vision analysis
         """
         try:
             # Verify image file exists and is readable

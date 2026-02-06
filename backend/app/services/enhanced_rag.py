@@ -6,7 +6,7 @@ Replaces the custom RAG implementation with industry-standard tools
 import logging
 import time
 import asyncio
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Callable, Awaitable
 from uuid import UUID
 from supabase import Client
 from langchain_core.documents import Document
@@ -40,7 +40,8 @@ class EnhancedRAGService:
         conversation_id: UUID, 
         user_id: UUID,
         user_prompt: Optional[str] = None,
-        mode: str = "detailed"
+        mode: str = "detailed",
+        cancellation_check: Optional[Callable[[], Awaitable[bool]]] = None
     ) -> DocumentUploadResponse:
         """
         Process uploaded file using LangChain loaders and Mistral embeddings
@@ -277,6 +278,17 @@ class EnhancedRAGService:
             
             for chunk_index, chunk in enumerate(chunks):
                 try:
+                    # Check for cancellation
+                    if cancellation_check and await cancellation_check():
+                        logger.warning(f"🚫 Upload cancelled by user: {filename} - Rolling back {success_count} chunks")
+                        await self.delete_file_documents(conversation_id, filename, user_id)
+                        return DocumentUploadResponse(
+                            success=False,
+                            message="Upload cancelled by user",
+                            chunk_count=0,
+                            file_info=file_info
+                        )
+
                     success = await self._process_and_store_chunk(
                         chunk=chunk,
                         filename=filename,
@@ -497,19 +509,13 @@ class EnhancedRAGService:
             is_image = chunk.metadata.get("file_type") == "image"
             image_path = chunk.metadata.get("image_path")
             
-            # Generate embedding based on content type
-            if is_image and image_path:
-                # Use Cohere's image embedding for images
-                logger.debug(f"🖼️  Generating image embedding for {filename}")
-                if hasattr(self.embeddings_service, 'embed_image'):
-                    embedding = await self.embeddings_service.embed_image(
-                        image_path=image_path,
-                        image_description=chunk.page_content  # Use placeholder text as description
-                    )
-                else:
-                    # Fallback to text embedding if image embedding not supported
-                    logger.warning(f"⚠️  Image embedding not supported, using text embedding for {filename}")
-                    embedding = await self.embeddings_service.generate_embedding(chunk.page_content)
+            # Generate embedding
+            # Mistral embeddings are text-only for now
+            if is_image:
+                 logger.warning(f"⚠️  Image embedding not supported by Mistral, using placeholder for {filename}")
+                 # For images we might want to use a vision model to describe it first (via smart loader)
+                 # But at this chunk storage level, we just store text content
+                 embedding = await self.embeddings_service.generate_embedding(chunk.page_content)
             else:
                 # Generate text embedding
                 embedding = await self.embeddings_service.generate_embedding(chunk.page_content)
@@ -549,13 +555,25 @@ class EnhancedRAGService:
                 "metadata": metadata
             }
             
+            # DEBUG: Print payload details
+            print(f"DEBUG: Inserting Chunk {chunk_index}")
+            print(f" - Content Len: {len(chunk.page_content)}")
+            print(f" - Embedding Len: {len(embedding)}")
+            print(f" - Metadata: {metadata}")
+            
             result = self.db.table("document_chunks").insert(chunk_data).execute()
+            
+            # DEBUG: Print Result
+            print(f"DEBUG: Insert Result: {result}")
             
             if result.data and len(result.data) > 0:
                 logger.debug(f"✅ Stored chunk {chunk_index} for {filename}")
                 return True
             else:
                 logger.error(f"❌ Database insert failed for chunk {chunk_index}")
+                # DEBUG print
+                if hasattr(result, 'error'):
+                    print(f"ERROR DETAILS: {result.error}")
                 return False
                 
         except Exception as e:
@@ -930,6 +948,35 @@ class EnhancedRAGService:
             logger.error(f"❌ Error deleting documents: {e}")
             return False
     
+    async def delete_file_documents(
+        self, 
+        conversation_id: UUID, 
+        filename: str,
+        user_id: UUID = None
+    ) -> bool:
+        """Delete all chunks for a specific file in a conversation (cleanup/rollback)"""
+        try:
+            # Construct query
+            query = self.db.table("document_chunks").delete().eq(
+                "conversation_id", str(conversation_id)
+            )
+            
+            if user_id:
+                query = query.eq("user_id", str(user_id))
+            
+            # Using Supabase JSON filtering syntax: metadata->>filename = filename
+            # Note: The syntax depends on the specific client version, but often custom filters are used 
+            # or we assume 'metadata' column. 
+            # A safer approach if filter syntax is unsure: verify 'filename' is in metadata
+            result = query.filter("metadata->>filename", "eq", filename).execute()
+            
+            logger.info(f"✅ Deleted chunks for file {filename} in conversation {conversation_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error deleting document chunks for {filename}: {e}")
+            return False
+
     async def get_recent_image_analyses(
         self,
         conversation_id: UUID,

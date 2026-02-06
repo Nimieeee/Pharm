@@ -4,7 +4,7 @@ Chat API endpoints
 
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from supabase import Client
 
 from app.core.database import get_db
@@ -284,6 +284,7 @@ async def get_messages(
 @router.post("/conversations/{conversation_id}/documents", response_model=DocumentUploadResponse)
 async def upload_document(
     conversation_id: UUID,
+    request: Request,
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
     mode: str = Form("detailed"),
@@ -297,9 +298,15 @@ async def upload_document(
     Supported file types: PDF, TXT, MD, DOCX, PPTX, XLSX, CSV, SDF, MOL, PNG, JPG, JPEG, GIF, BMP, WEBP
     """
     import logging
+    import sys
     logger = logging.getLogger(__name__)
     
-    logger.info(f"📤 Document upload started: {file.filename} for conversation {conversation_id}")
+    print(f"DEBUG: MARKER - ENTERING UPLOAD_DOCUMENT", flush=True)
+    sys.stdout.flush()
+    try:
+        print(f"📤 Document upload started: {file.filename}", flush=True)
+    except Exception as e:
+        print(f"ERROR PRINTING FILENAME: {e}", flush=True)
     
     try:
         # Check if conversation exists and belongs to user
@@ -315,45 +322,52 @@ async def upload_document(
         allowed_extensions = {fmt.lstrip('.') for fmt in supported_formats}
         file_extension = file.filename.lower().split('.')[-1] if file.filename else ''
         
-        logger.info(f"📄 File type: {file_extension}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")
+        print(f"📄 File type: {file_extension}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")
         
         if file_extension not in allowed_extensions:
-            logger.error(f"❌ Unsupported file type: {file_extension}")
+            print(f"❌ Unsupported file type: {file_extension}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}"
             )
         
         # Read file content
-        logger.info(f"📖 Reading file content...")
+        print(f"📖 Reading file content...")
         file_content = await file.read()
-        logger.info(f"✅ File read: {len(file_content)} bytes")
+        print(f"✅ File read: {len(file_content)} bytes")
         
         if len(file_content) == 0:
-            logger.error(f"❌ Empty file")
+            print(f"❌ Empty file")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Empty file"
             )
         
+        # Define cancellation check
+        async def check_cancellation() -> bool:
+            return await request.is_disconnected()
+
         # Process file
-        logger.info(f"⚙️  Processing file with RAG service...")
+        print(f"⚙️  Processing file with RAG service...")
         result = await rag_service.process_uploaded_file(
             file_content, 
             file.filename, 
             conversation_id, 
             current_user.id,
             user_prompt=prompt,
-            mode=mode
+            mode=mode,
+            cancellation_check=check_cancellation
         )
         
-        logger.info(f"✅ Upload complete: {result.chunk_count} chunks processed")
+        print(f"✅ Upload complete: {result.chunk_count} chunks processed")
         return result
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Upload failed: {str(e)}", exc_info=True)
+        print(f"❌ Upload failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload document: {str(e)}"

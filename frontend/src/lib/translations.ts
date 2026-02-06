@@ -82,7 +82,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'supported_files': 'PDF, DOCX, CSV, Images',
         'ask_placeholder': 'Ask anything in {mode} mode...',
         'message_placeholder': 'Message...',
-        'ai_disclaimer': 'PharmGPT can make mistakes. Consider checking important information.',
+        'ai_disclaimer': 'Benchside can make mistakes. Consider checking important information.',
         'stop_gen': 'Stop generating',
 
         // Navigation & History
@@ -191,7 +191,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'supported_files': 'PDF, DOCX, CSV, Imágenes',
         'ask_placeholder': 'Pregunta cualquier cosa en modo {mode}...',
         'message_placeholder': 'Mensaje...',
-        'ai_disclaimer': 'PharmGPT puede cometer errores. Verifica la información importante.',
+        'ai_disclaimer': 'Benchside puede cometer errores. Verifica la información importante.',
         'stop_gen': 'Detener generación',
 
         // Navigation & History
@@ -295,7 +295,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'supported_files': 'PDF, DOCX, CSV, Images',
         'ask_placeholder': 'Demandez n\'importe quoi en mode {mode}...',
         'message_placeholder': 'Message...',
-        'ai_disclaimer': 'PharmGPT peut faire des erreurs. Vérifiez les infos importantes.',
+        'ai_disclaimer': 'Benchside peut faire des erreurs. Vérifiez les infos importantes.',
         'stop_gen': 'Arrêter',
 
         // Navigation & History
@@ -399,7 +399,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'supported_files': 'PDF, DOCX, CSV, Bilder',
         'ask_placeholder': 'Fragen Sie etwas im {mode}-Modus...',
         'message_placeholder': 'Nachricht...',
-        'ai_disclaimer': 'PharmGPT kann Fehler machen. Überprüfen Sie wichtige Infos.',
+        'ai_disclaimer': 'Benchside kann Fehler machen. Überprüfen Sie wichtige Infos.',
         'stop_gen': 'Generierung stoppen',
 
         // Navigation & History
@@ -503,7 +503,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'supported_files': 'PDF, DOCX, CSV, Imagens',
         'ask_placeholder': 'Pergunte algo no modo {mode}...',
         'message_placeholder': 'Mensagem...',
-        'ai_disclaimer': 'PharmGPT pode cometer erros. Verifique informações importantes.',
+        'ai_disclaimer': 'Benchside pode cometer erros. Verifique informações importantes.',
         'stop_gen': 'Parar geração',
 
         // Navigation & History
@@ -607,7 +607,7 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'supported_files': 'PDF, DOCX, CSV, 图片',
         'ask_placeholder': '在 {mode} 模式下提问...',
         'message_placeholder': '输入消息...',
-        'ai_disclaimer': 'PharmGPT 可能会犯错。请核实重要信息。',
+        'ai_disclaimer': 'Benchside 可能会犯错。请核实重要信息。',
         'stop_gen': '停止生成',
 
         // Navigation & History

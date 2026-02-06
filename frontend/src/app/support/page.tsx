@@ -419,7 +419,7 @@ export default function SupportPage() {
                                                             <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-lg p-3">
                                                                 <p className="text-xs font-medium text-indigo-500 uppercase tracking-wider mb-1 flex items-center gap-2">
                                                                     <LifeBuoy size={12} />
-                                                                    Support Response
+                                                                    Benchside Support Response
                                                                 </p>
                                                                 <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{ticket.admin_response}</p>
                                                             </div>
@@ -440,7 +440,7 @@ export default function SupportPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-medium text-[var(--text-primary)]">Support Assistant</h3>
-                                    <p className="text-xs text-[var(--text-secondary)]">Powered by PharmGPT AI</p>
+                                    <p className="text-xs text-[var(--text-secondary)]">Powered by Benchside AI</p>
                                 </div>
                             </div>
 
@@ -449,7 +449,7 @@ export default function SupportPage() {
                                     <div className="text-center py-8 opacity-60">
                                         <LifeBuoy className="mx-auto text-indigo-500 mb-2" size={32} />
                                         <p className="text-sm text-[var(--text-secondary)]">
-                                            Hi! I'm your PharmGPT Support Agent.<br />
+                                            Hi! I'm your Benchside Support Agent.<br />
                                             Ask me anything about how to use the platform!
                                         </p>
                                     </div>
