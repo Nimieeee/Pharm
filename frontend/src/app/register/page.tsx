@@ -90,11 +90,11 @@ export default function RegisterPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-6">
             <img
               src="/Benchside.png"
               alt="Benchside Logo"
-              className="w-20 h-20 object-contain rounded-2xl shadow-lg"
+              className="w-14 h-14 object-contain"
             />
           </div>
           <h1 className="text-2xl font-serif font-medium text-[var(--text-primary)]">Create account</h1>

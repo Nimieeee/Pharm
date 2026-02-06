@@ -88,11 +88,11 @@ function LoginContent() {
     >
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-[var(--surface-highlight)] rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-[var(--border)]">
+        <div className="flex justify-center mb-6">
           <img
             src="/Benchside.png"
             alt="Benchside Logo"
-            className="w-10 h-10 object-contain"
+            className="w-14 h-14 object-contain"
           />
         </div>
         <h1 className="text-3xl font-serif font-bold text-[var(--text-primary)] mb-2">Welcome Back</h1>
