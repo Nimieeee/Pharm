@@ -125,22 +125,15 @@ export default function HomePage() {
       {/* Navbar with Pill Design - Liquid Glass */}
       <nav className="!fixed top-0 left-0 right-0 rounded-none md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl md:rounded-full z-50 glass-effect transition-all duration-300">
         <div className="w-full h-16 md:h-14 px-4 md:px-6 flex items-center justify-between">
-          <div className="flex flex-row items-center gap-6">
-            <div className="flex items-center gap-3 bg-surface/50 backdrop-blur-sm p-4 rounded-2xl border border-border shadow-sm">
-              <div className="h-10 w-10 relative">
-                <img
-                  src="/Benchside.png"
-                  alt="Benchside Logo"
-                  className="object-contain"
-                />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-lg text-foreground leading-tight">Benchside</p>
-                <p className="text-xs text-foreground-muted">Official Release v2.0</p>
-              </div>
+          <div className="flex flex-row items-center gap-3">
+            <div className="h-10 w-10 relative">
+              <img
+                src="/Benchside.png"
+                alt="Benchside Logo"
+                className="object-contain"
+              />
             </div>
-            <span className="hidden md:block text-foreground-muted/30 text-4xl font-light">/</span>
-            <p className="hidden md:block text-foreground-muted text-lg">See how Benchside adapts to your workflow.</p>
+            <p className="font-bold text-xl text-foreground tracking-tight">Benchside</p>
           </div>
 
           <button
