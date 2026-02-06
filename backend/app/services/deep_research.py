@@ -1241,13 +1241,17 @@ In-text examples:
 - "Jordan et al. (2015) demonstrated that..."
 - Two authors: "(Kwan & Brodie, 2021)"
 
-Reference format (CRITICAL - ALWAYS HYPERLINK THE TITLE):
+Reference format:
 ```
-Author, A. A., & Author, B. B. (Year). [Title of article](URL). *Journal Name*. doi:10.xxxx/xxxxx
+Author, A. A., & Author, B. B. (Year). Title of article. *Journal Name*. [doi:10.xxxx/xxxxx](https://doi.org/10.xxxx/xxxxx)
 ```
-- **YOU MUST hyperlink the Title** using the URL provided in the findings.
-- Example: [Efficacy of mRNA Vaccines](https://pubmed.ncbi.nlm.nih.gov/33301246/)
-- If a DOI is available, include it after the journal name.
+
+**LINKING RULES (STRICT):**
+1. **Title**: Write the title as PLAIN text (do NOT hyperlink it).
+2. **DOI**: If a DOI is available, write the DOI and hyperlink it to the DOI URL.
+3. **URL**: If NO DOI is available, include "Retrieved from [URL](URL)" at the end.
+4. **Example (DOI)**: Smith, J. (2020). New treatments. *Nature*. [doi:10.1038/xyz](https://doi.org/10.1038/xyz)
+5. **Example (Web)**: FDA. (2023). Drug Safety. Retrieved from [https://fda.gov/...](https://fda.gov/...)
 
 ## WRITING STYLE RULES (CRITICAL):
 1. Write in clear, professional scientific prose

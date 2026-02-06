@@ -148,7 +148,7 @@ export default function DeepResearchUI({
         </div>
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="flex md:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-sm transition-all active:scale-95"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-sm transition-all active:scale-95"
           title={sidebarCollapsed ? t('sources') : t('close')}
         >
           <BookOpen className="w-3.5 h-3.5" />
