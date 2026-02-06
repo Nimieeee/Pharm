@@ -554,7 +554,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
             <div className="w-[280px] h-full flex flex-col p-4">
               {/* Header Area */}
               <div className="flex flex-col gap-4 mb-2">
-                <div className="flex items-center justify-between h-12 px-1">
+                <div className="flex items-center justify-between h-12 px-3">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => router.push('/')}
@@ -569,19 +569,12 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                       </div>
                       <span className="font-serif font-medium text-foreground text-lg">PharmGPT</span>
                     </button>
-
-                    {/* Mobile Toggle - Moved to right of logo */}
-                    <button
-                      onClick={onToggle}
-                      className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted ml-6"
-                    >
-                      <PanelLeft size={20} strokeWidth={1.5} />
-                    </button>
                   </div>
 
+                  {/* Toggle Button (Both Mobile & Desktop) */}
                   <button
                     onClick={onToggle}
-                    className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted"
                   >
                     <PanelLeft size={20} strokeWidth={1.5} />
                   </button>

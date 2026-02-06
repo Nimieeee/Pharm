@@ -57,7 +57,7 @@ function ResendButton({ email }: { email: string }) {
                     type="button"
                     onClick={handleResend}
                     disabled={loading || cooldown > 0}
-                    className="text-[var(--primary)] hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? 'Sending...' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
                 </button>
@@ -150,7 +150,7 @@ function VerifyContent() {
                             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                             required
                             placeholder="Enter 6-digit code"
-                            className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all text-center tracking-[0.5em] text-lg font-mono"
+                            className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-center tracking-[0.5em] text-lg font-mono"
                             maxLength={6}
                         />
                     </div>
@@ -158,7 +158,7 @@ function VerifyContent() {
                     <button
                         type="submit"
                         disabled={isLoading || code.length !== 6}
-                        className="w-full h-12 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full h-12 rounded-xl bg-[var(--text-primary)] text-[var(--background)] font-medium flex items-center justify-center gap-2 btn-press hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Verify Email'}
                     </button>

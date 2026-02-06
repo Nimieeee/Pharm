@@ -150,10 +150,10 @@ h3,
   color: var(--text-secondary);
 }
 
-/* Atmospheric Background Gradient */
+/* Atmospheric Background - simplified to match theme */
 .bg-atmospheric {
   background-color: var(--background);
-  background-image: radial-gradient(circle at 50% 0%, var(--gradient-color) 0%, transparent 60%);
+  /* Removed gradient for cleaner look requested by user */
 }
 
 /* Glassmorphism */
@@ -168,32 +168,32 @@ h3,
 .glass-effect {
   position: relative;
   /* Use rgba for transparency instead of opaque var(--surface) */
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(var(--surface-rgb), 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(var(--border-rgb), 0.5);
   border-radius: 1rem;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 }
 
 .glass-effect:hover {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(var(--surface-rgb), 0.85);
+  border-color: rgba(var(--border-rgb), 0.8);
   /* Darker border on hover in light mode */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
-/* Dark mode - subtle white transparency like the screenshot */
+/* Dark mode - subtle warmth matching surface */
 .dark .glass-effect {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--surface-rgb), 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .dark .glass-effect:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--surface-rgb), 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 

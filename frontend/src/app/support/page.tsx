@@ -440,7 +440,7 @@ export default function SupportPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-medium text-[var(--text-primary)]">Support Assistant</h3>
-                                    <p className="text-xs text-[var(--text-secondary)]">Powered by Mistral Small</p>
+                                    <p className="text-xs text-[var(--text-secondary)]">Powered by PharmGPT AI</p>
                                 </div>
                             </div>
 
