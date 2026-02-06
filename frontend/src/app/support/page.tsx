@@ -39,7 +39,7 @@ export default function SupportPage() {
     const { theme } = useTheme();
 
     // View State
-    const [view, setView] = useState<'create' | 'list'>('create');
+    const [view, setView] = useState<'create' | 'list' | 'chat'>('create');
 
     // Form State
     const [subject, setSubject] = useState('');
@@ -54,12 +54,52 @@ export default function SupportPage() {
     const [isLoadingTickets, setIsLoadingTickets] = useState(false);
     const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
 
+    // Chat State
+    const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
+    const [chatInput, setChatInput] = useState('');
+    const [isChatLoading, setIsChatLoading] = useState(false);
+
     // Initial load check
     useEffect(() => {
         if (user) {
             setEmail(user.email);
         }
     }, [user]);
+
+    const handleChatSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!chatInput.trim() || isChatLoading) return;
+
+        const userMsg = chatInput;
+        setChatInput('');
+        setChatMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setIsChatLoading(true);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/support/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    message: userMsg,
+                    history: chatMessages // Send previous history
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setChatMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+            } else {
+                setChatMessages(prev => [...prev, { role: 'assistant', content: "I apologize, I'm having trouble connecting right now. Please try again later." }]);
+            }
+        } catch (err) {
+            setChatMessages(prev => [...prev, { role: 'assistant', content: "Network error occurred." }]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
 
     // Fetch tickets when view changes to list
     useEffect(() => {
@@ -223,6 +263,7 @@ export default function SupportPage() {
 
                     {view === 'create' ? (
                         <div className="card-swiss border border-[var(--border)] p-4 md:p-8">
+                            {/* ... existing Create Ticket form ... */}
                             {success ? (
                                 <div className="text-center py-12">
                                     <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -314,8 +355,9 @@ export default function SupportPage() {
                                 </form>
                             )}
                         </div>
-                    ) : (
+                    ) : view === 'list' ? (
                         <div className="space-y-4">
+                            {/* ... List view content (same as before) ... */}
                             {isLoadingTickets ? (
                                 <div className="flex justify-center py-12">
                                     <Loader2 className="animate-spin text-indigo-500" size={32} />
@@ -390,19 +432,93 @@ export default function SupportPage() {
                                 ))
                             )}
                         </div>
+                    ) : (
+                        <div className="flex flex-col h-[600px] bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+                            <div className="p-4 border-b border-[var(--border)] bg-[var(--surface-highlight)]/30 flex items-center gap-3">
+                                <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-500">
+                                    <MessageSquare size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-medium text-[var(--text-primary)]">Support Assistant</h3>
+                                    <p className="text-xs text-[var(--text-secondary)]">Powered by Mistral Small</p>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {chatMessages.length === 0 && (
+                                    <div className="text-center py-8 opacity-60">
+                                        <LifeBuoy className="mx-auto text-indigo-500 mb-2" size={32} />
+                                        <p className="text-sm text-[var(--text-secondary)]">
+                                            Hi! I'm your PharmGPT Support Agent.<br />
+                                            Ask me anything about how to use the platform!
+                                        </p>
+                                    </div>
+                                )}
+
+                                {chatMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div
+                                            className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user'
+                                                ? 'bg-blue-600 text-white rounded-tr-none'
+                                                : 'bg-[var(--surface-highlight)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border)]'
+                                                }`}
+                                        >
+                                            {msg.content}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isChatLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-[var(--surface-highlight)] rounded-2xl rounded-tl-none px-4 py-2 border border-[var(--border)]">
+                                            <div className="flex gap-1">
+                                                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <form onSubmit={handleChatSubmit} className="p-4 border-t border-[var(--border)] bg-[var(--surface)]">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={chatInput}
+                                        onChange={(e) => setChatInput(e.target.value)}
+                                        placeholder="Ask a question..."
+                                        className="flex-1 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        disabled={isChatLoading}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!chatInput.trim() || isChatLoading}
+                                        className="p-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+                                    >
+                                        <Send size={18} />
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     )}
 
                     <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                        <button
+                            onClick={() => window.location.href = '/faq'}
+                            className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-blue-500/30 transition-all text-left"
+                        >
                             <HelpCircle className="text-indigo-500 mb-4" size={24} />
                             <h3 className="font-medium text-[var(--text-primary)] mb-2">FAQs</h3>
                             <p className="text-sm text-[var(--text-secondary)]">Check our knowledge base for quick answers to common questions.</p>
-                        </div>
-                        <div className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                        </button>
+                        <button
+                            onClick={() => setView('chat')}
+                            className={`p-6 rounded-2xl border transition-all text-left ${view === 'chat' ? 'bg-indigo-500/5 border-indigo-500 ring-1 ring-indigo-500/20' : 'bg-[var(--surface)] border-[var(--border)] hover:border-purple-500/30'}`}
+                        >
                             <MessageSquare className="text-purple-500 mb-4" size={24} />
                             <h3 className="font-medium text-[var(--text-primary)] mb-2">Live Chat</h3>
                             <p className="text-sm text-[var(--text-secondary)]">Chat with our AI support agent for instant assistance 24/7.</p>
-                        </div>
+                        </button>
                     </div>
                 </div>
             </main>

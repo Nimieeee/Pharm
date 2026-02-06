@@ -17,7 +17,8 @@ import {
     AlertCircle,
     Moon,
     Sun,
-    Globe
+    Globe,
+    X
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/lib/theme-context';
@@ -42,6 +43,7 @@ export default function ProfilePage() {
     const [success, setSuccess] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showLightbox, setShowLightbox] = useState(false);
 
     useEffect(() => {
         // Redirect if not authenticated
@@ -203,7 +205,10 @@ export default function ProfilePage() {
                     <div className="space-y-6">
                         <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-3xl text-center">
                             <div className="relative w-32 h-32 mx-auto mb-6 group">
-                                <div className="w-full h-full rounded-2xl overflow-hidden bg-[var(--surface-highlight)] border-4 border-[var(--surface)] shadow-xl relative">
+                                <button
+                                    onClick={() => avatarUrl && setShowLightbox(true)}
+                                    className={`w-full h-full rounded-2xl overflow-hidden bg-[var(--surface-highlight)] border-4 border-[var(--surface)] shadow-xl relative ${avatarUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : 'cursor-default'}`}
+                                >
                                     {isUploading ? (
                                         <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10">
                                             <Loader2 size={24} className="text-white animate-spin" />
@@ -215,7 +220,7 @@ export default function ProfilePage() {
                                             <User size={48} className="text-[var(--text-secondary)] opacity-30" />
                                         </div>
                                     )}
-                                </div>
+                                </button>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-indigo-500 text-white shadow-lg hover:bg-indigo-600 transition-all btn-press z-20"
@@ -230,6 +235,38 @@ export default function ProfilePage() {
                                     className="hidden"
                                 />
                             </div>
+
+                            <AnimatePresence>
+                                {showLightbox && avatarUrl && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        onClick={() => setShowLightbox(false)}
+                                        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+                                    >
+                                        <motion.div
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.9, opacity: 0 }}
+                                            className="relative max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <button
+                                                onClick={() => setShowLightbox(false)}
+                                                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors z-10"
+                                            >
+                                                <X size={24} />
+                                            </button>
+                                            <img
+                                                src={avatarUrl}
+                                                alt="Profile Full Size"
+                                                className="w-full h-full object-contain max-h-[90vh]"
+                                            />
+                                        </motion.div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <h2 className="text-xl font-medium text-[var(--text-primary)] mb-1">
                                 {user.first_name} {user.last_name}

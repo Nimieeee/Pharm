@@ -573,7 +573,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     {/* Mobile Toggle - Moved to right of logo */}
                     <button
                       onClick={onToggle}
-                      className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted ml-2"
+                      className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-highlight transition-colors text-foreground-muted ml-6"
                     >
                       <PanelLeft size={20} strokeWidth={1.5} />
                     </button>

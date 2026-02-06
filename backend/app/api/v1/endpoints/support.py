@@ -10,18 +10,53 @@ from supabase import Client
 from app.core.database import get_db
 from app.core.security import get_current_user, get_current_admin_user, get_optional_user
 from app.services.support import SupportService
+from app.services.ai import AIService
 from app.models.user import User
 from app.models.support import (
     SupportRequest, SupportRequestCreate, SupportRequestUpdate, 
     SupportRequestResponse
 )
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class SupportChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
 
 
 def get_support_service(db: Client = Depends(get_db)) -> SupportService:
     """Get support service"""
     return SupportService(db)
+
+
+def get_ai_service(db: Client = Depends(get_db)) -> AIService:
+    """Get AI service"""
+    return AIService(db)
+
+
+@router.post("/chat", response_model=Dict[str, str])
+async def chat_with_support(
+    request: SupportChatRequest,
+    current_user: User = Depends(get_current_user),
+    ai_service: AIService = Depends(get_ai_service)
+):
+    """
+    Chat with the AI Support Agent
+    """
+    try:
+        response_text = await ai_service.generate_support_response(
+            message=request.message,
+            user=current_user,
+            conversation_history=request.history
+        )
+        return {"response": response_text}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Support chat failed: {str(e)}"
+        )
 
 
 @router.post("/requests", response_model=SupportRequest, status_code=status.HTTP_201_CREATED)
