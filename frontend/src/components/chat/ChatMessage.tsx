@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Copy, Check, RefreshCw, ExternalLink, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useTranslation } from '@/hooks/use-translation';
 
@@ -42,6 +43,12 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   const [editContent, setEditContent] = useState(message.content);
   const { t, language } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const animationProps = {
+    initial: { opacity: 0, y: 15 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.4, ease: "easeOut" }
+  };
 
   const handleCopy = async () => {
     if (!contentRef.current) {
@@ -104,7 +111,10 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   // ============================================
   if (isUser) {
     return (
-      <div className="flex flex-col items-end gap-2 mb-4 py-3 sm:py-4">
+      <motion.div
+        {...animationProps}
+        className="flex flex-col items-end gap-2 mb-4 py-3 sm:py-4"
+      >
         {/* 1. Attachment Cards (Rendered OUTSIDE the bubble) */}
         {message.attachments?.map((file, index) => (
           <div
@@ -188,7 +198,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
             {formatTime(message.timestamp)}
           </span>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -219,7 +229,10 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   const displayContent = cleanContent(translatedContent);
 
   return (
-    <article className="py-5 sm:py-6 w-full pl-2 sm:pl-0">
+    <motion.article
+      {...animationProps}
+      className="py-5 sm:py-6 w-full pl-2 sm:pl-0"
+    >
       {/* AI Response - Editorial style, transparent background */}
       <div
         ref={contentRef}
@@ -351,7 +364,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
           </div>
         </div>
       )}
-    </article>
+    </motion.article>
   );
 }
 
