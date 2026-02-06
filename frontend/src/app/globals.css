@@ -28,7 +28,7 @@
   --border-rgb: 228, 228, 231;
 
   /* Foreground - Text colors */
-  --foreground: #18181B;
+  --foreground: #262624;
   /* Zinc-950 - Primary text */
   --foreground-muted: #71717A;
   /* Zinc-500 - Secondary text */
@@ -73,7 +73,7 @@
   --border-rgb: 63, 63, 60;
 
   /* Foreground - Text colors */
-  --foreground: #FAFAFA;
+  --foreground: #faf9f5;
   /* Zinc-50 - Soft white, not pure white */
   --foreground-muted: #A1A1AA;
   /* Zinc-400 - Readable but secondary */
