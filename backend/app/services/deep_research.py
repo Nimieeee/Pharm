@@ -1234,17 +1234,20 @@ Include a section discussing what is NOT known or where evidence is conflicting.
 ### 5. REFERENCES
 List all cited sources in APA 7th edition format.
 
-## CITATION FORMAT (APA 7th Edition):
+## CITATION FORMAT (Modified APA 7th):
 
 In-text examples:
 - "...associated with significant toxicity (Khanna et al., 2015)."
 - "Jordan et al. (2015) demonstrated that..."
 - Two authors: "(Kwan & Brodie, 2021)"
 
-Reference format:
+Reference format (CRITICAL - ALWAYS HYPERLINK THE TITLE):
 ```
-Author, A. A., Author, B. B., & Author, C. C. (Year). Title of article. *Journal Name, Volume*(Issue), Pages. doi:10.xxxx/xxxxx
+Author, A. A., & Author, B. B. (Year). [Title of article](URL). *Journal Name*. doi:10.xxxx/xxxxx
 ```
+- **YOU MUST hyperlink the Title** using the URL provided in the findings.
+- Example: [Efficacy of mRNA Vaccines](https://pubmed.ncbi.nlm.nih.gov/33301246/)
+- If a DOI is available, include it after the journal name.
 
 ## WRITING STYLE RULES (CRITICAL):
 1. Write in clear, professional scientific prose
