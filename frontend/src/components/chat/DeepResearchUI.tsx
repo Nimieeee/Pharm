@@ -312,7 +312,7 @@ export default function DeepResearchUI({
                 className={`
                   p-2.5 rounded-lg border text-sm transition-all duration-200 cursor-pointer group
                   ${activeSourceId === source.id
-                    ? 'bg-white dark:bg-surface border-emerald-500/50 ring-1 ring-emerald-500/20 shadow-md transform scale-[1.02]'
+                    ? 'bg-surface border-emerald-500/50 ring-1 ring-emerald-500/20 shadow-md transform scale-[1.02]'
                     : 'bg-surface/40 border-border hover:border-emerald-500/30'
                   }
                 `}
@@ -380,7 +380,7 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
       {/* Search Icon with Pulse Ring */}
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse"></div>
-        <div className="relative w-16 h-16 bg-white dark:bg-surface rounded-2xl shadow-lg border border-slate-100 dark:border-border flex items-center justify-center group">
+        <div className="relative w-16 h-16 bg-surface rounded-2xl shadow-lg border border-slate-100 dark:border-border flex items-center justify-center group">
           <Search className="w-6 h-6 text-emerald-500 group-hover:scale-110 transition-transform duration-500" />
 
           {/* Spinner Ring */}
