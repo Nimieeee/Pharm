@@ -1,10 +1,10 @@
-# PharmGPT - AI-Powered Pharmacology Assistant
+# Benchside - AI-Powered Pharmacology Assistant
 
 A modern AI pharmacology assistant featuring deep research capabilities, document analysis, lab report generation, and specialized pharmaceutical expertise.
 
 ## 🌐 Live Application
 
-- **Frontend**: [pharmgpt.app](https://pharmgpt.app) (Vercel)
+- **Frontend**: [benchside.app](https://benchside.app) (Vercel)
 - **Backend**: Private VPS (deployed separately)
 
 ## ✨ Features
