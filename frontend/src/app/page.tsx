@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play, User } from 'lucide-react';
+import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play, User, MessageSquare } from 'lucide-react';
 import { GlassCard, GlassNavbar } from '@/components/ui/GlassCard';
 import { API_BASE_URL } from '@/config/api';
 
@@ -136,61 +136,65 @@ export default function HomePage() {
             <p className="font-bold text-xl text-foreground tracking-tight">Benchside</p>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
-          >
-            {theme === 'light' ? (
-              <Moon size={18} strokeWidth={1.5} className="text-foreground-muted" />
-            ) : (
-              <Sun size={18} strokeWidth={1.5} className="text-foreground-muted" />
-            )}
-          </button>
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
+            >
+              {theme === 'light' ? (
+                <Moon size={18} strokeWidth={1.5} className="text-foreground-muted" />
+              ) : (
+                <Sun size={18} strokeWidth={1.5} className="text-foreground-muted" />
+              )}
+            </button>
 
-          {/* Auth Buttons - Prevent Flash of Unauthenticated Content */}
-          {!isClient ? (
-            // Loading Skeleton
-            <div className="w-32 h-10 rounded-full bg-surface-highlight/50 animate-pulse" />
-          ) : (user || localStorage.getItem('token')) ? (
-            <>
-              <button
-                onClick={() => router.push('/chat')}
-                className="px-5 py-2.5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90"
-              >
-                Open Chat
-              </button>
-              <button
-                onClick={() => router.push('/profile')}
-                className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
-                title="Profile"
-              >
-                <User size={18} strokeWidth={1.5} className="text-foreground-muted" />
-              </button>
-              <button
-                onClick={logout}
-                className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
-                title="Sign out"
-              >
-                <LogOut size={18} strokeWidth={1.5} className="text-foreground-muted" />
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => router.push('/login')}
-                className="px-4 py-2.5 rounded-full bg-surface-highlight text-foreground font-medium text-sm btn-press transition-all hover:bg-surface-hover flex items-center gap-2"
-              >
-                <LogIn size={18} strokeWidth={1.5} />
-                Sign In
-              </button>
-              <button
-                onClick={() => router.push('/register')}
-                className="px-5 py-2.5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90"
-              >
-                Get Started
-              </button>
-            </>
-          )}
+            {/* Auth Buttons */}
+            {!isClient ? (
+              <div className="w-24 h-9 md:h-10 rounded-full bg-surface-highlight/50 animate-pulse" />
+            ) : (user || localStorage.getItem('token')) ? (
+              <>
+                <button
+                  onClick={() => router.push('/chat')}
+                  className="h-9 w-9 md:w-auto md:h-10 md:px-5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                  title="Open Chat"
+                >
+                  <MessageSquare size={18} strokeWidth={1.5} />
+                  <span className="hidden md:inline">Open Chat</span>
+                </button>
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
+                  title="Profile"
+                >
+                  <User size={18} strokeWidth={1.5} className="text-foreground-muted" />
+                </button>
+                <button
+                  onClick={logout}
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-surface-highlight flex items-center justify-center btn-press transition-all hover:scale-105"
+                  title="Sign out"
+                >
+                  <LogOut size={18} strokeWidth={1.5} className="text-foreground-muted" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push('/login')}
+                  className="h-9 px-3 md:h-10 md:px-4 rounded-full bg-surface-highlight text-foreground font-medium text-sm btn-press transition-all hover:bg-surface-hover flex items-center gap-2"
+                >
+                  <LogIn size={18} strokeWidth={1.5} />
+                  <span className="hidden md:inline">Sign In</span>
+                </button>
+                <button
+                  onClick={() => router.push('/register')}
+                  className="h-9 px-4 md:h-10 md:px-5 rounded-full bg-foreground text-background font-medium text-sm btn-press transition-all hover:opacity-90"
+                >
+                  Get Started
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
