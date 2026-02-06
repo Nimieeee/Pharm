@@ -28,7 +28,7 @@ export default function DocsPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <h1 className="text-4xl font-bold mb-4">PharmGPT Documentation</h1>
+                        <h1 className="text-4xl font-bold mb-4">Benchside Documentation</h1>
                         <p className="text-xl text-gray-600 dark:text-gray-400">
                             Comprehensive guide to using the advanced features of your AI research assistant.
                         </p>
@@ -44,7 +44,7 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                PharmGPT is designed to be intuitive for researchers and clinicians. This guide will help you get up and running quickly.
+                                Benchside is designed to be intuitive for researchers and clinicians. This guide will help you get up and running quickly.
                             </p>
 
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">1. Interface Overview</h3>
@@ -78,7 +78,7 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                Deep Research transforms PharmGPT from a chatbot into an autonomous research assistant. It is designed to handle complex queries that require synthesizing information from multiple scientific sources.
+                                Deep Research transforms Benchside from a chatbot into an autonomous research assistant. It is designed to handle complex queries that require synthesizing information from multiple scientific sources.
                             </p>
 
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">How It Works</h3>
@@ -123,7 +123,7 @@ export default function DocsPage() {
                         </div>
                         <div className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                             <p>
-                                PharmGPT includes a powerful <strong>Vision-to-Text Bridge</strong> that allows it to "see" and understand visual content. This is crucial for analyzing scientific papers, which often contain vital data in charts and figures.
+                                Benchside includes a powerful <strong>Vision-to-Text Bridge</strong> that allows it to "see" and understand visual content. This is crucial for analyzing scientific papers, which often contain vital data in charts and figures.
                             </p>
 
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">Supported Visuals</h3>
@@ -163,7 +163,7 @@ export default function DocsPage() {
                                 When you upload a <strong>PDF, Word, or PowerPoint</strong> file, our system automatically extracts every image found within the pages. These images are sent to our Vision AI, which generates a detailed textual description. This description is then embedded into the document's text index.
                             </p>
                             <p className="mt-2">
-                                <strong>Why this matters:</strong> You can ask questions like <em>"What does the survival curve in Figure 2 show?"</em> and PharmGPT will be able to answer, even though the information was originally just pixels in an image.
+                                <strong>Why this matters:</strong> You can ask questions like <em>"What does the survival curve in Figure 2 show?"</em> and Benchside will be able to answer, even though the information was originally just pixels in an image.
                             </p>
                         </div>
                     </section>

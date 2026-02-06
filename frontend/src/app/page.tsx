@@ -397,22 +397,23 @@ export default function HomePage() {
       <footer className="py-20 border-t border-border bg-surface/20" >
         <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-3 gap-12">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 relative rounded-xl overflow-hidden">
-                <img
-                  src="/PharmGPT.png"
-                  alt="PharmGPT Logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <span className="font-serif font-bold text-xl text-foreground">PharmGPT</span>
+            {/* Logo area */}
+            <div className="flex items-center gap-3 mb-4 md:mb-0">
+              <img
+                src="/Benchside.png"
+                alt="Benchside Logo"
+                className="w-8 h-8 md:w-10 md:h-10 opacity-90"
+              />
+              <span className="font-serif font-bold text-xl text-foreground">Benchside</span>
             </div>
+
             <p className="text-foreground-muted max-w-xs mb-6">
               Pioneering the future of pharmacological intelligence with autonomous AI agents.
             </p>
-            <p className="text-xs text-foreground-muted">
-              © 2025 PharmGPT. All rights reserved.
-            </p>
+            {/* Copyright */}
+            <div className="text-sm text-foreground-muted opacity-60">
+              © 2026 Benchside. All rights reserved.
+            </div>
           </div>
           <div>
             <h4 className="font-bold text-foreground mb-6">Product</h4>

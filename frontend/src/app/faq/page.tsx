@@ -13,8 +13,8 @@ interface FAQItem {
 const faqs: FAQItem[] = [
     {
         category: 'general',
-        question: "What is PharmGPT?",
-        answer: "PharmGPT is an advanced AI-powered pharmacological research assistant. It combines state-of-the-art Large Language Models (LLMs) with deep research capabilities, real-time web search, and multimodal document analysis to help researchers, students, and professionals navigate complex biomedical data."
+        question: "What is Benchside?",
+        answer: "Benchside is an advanced AI-powered pharmacological research assistant. It combines state-of-the-art Large Language Models (LLMs) with deep research capabilities, real-time web search, and multimodal document analysis to help researchers, students, and professionals navigate complex biomedical data."
     },
     {
         category: 'features',
@@ -24,12 +24,12 @@ const faqs: FAQItem[] = [
     {
         category: 'features',
         question: "What is 'Deep Research' mode?",
-        answer: "Deep Research mode is an autonomous agentic workflow. Instead of just answering a question, PharmGPT creates a research plan, queries multiple academic databases (PubMed, Google Scholar), analyzes the findings, and synthesizes a comprehensive, cited report. It's like having a research assistant write a literature review for you."
+        answer: "Deep Research mode is an autonomous agentic workflow. Instead of just answering a question, Benchside creates a research plan, queries multiple academic databases (PubMed, Google Scholar), analyzes the findings, and synthesizes a comprehensive, cited report. It's like having a research assistant write a literature review for you."
     },
     {
         category: 'features',
         question: "Can I upload images?",
-        answer: "Yes! PharmGPT is multimodal. You can upload images of chemical structures, clinical trial graphs, or scanned documents. Our advanced Vision AI analyzes the image in detail and allows the system to 'see' and reason about the visual content alongside text."
+        answer: "Yes! Benchside is multimodal. You can upload images of chemical structures, clinical trial graphs, or scanned documents. Our advanced Vision AI analyzes the image in detail and allows the system to 'see' and reason about the visual content alongside text."
     },
     {
         category: 'features',
@@ -78,7 +78,7 @@ export default function FAQPage() {
                         Frequently Asked Questions
                     </h1>
                     <p className="text-lg text-gray-600 dark:text-gray-400">
-                        Everything you need to know about PharmGPT's capabilities and workflows.
+                        Everything you need to know about Benchside's capabilities and workflows.
                     </p>
                 </motion.div>
 

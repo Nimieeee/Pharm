@@ -88,15 +88,15 @@ function LoginContent() {
     >
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="flex justify-center mb-4">
+        <div className="w-16 h-16 bg-[var(--surface-highlight)] rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-[var(--border)]">
           <img
-            src="/PharmGPT.png"
-            alt="PharmGPT Logo"
-            className="w-20 h-20 object-contain rounded-2xl shadow-lg"
+            src="/Benchside.png"
+            alt="Benchside Logo"
+            className="w-10 h-10 object-contain"
           />
         </div>
-        <h1 className="text-2xl font-serif font-medium text-[var(--text-primary)]">Welcome back</h1>
-        <p className="text-[var(--text-secondary)] mt-2">Sign in to continue to PharmGPT</p>
+        <h1 className="text-3xl font-serif font-bold text-[var(--text-primary)] mb-2">Welcome Back</h1>
+        <p className="text-[var(--text-secondary)] mt-2">Sign in to continue to Benchside</p>
       </div>
 
       {/* Form */}

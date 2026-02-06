@@ -92,13 +92,13 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <img
-              src="/PharmGPT.png"
-              alt="PharmGPT Logo"
+              src="/Benchside.png"
+              alt="Benchside Logo"
               className="w-20 h-20 object-contain rounded-2xl shadow-lg"
             />
           </div>
           <h1 className="text-2xl font-serif font-medium text-[var(--text-primary)]">Create account</h1>
-          <p className="text-[var(--text-secondary)] mt-2">Get started with PharmGPT</p>
+          <p className="text-[var(--text-secondary)] mt-2">Get started with Benchside</p>
         </div>
 
         {/* Form */}
