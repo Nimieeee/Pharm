@@ -188,9 +188,17 @@ class ResearchTools:
                         })
                         
                     except Exception as e:
-                        print(f"Error parsing article: {e}")
+                        # Log specific parsing errors but continue
+                        print(f"Error parsing article {pmid if 'pmid' in locals() else 'unknown'}: {e}")
                         continue
                         
+        except httpx.TimeoutException:
+            print("PubMed search timed out. Please try again later.")
+            # Return partial results if we have them, or empty list
+            
+        except httpx.HTTPError as e:
+            print(f"PubMed API connection error: {e}")
+            
         except Exception as e:
             print(f"PubMed search error: {e}")
         
@@ -738,9 +746,24 @@ class DeepResearchService:
                         last_error = f"Status {response.status_code}"
                         continue
                         
+            except httpx.TimeoutException:
+                print(f"⚠️ Model {model} timed out after 180s")
+                last_error = "Request timed out. The model is taking too long."
+                continue
+            
+            except (httpx.ReadError, httpx.WriteError, httpx.StreamError) as e:
+                # Catch low-level stream aborts (BodyStreamBuffer errors)
+                print(f"⚠️ Model {model} stream interrupted: {e}")
+                last_error = "Connection interrupted. Please try again."
+                continue
+                
             except Exception as e:
                 print(f"⚠️ Model {model} exception: {e}")
-                last_error = str(e)
+                error_str = str(e)
+                if "BodyStreamBuffer" in error_str:
+                    last_error = "Connection flow aborted. Please retry."
+                else:
+                    last_error = f"System error: {error_str}"
                 continue
         
         # If all failed
