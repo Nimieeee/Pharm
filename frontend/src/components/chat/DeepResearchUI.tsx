@@ -181,7 +181,7 @@ export default function DeepResearchUI({
               <ReactMarkdown
                 components={{
                   p: ({ children }) => (
-                    <p className="leading-relaxed text-slate-600 dark:text-slate-300 mb-4 font-normal">
+                    <p className="leading-relaxed text-foreground-muted mb-4 font-normal">
                       {React.Children.map(children, (child) => {
                         if (typeof child === "string") {
                           return <CitationRenderer onCitationClick={handleCitationClick}>{child}</CitationRenderer>;
@@ -191,17 +191,17 @@ export default function DeepResearchUI({
                     </p>
                   ),
                   h1: ({ children }) => (
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 pb-2 border-b border-slate-100 dark:border-slate-800/50">
+                    <h1 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border/50">
                       {children}
                     </h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mt-8 mb-3 flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-foreground/90 mt-8 mb-3 flex items-center gap-2">
                       {children}
                     </h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mt-6 mb-2">
+                    <h3 className="text-lg font-medium text-foreground/90 mt-6 mb-2">
                       {children}
                     </h3>
                   ),
@@ -389,12 +389,12 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
       </div>
 
       {/* Primary Status */}
-      <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-2 text-center tracking-tight">
+      <h3 className="text-xl font-medium text-foreground mb-2 text-center tracking-tight">
         {progress || t('initializing_research')}
       </h3>
 
       {/* Secondary Progress Detail */}
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center font-light">
+      <p className="text-sm text-foreground-muted mb-8 text-center font-light">
         {t('processing_sources')} <span className="font-mono text-emerald-600 dark:text-emerald-400 ml-1">{progressPercent}%</span>
       </p>
 
