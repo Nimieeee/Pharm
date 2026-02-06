@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
+import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal, PanelLeft } from 'lucide-react';
 
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput, { Mode } from '@/components/chat/ChatInput';
@@ -110,7 +110,7 @@ function ChatContent() {
           onClick={() => setSidebarOpen(true)}
           className={`absolute top-3 left-4 z-50 p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all backdrop-blur-sm pointer-events-auto md:hidden`}
         >
-          <Menu size={24} strokeWidth={1.5} />
+          <PanelLeft size={24} strokeWidth={1.5} />
         </button>
 
         {/* PharmGPT Pill - Absolutely centered (pixel-perfect) */}

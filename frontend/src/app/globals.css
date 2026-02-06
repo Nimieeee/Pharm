@@ -58,19 +58,19 @@
   /* Warm Dark */
   --background-rgb: 38, 38, 36;
 
-  /* Surface - Slightly lighter than background for hierarchy */
-  --surface: #18181B;
-  /* Zinc-900 */
-  --surface-rgb: 24, 24, 27;
-  --surface-hover: #27272A;
-  /* Zinc-800 */
-  --surface-highlight: #27272A;
+  /* Surface - Slightly lighter/warmer than background for hierarchy */
+  --surface: #2F2F2D;
+  /* Warm Surface */
+  --surface-rgb: 47, 47, 45;
+  --surface-hover: #3A3A38;
+  /* Warmer Hover */
+  --surface-highlight: #3A3A38;
   /* Legacy alias */
 
   /* Border - Subtle separation */
-  --border: #27272A;
-  /* Zinc-800 */
-  --border-rgb: 39, 39, 42;
+  --border: #3F3F3C;
+  /* Warm Border */
+  --border-rgb: 63, 63, 60;
 
   /* Foreground - Text colors */
   --foreground: #FAFAFA;
@@ -83,11 +83,12 @@
   --text-secondary: var(--foreground-muted);
 
   /* Accent colors */
-  --accent: #818cf8;
-  --accent-light: #a5b4fc;
+  --accent: #D9D9D6;
+  /* Muted Warm Accent (Claude-like) - replacing sharp Indigo */
+  --accent-light: #E5E5E1;
 
   /* Gradient color for atmospheric background */
-  --gradient-color: rgba(129, 140, 248, 0.06);
+  --gradient-color: rgba(217, 217, 214, 0.05);
 
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);

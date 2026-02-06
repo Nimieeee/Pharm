@@ -83,8 +83,9 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      await processFiles(e.target.files);
-      e.target.value = ''; // Reset input
+      const files = Array.from(e.target.files);
+      e.target.value = ''; // Reset input immediately to allow re-selection
+      await processFiles(files);
     }
     setShowAttachMenu(false);
   };
@@ -93,11 +94,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      await processFiles(e.dataTransfer.files);
+      await processFiles(Array.from(e.dataTransfer.files));
     }
   };
 
-  const processFiles = async (files: FileList) => {
+  const processFiles = async (files: File[] | FileList) => {
     if (!onFileUpload) return;
 
     // 1. Validation: Max 5 files at once
