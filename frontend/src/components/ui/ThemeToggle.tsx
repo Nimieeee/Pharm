@@ -32,24 +32,48 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
         }
     };
 
-    // Sync with system changes
+    // 1. Listen for system preference changes ONLY when in 'system' mode
     React.useEffect(() => {
         if (!mounted || mode !== 'system') return;
 
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-        // Check immediately
-        const systemTheme = mediaQuery.matches ? 'dark' : 'light';
-        if (theme !== systemTheme) toggleTheme();
-
         const handleChange = (e: MediaQueryListEvent) => {
             const newSystemTheme = e.matches ? 'dark' : 'light';
+            // Use functional update or ref to avoid dependency loop, but here theme is needed.
+            // If system changes, we MUST update theme.
             if (theme !== newSystemTheme) toggleTheme();
         };
 
         mediaQuery.addEventListener('change', handleChange);
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, [mode, mounted, theme, toggleTheme]);
+
+    // 2. When mode explicitly changes to 'system', enforce it once.
+    React.useEffect(() => {
+        if (!mounted || mode !== 'system') return;
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (theme !== systemTheme) toggleTheme();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode, mounted]); // Intentionally exclude 'theme' to prevent revert loop
+
+    // 3. Sync internal 'mode' state when 'theme' changes externally (e.g. mobile toggle)
+    React.useEffect(() => {
+        if (!mounted) return;
+
+        if (mode === 'system') {
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            if (theme !== systemTheme) {
+                // Theme changed to something that isn't system default -> User must have manually toggled it elsewhere
+                setMode(theme);
+                localStorage.setItem('theme_mode_preference', theme);
+            }
+        } else if (mode !== theme) {
+            // Theme changed explicitly (e.g. was light, now dark), sync mode
+            setMode(theme);
+            localStorage.setItem('theme_mode_preference', theme);
+        }
+    }, [theme, mounted]); // Dependency on 'mode' omitted to avoid circularity, effectively we check current mode ref equivalent
 
     if (!mounted) return null;
 
