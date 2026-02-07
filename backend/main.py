@@ -44,12 +44,14 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     stop_scheduler()
-    print("🛑 Shutting down PharmGPT Backend API...")
+    # Shutdown
+    stop_scheduler()
+    print("🛑 Shutting down Benchside Backend API...")
 
 
 # Create FastAPI app
 app = FastAPI(
-    title="PharmGPT API",
+    title="Benchside API",
     description="AI-Powered Pharmacology Assistant Backend API",
     version="2.0.0",
     docs_url="/docs",
@@ -68,16 +70,17 @@ for origin in settings.ALLOWED_ORIGINS:
 
 # Explicitly add production domains to ensure they work even if regex fails
 allowed_origins.extend([
+    "https://benchside.vercel.app",
+    "https://www.benchside.vercel.app",
     "https://pharmgpt.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://pharmgpt-frontend.vercel.app"
 ])
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://pharmgpt.*\.vercel\.app", # Support preview branches
+    allow_origin_regex=r"https://(benchside|pharmgpt).*\.vercel\.app", # Support preview branches
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

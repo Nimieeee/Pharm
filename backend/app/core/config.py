@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     )
     
     # Basic app settings
-    APP_NAME: str = "PharmGPT Backend"
+    APP_NAME: str = "Benchside Backend"
     VERSION: str = "2.0.0"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     
@@ -82,10 +82,10 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
     
     # Email settings (Gmail SMTP)
-    SMTP_USER: str = os.getenv("SMTP_USER", "noreply.pharmgpt@gmail.com")
+    SMTP_USER: str = os.getenv("SMTP_USER", "noreply.benchside@gmail.com")
     SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD", "")
     RESEND_API_KEY: Optional[str] = os.getenv("RESEND_API_KEY", "")
-    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply.pharmgpt@gmail.com")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply.benchside@gmail.com")
     
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

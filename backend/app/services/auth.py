@@ -467,6 +467,14 @@ class AuthService:
                 "verification_code": None # Clear code
             }).eq("id", user_data["id"]).execute()
             
+            # Send welcome email
+            try:
+                first_name = user_data.get("first_name") or "there"
+                self.email_service.send_welcome_email(email, first_name)
+            except Exception as e:
+                # Don't fail verification if email fails
+                print(f"⚠️ Failed to send welcome email: {e}")
+            
             return True
             
         except Exception as e:
