@@ -46,7 +46,7 @@ class AuthService:
         except Exception:
             return False
     
-    def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None, token_type: str = "access") -> str:
         """Create JWT access token"""
         to_encode = data.copy()
         if expires_delta:
@@ -54,7 +54,7 @@ class AuthService:
         else:
             expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         
-        to_encode.update({"exp": expire, "type": "access"})
+        to_encode.update({"exp": expire, "type": token_type})
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
     
@@ -503,7 +503,7 @@ class AuthService:
         
         # Create token valid for 30 minutes
         expiry = timedelta(minutes=30)
-        reset_token = self.create_access_token(token_data, expires_delta=expiry)
+        reset_token = self.create_access_token(token_data, expires_delta=expiry, token_type="reset")
         
         # Build link (assume frontend route /reset-password?token=...)
         # Handle trailing slash in base url

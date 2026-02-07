@@ -171,6 +171,13 @@ export default function ResetPasswordPage() {
                 className="w-full max-w-md"
             >
                 <div className="text-center mb-8">
+                    <div className="flex justify-center mb-6">
+                        <img
+                            src="/Benchside.png"
+                            alt="Benchside Logo"
+                            className="w-16 h-16 object-contain"
+                        />
+                    </div>
                     <h1 className="text-2xl font-serif font-medium text-[var(--text-primary)]">Set New Password</h1>
                     <p className="text-[var(--text-secondary)] mt-2">Enter your new password below</p>
                 </div>
