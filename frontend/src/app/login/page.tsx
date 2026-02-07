@@ -184,7 +184,7 @@ export default function LoginPage() {
       <ThemeToggle className="hidden md:flex fixed top-8 right-8 z-50" />
       <button
         onClick={toggleTheme}
-        className="md:hidden fixed top-6 right-6 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-lg hover:bg-[var(--surface-highlight)] active:scale-95 transition-all z-50 cursor-pointer"
+        className="md:hidden fixed top-4 right-4 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-lg hover:bg-[var(--surface-highlight)] active:scale-95 transition-all z-[9999] cursor-pointer touch-manipulation"
         aria-label="Toggle theme"
       >
         {theme === 'light' ? (
