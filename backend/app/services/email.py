@@ -24,7 +24,11 @@ class EmailService:
             print(f"✅ Gmail SMTP email service initialized ({self.smtp_user})")
             
         # Path to the logo for embedding
-        self.logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend/public/Benchside.png")
+        self.logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "frontend/public/Benchside.png")
+        if not os.path.exists(self.logo_path):
+            # Fallback check - maybe we are in backend root
+            self.logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend/public/Benchside.png")
+            
         if not os.path.exists(self.logo_path):
             # Fallback for VPS structure if different
             self.logo_path = "/var/www/pharmgpt-backend/frontend/public/Benchside.png"
