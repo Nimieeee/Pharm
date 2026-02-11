@@ -71,14 +71,14 @@ export function HeroQupe() {
 
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
-            {/* Background Gradient (Aligned with Platform Theme) */}
+            {/* Background Gradient (Warm Orange Theme) */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 bg-background" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
 
-                {/* Subtle Ambient Glows (Using Platform Accents) */}
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[var(--accent)]/5 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[var(--accent)]/5 rounded-full blur-[100px]" />
+                {/* Subtle Ambient Glows (Orange/Peach) */}
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-orange-200/20 dark:bg-orange-900/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-peach-500/10 rounded-full blur-[100px]" />
             </div>
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
@@ -91,8 +91,8 @@ export function HeroQupe() {
                     className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
                     Your Intelligent <br className="hidden md:block" />
-                    {/* Text Highlight using Platform Accent with gradient fallback */}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)]">
+                    {/* Text Highlight using Orange/Peach Gradient */}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-peach-500 dark:from-orange-400 dark:to-peach-300">
                         R&D Partner
                     </span>
                 </motion.h1>
@@ -138,7 +138,7 @@ export function HeroQupe() {
                         relative w-full rounded-2xl overflow-hidden
                         transition-all duration-500
                         ${isDark
-                            ? 'border border-white/10 shadow-[0_0_60px_-15px_rgba(88,101,242,0.15)] bg-gray-900/50' // Dark Mode Glow
+                            ? 'border border-white/10 shadow-[0_0_60px_-15px_rgba(255,160,122,0.15)] bg-gray-900/50' // Dark Mode Glow (Orange tint)
                             : 'shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] border border-gray-200/50 bg-white'     // Light Mode Heavy Shadow
                         }
                     `}>
@@ -201,14 +201,14 @@ export function HeroQupe() {
                             {tabs.map((tab) => (
                                 <div
                                     key={tab}
-                                    className={`h-1 rounded-full transition-all duration-300 ${activeTab === tab ? 'w-8 bg-[var(--accent)]' : 'w-2 bg-gray-400/50'}`}
+                                    className={`h-1 rounded-full transition-all duration-300 ${activeTab === tab ? 'w-8 bg-peach-500' : 'w-2 bg-gray-400/50'}`}
                                 />
                             ))}
                         </div>
                     </div>
 
-                    {/* Ambient Glow underneath */}
-                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-[var(--accent)]/20 blur-[100px] -z-10 rounded-full pointer-events-none" />
+                    {/* Ambient Glow underneath (Orange) */}
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-orange-500/20 blur-[100px] -z-10 rounded-full pointer-events-none" />
                 </motion.div>
 
             </div>
