@@ -92,39 +92,50 @@ export function HeroQupe() {
 
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
-            {/* Interactive Aurora Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            {/* Interactive Aurora Background - 'X-Shape' Beams */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
                 <div className="absolute inset-0 bg-background" />
 
-                {/* Main Aurora Horizon - Reacts to Mouse */}
+                {/* Main Beam 1 (Top-Left to Bottom-Right) */}
                 <motion.div
-                    className="absolute top-[20%] left-[-20%] w-[140%] h-[60%] opacity-40 dark:opacity-30 mix-blend-screen dark:mix-blend-screen blur-[100px]"
+                    className="absolute top-1/2 left-1/2 w-[150vw] h-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-[0.25] dark:opacity-[0.15] blur-[120px] mix-blend-screen"
                     animate={{
-                        x: backgroundX * -2, // Parallax effect
-                        y: backgroundY * -2,
-                        scale: [1, 1.05, 1],
+                        rotate: [-25 + (backgroundX * 0.5), -20 + (backgroundX * 0.5), -25 + (backgroundX * 0.5)],
+                        scale: [1, 1.1, 1],
                     }}
                     transition={{
-                        scale: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-                        x: { type: "spring", stiffness: 50, damping: 20 },
-                        y: { type: "spring", stiffness: 50, damping: 20 }
+                        rotate: { type: "spring", stiffness: 20, damping: 20 },
+                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut" }
                     }}
                     style={{
-                        background: 'radial-gradient(ellipse at center, #C85B20 0%, rgba(200, 91, 32, 0.4) 40%, transparent 70%)',
+                        background: 'linear-gradient(90deg, transparent 0%, #C85B20 40%, rgba(200, 91, 32, 0.8) 50%, #C85B20 60%, transparent 100%)',
+                        transformOrigin: 'center center',
                     }}
                 />
 
-                {/* Secondary Moving Orb - Reacts Stronger */}
+                {/* Main Beam 2 (Top-Right to Bottom-Left) */}
                 <motion.div
-                    className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] opacity-30 dark:opacity-20 mix-blend-screen dark:mix-blend-screen blur-[120px]"
+                    className="absolute top-1/2 left-1/2 w-[150vw] h-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-[0.25] dark:opacity-[0.15] blur-[120px] mix-blend-screen"
                     animate={{
-                        x: backgroundX * 4,
-                        y: backgroundY * 4
+                        rotate: [25 + (backgroundX * 0.5), 20 + (backgroundX * 0.5), 25 + (backgroundX * 0.5)],
+                        scale: [1.1, 1, 1.1],
                     }}
-                    transition={{ type: "spring", stiffness: 30, damping: 20 }}
+                    transition={{
+                        rotate: { type: "spring", stiffness: 20, damping: 20 },
+                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }
+                    }}
                     style={{
-                        background: 'radial-gradient(circle at center, #C85B20, transparent 70%)',
+                        background: 'linear-gradient(90deg, transparent 0%, #C85B20 40%, rgba(200, 91, 32, 0.8) 50%, #C85B20 60%, transparent 100%)',
+                        transformOrigin: 'center center',
                     }}
+                />
+
+                {/* Center Core Glow */}
+                <motion.div
+                    className="absolute top-1/2 left-1/2 w-[50vw] h-[50vh] -translate-x-1/2 -translate-y-1/2 opacity-20 blur-[100px]"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 5, repeat: Infinity }}
+                    style={{ background: 'radial-gradient(circle, #C85B20 0%, transparent 70%)' }}
                 />
             </div>
 
