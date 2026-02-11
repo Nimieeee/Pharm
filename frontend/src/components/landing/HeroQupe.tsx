@@ -18,18 +18,19 @@ export function HeroQupe() {
     const currentTheme = mounted ? theme : 'light';
     const isDark = currentTheme === 'dark';
 
-    // Deep gradient for button (Dark Blue -> Black)
-    const buttonGradient = "bg-gradient-to-br from-indigo-950 via-gray-900 to-black";
+    // Semantic button style (Matches platform theme: Black in Light, White in Dark)
+    const buttonStyle = "bg-foreground text-background hover:opacity-90";
 
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
-            {/* Background Gradient (No Image) */}
+            {/* Background Gradient (Aligned with Platform Theme) */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-white dark:from-gray-950 dark:via-gray-900 dark:to-black" />
+                <div className="absolute inset-0 bg-background" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
 
-                {/* Subtle Ambient Glows for Depth */}
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-100/30 dark:bg-indigo-900/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-teal-100/30 dark:bg-teal-900/10 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen" />
+                {/* Subtle Ambient Glows (Using Platform Accents) */}
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[var(--accent)]/5 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[var(--accent)]/5 rounded-full blur-[100px]" />
             </div>
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
@@ -39,13 +40,10 @@ export function HeroQupe() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="relative inline-flex items-center space-x-2 bg-indigo-50/80 dark:bg-indigo-900/30 backdrop-blur-sm border border-indigo-100 dark:border-indigo-800 rounded-full px-4 py-1.5 mb-8 cursor-default overflow-hidden group"
+                    className="relative inline-flex items-center space-x-2 bg-surface backdrop-blur-sm border border-border rounded-full px-4 py-1.5 mb-8 cursor-default overflow-hidden group shadow-sm"
                 >
-                    {/* Badge Glow */}
-                    <div className="absolute inset-0 bg-indigo-500/10 blur-xl group-hover:bg-indigo-500/20 transition-all duration-500" />
-
-                    <span className="relative text-[11px] font-bold tracking-wider text-indigo-600 dark:text-indigo-200 uppercase flex items-center">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 animate-pulse" />
+                    <span className="relative text-[11px] font-bold tracking-wider text-foreground-muted uppercase flex items-center">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-2 animate-pulse" />
                         Benchside AI
                     </span>
                 </motion.div>
@@ -58,8 +56,8 @@ export function HeroQupe() {
                     className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10"
                 >
                     Your Intelligent <br className="hidden md:block" />
-                    {/* Neon Text Effect for Dark Mode: Lavender -> Cyan */}
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-300 dark:via-purple-200 dark:to-cyan-200 animate-gradient-x pb-2">
+                    {/* Text Highlight using Platform Accent with gradient fallback */}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-[var(--accent-light)]">
                         R&D Partner
                     </span>
                 </motion.h1>
@@ -81,8 +79,8 @@ export function HeroQupe() {
                     transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                     className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-24 relative z-20"
                 >
-                    {/* Primary Button with Deep Gradient */}
-                    <button className={`h-12 px-8 rounded-full ${buttonGradient} text-white font-medium text-base hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 flex items-center group relative overflow-hidden`}>
+                    {/* Primary Button with Semantic Theme Colors */}
+                    <button className={`h-12 px-8 rounded-full ${buttonStyle} font-medium text-base hover:scale-105 hover:shadow-lg transition-all duration-300 flex items-center group relative overflow-hidden`}>
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <span className="relative z-10">Start Researching</span>
                         <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
