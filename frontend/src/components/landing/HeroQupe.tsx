@@ -3,13 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, MessageSquare, User, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
-type Tab = 'chat' | 'profile' | 'settings';
-
 export function HeroQupe() {
-    const [activeTab, setActiveTab] = useState<Tab>('chat');
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
@@ -18,17 +15,11 @@ export function HeroQupe() {
         setMounted(true);
     }, []);
 
-    const tabs = [
-        { id: 'chat', label: 'Chat', icon: MessageSquare },
-        { id: 'profile', label: 'Profile', icon: User },
-        { id: 'settings', label: 'Settings', icon: SettingsIcon },
-    ];
-
     const currentTheme = mounted ? theme : 'light';
+    const isDark = currentTheme === 'dark';
 
-    const getImageSrc = (device: 'desktop' | 'mobile') => {
-        return `/assets/${device}-${activeTab}-${currentTheme}.png`;
-    };
+    // Deep gradient for button (Dark Blue -> Black)
+    const buttonGradient = "bg-gradient-to-br from-indigo-950 via-gray-900 to-black";
 
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
@@ -39,22 +30,30 @@ export function HeroQupe() {
                     alt=""
                     fill
                     unoptimized
-                    className="object-cover opacity-20 dark:opacity-40"
+                    // Fix "Ghost" background: Increase opacity significantly
+                    className="object-cover opacity-80 dark:opacity-60 transition-opacity duration-700"
                     priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/50 to-background" />
+                {/* Gradient Overlay to ensure text readability without washing out the image */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/40 to-background" />
             </div>
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
 
-                {/* Badge */}
+                {/* Badge with Glow */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="inline-flex items-center space-x-2 bg-indigo-50/80 dark:bg-indigo-900/30 backdrop-blur-sm border border-indigo-100 dark:border-indigo-800 rounded-full px-3 py-1 mb-8 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
+                    className="relative inline-flex items-center space-x-2 bg-indigo-50/80 dark:bg-indigo-900/30 backdrop-blur-sm border border-indigo-100 dark:border-indigo-800 rounded-full px-4 py-1.5 mb-8 cursor-default overflow-hidden group"
                 >
-                    <span className="text-[11px] font-bold tracking-wider text-indigo-600 dark:text-indigo-300 uppercase">Benchside AI</span>
+                    {/* Badge Glow */}
+                    <div className="absolute inset-0 bg-indigo-500/10 blur-xl group-hover:bg-indigo-500/20 transition-all duration-500" />
+
+                    <span className="relative text-[11px] font-bold tracking-wider text-indigo-600 dark:text-indigo-200 uppercase flex items-center">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 animate-pulse" />
+                        Benchside AI
+                    </span>
                 </motion.div>
 
                 {/* Heading */}
@@ -62,10 +61,13 @@ export function HeroQupe() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-6 max-w-5xl"
+                    className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10"
                 >
                     Your Intelligent <br className="hidden md:block" />
-                    <span className="text-indigo-500 dark:text-indigo-400">R&D Partner</span>
+                    {/* Neon Text Effect for Dark Mode: Lavender -> Cyan */}
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-300 dark:via-purple-200 dark:to-cyan-200 animate-gradient-x pb-2">
+                        R&D Partner
+                    </span>
                 </motion.h1>
 
                 {/* Subtext */}
@@ -73,7 +75,7 @@ export function HeroQupe() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                    className="text-lg md:text-xl text-muted-foreground/80 max-w-2xl mb-10 leading-relaxed"
+                    className="text-lg md:text-xl text-muted-foreground/90 max-w-2xl mb-12 leading-relaxed"
                 >
                     Accelerate pharmacological discovery with AI-powered insights. Analyze drug interactions, clinical data, and research documents in seconds.
                 </motion.p>
@@ -83,99 +85,52 @@ export function HeroQupe() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-                    className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-20"
+                    className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-24 relative z-20"
                 >
-                    <button className="h-12 px-8 rounded-full bg-foreground text-background font-medium text-base hover:bg-foreground/90 transition-all flex items-center group">
-                        Start Researching
-                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    {/* Primary Button with Deep Gradient */}
+                    <button className={`h-12 px-8 rounded-full ${buttonGradient} text-white font-medium text-base hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 flex items-center group relative overflow-hidden`}>
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <span className="relative z-10">Start Researching</span>
+                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
                     </button>
 
-                    <button className="h-12 px-8 rounded-full bg-transparent border border-border text-foreground font-medium text-base hover:bg-surface-hover/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all flex items-center">
+                    <button className="h-12 px-8 rounded-full bg-transparent border border-border text-foreground font-medium text-base hover:bg-surface-hover/50 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all flex items-center">
                         View Demo
                     </button>
                 </motion.div>
 
-                {/* Interface Demo */}
+                {/* Dashboard Anchor (The "Float" Fix) */}
                 <motion.div
-                    initial={{ opacity: 0, y: 100, rotateX: 10 }}
+                    initial={{ opacity: 0, y: 100, rotateX: 5 }}
                     animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                    transition={{ duration: 1, delay: 0.4, type: "spring", stiffness: 50 }}
-                    className="relative w-full max-w-5xl perspective-1000 flex flex-col items-center"
+                    transition={{ duration: 1, delay: 0.4, type: "spring", stiffness: 40, damping: 20 }}
+                    className="relative w-full max-w-6xl perspective-1000 flex flex-col items-center"
                 >
-                    {/* Controls */}
-                    <div className="flex items-center space-x-4 mb-6 bg-white/50 dark:bg-black/50 backdrop-blur-md p-1.5 rounded-full border border-white/40 dark:border-white/10 shadow-sm z-20">
-                        <div className="flex space-x-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-full p-1">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as Tab)}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center space-x-2 ${activeTab === tab.id
-                                        ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                >
-                                    <tab.icon className="w-3.5 h-3.5" />
-                                    <span>{tab.label}</span>
-                                </button>
-                            ))}
+                    <div className={`
+                        relative w-full rounded-2xl overflow-hidden
+                        transition-all duration-500
+                        ${isDark
+                            ? 'border border-white/10 shadow-[0_0_60px_-15px_rgba(88,101,242,0.15)] bg-gray-900/50' // Dark Mode Glow
+                            : 'shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] border border-gray-200/50 bg-white'     // Light Mode Heavy Shadow
+                        }
+                    `}>
+                        {/* Glossy Overlay/Reflection */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-white/5 to-transparent z-10 pointer-events-none" />
+
+                        {/* Desktop View Only (Simplified for Impact) */}
+                        <div className="relative aspect-[2880/1580] w-full">
+                            <Image
+                                src={`/assets/desktop-chat-${currentTheme}.png`}
+                                alt="Benchside Interface"
+                                fill
+                                className="object-cover object-top"
+                                priority
+                            />
                         </div>
                     </div>
 
-                    <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/20 border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
-                        {/* Glossy Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/40 via-transparent to-transparent dark:from-white/5 z-10 pointer-events-none" />
-
-                        {/* Desktop View */}
-                        <div className="hidden md:block relative aspect-[2880/1580] w-full bg-gray-50/50 dark:bg-gray-900/50">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={`${activeTab}-${currentTheme}-desktop`}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute inset-0"
-                                >
-                                    <Image
-                                        src={getImageSrc('desktop')}
-                                        alt={`Benchside Desktop ${activeTab} ${currentTheme}`}
-                                        fill
-                                        className="object-cover object-top"
-                                        priority
-                                    />
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Mobile View */}
-                        <div className="block md:hidden relative aspect-[642/1398] w-full bg-gray-50/50 dark:bg-gray-900/50">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={`${activeTab}-${currentTheme}-mobile`}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute inset-0"
-                                >
-                                    <Image
-                                        src={getImageSrc('mobile')}
-                                        alt={`Benchside Mobile ${activeTab} ${currentTheme}`}
-                                        fill
-                                        className="object-cover object-top"
-                                        priority
-                                    />
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-                    </div>
-
-                    {/* Floating Elements (Optional Decoration) */}
-                    <motion.div
-                        animate={{ y: [0, -20, 0] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute -top-12 -right-12 w-64 h-64 bg-gradient-to-br from-indigo-300/20 to-transparent rounded-full blur-3xl -z-10"
-                    />
+                    {/* Ambient Glow underneath */}
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-indigo-500/20 blur-[100px] -z-10 rounded-full pointer-events-none" />
                 </motion.div>
 
             </div>
