@@ -110,7 +110,7 @@ export function HeroQupe() {
                         y: { type: "spring", stiffness: 50, damping: 20 }
                     }}
                     style={{
-                        background: 'radial-gradient(ellipse at center, var(--peach-500) 0%, var(--orange-600) 20%, transparent 70%)',
+                        background: 'radial-gradient(ellipse at center, #C85B20 0%, rgba(200, 91, 32, 0.4) 40%, transparent 70%)',
                     }}
                 />
 
@@ -123,7 +123,7 @@ export function HeroQupe() {
                     }}
                     transition={{ type: "spring", stiffness: 30, damping: 20 }}
                     style={{
-                        background: 'radial-gradient(circle at center, var(--orange-400), transparent 70%)',
+                        background: 'radial-gradient(circle at center, #C85B20, transparent 70%)',
                     }}
                 />
             </div>
@@ -138,8 +138,8 @@ export function HeroQupe() {
                     className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
                     Your Intelligent <br className="hidden md:block" />
-                    {/* Text Highlight using Orange/Peach Gradient */}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-peach-500 dark:from-orange-400 dark:to-peach-300">
+                    {/* Text Highlight using specific User Color */}
+                    <span className="text-[#C85B20]">
                         R&D Partner
                     </span>
                 </motion.h1>
