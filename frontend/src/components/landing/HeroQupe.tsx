@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
+import { HorizonGlow } from './HorizonGlow';
 
 type Tab = 'chat' | 'profile' | 'settings';
 
@@ -69,80 +70,14 @@ export function HeroQupe() {
         setIsHovering(false);
     };
 
-    // Interactive Background Logic
-    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-    useEffect(() => {
-        const handleGlobalMouseMove = (e: MouseEvent) => {
-            // Calculate normalized mouse position (-1 to 1)
-            const x = (e.clientX / window.innerWidth) * 2 - 1;
-            const y = (e.clientY / window.innerHeight) * 2 - 1;
-            setMousePosition({ x, y });
-        };
-
-        window.addEventListener('mousemove', handleGlobalMouseMove);
-        return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
-    }, []);
-
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
-            {/* Interactive Aurora Background - 'X-Shape' Beams */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-                <div className="absolute inset-0 bg-background" />
-
-                {/* Main Beam 1 (Top-Left to Bottom-Right) */}
-                <motion.div
-                    className="absolute top-1/2 left-1/2 w-[140vw] h-[80vh] -translate-x-1/2 -translate-y-1/2 opacity-60 dark:opacity-50 blur-[90px]"
-                    animate={{
-                        rotate: -25 + (mousePosition.x * 10), // Reacts to Mouse X
-                        x: mousePosition.x * -30,             // Parallax X
-                        y: mousePosition.y * -30,             // Parallax Y
-                        scaleX: 1 + Math.abs(mousePosition.x * 0.5), // Active Stretching
-                        scaleY: 1,
-                    }}
-                    transition={{
-                        rotate: { type: "tween", ease: "linear", duration: 0.1 }, // Immediate response
-                        x: { type: "tween", ease: "linear", duration: 0.1 },
-                        y: { type: "tween", ease: "linear", duration: 0.1 },
-                        scaleX: { type: "spring", stiffness: 50, damping: 20 }, // Bouncy stretch
-                    }}
-                    style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(200, 91, 32, 0) 30%, rgba(200, 91, 32, 0.4) 45%, #C85B20 50%, rgba(200, 91, 32, 0.4) 55%, rgba(200, 91, 32, 0) 70%, transparent 100%)',
-                    }}
-                />
-
-                {/* Main Beam 2 (Top-Right to Bottom-Left) */}
-                <motion.div
-                    className="absolute top-1/2 left-1/2 w-[140vw] h-[80vh] -translate-x-1/2 -translate-y-1/2 opacity-60 dark:opacity-50 blur-[90px]"
-                    animate={{
-                        rotate: 25 + (mousePosition.x * 10),  // Reacts to Mouse X
-                        x: mousePosition.x * -30,
-                        y: mousePosition.y * -30,
-                        scaleX: 1 + Math.abs(mousePosition.x * 0.5), // Active Stretching
-                        scaleY: 1,
-                    }}
-                    transition={{
-                        rotate: { type: "tween", ease: "linear", duration: 0.1 },
-                        x: { type: "tween", ease: "linear", duration: 0.1 },
-                        y: { type: "tween", ease: "linear", duration: 0.1 },
-                        scaleX: { type: "spring", stiffness: 50, damping: 20 },
-                    }}
-                    style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(200, 91, 32, 0) 30%, rgba(200, 91, 32, 0.4) 45%, #C85B20 50%, rgba(200, 91, 32, 0.4) 55%, rgba(200, 91, 32, 0) 70%, transparent 100%)',
-                    }}
-                />
-
-                {/* Center Core Haze (Reacts to Mouse) */}
-                <motion.div
-                    className="absolute top-1/2 left-1/2 w-[60vw] h-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-30 blur-[100px]"
-                    animate={{
-                        x: mousePosition.x * 50,
-                        y: mousePosition.y * 50
-                    }}
-                    transition={{ type: "spring", stiffness: 20, damping: 20 }}
-                    style={{ background: 'radial-gradient(circle, #C85B20 0%, transparent 70%)' }}
-                />
-            </div>
+            {/* 
+              Background Component: HorizonGlow 
+              - Replicates "Event Horizon" effect
+              - Orange/Amber theme
+            */}
+            <HorizonGlow />
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
 
