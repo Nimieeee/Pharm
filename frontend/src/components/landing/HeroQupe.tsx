@@ -69,16 +69,63 @@ export function HeroQupe() {
         setIsHovering(false);
     };
 
+    // Interactive Background Logic
+    const mouseX = useRef(0);
+    const mouseY = useRef(0);
+    const [backgroundX, setBackgroundX] = useState(0);
+    const [backgroundY, setBackgroundY] = useState(0);
+
+    // Throttled mouse move for smooth background performance
+    useEffect(() => {
+        const handleGlobalMouseMove = (e: MouseEvent) => {
+            const { clientX, clientY } = e;
+            const x = (clientX / window.innerWidth - 0.5) * 20; // -10 to 10
+            const y = (clientY / window.innerHeight - 0.5) * 20; // -10 to 10
+
+            setBackgroundX(x);
+            setBackgroundY(y);
+        };
+
+        window.addEventListener('mousemove', handleGlobalMouseMove);
+        return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
+    }, []);
+
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
-            {/* Background Gradient (Warm Orange Theme) */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
+            {/* Interactive Aurora Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute inset-0 bg-background" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
 
-                {/* Subtle Ambient Glows (Orange/Peach) */}
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-orange-200/20 dark:bg-orange-900/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-peach-500/10 rounded-full blur-[100px]" />
+                {/* Main Aurora Horizon - Reacts to Mouse */}
+                <motion.div
+                    className="absolute top-[20%] left-[-20%] w-[140%] h-[60%] opacity-40 dark:opacity-30 mix-blend-screen dark:mix-blend-screen blur-[100px]"
+                    animate={{
+                        x: backgroundX * -2, // Parallax effect
+                        y: backgroundY * -2,
+                        scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                        scale: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+                        x: { type: "spring", stiffness: 50, damping: 20 },
+                        y: { type: "spring", stiffness: 50, damping: 20 }
+                    }}
+                    style={{
+                        background: 'radial-gradient(ellipse at center, var(--peach-500) 0%, var(--orange-600) 20%, transparent 70%)',
+                    }}
+                />
+
+                {/* Secondary Moving Orb - Reacts Stronger */}
+                <motion.div
+                    className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] opacity-30 dark:opacity-20 mix-blend-screen dark:mix-blend-screen blur-[120px]"
+                    animate={{
+                        x: backgroundX * 4,
+                        y: backgroundY * 4
+                    }}
+                    transition={{ type: "spring", stiffness: 30, damping: 20 }}
+                    style={{
+                        background: 'radial-gradient(circle at center, var(--orange-400), transparent 70%)',
+                    }}
+                />
             </div>
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
