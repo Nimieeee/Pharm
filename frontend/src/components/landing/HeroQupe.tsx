@@ -88,10 +88,10 @@ export function HeroQupe() {
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
                     className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
-                    Your Intelligent <br className="hidden md:block" />
+                    The AI Workspace for <br className="hidden md:block" />
                     {/* Text Highlight using specific User Color */}
                     <span className="text-[#C85B20]">
-                        R&D Partner
+                        Modern Pharmacology.
                     </span>
                 </motion.h1>
 
