@@ -21,8 +21,10 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import { useTheme } from '@/lib/theme-context';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 
 import { API_BASE_URL } from '@/config/api';
+
 
 interface SupportTicket {
     id: string;
@@ -463,7 +465,19 @@ export default function SupportPage() {
                                                 : 'bg-[var(--surface-highlight)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border)]'
                                                 }`}
                                         >
-                                            {msg.content}
+                                            {msg.role === 'assistant' ? (
+                                                <ReactMarkdown
+                                                    components={{
+                                                        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                                                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                                        ul: ({ children }) => <ul className="list-disc list-inside ml-1 my-1">{children}</ul>,
+                                                        ol: ({ children }) => <ol className="list-decimal list-inside ml-1 my-1">{children}</ol>,
+                                                        li: ({ children }) => <li className="mb-0.5">{children}</li>,
+                                                    }}
+                                                >{msg.content}</ReactMarkdown>
+                                            ) : (
+                                                msg.content
+                                            )}
                                         </div>
                                     </div>
                                 ))}
