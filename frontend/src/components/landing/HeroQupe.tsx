@@ -23,19 +23,13 @@ export function HeroQupe() {
 
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
-            {/* Background Image & Overlay */}
+            {/* Background Gradient (No Image) */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <Image
-                    src="/assets/hero-bg.png"
-                    alt=""
-                    fill
-                    unoptimized
-                    // Fix "Ghost" background: Increase opacity significantly
-                    className="object-cover opacity-80 dark:opacity-60 transition-opacity duration-700"
-                    priority
-                />
-                {/* Gradient Overlay to ensure text readability without washing out the image */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/40 to-background" />
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-white dark:from-gray-950 dark:via-gray-900 dark:to-black" />
+
+                {/* Subtle Ambient Glows for Depth */}
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-100/30 dark:bg-indigo-900/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-teal-100/30 dark:bg-teal-900/10 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen" />
             </div>
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
