@@ -24,7 +24,7 @@ export function HeroQupe() {
         { id: 'settings', label: 'Settings', icon: SettingsIcon },
     ];
 
-    const currentTheme = mounted ? (theme === 'system' ? 'light' : theme) : 'light';
+    const currentTheme = mounted ? theme : 'light';
 
     const getImageSrc = (device: 'desktop' | 'mobile') => {
         return `/assets/${device}-${activeTab}-${currentTheme}.png`;
@@ -109,8 +109,8 @@ export function HeroQupe() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as Tab)}
                                     className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center space-x-2 ${activeTab === tab.id
-                                            ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                                            : 'text-muted-foreground hover:text-foreground'
+                                        ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                 >
                                     <tab.icon className="w-3.5 h-3.5" />
