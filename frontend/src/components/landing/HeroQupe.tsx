@@ -36,8 +36,9 @@ export function HeroQupe() {
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <Image
                     src="/assets/hero-bg.png"
-                    alt="Benchside Background"
+                    alt=""
                     fill
+                    unoptimized
                     className="object-cover opacity-20 dark:opacity-40"
                     priority
                 />
