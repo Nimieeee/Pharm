@@ -70,20 +70,14 @@ export function HeroQupe() {
     };
 
     // Interactive Background Logic
-    const mouseX = useRef(0);
-    const mouseY = useRef(0);
-    const [backgroundX, setBackgroundX] = useState(0);
-    const [backgroundY, setBackgroundY] = useState(0);
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-    // Throttled mouse move for smooth background performance
     useEffect(() => {
         const handleGlobalMouseMove = (e: MouseEvent) => {
-            const { clientX, clientY } = e;
-            const x = (clientX / window.innerWidth - 0.5) * 20; // -10 to 10
-            const y = (clientY / window.innerHeight - 0.5) * 20; // -10 to 10
-
-            setBackgroundX(x);
-            setBackgroundY(y);
+            // Calculate normalized mouse position (-1 to 1)
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = (e.clientY / window.innerHeight) * 2 - 1;
+            setMousePosition({ x, y });
         };
 
         window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -98,43 +92,54 @@ export function HeroQupe() {
 
                 {/* Main Beam 1 (Top-Left to Bottom-Right) */}
                 <motion.div
-                    className="absolute top-1/2 left-1/2 w-[150vw] h-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-[0.25] dark:opacity-[0.15] blur-[120px] mix-blend-screen"
+                    className="absolute top-1/2 left-1/2 w-[140vw] h-[80vh] -translate-x-1/2 -translate-y-1/2 opacity-60 dark:opacity-50 blur-[90px]"
                     animate={{
-                        rotate: [-25 + (backgroundX * 0.5), -20 + (backgroundX * 0.5), -25 + (backgroundX * 0.5)],
-                        scale: [1, 1.1, 1],
+                        rotate: -25 + (mousePosition.x * 10), // Reacts to Mouse X
+                        x: mousePosition.x * -30,             // Parallax X
+                        y: mousePosition.y * -30,             // Parallax Y
+                        scaleX: 1 + Math.abs(mousePosition.x * 0.5), // Active Stretching
+                        scaleY: 1,
                     }}
                     transition={{
-                        rotate: { type: "spring", stiffness: 20, damping: 20 },
-                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+                        rotate: { type: "tween", ease: "linear", duration: 0.1 }, // Immediate response
+                        x: { type: "tween", ease: "linear", duration: 0.1 },
+                        y: { type: "tween", ease: "linear", duration: 0.1 },
+                        scaleX: { type: "spring", stiffness: 50, damping: 20 }, // Bouncy stretch
                     }}
                     style={{
-                        background: 'linear-gradient(90deg, transparent 0%, #C85B20 40%, rgba(200, 91, 32, 0.8) 50%, #C85B20 60%, transparent 100%)',
-                        transformOrigin: 'center center',
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(200, 91, 32, 0) 30%, rgba(200, 91, 32, 0.4) 45%, #C85B20 50%, rgba(200, 91, 32, 0.4) 55%, rgba(200, 91, 32, 0) 70%, transparent 100%)',
                     }}
                 />
 
                 {/* Main Beam 2 (Top-Right to Bottom-Left) */}
                 <motion.div
-                    className="absolute top-1/2 left-1/2 w-[150vw] h-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-[0.25] dark:opacity-[0.15] blur-[120px] mix-blend-screen"
+                    className="absolute top-1/2 left-1/2 w-[140vw] h-[80vh] -translate-x-1/2 -translate-y-1/2 opacity-60 dark:opacity-50 blur-[90px]"
                     animate={{
-                        rotate: [25 + (backgroundX * 0.5), 20 + (backgroundX * 0.5), 25 + (backgroundX * 0.5)],
-                        scale: [1.1, 1, 1.1],
+                        rotate: 25 + (mousePosition.x * 10),  // Reacts to Mouse X
+                        x: mousePosition.x * -30,
+                        y: mousePosition.y * -30,
+                        scaleX: 1 + Math.abs(mousePosition.x * 0.5), // Active Stretching
+                        scaleY: 1,
                     }}
                     transition={{
-                        rotate: { type: "spring", stiffness: 20, damping: 20 },
-                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }
+                        rotate: { type: "tween", ease: "linear", duration: 0.1 },
+                        x: { type: "tween", ease: "linear", duration: 0.1 },
+                        y: { type: "tween", ease: "linear", duration: 0.1 },
+                        scaleX: { type: "spring", stiffness: 50, damping: 20 },
                     }}
                     style={{
-                        background: 'linear-gradient(90deg, transparent 0%, #C85B20 40%, rgba(200, 91, 32, 0.8) 50%, #C85B20 60%, transparent 100%)',
-                        transformOrigin: 'center center',
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(200, 91, 32, 0) 30%, rgba(200, 91, 32, 0.4) 45%, #C85B20 50%, rgba(200, 91, 32, 0.4) 55%, rgba(200, 91, 32, 0) 70%, transparent 100%)',
                     }}
                 />
 
-                {/* Center Core Glow */}
+                {/* Center Core Haze (Reacts to Mouse) */}
                 <motion.div
-                    className="absolute top-1/2 left-1/2 w-[50vw] h-[50vh] -translate-x-1/2 -translate-y-1/2 opacity-20 blur-[100px]"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 5, repeat: Infinity }}
+                    className="absolute top-1/2 left-1/2 w-[60vw] h-[60vh] -translate-x-1/2 -translate-y-1/2 opacity-30 blur-[100px]"
+                    animate={{
+                        x: mousePosition.x * 50,
+                        y: mousePosition.y * 50
+                    }}
+                    transition={{ type: "spring", stiffness: 20, damping: 20 }}
                     style={{ background: 'radial-gradient(circle, #C85B20 0%, transparent 70%)' }}
                 />
             </div>
