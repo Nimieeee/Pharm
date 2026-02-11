@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
@@ -35,25 +36,12 @@ export function HeroQupe() {
 
             <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
 
-                {/* Badge with Glow */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="relative inline-flex items-center space-x-2 bg-surface backdrop-blur-sm border border-border rounded-full px-4 py-1.5 mb-8 cursor-default overflow-hidden group shadow-sm"
-                >
-                    <span className="relative text-[11px] font-bold tracking-wider text-foreground-muted uppercase flex items-center">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-2 animate-pulse" />
-                        Benchside AI
-                    </span>
-                </motion.div>
-
                 {/* Heading */}
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10"
+                    className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
                     Your Intelligent <br className="hidden md:block" />
                     {/* Text Highlight using Platform Accent with gradient fallback */}
@@ -80,15 +68,13 @@ export function HeroQupe() {
                     className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-24 relative z-20"
                 >
                     {/* Primary Button with Semantic Theme Colors */}
-                    <button className={`h-12 px-8 rounded-full ${buttonStyle} font-medium text-base hover:scale-105 hover:shadow-lg transition-all duration-300 flex items-center group relative overflow-hidden`}>
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <span className="relative z-10">Start Researching</span>
-                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
-                    </button>
-
-                    <button className="h-12 px-8 rounded-full bg-transparent border border-border text-foreground font-medium text-base hover:bg-surface-hover/50 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all flex items-center">
-                        View Demo
-                    </button>
+                    <Link href="/chat">
+                        <button className={`h-12 px-8 rounded-full ${buttonStyle} font-medium text-base hover:scale-105 hover:shadow-lg transition-all duration-300 flex items-center group relative overflow-hidden`}>
+                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <span className="relative z-10">Start Researching</span>
+                            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+                        </button>
+                    </Link>
                 </motion.div>
 
                 {/* Dashboard Anchor (The "Float" Fix) */}
@@ -109,11 +95,22 @@ export function HeroQupe() {
                         {/* Glossy Overlay/Reflection */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-white/5 to-transparent z-10 pointer-events-none" />
 
-                        {/* Desktop View Only (Simplified for Impact) */}
-                        <div className="relative aspect-[2880/1580] w-full">
+                        {/* Desktop View */}
+                        <div className="hidden md:block relative aspect-[2880/1580] w-full">
                             <Image
                                 src={`/assets/desktop-chat-${currentTheme}.png`}
-                                alt="Benchside Interface"
+                                alt="Benchside Interface Desktop"
+                                fill
+                                className="object-cover object-top"
+                                priority
+                            />
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="block md:hidden relative aspect-[642/1398] w-full">
+                            <Image
+                                src={`/assets/mobile-chat-${currentTheme}.png`}
+                                alt="Benchside Interface Mobile"
                                 fill
                                 className="object-cover object-top"
                                 priority
@@ -122,7 +119,7 @@ export function HeroQupe() {
                     </div>
 
                     {/* Ambient Glow underneath */}
-                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-indigo-500/20 blur-[100px] -z-10 rounded-full pointer-events-none" />
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-20 bg-[var(--accent)]/20 blur-[100px] -z-10 rounded-full pointer-events-none" />
                 </motion.div>
 
             </div>
