@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
+type Tab = 'chat' | 'profile' | 'settings';
+
 export function HeroQupe() {
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [activeTab, setActiveTab] = useState<Tab>('chat');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isHovering, setIsHovering] = useState(false);
 
     // Prevent hydration mismatch
     useEffect(() => {
@@ -21,6 +26,48 @@ export function HeroQupe() {
 
     // Semantic button style (Matches platform theme: Black in Light, White in Dark)
     const buttonStyle = "bg-foreground text-background hover:opacity-90";
+
+    const tabs: Tab[] = ['chat', 'profile', 'settings'];
+
+    // Autoplay for Mobile (and Desktop when not hovering)
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        if (!isHovering) {
+            interval = setInterval(() => {
+                setActiveTab((prev) => {
+                    const currentIndex = tabs.indexOf(prev);
+                    const nextIndex = (currentIndex + 1) % tabs.length;
+                    return tabs[nextIndex];
+                });
+            }, 3000); // 3 seconds per slide
+        }
+
+        return () => clearInterval(interval);
+    }, [isHovering]);
+
+    // Mouse Move Logic for Desktop "Scrubbing"
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!containerRef.current) return;
+
+        setIsHovering(true);
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+        const percentage = x / width;
+
+        if (percentage < 0.33) {
+            setActiveTab('chat');
+        } else if (percentage < 0.66) {
+            setActiveTab('profile');
+        } else {
+            setActiveTab('settings');
+        }
+    };
+
+    const handleMouseLeave = () => {
+        setIsHovering(false);
+    };
 
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
@@ -77,12 +124,15 @@ export function HeroQupe() {
                     </Link>
                 </motion.div>
 
-                {/* Dashboard Anchor (The "Float" Fix) */}
+                {/* Dashboard Anchor (Interactive Slideshow) */}
                 <motion.div
                     initial={{ opacity: 0, y: 100, rotateX: 5 }}
                     animate={{ opacity: 1, y: 0, rotateX: 0 }}
                     transition={{ duration: 1, delay: 0.4, type: "spring", stiffness: 40, damping: 20 }}
-                    className="relative w-full max-w-6xl perspective-1000 flex flex-col items-center"
+                    className="relative w-full max-w-6xl perspective-1000 flex flex-col items-center group"
+                    ref={containerRef}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
                 >
                     <div className={`
                         relative w-full rounded-2xl overflow-hidden
@@ -95,26 +145,65 @@ export function HeroQupe() {
                         {/* Glossy Overlay/Reflection */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-white/5 to-transparent z-10 pointer-events-none" />
 
+                        {/* Interactive Hint (Only visible on hover when mounted) */}
+                        <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${isHovering ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className="bg-black/50 backdrop-blur-md text-white text-[10px] px-3 py-1 rounded-full border border-white/10">
+                                {activeTab === 'chat' ? 'Chat Interface' : activeTab === 'profile' ? 'Researcher Profile' : 'System Settings'}
+                            </div>
+                        </div>
+
                         {/* Desktop View */}
                         <div className="hidden md:block relative aspect-[2880/1580] w-full">
-                            <Image
-                                src={`/assets/desktop-chat-${currentTheme}.png`}
-                                alt="Benchside Interface Desktop"
-                                fill
-                                className="object-cover object-top"
-                                priority
-                            />
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={`desktop-${activeTab}-${currentTheme}`}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute inset-0"
+                                >
+                                    <Image
+                                        src={`/assets/desktop-${activeTab}-${currentTheme}.png`}
+                                        alt={`Benchside Interface Desktop - ${activeTab}`}
+                                        fill
+                                        className="object-cover object-top"
+                                        priority
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
                         </div>
 
                         {/* Mobile View */}
                         <div className="block md:hidden relative aspect-[642/1398] w-full">
-                            <Image
-                                src={`/assets/mobile-chat-${currentTheme}.png`}
-                                alt="Benchside Interface Mobile"
-                                fill
-                                className="object-cover object-top"
-                                priority
-                            />
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={`mobile-${activeTab}-${currentTheme}`}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute inset-0"
+                                >
+                                    <Image
+                                        src={`/assets/mobile-${activeTab}-${currentTheme}.png`}
+                                        alt={`Benchside Interface Mobile - ${activeTab}`}
+                                        fill
+                                        className="object-cover object-top"
+                                        priority
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Progress Indicators (Bottom) */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+                            {tabs.map((tab) => (
+                                <div
+                                    key={tab}
+                                    className={`h-1 rounded-full transition-all duration-300 ${activeTab === tab ? 'w-8 bg-[var(--accent)]' : 'w-2 bg-gray-400/50'}`}
+                                />
+                            ))}
                         </div>
                     </div>
 
