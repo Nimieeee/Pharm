@@ -27,15 +27,29 @@ const config: Config = {
           DEFAULT: 'var(--foreground)',
           muted: 'var(--foreground-muted)',
         },
-        
+
         // Legacy aliases (backward compatibility)
         'text-primary': 'var(--text-primary)',
         'text-secondary': 'var(--text-secondary)',
         'surface-highlight': 'var(--surface-highlight)',
-        
+
         // Premium Scientific Journal palette (now theme-aware)
         canvas: 'var(--background)',
         ink: 'var(--foreground)',
+
+        // Qupe Brand Colors
+        peach: {
+          50: '#fff5f1',
+          100: '#ffe8df',
+          200: '#ffcfc0',
+          300: '#ffaa91',
+          400: '#ff7b5c',
+          500: '#ff522e',
+          600: '#ed3b15',
+          700: '#ca2b0b',
+          800: '#a6240b',
+          900: '#86210e',
+        },
       },
       borderRadius: {
         '2xl': '24px',

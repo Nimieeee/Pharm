@@ -5,61 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Moon, Sun, ArrowRight, Dna, BarChart3, Microscope, FileText, LogIn, LogOut, Globe, Database, Activity, FileSearch, Shield, Zap, Cpu, ChevronDown, CheckCircle2, Play, User, MessageSquare } from 'lucide-react';
-import { GlassCard, GlassNavbar } from '@/components/ui/GlassCard';
+import { Moon, Sun, LogIn, LogOut, Database, ChevronDown, User, MessageSquare } from 'lucide-react';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { HeroQupe } from '@/components/landing/HeroQupe';
 import { API_BASE_URL } from '@/config/api';
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.2, 0.8, 0.2, 1] } }
-};
-
-const features = [
-  { icon: Dna, title: 'Drug Research', desc: 'Analyze compounds and interactions' },
-  { icon: BarChart3, title: 'Clinical Data', desc: 'Process trial results and studies' },
-  { icon: Microscope, title: 'Molecular Analysis', desc: 'Understand chemical structures' },
-  { icon: FileText, title: 'Document RAG', desc: 'Query your research documents' },
-];
-
-const capabilities = [
-  {
-    title: "Deep Literature Research",
-    desc: "Autonomous agents scan millions of papers to find relevant interactions and contraindications.",
-    className: "md:col-span-2",
-    icon: Globe,
-    gradient: "from-blue-500/10 to-cyan-500/10"
-  },
-
-  {
-    title: "Clinical Trials",
-    desc: "Track global patient recruitment.",
-    className: "md:col-span-1",
-    icon: Activity,
-    gradient: "from-emerald-500/10 to-teal-500/10"
-  },
-  {
-    title: "Patent Landscape",
-    desc: "Visualize IP whitespace and operate freely.",
-    className: "md:col-span-2 lg:col-span-1",
-    icon: FileSearch,
-    gradient: "from-orange-500/10 to-red-500/10"
-  },
-  {
-    title: "Automated Compliance",
-    desc: "Ensure FDA/EMA guideline adherence.",
-    className: "md:col-span-3 lg:col-span-1",
-    icon: Shield,
-    gradient: "from-indigo-500/10 to-violet-500/10"
-  }
-];
 
 const faqs = [
 
@@ -78,7 +27,6 @@ export default function HomePage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [query, setQuery] = useState('');
   const [activeDemoTab, setActiveDemoTab] = useState(demoTabs[0].id);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -112,12 +60,7 @@ export default function HomePage() {
     warmup();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      router.push(`/chat?q=${encodeURIComponent(query)}`);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-atmospheric text-foreground selection:bg-indigo-500/20">
@@ -199,76 +142,8 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <motion.main
-        className="pt-32 pb-24 px-6"
-        variants={container}
-        initial="hidden"
-        animate="show"
-      >
-        <div className="max-w-[1200px] mx-auto">
-          <motion.div variants={item} className="text-center mb-16">
-            <h1 className="text-5xl md:text-7xl font-serif text-foreground mb-6 leading-tight tracking-tight">
-              Your AI Research
-              <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-violet-500 italic">
-                Companion
-              </span>
-            </h1>
-            <p className="text-foreground-muted max-w-xl mx-auto text-lg">
-              Accelerate pharmacological research with intelligent document analysis,
-              drug interaction insights, and clinical data processing.
-            </p>
-          </motion.div>
+      <HeroQupe />
 
-          {/* Search Input - Wrapped in GlassCard for Liquid Effect */}
-          <motion.div
-            variants={item}
-            className="max-w-2xl mx-auto mb-24"
-          >
-            <GlassCard className="p-2 flex items-center gap-4">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask about drug interactions, compounds, clinical trials..."
-                className="flex-1 h-12 bg-transparent border-none text-foreground placeholder:text-foreground-muted focus:outline-none px-4"
-              />
-              <button
-                onClick={(e) => { e.preventDefault(); handleSubmit(e as any); }}
-                className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center btn-press transition-all hover:opacity-90"
-              >
-                <ArrowRight size={20} strokeWidth={1.5} />
-              </button>
-            </GlassCard>
-          </motion.div>
-
-          {/* Feature Cards */}
-          <motion.div
-            variants={item}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {features.map((feature) => (
-              <GlassCard
-                key={feature.title}
-                className="p-8 h-full flex flex-col justify-between cursor-pointer group hover:scale-[1.02] hover:shadow-lg transition-all duration-300"
-                onClick={() => router.push('/chat')}
-              >
-                <div>
-                  <div className="mb-6 p-3 w-fit rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
-                    <feature.icon size={28} strokeWidth={2} />
-                  </div>
-                  <h3 className="text-xl font-serif text-foreground mb-3 font-medium">
-                    {feature.title}
-                  </h3>
-                  <p className="text-foreground-muted text-sm leading-relaxed">
-                    {feature.desc}
-                  </p>
-                </div>
-              </GlassCard>
-            ))}
-          </motion.div>
-        </div>
-      </motion.main >
 
       {/* Interactive Demo Section */}
       < section className="py-24 px-6 relative" >
@@ -321,28 +196,7 @@ export default function HomePage() {
         </div>
       </section >
 
-      {/* Bento Grid Features */}
-      < section className="py-24 px-6 bg-surface/30" >
-        <div className="max-w-[1200px] mx-auto">
-          <h2 className="text-4xl font-serif text-foreground mb-16 text-center">Powerful Research Capabilities</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {capabilities.map((cap, i) => (
-              <GlassCard key={i} className={`${cap.className} p-8 relative overflow-hidden hover:scale-[1.01] transition-transform duration-500`}>
-                <div className={`absolute inset-0 bg-gradient-to-br ${cap.gradient} opacity-20`} />
-                <div className="relative z-10 flex flex-col h-full justify-between">
-                  <div className="mb-6 p-3 w-fit rounded-2xl bg-foreground/5 text-foreground">
-                    <cap.icon size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-serif text-foreground mb-3">{cap.title}</h3>
-                    <p className="text-foreground-muted">{cap.desc}</p>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        </div>
-      </section >
+
 
       {/* FAQ Section */}
       < section className="py-24 px-6" >
