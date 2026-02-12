@@ -26,13 +26,14 @@ class ImageGenerationService:
         if not self.api_key:
             logger.warning("POLLINATIONS_API_KEY not found. Image generation will use anonymous tier (rate-limited).")
 
-    async def generate_image(self, prompt: str, model: str = "turbo") -> Dict[str, Any]:
+    async def generate_image(self, prompt: str, model: str = "flux") -> Dict[str, Any]:
         """
         Generate an image URL proxy (Internal API).
         """
         # We now use a proxy endpoint in our own backend to hide the API key
         # The URL points to OUR backend, which fetches from Pollinations
         encoded_prompt = urllib.parse.quote(prompt)
+        # Use full URL if needed, but relative usually works for frontend
         base_url = "/api/v1/ai/image-proxy"
         
         seed = random.randint(0, 999999)
@@ -46,6 +47,7 @@ class ImageGenerationService:
         query = "&".join(params)
         
         # Return relative URL to our proxy
+        # Frontend will treat this as https://api.domain.com/api/v1/ai/image-proxy?...
         image_url = f"{base_url}?{query}"
         
         return {
@@ -81,4 +83,5 @@ class ImageGenerationService:
                 return resp.content
             else:
                 logger.error(f"Pollinations Error {resp.status_code}: {resp.text}")
+                # Fallback to public if auth fails? No, public is dead.
                 raise Exception(f"Pollinations API Error: {resp.status_code}")

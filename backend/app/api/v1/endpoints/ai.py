@@ -465,7 +465,12 @@ async def chat_stream(
 
         # Check for "/image" prefix → ignore, handled by frontend dedicated endpoint
         elif original_message.lower().startswith("/image"):
+             logger.info(f"🎨 Stream ignored for image command: {original_message}")
              async def empty_stream():
+                 # Yield nothing or a comment to keep connection alive but not add content
+                 # DO NOT yield [DONE] immediately if it causes frontend to think stream finished successfuly 
+                 # and potentially trigger a save.
+                 # Actually, yielding [DONE] is fine as long as we don't save a new message.
                  yield "data: [DONE]\n\n"
              return StreamingResponse(empty_stream(), media_type="text/event-stream")
         
@@ -1090,7 +1095,7 @@ async def delete_conversation_documents(
 @router.get("/image-proxy")
 async def proxy_image(
     prompt: str,
-    model: str = "turbo",
+    model: str = "flux",
     width: int = 512,
     height: int = 512,
     seed: int = 42,
@@ -1105,6 +1110,9 @@ async def proxy_image(
         return Response(content=image_bytes, media_type="image/jpeg")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 
 
