@@ -112,9 +112,12 @@ async def generate_image(
         )
         
         # 2. Save assistant response (image URL)
-        assistant_message = result.get("content", "")
-        if not assistant_message:
-             assistant_message = "Failed to generate image content."
+        # 2. Save assistant response (image URL)
+        if result.get("status") == "success":
+            img_data = result.get("image_base64")
+            assistant_message = f"![{request.prompt}](data:image/png;base64,{img_data})"
+        else:
+            assistant_message = f"Failed to generate image: {result.get('error', 'Unknown error')}"
              
         await chat_service.add_message(
             MessageCreate(
