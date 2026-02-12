@@ -8,6 +8,7 @@ import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
 import { Copy, Check, Download, ExternalLink } from 'lucide-react';
 import 'katex/dist/katex.min.css';
+import { MermaidRenderer } from './MermaidRenderer';
 
 interface MarkdownRendererProps {
   content: string;
@@ -352,7 +353,7 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
             </a>
           ),
 
-          // Code - inline and block
+          // Code - inline, block, and mermaid diagrams
           code: ({ className, children, ...props }) => {
             const isInline = !className;
             if (isInline) {
@@ -361,6 +362,11 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
                   {children}
                 </code>
               );
+            }
+            // Mermaid diagram rendering
+            const language = className?.replace('language-', '') || '';
+            if (language === 'mermaid') {
+              return <MermaidRenderer code={String(children).replace(/\n$/, '')} />;
             }
             return (
               <EnhancedCodeBlock className={className} isAnimating={isAnimating}>

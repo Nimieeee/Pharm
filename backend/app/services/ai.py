@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.services.enhanced_rag import EnhancedRAGService
 from app.services.chat import ChatService
 from app.services.tools import BiomedicalTools
+from app.services.plotting import PlottingService
 from app.models.user import User
 from app.utils.rate_limiter import mistral_limiter
 from app.services.multi_provider import get_multi_provider
@@ -40,6 +41,7 @@ class AIService:
         self.rag_service = EnhancedRAGService(db)
         self.chat_service = ChatService(db)
         self.tools_service = BiomedicalTools()
+        self.plotting_service = PlottingService()
         self.mistral_api_key = None
         self.mistral_base_url = "https://api.mistral.ai/v1"
         self.mistral_client = None  # SDK client for Conversations API
@@ -116,6 +118,23 @@ class AIService:
                     "required": ["compound_name"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "generate_chart",
+                "description": "Generate a chart or plot using matplotlib/seaborn. Use this ONLY when the user explicitly asks for a chart, graph, plot, or visualization of data. Do NOT use this for general text answers.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Python code using matplotlib (plt) and/or seaborn (sns) to create the plot. numpy (np) is also available. Do not include import statements."
+                        }
+                    },
+                    "required": ["code"]
+                }
+            }
         }
     ]
     
@@ -136,6 +155,13 @@ class AIService:
                 return f"PUBCHEM DATA:\n- Molecular Weight: {result.get('molecular_weight')}\n- Formula: {result.get('molecular_formula')}\n- IUPAC: {result.get('iupac_name')}\n- XLogP: {result.get('xlogp')}"
             else:
                 return f"PubChem data not found for {tool_args.get('compound_name')}."
+        
+        elif tool_name == "generate_chart":
+            result = await self.plotting_service.generate_chart(tool_args.get("code", ""))
+            if result.get("status") == "success":
+                return f"[CHART_IMAGE_BASE64]{result['image_base64']}[/CHART_IMAGE_BASE64]"
+            else:
+                return f"Chart generation failed: {result.get('error', 'Unknown error')}"
         
         return "Tool function not found."
 
@@ -338,6 +364,20 @@ OUTPUT FORMATTING RULES (CRITICAL - STRICT ENFORCEMENT):
 5. Use bullet points for lists of 3 or more items, or whenever they significantly improve readability.
 6. A well-formatted response uses a mix of prose and clear, structured lists.
 
+
+VISUALIZATION PROTOCOL (CONDITIONAL - DO NOT OVERUSE):
+You have the ability to create diagrams and charts. Follow these rules strictly:
+1. MERMAID DIAGRAMS: When the user asks you to "draw", "diagram", or "show the pathway/mechanism" of something, output a Mermaid diagram inside a ```mermaid code block. Use flowchart TD or LR syntax. Example:
+```mermaid
+flowchart TD
+    A[Drug Administration] --> B[Absorption]
+    B --> C[Distribution]
+    C --> D[Metabolism]
+    D --> E[Excretion]
+```
+2. DATA CHARTS: You do NOT generate charts automatically. Only generate charts if the user explicitly asks for a "chart", "graph", "plot", or "visualization" of specific data.
+3. NEVER generate a diagram or chart for a simple text-based question. Default to written explanation.
+4. When creating Mermaid diagrams, use simple node labels without special characters.
 
 Output Restriction: Always ensure your final output adheres strictly to scientific accuracy and the context of pharmacology.
 
