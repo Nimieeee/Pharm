@@ -25,7 +25,7 @@ class ImageGenerationService:
         if not self.api_key:
             logger.warning("POLLINATIONS_API_KEY not found. Image generation will use anonymous tier (rate-limited).")
 
-    async def generate_image(self, prompt: str, model: str = "flux") -> Dict[str, Any]:
+    async def generate_image(self, prompt: str, model: str = "zimage") -> Dict[str, Any]:
         """
         Generate an image using Pollinations.ai.
         
