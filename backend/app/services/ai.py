@@ -16,6 +16,7 @@ from app.services.enhanced_rag import EnhancedRAGService
 from app.services.chat import ChatService
 from app.services.tools import BiomedicalTools
 from app.services.plotting import PlottingService
+from app.services.image_gen import ImageGenerationService
 from app.models.user import User
 from app.utils.rate_limiter import mistral_limiter
 from app.services.multi_provider import get_multi_provider
@@ -42,6 +43,7 @@ class AIService:
         self.chat_service = ChatService(db)
         self.tools_service = BiomedicalTools()
         self.plotting_service = PlottingService()
+        self.image_gen_service = ImageGenerationService()
         self.mistral_api_key = None
         self.mistral_base_url = "https://api.mistral.ai/v1"
         self.mistral_client = None  # SDK client for Conversations API
@@ -135,6 +137,23 @@ class AIService:
                     "required": ["code"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "generate_image",
+                "description": "Generate a photorealistic image from a text description. Use this ONLY when the user EXPLICITLY asks you to 'generate an image', 'create a picture', or 'show me an image of'. Do NOT use this for diagrams, charts, or general questions.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "description": "A detailed English text prompt describing the image to generate. Be specific about style, composition, and content."
+                        }
+                    },
+                    "required": ["prompt"]
+                }
+            }
         }
     ]
     
@@ -162,6 +181,13 @@ class AIService:
                 return f"[CHART_IMAGE_BASE64]{result['image_base64']}[/CHART_IMAGE_BASE64]"
             else:
                 return f"Chart generation failed: {result.get('error', 'Unknown error')}"
+        
+        elif tool_name == "generate_image":
+            result = await self.image_gen_service.generate_image(tool_args.get("prompt", ""))
+            if result.get("status") == "success":
+                return f"[IMAGE_BASE64]{result['image_base64']}[/IMAGE_BASE64]"
+            else:
+                return f"Image generation failed: {result.get('error', 'Unknown error')}"
         
         return "Tool function not found."
 

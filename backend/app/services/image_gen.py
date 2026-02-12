@@ -1,78 +1,117 @@
+"""
+Image Generation Service
+Uses Hugging Face Inference API with Z-Image-Turbo for high-quality image generation.
+"""
 
-import os
+import io
+import base64
 import logging
-from typing import Optional, Dict, Any
-from mistralai import Mistral
+from typing import Dict, Any
+
+import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Z-Image-Turbo via HF Inference API
+HF_MODEL_ID = "Tongyi-MAI/Z-Image-Turbo"
+HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL_ID}"
+
+
 class ImageGenerationService:
     def __init__(self):
-        self.api_key = os.getenv("MISTRAL_API_KEY")
+        self.api_key = settings.HF_API_KEY
         if not self.api_key:
-            logger.warning("MISTRAL_API_KEY not found. Image generation will fail.")
-            self.client = None
-        else:
-            self.client = Mistral(api_key=self.api_key)
+            logger.warning("HF_API_KEY not found. Image generation will be unavailable.")
 
     async def generate_image(self, prompt: str) -> Dict[str, Any]:
         """
-        Generate an image using Mistral's beta tools.
+        Generate an image using Z-Image-Turbo via Hugging Face Inference API.
+        
+        Returns a dict with:
+          - status: 'success' or 'error'
+          - image_base64: base64-encoded PNG (on success)
+          - error: error message (on failure)
         """
-        if not self.client:
-            raise ValueError("Mistral API key not configured")
-
-        logger.info(f"🎨 Generating image for prompt: {prompt[:50]}...")
-
-        messages = [
-            {"role": "user", "content": f"Generate an image of: {prompt}"}
-        ]
-
-        # Use the specific beta configuration for image generation
-        try:
-            # We run this synchronously as the Mistral client is sync (unless we use AsyncMistral which wasn't in the snippet provided)
-            # But the user snippet used 'Mistral' which is sync.
-            # Ideally we should run this in a threadpool if it blocks, but for now strict implementation of snippet.
-            # Actually, let's checking requirements.txt again, it has mistralai>=1.2.0.
-            # The user snippet used specific beta.conversations.start
-            
-            completion_args = {
-                "temperature": 0.7,
-                "max_tokens": 1024,
-                "top_p": 1
-            }
-
-            tools = [
-                {
-                    "type": "image_generation"
-                }
-            ]
-
-            response = self.client.beta.conversations.start(
-                inputs=messages,
-                model="mistral-large-latest",
-                completion_args=completion_args,
-                tools=tools,
-            )
-
-            # Parse response to find image URL
-            # The response structure from beta conversations usually has choices[0].message.content 
-            # OR if it used a tool, it might be in steps or tool_calls.
-            # However, for 'image_generation' tool in Mistral's beta, 
-            # the model typically returns a markdown image link like ![image](url) in the content
-            # OR it returns the tool output. 
-            
-            # Let's try to extract textual content which should contain the image URL in markdown format.
-            content = response.choices[0].message.content
-            
-            logger.info("✅ Image generation response received")
+        if not self.api_key:
             return {
-                "status": "success",
-                "content": content,
-                "raw_response": str(response)
+                "status": "error",
+                "error": "HF_API_KEY not configured. Image generation is unavailable.",
+                "image_base64": None,
             }
 
+        logger.info(f"🎨 Generating image with Z-Image-Turbo: {prompt[:80]}...")
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "num_inference_steps": 8,
+                "guidance_scale": 0.0,
+                "width": 1024,
+                "height": 1024,
+            },
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(
+                    HF_INFERENCE_URL,
+                    headers=headers,
+                    json=payload,
+                )
+
+                if response.status_code == 200:
+                    # HF Inference API returns raw image bytes
+                    image_bytes = response.content
+                    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+                    logger.info("✅ Image generated successfully")
+                    return {
+                        "status": "success",
+                        "image_base64": image_base64,
+                        "error": None,
+                    }
+
+                elif response.status_code == 503:
+                    # Model is loading
+                    try:
+                        body = response.json()
+                        wait_time = body.get("estimated_time", 30)
+                    except Exception:
+                        wait_time = 30
+                    logger.warning(f"⏳ Model loading, estimated wait: {wait_time}s")
+                    return {
+                        "status": "error",
+                        "error": f"Model is loading. Please try again in ~{int(wait_time)} seconds.",
+                        "image_base64": None,
+                    }
+
+                else:
+                    error_text = response.text[:500]
+                    logger.error(f"❌ HF API error {response.status_code}: {error_text}")
+                    return {
+                        "status": "error",
+                        "error": f"Image generation failed (HTTP {response.status_code}): {error_text}",
+                        "image_base64": None,
+                    }
+
+        except httpx.TimeoutException:
+            logger.error("❌ Image generation timed out (120s)")
+            return {
+                "status": "error",
+                "error": "Image generation timed out. Please try again.",
+                "image_base64": None,
+            }
         except Exception as e:
-            logger.error(f"❌ Image generation failed: {str(e)}")
-            raise e
+            logger.error(f"❌ Image generation failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "image_base64": None,
+            }
