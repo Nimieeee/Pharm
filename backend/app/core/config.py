@@ -42,7 +42,8 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
     SERP_API_KEY: str = os.getenv("SERP_API_KEY", "")
     SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
-    HF_API_KEY: str = os.getenv("HF_API_KEY", "")  # Hugging Face Inference API (Z-Image-Turbo)
+    HF_API_KEY: str = os.getenv("HF_API_KEY", "")  # Hugging Face Inference API (kept as fallback)
+    POLLINATIONS_API_KEY: str = os.getenv("POLLINATIONS_API_KEY", "")  # Pollinations.ai (primary image gen)
     
     # Embedding settings - Using Mistral embeddings only
     EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "mistral")  # "mistral" is default

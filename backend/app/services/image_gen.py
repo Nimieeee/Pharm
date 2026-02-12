@@ -1,11 +1,12 @@
 """
 Image Generation Service
-Uses Hugging Face Inference API with Z-Image-Turbo for high-quality image generation.
+Uses Pollinations.ai API with FLUX Schnell for high-quality image generation.
+Free tier: 5,000 images/day with secret API key (no rate limit).
 """
 
-import io
 import base64
 import logging
+import urllib.parse
 from typing import Dict, Any
 
 import httpx
@@ -14,90 +15,78 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Z-Image-Turbo via HF Inference API
-HF_MODEL_ID = "Tongyi-MAI/Z-Image-Turbo"
-HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL_ID}"
+# Pollinations.ai API
+POLLINATIONS_BASE_URL = "https://gen.pollinations.ai/image"
 
 
 class ImageGenerationService:
     def __init__(self):
-        self.api_key = settings.HF_API_KEY
+        self.api_key = settings.POLLINATIONS_API_KEY
         if not self.api_key:
-            logger.warning("HF_API_KEY not found. Image generation will be unavailable.")
+            logger.warning("POLLINATIONS_API_KEY not found. Image generation will use anonymous tier (rate-limited).")
 
-    async def generate_image(self, prompt: str) -> Dict[str, Any]:
+    async def generate_image(self, prompt: str, model: str = "flux") -> Dict[str, Any]:
         """
-        Generate an image using Z-Image-Turbo via Hugging Face Inference API.
+        Generate an image using Pollinations.ai.
         
-        Returns a dict with:
-          - status: 'success' or 'error'
-          - image_base64: base64-encoded PNG (on success)
-          - error: error message (on failure)
+        Args:
+            prompt: Text description of the image to generate.
+            model: Model to use ('flux' for FLUX Schnell, 'zimage' for Z-Image Turbo).
+            
+        Returns:
+            Dict with status, image_base64, and error fields.
         """
-        if not self.api_key:
-            return {
-                "status": "error",
-                "error": "HF_API_KEY not configured. Image generation is unavailable.",
-                "image_base64": None,
-            }
+        logger.info(f"🎨 Generating image with Pollinations ({model}): {prompt[:80]}...")
 
-        logger.info(f"🎨 Generating image with Z-Image-Turbo: {prompt[:80]}...")
+        # URL-encode the prompt for the path
+        encoded_prompt = urllib.parse.quote(prompt, safe='')
+        url = f"{POLLINATIONS_BASE_URL}/{encoded_prompt}"
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
+        params = {
+            "model": model,
+            "width": 1024,
+            "height": 1024,
+            "nologo": "true",
+            "safe": "true",
         }
 
-        payload = {
-            "inputs": prompt,
-            "parameters": {
-                "num_inference_steps": 8,
-                "guidance_scale": 0.0,
-                "width": 1024,
-                "height": 1024,
-            },
-        }
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
 
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                response = await client.post(
-                    HF_INFERENCE_URL,
+            async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+                response = await client.get(
+                    url,
+                    params=params,
                     headers=headers,
-                    json=payload,
                 )
 
-                if response.status_code == 200:
-                    # HF Inference API returns raw image bytes
+                if response.status_code == 200 and response.headers.get("content-type", "").startswith("image/"):
                     image_bytes = response.content
                     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-                    logger.info("✅ Image generated successfully")
+                    logger.info(f"✅ Image generated ({len(image_bytes)} bytes)")
                     return {
                         "status": "success",
                         "image_base64": image_base64,
                         "error": None,
                     }
 
-                elif response.status_code == 503:
-                    # Model is loading
-                    try:
-                        body = response.json()
-                        wait_time = body.get("estimated_time", 30)
-                    except Exception:
-                        wait_time = 30
-                    logger.warning(f"⏳ Model loading, estimated wait: {wait_time}s")
+                elif response.status_code == 429:
+                    logger.warning("⏳ Rate limited by Pollinations")
                     return {
                         "status": "error",
-                        "error": f"Model is loading. Please try again in ~{int(wait_time)} seconds.",
+                        "error": "Image generation is temporarily rate-limited. Please try again in a moment.",
                         "image_base64": None,
                     }
 
                 else:
                     error_text = response.text[:500]
-                    logger.error(f"❌ HF API error {response.status_code}: {error_text}")
+                    logger.error(f"❌ Pollinations API error {response.status_code}: {error_text}")
                     return {
                         "status": "error",
-                        "error": f"Image generation failed (HTTP {response.status_code}): {error_text}",
+                        "error": f"Image generation failed (HTTP {response.status_code})",
                         "image_base64": None,
                     }
 
