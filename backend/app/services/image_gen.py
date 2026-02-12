@@ -10,6 +10,7 @@ import urllib.parse
 from typing import Dict, Any
 
 import httpx
+import random
 
 from app.core.config import settings
 
@@ -25,7 +26,7 @@ class ImageGenerationService:
         if not self.api_key:
             logger.warning("POLLINATIONS_API_KEY not found. Image generation will use anonymous tier (rate-limited).")
 
-    async def generate_image(self, prompt: str, model: str = "flux") -> Dict[str, Any]:
+    async def generate_image(self, prompt: str, model: str = "turbo") -> Dict[str, Any]:
         """
         Generate an image URL using Pollinations.ai (Public API).
         """
@@ -35,13 +36,17 @@ class ImageGenerationService:
         encoded_prompt = urllib.parse.quote(prompt, safe='')
         base_url = "https://image.pollinations.ai/prompt"
         
+        # Random seed to ensure uncached results
+        seed = random.randint(0, 999999)
+        
         # Construct parameters
         params = [
             f"model={model}",
-            "width=1024",
-            "height=1024",
+            "width=512",
+            "height=512",
             "nologo=true",
-            "safe=true"
+            "safe=true",
+            f"seed={seed}"
         ]
         query_string = "&".join(params)
         
