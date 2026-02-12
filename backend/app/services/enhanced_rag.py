@@ -276,47 +276,50 @@ class EnhancedRAGService:
             success_count = streamed_chunks_count
             failed_count = 0
             
-            for chunk_index, chunk in enumerate(chunks):
-                try:
-                    # Check for cancellation
-                    if cancellation_check and await cancellation_check():
-                        logger.warning(f"🚫 Upload cancelled by user: {filename} - Rolling back {success_count} chunks")
-                        await self.delete_file_documents(conversation_id, filename, user_id)
-                        return DocumentUploadResponse(
-                            success=False,
-                            message="Upload cancelled by user",
-                            chunk_count=0,
-                            file_info=file_info
+            # Parallel processing of chunks
+            logger.info(f"🚀 Starting parallel processing of {len(chunks)} chunks (concurrency=5)...")
+            semaphore = asyncio.Semaphore(5)  # Limit concurrent embedding requests
+            
+            async def process_chunk_with_semaphore(idx, chk):
+                async with semaphore:
+                    try:
+                        # Check for cancellation (check less frequently to avoid overhead)
+                        if cancellation_check and idx % 5 == 0 and await cancellation_check():
+                            return "cancelled"
+                            
+                        return await self._process_and_store_chunk(
+                            chunk=chk,
+                            filename=filename,
+                            conversation_id=conversation_id,
+                            user_id=user_id,
+                            chunk_index=idx
                         )
+                    except Exception as e:
+                        return f"Error: {str(e)}"
 
-                    success = await self._process_and_store_chunk(
-                        chunk=chunk,
-                        filename=filename,
-                        conversation_id=conversation_id,
-                        user_id=user_id,
-                        chunk_index=chunk_index
+            # Create tasks
+            tasks = [process_chunk_with_semaphore(i, c) for i, c in enumerate(chunks)]
+            results = await asyncio.gather(*tasks)
+            
+            # Process results
+            success_count = 0
+            failed_count = 0
+            
+            for i, result in enumerate(results):
+                if result == "cancelled":
+                    logger.warning(f"🚫 Upload cancelled by user: {filename} - Rolling back")
+                    await self.delete_file_documents(conversation_id, filename, user_id)
+                    return DocumentUploadResponse(
+                        success=False,
+                        message="Upload cancelled by user",
+                        chunk_count=0,
+                        file_info=file_info
                     )
-                    
-                    if success:
-                        success_count += 1
-                    else:
-                        failed_count += 1
-                        processing_errors.append(f"Failed to store chunk {chunk_index}")
-                        
-                except Exception as e:
+                elif result is True:
+                    success_count += 1
+                else:
                     failed_count += 1
-                    error_msg = f"Error processing chunk {chunk_index}: {str(e)}"
-                    logger.error(
-                        f"❌ {error_msg}",
-                        extra={
-                            'operation': 'chunk_storage',
-                            'document_name': filename,
-                            'user_id': str(user_id),
-                            'conversation_id': str(conversation_id),
-                            'chunk_index': chunk_index,
-                            'error_type': 'chunk_storage_error'
-                        }
-                    )
+                    error_msg = str(result) if result is not False else f"Failed to store chunk {i}"
                     processing_errors.append(error_msg)
             
             storage_duration = time.time() - storage_start_time

@@ -86,7 +86,8 @@ function ChatContent() {
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // efficient scroll without animation jitter during streaming
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages]);
 
   // Reset mode when conversation changes
