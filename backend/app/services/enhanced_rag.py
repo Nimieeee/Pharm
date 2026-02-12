@@ -276,9 +276,9 @@ class EnhancedRAGService:
             success_count = streamed_chunks_count
             failed_count = 0
             
-            # Parallel processing of chunks
-            logger.info(f"🚀 Starting parallel processing of {len(chunks)} chunks (concurrency=5)...")
-            semaphore = asyncio.Semaphore(5)  # Limit concurrent embedding requests
+            # Parallel processing of chunks (Optimized for 2-core VPS)
+            logger.info(f"🚀 Starting parallel processing of {len(chunks)} chunks (concurrency=3)...")
+            semaphore = asyncio.Semaphore(3)  # Limit concurrent embedding requests to avoid overloading
             
             async def process_chunk_with_semaphore(idx, chk):
                 async with semaphore:
