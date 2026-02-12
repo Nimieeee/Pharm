@@ -9,6 +9,7 @@ import rehypeKatex from 'rehype-katex';
 import { Copy, Check, Download, ExternalLink } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { MermaidRenderer } from './MermaidRenderer';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 
 interface MarkdownRendererProps {
   content: string;
@@ -245,6 +246,8 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   mode = 'normal'
 }: MarkdownRendererProps & { mode?: 'normal' | 'deep_research' | 'fast' }) {
 
+  const mermaidEnabled = useFeatureFlag('mermaid-diagrams');
+
   // 1. Clean content from logs
   let displayContent = content
     .replace(/\{"timestamp":[^}]+\}/g, '')
@@ -363,9 +366,9 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
                 </code>
               );
             }
-            // Mermaid diagram rendering
+            // Mermaid diagram rendering (admin-only via feature flag)
             const language = className?.replace('language-', '') || '';
-            if (language === 'mermaid') {
+            if (language === 'mermaid' && mermaidEnabled) {
               return <MermaidRenderer code={String(children).replace(/\n$/, '')} />;
             }
             return (
