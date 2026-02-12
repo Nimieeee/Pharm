@@ -28,36 +28,57 @@ class ImageGenerationService:
 
     async def generate_image(self, prompt: str, model: str = "turbo") -> Dict[str, Any]:
         """
-        Generate an image URL using Pollinations.ai (Public API).
+        Generate an image URL proxy (Internal API).
         """
-        logger.info(f"🎨 Generating image URL with Pollinations ({model}): {prompt[:80]}...")
-
-        # URL-encode the prompt
-        encoded_prompt = urllib.parse.quote(prompt, safe='')
-        base_url = "https://image.pollinations.ai/prompt"
+        # We now use a proxy endpoint in our own backend to hide the API key
+        # The URL points to OUR backend, which fetches from Pollinations
+        encoded_prompt = urllib.parse.quote(prompt)
+        base_url = "/api/v1/ai/image-proxy"
         
-        # Random seed to ensure uncached results
         seed = random.randint(0, 999999)
-        
-        # Construct parameters
         params = [
+            f"prompt={encoded_prompt}",
             f"model={model}",
             "width=512",
             "height=512",
-            "nologo=true",
-            "safe=true",
             f"seed={seed}"
         ]
-        query_string = "&".join(params)
+        query = "&".join(params)
         
-        # Final URL
-        image_url = f"{base_url}/{encoded_prompt}?{query_string}"
-        
-        logger.info(f"✅ Image URL generated: {image_url}")
+        # Return relative URL to our proxy
+        image_url = f"{base_url}?{query}"
         
         return {
             "status": "success",
             "image_url": image_url,
-            "image_base64": None, # Not used
+            "image_base64": None,
             "error": None,
         }
+
+    async def fetch_image_from_pollinations(self, prompt: str, model: str, width: int, height: int, seed: int) -> bytes:
+        """
+        Fetch actual image bytes from Gen.Pollinations.AI (Secure).
+        """
+        encoded_prompt = urllib.parse.quote(prompt, safe='')
+        url = f"{POLLINATIONS_BASE_URL}/{encoded_prompt}" # https://gen.pollinations.ai/image/...
+        
+        params = {
+            "model": model,
+            "width": width,
+            "height": height,
+            "nologo": "true",
+            "safe": "true",
+            "seed": seed
+        }
+        
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+            
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            resp = await client.get(url, params=params, headers=headers)
+            if resp.status_code == 200:
+                return resp.content
+            else:
+                logger.error(f"Pollinations Error {resp.status_code}: {resp.text}")
+                raise Exception(f"Pollinations API Error: {resp.status_code}")

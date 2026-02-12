@@ -5,7 +5,7 @@ AI Chat API endpoints
 from typing import Dict, Any, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 from supabase import Client
 
@@ -1085,6 +1085,26 @@ async def delete_conversation_documents(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete documents: {str(e)}"
         )
+
+
+@router.get("/image-proxy")
+async def proxy_image(
+    prompt: str,
+    model: str = "turbo",
+    width: int = 512,
+    height: int = 512,
+    seed: int = 42,
+):
+    """
+    Proxy endpoint to fetch images from Pollinations (hiding API key).
+    Publicly accessible to allow embedding in Markdown.
+    """
+    try:
+        service = ImageGenerationService()
+        image_bytes = await service.fetch_image_from_pollinations(prompt, model, width, height, seed)
+        return Response(content=image_bytes, media_type="image/jpeg")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
