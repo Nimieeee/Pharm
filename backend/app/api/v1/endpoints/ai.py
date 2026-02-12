@@ -114,9 +114,10 @@ async def generate_image(
         # 2. Save assistant response (image URL)
         # 2. Save assistant response (image URL)
         if result.get("status") == "success":
-            # Use direct URL to avoid base64 data URI issues in frontend renderer
-            img_url = result.get("image_url")
-            assistant_message = f"![{request.prompt}]({img_url})"
+            # Sanitize base64 string
+            img_data = result.get("image_base64", "").replace("\n", "").replace("\r", "")
+            mime = result.get("mime_type", "image/jpeg")
+            assistant_message = f"![{request.prompt}](data:{mime};base64,{img_data})"
         else:
             assistant_message = f"Failed to generate image: {result.get('error', 'Unknown error')}"
              

@@ -189,8 +189,9 @@ class AIService:
                 return "Image generation is currently in beta and available to administrators only."
             result = await self.image_gen_service.generate_image(tool_args.get("prompt", ""))
             if result.get("status") == "success":
-                img_url = result.get("image_url")
-                return f"![{tool_args.get('prompt', '')}]({img_url})"
+                img_data = result.get("image_base64", "").replace("\n", "").replace("\r", "")
+                mime = result.get("mime_type", "image/jpeg")
+                return f"![{tool_args.get('prompt', '')}](data:{mime};base64,{img_data})"
             else:
                 return f"Image generation failed: {result.get('error', 'Unknown error')}"
         

@@ -65,12 +65,13 @@ class ImageGenerationService:
                 if response.status_code == 200 and response.headers.get("content-type", "").startswith("image/"):
                     image_bytes = response.content
                     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+                    mime_type = response.headers.get("content-type", "image/jpeg")
 
-                    logger.info(f"✅ Image generated ({len(image_bytes)} bytes)")
+                    logger.info(f"✅ Image generated ({len(image_bytes)} bytes, {mime_type})")
                     return {
                         "status": "success",
                         "image_base64": image_base64,
-                        "image_url": url,
+                        "mime_type": mime_type,
                         "error": None,
                     }
 
