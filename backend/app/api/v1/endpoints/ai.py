@@ -114,7 +114,8 @@ async def generate_image(
         # 2. Save assistant response (image URL)
         # 2. Save assistant response (image URL)
         if result.get("status") == "success":
-            img_data = result.get("image_base64")
+            # Sanitize base64 string
+            img_data = result.get("image_base64", "").replace("\n", "").replace("\r", "")
             assistant_message = f"![{request.prompt}](data:image/png;base64,{img_data})"
         else:
             assistant_message = f"Failed to generate image: {result.get('error', 'Unknown error')}"
@@ -463,63 +464,11 @@ async def chat_stream(
             chat_request.message = original_message[14:].strip()
             logger.info(f"🔬 Deep Research mode triggered via 'Deep Research:' prefix")
 
-        # Check for "/image" prefix → trigger image generation
+        # Check for "/image" prefix → ignore, handled by frontend dedicated endpoint
         elif original_message.lower().startswith("/image"):
-            # Remove prefix and generate image
-            prompt = original_message[7:].strip()
-            logger.info(f"🎨 Image Generation triggered via '/image' prefix: {prompt}")
-            
-            # Save user message
-            await chat_service.add_message(
-                MessageCreate(conversation_id=chat_request.conversation_id, role="user", content=original_message),
-                current_user
-            )
-            
-            async def image_stream():
-                start_msg = json.dumps({'text': '🎨 **Generating Image...**\n\n'})
-                yield f"data: {start_msg}\n\n"
-                
-                try:
-                    # Import here to avoid circular dependencies if any
-                    from app.services.image_gen import ImageGenerationService
-                    img_service = ImageGenerationService()
-                    
-                    result = await img_service.generate_image(prompt)
-                    
-                    if result.get("status") == "success":
-                        img_data = result.get("image_base64")
-                        # Return markdown image
-                        markdown_img = f"![{prompt}](data:image/png;base64,{img_data})"
-                        
-                        # Send JSON text
-                        # chunk large base64? No, text/event-stream handles it usually, but base64 is large.
-                        # Frontend expects {"text": "..."}
-                        # We send it as one chunk or split?
-                        # Better to send a descriptive text + image.
-                        
-                        response_text = f"Here is your generated image for: **{prompt}**\n\n{markdown_img}"
-                        yield f"data: {json.dumps({'text': response_text})}\n\n"
-                        
-                        # Save assistant response
-                        await chat_service.add_message(
-                             MessageCreate(conversation_id=chat_request.conversation_id, role="assistant", content=response_text),
-                             current_user
-                        )
-                    else:
-                        error_msg = result.get("error", "Unknown error")
-                        yield f"data: {json.dumps({'text': f'❌ Image generation failed: {error_msg}'})}\n\n"
-                        await chat_service.add_message(
-                             MessageCreate(conversation_id=chat_request.conversation_id, role="assistant", content=f"Image generation failed: {error_msg}"),
-                             current_user
-                        )
-
-                except Exception as e:
-                    logger.error(f"Image generation stream error: {e}")
-                    yield f"data: {json.dumps({'text': f'❌ Error: {str(e)}'})}\n\n"
-                
-                yield "data: [DONE]\n\n"
-
-            return StreamingResponse(image_stream(), media_type="text/event-stream")
+             async def empty_stream():
+                 yield "data: [DONE]\n\n"
+             return StreamingResponse(empty_stream(), media_type="text/event-stream")
         
         # =====================================================================
         # HANDLE LAB REPORT MODE (Special case - generates structured report)
