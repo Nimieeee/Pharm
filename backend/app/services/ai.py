@@ -157,7 +157,7 @@ class AIService:
         }
     ]
     
-    async def execute_tool(self, tool_name: str, tool_args: Dict[str, Any]) -> str:
+    async def execute_tool(self, tool_name: str, tool_args: Dict[str, Any], is_admin: bool = False) -> str:
         """Execute a custom tool and return the output as a string"""
         print(f"🛠️ Executing tool: {tool_name} with args: {tool_args}")
         
@@ -176,6 +176,8 @@ class AIService:
                 return f"PubChem data not found for {tool_args.get('compound_name')}."
         
         elif tool_name == "generate_chart":
+            if not is_admin:
+                return "Chart generation is currently in beta and available to administrators only."
             result = await self.plotting_service.generate_chart(tool_args.get("code", ""))
             if result.get("status") == "success":
                 return f"[CHART_IMAGE_BASE64]{result['image_base64']}[/CHART_IMAGE_BASE64]"
@@ -183,6 +185,8 @@ class AIService:
                 return f"Chart generation failed: {result.get('error', 'Unknown error')}"
         
         elif tool_name == "generate_image":
+            if not is_admin:
+                return "Image generation is currently in beta and available to administrators only."
             result = await self.image_gen_service.generate_image(tool_args.get("prompt", ""))
             if result.get("status") == "success":
                 return f"[IMAGE_BASE64]{result['image_base64']}[/IMAGE_BASE64]"
