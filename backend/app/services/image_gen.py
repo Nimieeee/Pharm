@@ -70,6 +70,7 @@ class ImageGenerationService:
                     return {
                         "status": "success",
                         "image_base64": image_base64,
+                        "image_url": url,
                         "error": None,
                     }
 
