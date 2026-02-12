@@ -431,7 +431,8 @@ async def chat_stream(
             
             # Return streaming refusal
             async def refusal_stream():
-                yield f"data: {injection_check['refusal_message']}\n\n"
+                refusal_json = json.dumps({"text": injection_check["refusal_message"]})
+                yield f"data: {refusal_json}\n\n"
                 yield "data: [DONE]\n\n"
                 
             return StreamingResponse(
@@ -480,7 +481,8 @@ async def chat_stream(
                     lab_service = LabReportService()
                     rag_service = EnhancedRAGService(ai_service.supabase)
                     
-                    yield f"data: {json.dumps({'text': '📝 **Generating Lab Report...**\\n\\n'})}\n\n"
+                    start_msg = json.dumps({'text': '📝 **Generating Lab Report...**\n\n'})
+                    yield f"data: {start_msg}\n\n"
                     
                     # Get RAG context for uploaded documents
                     data_context = ""
@@ -493,11 +495,13 @@ async def chat_stream(
                         )
                         if context:
                             data_context = context
-                            yield f"data: {json.dumps({'text': '📄 Found uploaded document context...\\n'})}\n\n"
+                            found_msg = json.dumps({'text': '📄 Found uploaded document context...\n'})
+                            yield f"data: {found_msg}\n\n"
                     except Exception as e:
                         logger.warning(f"RAG fetch failed: {e}")
                     
-                    yield f"data: {json.dumps({'text': '🔬 Analyzing data and generating sections...\\n\\n'})}\n\n"
+                    analyze_msg = json.dumps({'text': '🔬 Analyzing data and generating sections...\n\n'})
+                    yield f"data: {analyze_msg}\n\n"
                     
                     # Generate the lab report
                     full_context = (data_context or "") + "\n" + image_context_str
