@@ -625,9 +625,9 @@ export function useChat() {
                 // Add to content
                 fullContent += textContent;
 
-                // Throttled UI Update (every 50ms)
+                // Throttled UI Update (every 100ms - 10fps for better performance)
                 const now = Date.now();
-                if (now - lastUpdateRef.current >= 50) {
+                if (now - lastUpdateRef.current >= 100) {
                   updateMessage(fullContent);
                   lastUpdateRef.current = now;
                 }
