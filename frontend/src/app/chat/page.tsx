@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal, PanelLeft } from 'lucide-react';
 
-import ChatMessage from '@/components/chat/ChatMessage';
+import { MemoizedChatMessage } from '@/components/chat/ChatMessage';
 import ChatInput, { Mode } from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
@@ -152,7 +152,7 @@ function ChatContent() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <ChatMessage
+                  <MemoizedChatMessage
                     message={msg}
                     isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
                     onEdit={editMessage}

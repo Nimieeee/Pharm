@@ -69,6 +69,7 @@ export function useChat() {
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
   const currentConvIdRef = useRef<string | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null); // Separate abort for uploads
+  const lastUpdateRef = useRef<number>(0); // For throttling updates
 
   // Keep-alive ping to prevent HF Space cold starts (runs every 30 seconds)
   useEffect(() => {
@@ -457,7 +458,12 @@ export function useChat() {
                     plan_overview: progress.plan_overview || accumulatedState.plan_overview,
                   };
 
-                  setDeepResearchProgress({ ...accumulatedState });
+                  // Throttled UI Update (every 50ms)
+                  const now = Date.now();
+                  if (now - lastUpdateRef.current >= 50) {
+                    setDeepResearchProgress({ ...accumulatedState });
+                    lastUpdateRef.current = now;
+                  }
 
                   if (progress.type === 'complete' && progress.report) {
                     finalReport = progress.report;
@@ -618,8 +624,13 @@ export function useChat() {
 
                 // Add to content
                 fullContent += textContent;
-                // Update the message content in real-time (respects current conversation)
-                updateMessage(fullContent);
+
+                // Throttled UI Update (every 50ms)
+                const now = Date.now();
+                if (now - lastUpdateRef.current >= 50) {
+                  updateMessage(fullContent);
+                  lastUpdateRef.current = now;
+                }
               }
             }
           }
@@ -641,9 +652,11 @@ export function useChat() {
                 textContent = data.replace(/\\n/g, '\n');
               }
               fullContent += textContent;
-              updateMessage(fullContent);
             }
           }
+
+          // Final update to ensure we have everything
+          updateMessage(fullContent);
 
           // After streaming completes, re-fetch the message to ensure we have the final formatted version
           if (streamConversationId) {
