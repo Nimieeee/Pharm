@@ -43,10 +43,18 @@ class ImageGenerationService:
         
         # Enhanced style for Diagrams/Cross-sections (triggers "Textbook Mode")
         diagram_triggers = ["cross section", "cross-section", "diagram", "anatomy", "structure", "labeled", "schematic", "cutaway"]
+        
+        # Enhanced style for Pathology/Conditions (triggers "Clinical Mode") to override "healthy" bias
+        pathology_triggers = ["spina bifida", "defect", "abnormality", "syndrome", "disorder", "disease", "lesion", "cyst", "tumor", "ulcer", "condition", "rupture", "hernia", "infection", "inflammation"]
+        
         if any(trigger in lower_prompt for trigger in diagram_triggers):
             # Stronger emphasis on educational/diagrammatic accuracy
             # Added "accurate text", "legible labels" to fight gibberish
             style_keywords = "medical textbook diagram, anatomically correct cross-section, correct physiological structure, clearly labeled parts, proper spelling, legible annotations, schematic, educational infographic, high detail, white background, vector style, clean lines, encyclopaedia britannica style"
+        
+        elif any(trigger in lower_prompt for trigger in pathology_triggers):
+             # Strong emphasis on CLINICAL visualization of the CONDITION
+             style_keywords = "clinical medical photography, showing pathological defect, high diagnostic quality, clear sign of condition, medical case study image, macro shot of lesion, dermatological reference, surgical view, hyper-realistic, 8k, medical journal quality"
 
         final_prompt = f"{prompt}, {style_keywords}"
         

@@ -86,19 +86,27 @@ async def generate_image(
     request: ImageGenerationRequest,
     current_user: User = Depends(get_current_user),
     image_service: ImageGenerationService = Depends(get_image_gen_service),
-    chat_service: ChatService = Depends(get_chat_service)
+    chat_service: ChatService = Depends(get_chat_service),
+    ai_service: AIService = Depends(get_ai_service)
 ):
     """
     Generate an image based on a prompt
     """
     print(f"🎨 Image Generation requested by user {current_user.id}")
-    print(f"📝 Prompt: {request.prompt}")
+    print(f"📝 Original Prompt: {request.prompt}")
     
     try:
-        logger.info(f"Generating image for user {current_user.id} with prompt: {request.prompt}")
+        # Step 1: Enhance the prompt using Mistral (Prompt Engineering)
+        print("✨ Enhancing prompt with Mistral...")
+        enhanced_prompt = await ai_service.enhance_image_prompt(request.prompt)
+        print(f"✨ Enhanced Prompt: {enhanced_prompt}")
         
-        # Call the image generation service
-        result = await image_service.generate_image(request.prompt)
+        logger.info(f"Generating image for user {current_user.id}")
+        logger.info(f"Original: {request.prompt}")
+        logger.info(f"Enhanced: {enhanced_prompt}")
+        
+        # Call the image generation service with the ENHANCED prompt
+        result = await image_service.generate_image(enhanced_prompt)
         
         # Save the interaction to chat history
         # 1. Save user prompt

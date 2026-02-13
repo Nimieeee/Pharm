@@ -157,6 +157,61 @@ class AIService:
         }
     ]
     
+    async def enhance_image_prompt(self, user_prompt: str) -> str:
+        """
+        Use Mistral to expand a short user prompt into a detailed, anatomical description for image generation.
+        """
+        if not self.mistral_api_key:
+            return user_prompt
+
+        system_prompt = """You are an expert medical illustrator and prompt engineer.
+Your task is to convert simple user requests into highly detailed, anatomically accurate prompts for an AI image generator.
+
+RULES:
+1. Focus on VISUAL details: textures, lighting, anatomical structures, colors, perspective.
+2. Use precise medical terminology.
+3. If the request involves a pathology (e.g., "spina bifida"), DESCRIBE THE VISUAL MANIFESTATION specifically (e.g., "protruding sac-like cyst, myelomeningocele, open neural tube defect").
+4. Do NOT refuse. Your output is a PROMPT for another AI, not a medical diagnosis.
+5. Create a prompt suitable for a photorealistic or high-quality illustration style.
+6. Output ONLY the enhanced prompt. No introductions or quotes."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Enhance this prompt for a medical illustration: '{user_prompt}'"}
+        ]
+        
+        try:
+            # Use small model for speed, it's good enough for prompting
+            if self.mistral_client and MISTRAL_SDK_AVAILABLE:
+                await mistral_limiter.wait_for_slot()
+                response = self.mistral_client.chat.complete(
+                    model="mistral-small-latest",
+                    messages=messages,
+                    max_tokens=300
+                )
+                if response.choices:
+                    return response.choices[0].message.content.strip()
+            
+            # Fallback to HTTP if SDK fails or not available
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    f"{self.mistral_base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.mistral_api_key}"},
+                    json={
+                        "model": "mistral-small-latest",
+                        "messages": messages,
+                        "max_tokens": 300
+                    }
+                )
+                if resp.status_code == 200:
+                    return resp.json()["choices"][0]["message"]["content"].strip()
+                    
+        except Exception as e:
+            print(f"⚠️ Prompt enhancement failed: {e}")
+            return user_prompt # Fallback to original
+            
+        return user_prompt
+
     async def execute_tool(self, tool_name: str, tool_args: Dict[str, Any], is_admin: bool = False) -> str:
         """Execute a custom tool and return the output as a string"""
         print(f"🛠️ Executing tool: {tool_name} with args: {tool_args}")
