@@ -120,7 +120,7 @@ class AuthService:
             user_dict["is_verified"] = False  # Default to unverified
 
             # Send email with code
-            self.email_service.send_verification_email(user_data.email, code)
+            await self.email_service.send_verification_email(user_data.email, code)
             
             
             result = self.db.table("users").insert(user_dict).execute()
@@ -439,7 +439,7 @@ class AuthService:
             }).eq("id", user_data["id"]).execute()
             
             # Send email
-            return self.email_service.send_verification_email(email, code)
+            return await self.email_service.send_verification_email(email, code)
             
         except Exception as e:
             print(f"Resend verification error: {e}")
@@ -470,7 +470,7 @@ class AuthService:
             # Send welcome email
             try:
                 first_name = user_data.get("first_name") or "there"
-                self.email_service.send_welcome_email(email, first_name)
+                await self.email_service.send_welcome_email(email, first_name)
             except Exception as e:
                 # Don't fail verification if email fails
                 print(f"⚠️ Failed to send welcome email: {e}")
@@ -511,7 +511,7 @@ class AuthService:
         link = f"{base_url}/reset-password?token={reset_token}"
         
         # Send email
-        return self.email_service.send_password_reset_email(email, link)
+        return await self.email_service.send_password_reset_email(email, link)
 
     async def reset_password(self, token: str, new_password: str) -> bool:
         """
