@@ -70,6 +70,7 @@ export function useChat() {
   const currentConvIdRef = useRef<string | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null); // Separate abort for uploads
   const lastUpdateRef = useRef<number>(0); // For throttling updates
+  const isSendingRef = useRef(false); // Debounce sendMessage
 
   // Keep-alive ping to prevent HF Space cold starts (runs every 30 seconds)
   useEffect(() => {
@@ -238,435 +239,260 @@ export function useChat() {
   const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed', language: string = 'en') => {
     // Check if THIS conversation is currently loading (allow sending in other conversations)
     const currentConvLoading = isConversationStreaming(conversationId);
-    if (!content.trim() || currentConvLoading) return;
 
-    const token = localStorage.getItem('token');
+    // Prevent double sending
+    if (isSendingRef.current || !content.trim() || currentConvLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: content.trim(),
-      timestamp: new Date(),
-      attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setUploadedFiles([]); // Clear attachments after sending
-    setIsLoading(true);
-
-    // Track the conversation ID for this request (will be set if new conversation is created)
-    let streamConversationId = conversationId;
-
-    // Only abort if there's an active stream in THIS conversation
-    if (streamConversationId) {
-      const existingStream = activeStreams.get(streamConversationId);
-      if (existingStream) {
-        existingStream.abortController.abort();
-        unregisterStream(streamConversationId);
-      }
-    }
-
-    // Create new abort controller for this stream
-    const abortController = new AbortController();
-    const signal = abortController.signal;
+    isSendingRef.current = true;
 
     try {
-      if (!token) {
-        const authMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Please sign in to use PharmGPT. Go to /login to authenticate.',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, authMessage]);
-        setIsLoading(false);
-        return;
-      }
+      const token = localStorage.getItem('token');
 
-      if (!streamConversationId) {
-        const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ title: generateConversationTitle(content) }),
-        });
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: content.trim(),
+        timestamp: new Date(),
+        attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
+      };
 
-        if (convResponse.ok) {
-          const convData = await convResponse.json();
-          streamConversationId = convData.id;
-          setConversationId(convData.id);
-          currentConvIdRef.current = convData.id;
-          // Optimistically add new conversation to sidebar
-          addConversationToList({
-            id: convData.id,
-            title: convData.title || generateConversationTitle(content),
-          });
-        } else {
-          throw new Error('Failed to create conversation');
-        }
-      } else {
-        // Existing conversation - move it to top of list
-        moveConversationToTop(streamConversationId);
-      }
+      setMessages(prev => [...prev, userMessage]);
+      setUploadedFiles([]); // Clear attachments after sending
+      setIsLoading(true);
 
-      // Register this stream in the global store
+      // Track the conversation ID for this request (will be set if new conversation is created)
+      let streamConversationId = conversationId;
+
+      // Only abort if there's an active stream in THIS conversation
       if (streamConversationId) {
-        registerStream(streamConversationId, abortController);
+        const existingStream = activeStreams.get(streamConversationId);
+        if (existingStream) {
+          existingStream.abortController.abort();
+          unregisterStream(streamConversationId);
+        }
       }
 
-      // Handle Image Generation Command
-      if (content.trim().startsWith('/image')) {
-        const prompt = content.replace('/image', '').trim();
+      // Create new abort controller for this stream
+      const abortController = new AbortController();
+      const signal = abortController.signal;
 
-        // Ensure we don't fall through even if prompt is empty
-        if (!prompt) {
+      try {
+        if (!token) {
+          const authMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: 'Please sign in to use PharmGPT. Go to /login to authenticate.',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, authMessage]);
           setIsLoading(false);
           return;
         }
 
-        if (prompt && streamConversationId) {
-          try {
-            // Add assistant placeholder
-            const assistantMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              role: 'assistant',
-              content: '_Generating image..._',
-              timestamp: new Date(),
-            };
+        if (!streamConversationId) {
+          const convResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title: generateConversationTitle(content) }),
+          });
 
-            // Optimistically add to UI if current
-            if (currentConvIdRef.current === streamConversationId) {
-              setMessages(prev => [...prev, assistantMessage]);
-            }
+          if (convResponse.ok) {
+            const convData = await convResponse.json();
+            streamConversationId = convData.id;
+            setConversationId(convData.id);
+            currentConvIdRef.current = convData.id;
+            // Optimistically add new conversation to sidebar
+            addConversationToList({
+              id: convData.id,
+              title: convData.title || generateConversationTitle(content),
+            });
+          } else {
+            throw new Error('Failed to create conversation');
+          }
+        } else {
+          // Existing conversation - move it to top of list
+          moveConversationToTop(streamConversationId);
+        }
 
-            const result = await generateImage(prompt, streamConversationId);
+        // Register this stream in the global store
+        if (streamConversationId) {
+          registerStream(streamConversationId, abortController);
+        }
 
-            // Update with actual result
-            const finalMessage: Message = {
-              ...assistantMessage,
-              content: result.markdown || result.image_url || 'Image generated.'
-            };
+        // Handle Image Generation Command
+        if (content.trim().startsWith('/image')) {
+          const prompt = content.replace('/image', '').trim();
 
-            // Update UI
-            if (currentConvIdRef.current === streamConversationId) {
-              setMessages(prev => prev.map(m => m.id === assistantMessage.id ? finalMessage : m));
-            }
-
-            // Update Cache
-            const cached = conversationMessages.get(streamConversationId) || [];
-            cached.push(finalMessage);
-            conversationMessages.set(streamConversationId, cached);
-
-            setIsLoading(false);
-            return; // Success
-          } catch (error) {
-            console.error('Image generation error:', error);
-            const errorMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              role: 'assistant',
-              content: 'Failed to generate image. Please try again.',
-              timestamp: new Date(),
-            };
-            if (currentConvIdRef.current === streamConversationId) {
-              setMessages(prev => prev.filter(m => m.content !== '_Generating image..._').concat(errorMessage));
-            }
+          // Ensure we don't fall through even if prompt is empty
+          if (!prompt) {
             setIsLoading(false);
             return;
           }
-        }
-        return; // Catch-all return for /image command
-      }
 
-      // Handle Deep Research mode differently - use streaming endpoint
-      if (mode === 'deep_research') {
-        // Initialize accumulated state for the UI
-        let accumulatedState: DeepResearchProgress = {
-          type: 'status',
-          status: 'initializing',
-          message: 'Starting deep research...',
-          progress: 0,
-          steps: [],
-          citations: [],
-          plan_overview: ''
-        };
+          if (prompt && streamConversationId) {
+            try {
+              // Add assistant placeholder
+              const assistantMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: '_Generating image..._',
+                timestamp: new Date(),
+              };
 
-        setDeepResearchProgress(accumulatedState);
-
-        const response = await fetch(`${UPLOAD_BASE_URL}/api/v1/ai/deep-research/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            question: content.trim(),
-            conversation_id: streamConversationId,
-            metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
-            language: language,
-          }),
-          signal,
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            localStorage.removeItem('token');
-            throw new Error('Session expired. Please sign in again.');
-          }
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Failed to start deep research');
-        }
-
-        // Process SSE stream
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let finalReport = '';
-
-        if (reader) {
-          let isDone = false;
-          let buffer = '';
-          while (!isDone) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
-
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6).trim();
-                if (data === '[DONE]') {
-                  isDone = true;
-                  break;
-                }
-
-                try {
-                  const progress = JSON.parse(data) as DeepResearchProgress;
-
-                  // Accumulate state for better UI experience
-                  let currentCitations = accumulatedState.citations || [];
-                  if (progress.citations && progress.citations.length > 0) {
-                    // Merge new citations avoiding duplicates by URL
-                    const newCitations = progress.citations.filter(
-                      nc => !currentCitations.some(ec => ec.url === nc.url)
-                    );
-                    currentCitations = [...currentCitations, ...newCitations];
-                  }
-
-                  accumulatedState = {
-                    ...accumulatedState,
-                    ...progress,
-                    // Preserve and update accumulated data
-                    steps: progress.steps || accumulatedState.steps,
-                    citations: currentCitations,
-                    plan_overview: progress.plan_overview || accumulatedState.plan_overview,
-                  };
-
-                  // Throttled UI Update (every 50ms)
-                  const now = Date.now();
-                  if (now - lastUpdateRef.current >= 50) {
-                    setDeepResearchProgress({ ...accumulatedState });
-                    lastUpdateRef.current = now;
-                  }
-
-                  if (progress.type === 'complete' && progress.report) {
-                    finalReport = progress.report;
-                  }
-                } catch (e) {
-                  // Ignore parse errors for partial chunks
-                  console.debug('Deep Research: Partial chunk or parse error', data);
-                }
+              // Optimistically add to UI if current
+              if (currentConvIdRef.current === streamConversationId) {
+                setMessages(prev => [...prev, assistantMessage]);
               }
+
+              const result = await generateImage(prompt, streamConversationId);
+
+              // Update with actual result
+              const finalMessage: Message = {
+                ...assistantMessage,
+                content: result.markdown || result.image_url || 'Image generated.'
+              };
+
+              // Update UI
+              if (currentConvIdRef.current === streamConversationId) {
+                setMessages(prev => prev.map(m => m.id === assistantMessage.id ? finalMessage : m));
+              }
+
+              setIsLoading(false);
+              return; // Success
+            } catch (error) {
+              console.error('Image generation error:', error);
+              const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: 'Failed to generate image. Please try again.',
+                timestamp: new Date(),
+              };
+              if (currentConvIdRef.current === streamConversationId) {
+                setMessages(prev => prev.filter(m => m.content !== '_Generating image..._').concat(errorMessage));
+              }
+              setIsLoading(false);
+              return;
             }
           }
+          return; // Catch-all return for /image command
         }
 
-        setDeepResearchProgress(null);
+        // ... continue ...
 
-        // Re-fetch conversation to ensure we have the latest saved report
-        let savedReport = finalReport;
-        if (streamConversationId) {
-          try {
-            const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
-            });
 
-            if (messagesResponse.ok) {
-              const messagesData = await messagesResponse.json();
-              // Find the most recent assistant message (should be the deep research report)
-              const latestAssistantMsg = messagesData
-                .filter((msg: any) => msg.role === 'assistant')
-                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-
-              if (latestAssistantMsg?.content) {
-                savedReport = latestAssistantMsg.content;
-              }
-            }
-          } catch (refetchError) {
-            console.error('Failed to re-fetch conversation:', refetchError);
-          }
-        }
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: savedReport || 'Deep research completed but no report was generated. Please try again.',
-          timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-        return;
-      }
-
-      // Regular chat mode - try streaming first, fallback to non-streaming
-      const assistantMessageId = (Date.now() + 1).toString();
-      let useStreaming = true;
-
-      try {
-        const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message: content.trim(),
-            conversation_id: streamConversationId,
-            mode: mode,
-            use_rag: true,
-            metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
-            language: language,
-          }),
-          signal,
-        });
-
-        if (streamResponse.ok && streamResponse.body) {
-          // Add empty assistant message that we'll update
-          const assistantMessage: Message = {
-            id: assistantMessageId,
-            role: 'assistant',
-            content: '',
-            timestamp: new Date(),
+        // Handle Deep Research mode differently - use streaming endpoint
+        if (mode === 'deep_research') {
+          // Initialize accumulated state for the UI
+          let accumulatedState: DeepResearchProgress = {
+            type: 'status',
+            status: 'initializing',
+            message: 'Starting deep research...',
+            progress: 0,
+            steps: [],
+            citations: [],
+            plan_overview: ''
           };
 
-          // Helper to update messages (only if still on same conversation)
-          const updateMessage = (content: string) => {
-            const newMsg = { ...assistantMessage, content };
-            // Always update the cache
-            const cached = conversationMessages.get(streamConversationId!) || [];
-            const existingIdx = cached.findIndex(m => m.id === assistantMessageId);
-            if (existingIdx >= 0) {
-              cached[existingIdx] = newMsg;
-            } else {
-              cached.push(newMsg);
-            }
-            conversationMessages.set(streamConversationId!, cached);
+          setDeepResearchProgress(accumulatedState);
 
-            // Only update UI if still on this conversation
-            if (currentConvIdRef.current === streamConversationId) {
-              setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId ? newMsg : msg
-              ));
-            }
-          };
+          const response = await fetch(`${UPLOAD_BASE_URL}/api/v1/ai/deep-research/stream`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              question: content.trim(),
+              conversation_id: streamConversationId,
+              metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
+              language: language,
+            }),
+            signal,
+          });
 
-          // Only add to UI if still on same conversation
-          if (currentConvIdRef.current === streamConversationId) {
-            setMessages(prev => [...prev, assistantMessage]);
+          if (!response.ok) {
+            if (response.status === 401) {
+              localStorage.removeItem('token');
+              throw new Error('Session expired. Please sign in again.');
+            }
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to start deep research');
           }
-          // Always add to cache
-          const cached = conversationMessages.get(streamConversationId!) || [];
-          cached.push(assistantMessage);
-          conversationMessages.set(streamConversationId!, cached);
 
           // Process SSE stream
-          const reader = streamResponse.body.getReader();
+          const reader = response.body?.getReader();
           const decoder = new TextDecoder();
-          let fullContent = '';
-          let buffer = '';
-          let isDone = false;
-          while (!isDone) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          let finalReport = '';
 
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
+          if (reader) {
+            let isDone = false;
+            let buffer = '';
+            while (!isDone) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            // Process complete lines from buffer
-            const lines = buffer.split('\n');
-            // Keep the last potentially incomplete line in buffer
-            buffer = lines.pop() || '';
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
 
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data.trim() === '[DONE]') {
-                  isDone = true;
-                  break;
-                }
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
 
-                // Skip any JSON log messages that might have leaked into the stream
-                if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
-                if (data.trim().startsWith('{') && data.includes('"level"')) continue;
-
-                // Try to parse as JSON (new format with proper newline handling)
-                let textContent = '';
-                try {
-                  const parsed = JSON.parse(data);
-                  if (parsed.text !== undefined) {
-                    textContent = parsed.text;
-                  } else {
-                    // Fallback: treat as raw text
-                    textContent = data.replace(/\\n/g, '\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6).trim();
+                  if (data === '[DONE]') {
+                    isDone = true;
+                    break;
                   }
-                } catch {
-                  // Not JSON - might be legacy format, decode escaped newlines
-                  textContent = data.replace(/\\n/g, '\n');
-                }
 
-                // Add to content
-                fullContent += textContent;
+                  try {
+                    const progress = JSON.parse(data) as DeepResearchProgress;
 
-                // Throttled UI Update (every 100ms - 10fps for better performance)
-                const now = Date.now();
-                if (now - lastUpdateRef.current >= 100) {
-                  updateMessage(fullContent);
-                  lastUpdateRef.current = now;
+                    // Accumulate state for better UI experience
+                    let currentCitations = accumulatedState.citations || [];
+                    if (progress.citations && progress.citations.length > 0) {
+                      // Merge new citations avoiding duplicates by URL
+                      const newCitations = progress.citations.filter(
+                        nc => !currentCitations.some(ec => ec.url === nc.url)
+                      );
+                      currentCitations = [...currentCitations, ...newCitations];
+                    }
+
+                    accumulatedState = {
+                      ...accumulatedState,
+                      ...progress,
+                      // Preserve and update accumulated data
+                      steps: progress.steps || accumulatedState.steps,
+                      citations: currentCitations,
+                      plan_overview: progress.plan_overview || accumulatedState.plan_overview,
+                    };
+
+                    // Throttled UI Update (every 50ms)
+                    const now = Date.now();
+                    if (now - lastUpdateRef.current >= 50) {
+                      setDeepResearchProgress({ ...accumulatedState });
+                      lastUpdateRef.current = now;
+                    }
+
+                    if (progress.type === 'complete' && progress.report) {
+                      finalReport = progress.report;
+                    }
+                  } catch (e) {
+                    // Ignore parse errors for partial chunks
+                    console.debug('Deep Research: Partial chunk or parse error', data);
+                  }
                 }
               }
             }
           }
 
-          // Process any remaining buffer
-          if (buffer.startsWith('data: ')) {
-            const data = buffer.slice(6);
-            if (data.trim() !== '[DONE]') {
-              // Try to parse as JSON
-              let textContent = '';
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.text !== undefined) {
-                  textContent = parsed.text;
-                } else {
-                  textContent = data.replace(/\\n/g, '\n');
-                }
-              } catch {
-                textContent = data.replace(/\\n/g, '\n');
-              }
-              fullContent += textContent;
-            }
-          }
+          setDeepResearchProgress(null);
 
-          // Final update to ensure we have everything
-          updateMessage(fullContent);
-
-          // After streaming completes, re-fetch the message to ensure we have the final formatted version
+          // Re-fetch conversation to ensure we have the latest saved report
+          let savedReport = finalReport;
           if (streamConversationId) {
             try {
               const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
@@ -677,98 +503,279 @@ export function useChat() {
 
               if (messagesResponse.ok) {
                 const messagesData = await messagesResponse.json();
+                // Find the most recent assistant message (should be the deep research report)
                 const latestAssistantMsg = messagesData
                   .filter((msg: any) => msg.role === 'assistant')
                   .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
-                if (latestAssistantMsg?.content && latestAssistantMsg.content !== fullContent) {
-                  // Update with the saved version if it's different (e.g., better formatted)
-                  setMessages(prev => prev.map(msg =>
-                    msg.id === assistantMessageId
-                      ? { ...msg, content: latestAssistantMsg.content }
-                      : msg
-                  ));
+                if (latestAssistantMsg?.content) {
+                  savedReport = latestAssistantMsg.content;
                 }
               }
             } catch (refetchError) {
-              console.error('Failed to re-fetch message:', refetchError);
+              console.error('Failed to re-fetch conversation:', refetchError);
             }
           }
-          return; // Successfully streamed
-        } else {
+
+          const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: savedReport || 'Deep research completed but no report was generated. Please try again.',
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+          return;
+        }
+
+        // Regular chat mode - try streaming first, fallback to non-streaming
+        const assistantMessageId = (Date.now() + 1).toString();
+        let useStreaming = true;
+
+        try {
+          const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              message: content.trim(),
+              conversation_id: streamConversationId,
+              mode: mode,
+              use_rag: true,
+              metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
+              language: language,
+            }),
+            signal,
+          });
+
+          if (streamResponse.ok && streamResponse.body) {
+            // Add empty assistant message that we'll update
+            const assistantMessage: Message = {
+              id: assistantMessageId,
+              role: 'assistant',
+              content: '',
+              timestamp: new Date(),
+            };
+
+            // Helper to update messages (only if still on same conversation)
+            const updateMessage = (content: string) => {
+              const newMsg = { ...assistantMessage, content };
+              // Always update the cache
+              const cached = conversationMessages.get(streamConversationId!) || [];
+              const existingIdx = cached.findIndex(m => m.id === assistantMessageId);
+              if (existingIdx >= 0) {
+                cached[existingIdx] = newMsg;
+              } else {
+                cached.push(newMsg);
+              }
+              conversationMessages.set(streamConversationId!, cached);
+
+              // Only update UI if still on this conversation
+              if (currentConvIdRef.current === streamConversationId) {
+                setMessages(prev => prev.map(msg =>
+                  msg.id === assistantMessageId ? newMsg : msg
+                ));
+              }
+            };
+
+            // Only add to UI if still on same conversation
+            if (currentConvIdRef.current === streamConversationId) {
+              setMessages(prev => [...prev, assistantMessage]);
+            }
+            // Always add to cache
+            const cached = conversationMessages.get(streamConversationId!) || [];
+            cached.push(assistantMessage);
+            conversationMessages.set(streamConversationId!, cached);
+
+            // Process SSE stream
+            const reader = streamResponse.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = '';
+            let buffer = '';
+            let isDone = false;
+            while (!isDone) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
+
+              // Process complete lines from buffer
+              const lines = buffer.split('\n');
+              // Keep the last potentially incomplete line in buffer
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data.trim() === '[DONE]') {
+                    isDone = true;
+                    break;
+                  }
+
+                  // Skip any JSON log messages that might have leaked into the stream
+                  if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
+                  if (data.trim().startsWith('{') && data.includes('"level"')) continue;
+
+                  // Try to parse as JSON (new format with proper newline handling)
+                  let textContent = '';
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.text !== undefined) {
+                      textContent = parsed.text;
+                    } else {
+                      // Fallback: treat as raw text
+                      textContent = data.replace(/\\n/g, '\n');
+                    }
+                  } catch {
+                    // Not JSON - might be legacy format, decode escaped newlines
+                    textContent = data.replace(/\\n/g, '\n');
+                  }
+
+                  // Add to content
+                  fullContent += textContent;
+
+                  // Throttled UI Update (every 100ms - 10fps for better performance)
+                  const now = Date.now();
+                  if (now - lastUpdateRef.current >= 100) {
+                    updateMessage(fullContent);
+                    lastUpdateRef.current = now;
+                  }
+                }
+              }
+            }
+
+            // Process any remaining buffer
+            if (buffer.startsWith('data: ')) {
+              const data = buffer.slice(6);
+              if (data.trim() !== '[DONE]') {
+                // Try to parse as JSON
+                let textContent = '';
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.text !== undefined) {
+                    textContent = parsed.text;
+                  } else {
+                    textContent = data.replace(/\\n/g, '\n');
+                  }
+                } catch {
+                  textContent = data.replace(/\\n/g, '\n');
+                }
+                fullContent += textContent;
+              }
+            }
+
+            // Final update to ensure we have everything
+            updateMessage(fullContent);
+
+            // After streaming completes, re-fetch the message to ensure we have the final formatted version
+            if (streamConversationId) {
+              try {
+                const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+
+                if (messagesResponse.ok) {
+                  const messagesData = await messagesResponse.json();
+                  const latestAssistantMsg = messagesData
+                    .filter((msg: any) => msg.role === 'assistant')
+                    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+                  if (latestAssistantMsg?.content && latestAssistantMsg.content !== fullContent) {
+                    // Update with the saved version if it's different (e.g., better formatted)
+                    setMessages(prev => prev.map(msg =>
+                      msg.id === assistantMessageId
+                        ? { ...msg, content: latestAssistantMsg.content }
+                        : msg
+                    ));
+                  }
+                }
+              } catch (refetchError) {
+                console.error('Failed to re-fetch message:', refetchError);
+              }
+            }
+            return; // Successfully streamed
+          } else {
+            useStreaming = false;
+          }
+        } catch (streamError) {
+          console.log('Streaming not available, falling back to regular chat');
           useStreaming = false;
         }
-      } catch (streamError) {
-        console.log('Streaming not available, falling back to regular chat');
-        useStreaming = false;
-      }
 
-      // Fallback to non-streaming
-      if (!useStreaming) {
-        const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message: content.trim(),
-            conversation_id: streamConversationId,
-            mode: mode,
-            use_rag: true,
-            metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
-            language: language,
-          }),
-          signal,
-        });
+        // Fallback to non-streaming
+        if (!useStreaming) {
+          const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              message: content.trim(),
+              conversation_id: streamConversationId,
+              mode: mode,
+              use_rag: true,
+              metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
+              language: language,
+            }),
+            signal,
+          });
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            localStorage.removeItem('token');
-            throw new Error('Session expired. Please sign in again.');
+          if (!response.ok) {
+            if (response.status === 401) {
+              localStorage.removeItem('token');
+              throw new Error('Session expired. Please sign in again.');
+            }
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to get response');
           }
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Failed to get response');
+
+          const data = await response.json();
+
+          const assistantMessage: Message = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: data.response || data.message || 'I apologize, but I encountered an issue processing your request.',
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+        }
+      } catch (error: any) {
+        console.error('Chat error:', error);
+
+        // Handle "Conversation not found" by resetting state so user can start fresh
+        if (error.message && (error.message.includes('Conversation not found') || error.message.includes('404'))) {
+          console.warn('Conversation lost during send, resetting state');
+          setConversationId(null);
+          currentConvIdRef.current = null;
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('currentConversationId');
+          }
         }
 
-        const data = await response.json();
-
-        const assistantMessage: Message = {
-          id: assistantMessageId,
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.response || data.message || 'I apologize, but I encountered an issue processing your request.',
+          content: error.message || 'I apologize, but I\'m having trouble connecting to the server. Please check your connection and try again.',
           timestamp: new Date(),
         };
 
-        setMessages(prev => [...prev, assistantMessage]);
-      }
-    } catch (error: any) {
-      console.error('Chat error:', error);
-
-      // Handle "Conversation not found" by resetting state so user can start fresh
-      if (error.message && (error.message.includes('Conversation not found') || error.message.includes('404'))) {
-        console.warn('Conversation lost during send, resetting state');
-        setConversationId(null);
-        currentConvIdRef.current = null;
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('currentConversationId');
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        // Clean up the stream from activeStreams using the tracked ID
+        if (streamConversationId) {
+          unregisterStream(streamConversationId);
         }
+        setIsLoading(false);
       }
-
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: error.message || 'I apologize, but I\'m having trouble connecting to the server. Please check your connection and try again.',
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      // Clean up the stream from activeStreams using the tracked ID
-      if (streamConversationId) {
-        unregisterStream(streamConversationId);
-      }
-      setIsLoading(false);
+      isSendingRef.current = false;
     }
   }, [conversationId, uploadedFiles]);
 

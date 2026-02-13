@@ -369,7 +369,9 @@ class ChatService:
                 # Check if translation needed
                 # CRITICAL FIX: Allow translation even for English ('en') if translation is missing
                 # This ensures foreign messages are translated back to English.
-                if (not msg_obj.translations or target_lang not in msg_obj.translations):
+                # ALSO: Skip translation for IMAGES (markdown) to prevent "description" hallucinations
+                is_image = "![" in msg_obj.content
+                if not is_image and (not msg_obj.translations or target_lang not in msg_obj.translations):
                     messages_needing_translation.append(msg_obj)
             
             print(f"🔍 DEBUG: Loop finished. Messages: {len(messages)}")

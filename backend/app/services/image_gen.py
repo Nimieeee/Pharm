@@ -35,21 +35,27 @@ class ImageGenerationService:
         base_url = "/api/v1/ai/image-proxy"
         
         # Enforce Biomedical/Scientific Style
-        # Appending these keywords ensures consistent, high-quality scientific rendering
-        style_keywords = ", scientific illustration, detailed, 8k resolution, professional biomedical rendering, white background, anatomically accurate"
-        final_prompt = f"{prompt}{style_keywords}"
+        # Context-aware prompting for better accuracy
+        lower_prompt = prompt.lower()
+        
+        # Default style for general scientific images
+        style_keywords = "scientific illustration, detailed, 8k resolution, professional biomedical rendering, white background, anatomically accurate, photorealistic"
+        
+        # Enhanced style for Diagrams/Cross-sections (triggers "Textbook Mode")
+        diagram_triggers = ["cross section", "cross-section", "diagram", "anatomy", "structure", "labeled", "schematic", "cutaway"]
+        if any(trigger in lower_prompt for trigger in diagram_triggers):
+            # Stronger emphasis on educational/diagrammatic accuracy
+            # Added "accurate text", "legible labels" to fight gibberish
+            style_keywords = "medical textbook diagram, anatomically correct cross-section, correct physiological structure, clearly labeled parts, proper spelling, legible annotations, schematic, educational infographic, high detail, white background, vector style, clean lines, encyclopaedia britannica style"
+
+        final_prompt = f"{prompt}, {style_keywords}"
         
         encoded_prompt = urllib.parse.quote(final_prompt)
         
         seed = random.randint(0, 999999)
-        params = [
-            f"prompt={encoded_prompt}",
-            f"model={model}",
-            "width=512",
-            "height=512",
-            f"seed={seed}"
-        ]
-        query = "&".join(params)
+        # Construct query parameters - use list to avoid encoding issues with pre-encoded prompt
+        # We construct the query string manually to ensure the prompt is handled correctly
+        query = f"prompt={encoded_prompt}&model={model}&width=512&height=512&seed={seed}"
         
         # Return relative URL to our proxy
         # Frontend will treat this as https://api.domain.com/api/v1/ai/image-proxy?...
