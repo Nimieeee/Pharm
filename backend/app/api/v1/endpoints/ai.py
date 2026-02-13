@@ -130,7 +130,7 @@ async def generate_image(
         
         return {
             "status": "success",
-            "image_url": assistant_message,
+            "image_url": img_url,
             "markdown": assistant_message
         }
         
@@ -162,6 +162,19 @@ async def chat(
         print(f"📝 Message: {chat_request.message[:100]}...")
         print(f"🆔 Conversation ID: {chat_request.conversation_id}")
         print(f"⚙️ Mode: {chat_request.mode}, RAG: {chat_request.use_rag}")
+        
+        # 0. SPECIAL COMMAND CHECK: "/image"
+        # The frontend handles these via a dedicated endpoint. 
+        # If they reach here (e.g. fallback from stream failure), we must ignore them 
+        # to prevent specific text generation or duplication.
+        if chat_request.message.strip().lower().startswith("/image"):
+            print(f"🎨 Chat endpoint ignoring image command: {chat_request.message}")
+            return ChatResponse(
+                response="",  # Return empty to avoid hallucination
+                conversation_id=chat_request.conversation_id,
+                mode=chat_request.mode,
+                context_used=False
+            )
         
         # Security Layer: Validate input before processing
         print("🔒 Running security checks...")

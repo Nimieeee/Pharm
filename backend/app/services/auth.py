@@ -120,7 +120,13 @@ class AuthService:
             user_dict["is_verified"] = False  # Default to unverified
 
             # Send email with code
-            await self.email_service.send_verification_email(user_data.email, code)
+            email_sent = await self.email_service.send_verification_email(user_data.email, code)
+            
+            if not email_sent:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to send verification email. Please check your email address or try again later."
+                )
             
             
             result = self.db.table("users").insert(user_dict).execute()

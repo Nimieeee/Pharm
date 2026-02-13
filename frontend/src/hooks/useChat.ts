@@ -319,6 +319,13 @@ export function useChat() {
       // Handle Image Generation Command
       if (content.trim().startsWith('/image')) {
         const prompt = content.replace('/image', '').trim();
+
+        // Ensure we don't fall through even if prompt is empty
+        if (!prompt) {
+          setIsLoading(false);
+          return;
+        }
+
         if (prompt && streamConversationId) {
           try {
             // Add assistant placeholder
@@ -369,6 +376,7 @@ export function useChat() {
             return;
           }
         }
+        return; // Catch-all return for /image command
       }
 
       // Handle Deep Research mode differently - use streaming endpoint

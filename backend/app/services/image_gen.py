@@ -26,15 +26,20 @@ class ImageGenerationService:
         if not self.api_key:
             logger.warning("POLLINATIONS_API_KEY not found. Image generation will use anonymous tier (rate-limited).")
 
-    async def generate_image(self, prompt: str, model: str = "flux") -> Dict[str, Any]:
+    async def generate_image(self, prompt: str, model: str = "zimage") -> Dict[str, Any]:
         """
         Generate an image URL proxy (Internal API).
         """
         # We now use a proxy endpoint in our own backend to hide the API key
         # The URL points to OUR backend, which fetches from Pollinations
-        encoded_prompt = urllib.parse.quote(prompt)
-        # Use full URL if needed, but relative usually works for frontend
         base_url = "/api/v1/ai/image-proxy"
+        
+        # Enforce Biomedical/Scientific Style
+        # Appending these keywords ensures consistent, high-quality scientific rendering
+        style_keywords = ", scientific illustration, detailed, 8k resolution, professional biomedical rendering, white background, anatomically accurate"
+        final_prompt = f"{prompt}{style_keywords}"
+        
+        encoded_prompt = urllib.parse.quote(final_prompt)
         
         seed = random.randint(0, 999999)
         params = [
