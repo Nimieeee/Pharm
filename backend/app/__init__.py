@@ -1,1 +1,0 @@
-# PharmGPT Backend Application
