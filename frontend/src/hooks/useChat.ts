@@ -670,34 +670,8 @@ export function useChat() {
             // Final update to ensure we have everything
             updateMessage(fullContent);
 
-            // After streaming completes, re-fetch the message to ensure we have the final formatted version
-            if (streamConversationId) {
-              try {
-                const messagesResponse = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${streamConversationId}/messages`, {
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                  },
-                });
-
-                if (messagesResponse.ok) {
-                  const messagesData = await messagesResponse.json();
-                  const latestAssistantMsg = messagesData
-                    .filter((msg: any) => msg.role === 'assistant')
-                    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-
-                  if (latestAssistantMsg?.content && latestAssistantMsg.content !== fullContent) {
-                    // Update with the saved version if it's different (e.g., better formatted)
-                    setMessages(prev => prev.map(msg =>
-                      msg.id === assistantMessageId
-                        ? { ...msg, content: latestAssistantMsg.content }
-                        : msg
-                    ));
-                  }
-                }
-              } catch (refetchError) {
-                console.error('Failed to re-fetch message:', refetchError);
-              }
-            }
+            // After streaming completes, we already have the full content in the state
+            return; // Successfully streamed
             return; // Successfully streamed
           } else {
             useStreaming = false;
