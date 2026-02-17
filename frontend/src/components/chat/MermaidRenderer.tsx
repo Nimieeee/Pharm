@@ -46,7 +46,12 @@ export function MermaidRenderer({ code }: { code: string }) {
     }, [code]);
 
     useEffect(() => {
-        renderDiagram();
+        // Debounce rendering to avoid parsing errors while streaming
+        const timeoutId = setTimeout(() => {
+            renderDiagram();
+        }, 1500);
+
+        return () => clearTimeout(timeoutId);
     }, [renderDiagram]);
 
     const handleDownload = useCallback(() => {
