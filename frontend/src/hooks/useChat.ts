@@ -639,6 +639,9 @@ export function useChat() {
             cached.push(assistantMessage);
             cacheSet(streamConversationId!, cached);
 
+            // Guard for the SSE parsing loop
+            const isCurrentConv = () => currentConvIdRef.current === streamConversationId;
+
             // Process SSE stream
             const reader = streamResponse.body.getReader();
             const decoder = new TextDecoder();
@@ -711,9 +714,20 @@ export function useChat() {
                   fullContent += textContent;
 
                   // Throttled UI Update (every 100ms - 10fps for better performance)
+                  // Only update the live UI if we are still looking at the same conversation
                   const now = Date.now();
                   if (now - lastUpdateRef.current >= 100) {
-                    updateMessage(fullContent);
+                    if (isCurrentConv()) {
+                      updateMessage(fullContent);
+                    } else {
+                      // Just update the cache silently in the background
+                      const bgCached = conversationMessages.get(streamConversationId!) || [];
+                      const msgIdx = bgCached.findIndex(m => m.id === assistantMessage.id);
+                      if (msgIdx >= 0) {
+                        bgCached[msgIdx] = { ...bgCached[msgIdx], content: fullContent };
+                        cacheSet(streamConversationId!, bgCached);
+                      }
+                    }
                     lastUpdateRef.current = now;
                   }
                 }
@@ -1195,6 +1209,19 @@ export function useChat() {
     }
   }, [conversationId]);
 
+  const regenerateMessage = useCallback(async (assistantMessageId: string) => {
+    // To regenerate an AI response, we actually want to "edit" the user message right before it
+    // with the exact same content. This creates a new branch and triggers a new AI response.
+    const msgIndex = messages.findIndex(m => m.id === assistantMessageId);
+    if (msgIndex <= 0) return; // Cannot regenerate if it's the first message or not found
+
+    const precedingUserMsg = messages[msgIndex - 1];
+    if (precedingUserMsg.role !== 'user') return; // Ensure the previous message was from the user
+
+    // Trigger the edit flow with the exact same content
+    await editMessage(precedingUserMsg.id, precedingUserMsg.content);
+  }, [messages, editMessage]);
+
   // Fetch branch info for a conversation
   const fetchBranchInfo = useCallback(async (convId: string) => {
     const token = localStorage.getItem('token');
@@ -1269,6 +1296,7 @@ export function useChat() {
     cancelUpload,
     removeFile,
     editMessage,
+    regenerateMessage,
     deleteMessage,
     conversationId,
     deepResearchProgress,
