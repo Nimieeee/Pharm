@@ -57,6 +57,13 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Keep cursor always active — refocus after streaming completes
+  useEffect(() => {
+    if (!isLoading && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isLoading]);
+
   // Handle click outside to close attach menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -468,6 +475,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                 onKeyDown={handleKeyDown}
                 placeholder={t('ask_placeholder').replace('{mode}', currentMode.label)}
                 disabled={isLoading}
+                autoFocus
                 rows={1}
                 className="w-full py-[18px] pl-16 pr-28 bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none text-base"
                 style={{ minHeight: '60px', maxHeight: '200px' }}

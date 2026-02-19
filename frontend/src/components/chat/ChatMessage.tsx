@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Copy, Check, RefreshCw, ExternalLink, FileText } from 'lucide-react';
+import { Copy, Check, RefreshCw, ExternalLink, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useTranslation } from '@/hooks/use-translation';
@@ -11,7 +11,10 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  translations?: Record<string, string>;  // Pre-generated translations {lang_code: content}
+  parentId?: string;  // DAG branching: links to preceding message
+  branchIndex?: number;  // Current branch position (1-based)
+  branchCount?: number;  // Total sibling branches
+  translations?: Record<string, string>;
   citations?: Array<{
     id: number;
     title: string;
@@ -34,9 +37,10 @@ interface ChatMessageProps {
   onRegenerate?: () => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onDelete?: (messageId: string) => void;
+  onBranchNavigate?: (messageId: string, direction: 'prev' | 'next') => void;
 }
 
-export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit, onDelete }: ChatMessageProps) {
+export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit, onDelete, onBranchNavigate }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -198,6 +202,31 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
             {formatTime(message.timestamp)}
           </span>
         </div>
+
+        {/* 4. Branch Navigation (← 1/3 →) */}
+        {message.branchCount && message.branchCount > 1 && (
+          <div className="flex items-center gap-1 mt-1 justify-end">
+            <button
+              onClick={() => onBranchNavigate?.(message.id, 'prev')}
+              disabled={!message.branchIndex || message.branchIndex <= 1}
+              className="p-1 rounded hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
+              title="Previous branch"
+            >
+              <ChevronLeft size={14} className="text-[var(--text-secondary)]" />
+            </button>
+            <span className="text-[10px] text-[var(--text-secondary)] font-medium min-w-[28px] text-center">
+              {message.branchIndex || 1}/{message.branchCount}
+            </span>
+            <button
+              onClick={() => onBranchNavigate?.(message.id, 'next')}
+              disabled={!message.branchIndex || message.branchIndex >= message.branchCount}
+              className="p-1 rounded hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
+              title="Next branch"
+            >
+              <ChevronRight size={14} className="text-[var(--text-secondary)]" />
+            </button>
+          </div>
+        )}
       </motion.div>
     );
   }

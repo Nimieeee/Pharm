@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/ios": "^8.1.0",
     "@langchain/core": "^0.2.0",
     "@langchain/mistralai": "^0.0.27",
     "@radix-ui/react-popover": "^1.1.15",

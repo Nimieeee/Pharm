@@ -10,6 +10,8 @@ export const activeStreams = new Map<string, {
 
 // Subscribers for reactive updates
 const subscribers = new Set<() => void>();
+// Expose globally so hooks can subscribe without circular imports
+(globalThis as any).__streamSubscribers = subscribers;
 
 export function notifyStreamChange() {
     subscribers.forEach(fn => fn());

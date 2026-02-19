@@ -53,7 +53,7 @@ interface DeepResearchProgress {
   }>;
 }
 
-import { activeStreams, registerStream, unregisterStream, isConversationStreaming } from './useStreamingState';
+import { activeStreams, registerStream, unregisterStream, isConversationStreaming, notifyStreamChange } from './useStreamingState';
 
 // Global store for messages per conversation (allows switching without losing streamed content)
 const conversationMessages = new Map<string, Message[]>();
@@ -95,12 +95,21 @@ export function useChat() {
     }
   }, [messages, conversationId]);
 
-  // Update loading state when current conversation's stream status changes
+  // Update loading state reactively when streaming state changes
   useEffect(() => {
-    if (conversationId) {
-      setIsLoading(isConversationStreaming(conversationId));
-    } else {
-      setIsLoading(false);
+    const update = () => {
+      if (conversationId) {
+        setIsLoading(isConversationStreaming(conversationId));
+      } else {
+        setIsLoading(false);
+      }
+    };
+    update();
+    // Subscribe to streaming state changes for reactive updates
+    const subscribers = (globalThis as any).__streamSubscribers;
+    if (subscribers) {
+      subscribers.add(update);
+      return () => { subscribers.delete(update); };
     }
   }, [conversationId]);
 
@@ -184,6 +193,7 @@ export function useChat() {
           id: msg.id,
           role: msg.role,
           content: msg.content,
+          parentId: msg.parent_id || undefined,
           translations: msg.translations || undefined,
           timestamp: new Date(msg.created_at),
           attachments: msg.metadata?.attachments || undefined,
@@ -546,6 +556,7 @@ export function useChat() {
               use_rag: true,
               metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
               language: language,
+              parent_id: messages.length > 0 ? messages[messages.length - 1].id : undefined,
             }),
             signal,
           });
@@ -671,7 +682,6 @@ export function useChat() {
             updateMessage(fullContent);
 
             // After streaming completes, we already have the full content in the state
-            return; // Successfully streamed
             return; // Successfully streamed
           } else {
             useStreaming = false;
@@ -954,13 +964,52 @@ export function useChat() {
     setDeepResearchProgress(null);
   }, [conversationId]);
 
-  const editMessage = useCallback((messageId: string, newContent: string) => {
-    setMessages(prev => prev.map(msg =>
-      msg.id === messageId
-        ? { ...msg, content: newContent }
-        : msg
-    ));
-  }, []);
+  const editMessage = useCallback(async (messageId: string, newContent: string) => {
+    const token = localStorage.getItem('token');
+    if (!token || !conversationId) {
+      // Fallback to local edit if no auth/conversation
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, content: newContent } : msg
+      ));
+      return;
+    }
+
+    try {
+      // POST to /edit endpoint to create a new branch
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/ai/chat/conversations/${conversationId}/messages/${messageId}/edit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ new_content: newContent }),
+        }
+      );
+
+      if (response.ok) {
+        const branchData = await response.json();
+        // Replace the edited message with the new branch in the UI
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, id: branchData.id, content: newContent, parentId: branchData.parent_id }
+            : msg
+        ));
+      } else {
+        console.error('Failed to create branch:', response.status);
+        // Fallback to local edit
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId ? { ...msg, content: newContent } : msg
+        ));
+      }
+    } catch (error) {
+      console.error('Edit/branch error:', error);
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, content: newContent } : msg
+      ));
+    }
+  }, [conversationId]);
 
   const deleteMessage = useCallback((messageId: string) => {
     setMessages(prev => prev.filter(msg => msg.id !== messageId));
