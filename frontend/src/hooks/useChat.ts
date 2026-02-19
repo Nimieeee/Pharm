@@ -1257,6 +1257,7 @@ export function useChat() {
   return {
     messages,
     isLoading,
+    isConversationLoading: (id: string) => activeStreams.has(id) || (id === conversationId && isLoading),
     isLoadingConversation,
     isUploading,
     isDeleting,
