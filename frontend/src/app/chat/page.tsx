@@ -132,7 +132,17 @@ function ChatContent() {
       </div>
 
       {/* Messages Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44">
+      <div
+        className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44"
+        onClick={(e) => {
+          // Refocus input when user clicks the empty chat background
+          if (e.target === e.currentTarget) {
+            const textarea = document.querySelector<HTMLTextAreaElement>('textarea[autofocus]')
+              || document.querySelector<HTMLInputElement>('.chat-input-field');
+            textarea?.focus();
+          }
+        }}
+      >
         <div className="max-w-3xl mx-auto">
           {isLoadingConversation ? (
             <div className="flex items-center justify-center py-20">

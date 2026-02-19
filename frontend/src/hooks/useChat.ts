@@ -596,7 +596,10 @@ export function useChat() {
               use_rag: true,
               metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
               language: language,
-              parent_id: messages.length > 0 ? messages[messages.length - 1].id : undefined,
+              // Only send parent_id if it's a real DB UUID (contains hyphens), not a temporary frontend ID
+              parent_id: messages.length > 0 && messages[messages.length - 1].id.includes('-')
+                ? messages[messages.length - 1].id
+                : undefined,
             }),
             signal,
           });
