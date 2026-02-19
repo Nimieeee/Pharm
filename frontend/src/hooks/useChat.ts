@@ -185,14 +185,10 @@ export function useChat() {
     // (reads from ref to avoid stale closure — the sync effect above keeps the cache hot)
     const prevId = currentConvIdRef.current;
 
-    // Abort any active stream for the PREVIOUS conversation to prevent bleed
-    if (prevId && prevId !== convId && activeStreams.has(prevId)) {
-      const prevStream = activeStreams.get(prevId);
-      if (prevStream) {
-        prevStream.abortController.abort();
-        unregisterStream(prevId);
-      }
-    }
+    // Concurrency fix: DO NOT abort the previous stream. Let it run in the background.
+    // The streaming loop is guarded by (currentConvIdRef.current === streamConversationId)
+    // so it won't bleed into the UI, but it WILL update the cache.
+
 
     // Update refs and state
     currentConvIdRef.current = convId;
@@ -669,9 +665,32 @@ export function useChat() {
                     break;
                   }
 
+                  // Handle Meta events (e.g. user_message_id)
+                  if (data.trim().startsWith('{"type": "meta"')) {
+                    try {
+                      const meta = JSON.parse(data);
+                      if (meta.user_message_id) {
+                        // Update the temporary user message ID with the real DB UUID
+                        const realId = meta.user_message_id;
+                        setMessages(prev => prev.map(msg =>
+                          msg.id === userMessage.id ? { ...msg, id: realId } : msg
+                        ));
+                        // Also update cache if needed
+                        const cached = conversationMessages.get(streamConversationId!) || [];
+                        const userMsgIdx = cached.findIndex(m => m.id === userMessage.id);
+                        if (userMsgIdx >= 0) {
+                          cached[userMsgIdx] = { ...cached[userMsgIdx], id: realId };
+                          cacheSet(streamConversationId!, cached);
+                        }
+                      }
+                    } catch (e) {
+                      console.error('Failed to parse meta event:', e);
+                    }
+                    continue;
+                  }
+
                   // Skip any JSON log messages that might have leaked into the stream
-                  if (data.trim().startsWith('{') && data.includes('"timestamp"')) continue;
-                  if (data.trim().startsWith('{') && data.includes('"level"')) continue;
+                  if (data.trim().startsWith('{') && (data.includes('"timestamp"') || data.includes('"level"'))) continue;
 
                   // Try to parse as JSON (new format with proper newline handling)
                   let textContent = '';

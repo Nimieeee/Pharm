@@ -19,7 +19,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, deleteMessage, branchMap, navigateBranch } = useChatContext();
+  const { messages, isLoading, isConversationLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, deleteMessage, branchMap, navigateBranch } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { t, language } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -223,12 +223,16 @@ function ChatContent() {
 
       {/* Input Area */}
       <ChatInput
-        onSend={handleSend}
+        onSend={(content, mode) => {
+          // Update mode implementation
+          setMode(mode);
+          sendMessage(content, mode, language);
+        }}
         onStop={stopGeneration}
         onFileUpload={uploadFiles}
         onCancelUpload={cancelUpload}
         onRemoveFile={removeFile}
-        isLoading={isLoading}
+        isLoading={conversationId ? isConversationLoading(conversationId) : false}
         isUploading={isUploading}
         mode={mode}
         setMode={setMode}
