@@ -229,6 +229,7 @@ export function useChat() {
           translations: msg.translations || undefined,
           timestamp: new Date(msg.created_at),
           attachments: msg.metadata?.attachments || undefined,
+          mode: msg.metadata?.mode || undefined,
         }));
         setMessages(loadedMessages);
         console.log(`✅ Loaded ${loadedMessages.length} messages`);
@@ -1041,7 +1042,10 @@ export function useChat() {
   }, [conversationId]);
 
   const editMessage = useCallback(async (messageId: string, newContent: string) => {
+    const messageToEdit = messages.find(m => m.id === messageId);
+    const targetMode = messageToEdit?.mode || modeRef.current;
     const token = localStorage.getItem('token');
+
     if (!token || !conversationId) {
       // Fallback to local edit if no auth/conversation
       setMessages(prev => prev.map(msg =>
@@ -1060,7 +1064,10 @@ export function useChat() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ new_content: newContent }),
+          body: JSON.stringify({
+            new_content: newContent,
+            mode: targetMode
+          }),
         }
       );
 
@@ -1087,6 +1094,7 @@ export function useChat() {
           content: newContent,
           parentId: branchData.parent_id || undefined,
           timestamp: new Date(branchData.created_at || Date.now()),
+          mode: targetMode,
         };
         return [...before, newUserMsg];
       });
@@ -1109,7 +1117,7 @@ export function useChat() {
           body: JSON.stringify({
             message: newContent,
             conversation_id: streamConversationId,
-            mode: modeRef.current,
+            mode: targetMode,
             use_rag: true,
             language: 'en',
             parent_id: branchData.id,  // Chain AI response to the new branch

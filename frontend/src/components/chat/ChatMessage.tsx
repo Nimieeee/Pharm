@@ -11,6 +11,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  mode?: string;      // The generation mode used for this message
   parentId?: string;  // DAG branching: links to preceding message
   branchIndex?: number;  // Current branch position (1-based)
   branchCount?: number;  // Total sibling branches
