@@ -420,7 +420,9 @@ export const MemoizedChatMessage = React.memo(ChatMessage, (prev, next) => {
   return (
     prev.message.content === next.message.content &&
     prev.message.id === next.message.id &&
-    prev.message.translations === next.message.translations
+    prev.message.translations === next.message.translations &&
+    prev.message.branchIndex === next.message.branchIndex &&
+    prev.message.branchCount === next.message.branchCount
   );
 });
 

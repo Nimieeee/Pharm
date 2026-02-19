@@ -55,8 +55,26 @@ interface DeepResearchProgress {
 
 import { activeStreams, registerStream, unregisterStream, isConversationStreaming, notifyStreamChange } from './useStreamingState';
 
-// Global store for messages per conversation (allows switching without losing streamed content)
+// Global store for messages per conversation (LRU-capped to avoid memory leaks)
+const MAX_CACHED_CONVERSATIONS = 20;
 const conversationMessages = new Map<string, Message[]>();
+
+/** Enforce LRU eviction on the global message cache */
+function cacheSet(key: string, value: Message[]) {
+  // Delete-then-set moves the key to "most recent" in Map insertion order
+  conversationMessages.delete(key);
+  conversationMessages.set(key, value);
+  // Evict oldest entries beyond the cap
+  while (conversationMessages.size > MAX_CACHED_CONVERSATIONS) {
+    const oldest = conversationMessages.keys().next().value;
+    if (oldest) conversationMessages.delete(oldest);
+  }
+}
+
+/** Clear the global message cache (call on logout) */
+export function clearMessageCache() {
+  conversationMessages.clear();
+}
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -71,27 +89,37 @@ export function useChat() {
   const uploadAbortRef = useRef<AbortController | null>(null); // Separate abort for uploads
   const lastUpdateRef = useRef<number>(0); // For throttling updates
   const isSendingRef = useRef(false); // Debounce sendMessage
+  // Branch navigation: maps messageId → { branchIndex, branchCount, siblingIds }
+  const [branchMap, setBranchMap] = useState<Record<string, { branchIndex: number; branchCount: number; siblingIds: string[] }>>({});
+  const modeRef = useRef<Mode>('detailed'); // Track current mode for edit-regenerate
 
   // Keep-alive ping to prevent HF Space cold starts (runs every 30 seconds)
   useEffect(() => {
+    let failCount = 0;
     const pingBackend = async () => {
       try {
-        await fetch(`${API_BASE_URL}/`, { method: 'HEAD' }).catch(() => { });
-      } catch { }
+        const res = await fetch(`${API_BASE_URL}/`, { method: 'HEAD' });
+        if (!res.ok) {
+          failCount++;
+          if (failCount >= 3) console.warn(`[Health] Backend ping failed ${failCount} times`);
+        } else {
+          failCount = 0;
+        }
+      } catch {
+        failCount++;
+        if (failCount >= 3) console.warn(`[Health] Backend unreachable (${failCount} failures)`);
+      }
     };
 
-    // Initial ping
     pingBackend();
-
-    // Ping every 30 seconds while the app is open
     const interval = setInterval(pingBackend, 30 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Sync messages to global cache whenever they change
+  // Sync messages to global cache whenever they change (uses LRU cache)
   useEffect(() => {
     if (conversationId && messages.length > 0) {
-      conversationMessages.set(conversationId, messages);
+      cacheSet(conversationId, messages);
     }
   }, [messages, conversationId]);
 
@@ -154,8 +182,16 @@ export function useChat() {
     console.log(`📖 Loading conversation: ${convId}`);
 
     // Save current conversation's messages to cache before switching
-    if (currentConvIdRef.current && messages.length > 0) {
-      conversationMessages.set(currentConvIdRef.current, messages);
+    // (reads from ref to avoid stale closure — the sync effect above keeps the cache hot)
+    const prevId = currentConvIdRef.current;
+
+    // Abort any active stream for the PREVIOUS conversation to prevent bleed
+    if (prevId && prevId !== convId && activeStreams.has(prevId)) {
+      const prevStream = activeStreams.get(prevId);
+      if (prevStream) {
+        prevStream.abortController.abort();
+        unregisterStream(prevId);
+      }
     }
 
     // Update refs and state
@@ -200,6 +236,9 @@ export function useChat() {
         }));
         setMessages(loadedMessages);
         console.log(`✅ Loaded ${loadedMessages.length} messages`);
+
+        // Fetch branch info after loading messages
+        fetchBranchInfo(convId);
       } else if (response.status === 401) {
         localStorage.removeItem('token');
         console.log('❌ Token expired');
@@ -254,6 +293,7 @@ export function useChat() {
     if (isSendingRef.current || !content.trim() || currentConvLoading) return;
 
     isSendingRef.current = true;
+    modeRef.current = mode; // Sync for edit-regenerate
 
     try {
       const token = localStorage.getItem('token');
@@ -581,7 +621,7 @@ export function useChat() {
               } else {
                 cached.push(newMsg);
               }
-              conversationMessages.set(streamConversationId!, cached);
+              cacheSet(streamConversationId!, cached);
 
               // Only update UI if still on this conversation
               if (currentConvIdRef.current === streamConversationId) {
@@ -598,7 +638,7 @@ export function useChat() {
             // Always add to cache
             const cached = conversationMessages.get(streamConversationId!) || [];
             cached.push(assistantMessage);
-            conversationMessages.set(streamConversationId!, cached);
+            cacheSet(streamConversationId!, cached);
 
             // Process SSE stream
             const reader = streamResponse.body.getReader();
@@ -975,7 +1015,7 @@ export function useChat() {
     }
 
     try {
-      // POST to /edit endpoint to create a new branch
+      // 1. POST to /edit endpoint to create a new branch
       const response = await fetch(
         `${API_BASE_URL}/api/v1/ai/chat/conversations/${conversationId}/messages/${messageId}/edit`,
         {
@@ -988,20 +1028,142 @@ export function useChat() {
         }
       );
 
-      if (response.ok) {
-        const branchData = await response.json();
-        // Replace the edited message with the new branch in the UI
-        setMessages(prev => prev.map(msg =>
-          msg.id === messageId
-            ? { ...msg, id: branchData.id, content: newContent, parentId: branchData.parent_id }
-            : msg
-        ));
-      } else {
+      if (!response.ok) {
         console.error('Failed to create branch:', response.status);
-        // Fallback to local edit
         setMessages(prev => prev.map(msg =>
           msg.id === messageId ? { ...msg, content: newContent } : msg
         ));
+        return;
+      }
+
+      const branchData = await response.json();
+      console.log(`✏️ Branch created: ${branchData.id}, parent: ${branchData.parent_id}`);
+
+      // 2. Truncate messages: keep everything BEFORE the edited message,
+      //    then append the new branch message
+      setMessages(prev => {
+        const editIdx = prev.findIndex(m => m.id === messageId);
+        if (editIdx < 0) return prev;
+        const before = prev.slice(0, editIdx);
+        const newUserMsg: Message = {
+          id: branchData.id,
+          role: 'user',
+          content: newContent,
+          parentId: branchData.parent_id || undefined,
+          timestamp: new Date(branchData.created_at || Date.now()),
+        };
+        return [...before, newUserMsg];
+      });
+
+      // 3. Immediately trigger AI regeneration via streaming
+      setIsLoading(true);
+      const streamConversationId = conversationId;
+      const abortController = new AbortController();
+
+      // Register this stream
+      registerStream(streamConversationId, abortController);
+
+      try {
+        const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: newContent,
+            conversation_id: streamConversationId,
+            mode: modeRef.current,
+            use_rag: true,
+            language: 'en',
+            parent_id: branchData.id,  // Chain AI response to the new branch
+          }),
+          signal: abortController.signal,
+        });
+
+        if (streamResponse.ok && streamResponse.body) {
+          const assistantMessageId = (Date.now() + 1).toString();
+          const assistantMessage: Message = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            timestamp: new Date(),
+          };
+
+          // Add empty assistant message
+          if (currentConvIdRef.current === streamConversationId) {
+            setMessages(prev => [...prev, assistantMessage]);
+          }
+
+          // Process SSE stream
+          const reader = streamResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let fullContent = '';
+          let buffer = '';
+          let isDone = false;
+
+          while (!isDone) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data.trim() === '[DONE]') { isDone = true; break; }
+                if (data.trim().startsWith('{') && (data.includes('"timestamp"') || data.includes('"level"'))) continue;
+
+                let textContent = '';
+                try {
+                  const parsed = JSON.parse(data);
+                  textContent = parsed.text !== undefined ? parsed.text : data.replace(/\\n/g, '\n');
+                } catch {
+                  textContent = data.replace(/\\n/g, '\n');
+                }
+
+                fullContent += textContent;
+                const now = Date.now();
+                if (now - lastUpdateRef.current >= 100) {
+                  const newMsg = { ...assistantMessage, content: fullContent };
+                  if (currentConvIdRef.current === streamConversationId) {
+                    setMessages(prev => prev.map(m => m.id === assistantMessageId ? newMsg : m));
+                  }
+                  lastUpdateRef.current = now;
+                }
+              }
+            }
+          }
+
+          // Final update
+          const finalMsg = { ...assistantMessage, content: fullContent };
+          if (currentConvIdRef.current === streamConversationId) {
+            setMessages(prev => prev.map(m => m.id === assistantMessageId ? finalMsg : m));
+          }
+
+          // Refresh branch info after edit
+          fetchBranchInfo(streamConversationId);
+
+          // Invalidate SWR conversation cache
+          moveConversationToTop(streamConversationId);
+        }
+      } catch (streamError: any) {
+        if (streamError.name !== 'AbortError') {
+          console.error('Edit streaming error:', streamError);
+          const errorMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: 'Failed to regenerate response after edit. Please try again.',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, errorMsg]);
+        }
+      } finally {
+        unregisterStream(streamConversationId);
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Edit/branch error:', error);
@@ -1010,6 +1172,61 @@ export function useChat() {
       ));
     }
   }, [conversationId]);
+
+  // Fetch branch info for a conversation
+  const fetchBranchInfo = useCallback(async (convId: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/ai/chat/conversations/${convId}/branch-info`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setBranchMap(data || {});
+      }
+    } catch (e) {
+      console.warn('Failed to fetch branch info:', e);
+    }
+  }, []);
+
+  // Navigate to a sibling branch
+  const navigateBranch = useCallback(async (messageId: string, direction: 'prev' | 'next') => {
+    const info = branchMap[messageId];
+    if (!info) return;
+
+    const currentIdx = info.siblingIds.indexOf(messageId);
+    const newIdx = direction === 'prev' ? currentIdx - 1 : currentIdx + 1;
+    if (newIdx < 0 || newIdx >= info.siblingIds.length) return;
+
+    const siblingId = info.siblingIds[newIdx];
+    const token = localStorage.getItem('token');
+    if (!token || !conversationId) return;
+
+    try {
+      // Fetch the thread from the sibling message downward
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/ai/chat/conversations/${conversationId}/messages/${siblingId}/thread`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const threadData = await res.json();
+        const threadMessages: Message[] = threadData.map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          parentId: msg.parent_id || undefined,
+          translations: msg.translations || msg.metadata?.translations || undefined,
+          timestamp: new Date(msg.created_at),
+          attachments: msg.metadata?.attachments || undefined,
+        }));
+        setMessages(threadMessages);
+      }
+    } catch (e) {
+      console.error('Branch navigation failed:', e);
+    }
+  }, [branchMap, conversationId]);
 
   const deleteMessage = useCallback((messageId: string) => {
     setMessages(prev => prev.filter(msg => msg.id !== messageId));
@@ -1033,5 +1250,7 @@ export function useChat() {
     conversationId,
     deepResearchProgress,
     selectConversation,
+    branchMap,
+    navigateBranch,
   };
 }

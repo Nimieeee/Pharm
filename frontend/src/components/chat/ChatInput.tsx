@@ -473,6 +473,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                 value={message}
                 onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
+                onBlur={(e) => {
+                  const related = e.relatedTarget as HTMLElement | null;
+                  if (related && (related.tagName === 'BUTTON' || related.tagName === 'A' || related.tagName === 'SELECT' || related.closest?.('[role="menu"]') || related.closest?.('[data-no-autofocus]'))) return;
+                  setTimeout(() => textareaRef.current?.focus(), 0);
+                }}
                 placeholder={t('ask_placeholder').replace('{mode}', currentMode.label)}
                 disabled={isLoading}
                 autoFocus
@@ -675,6 +680,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     e.preventDefault();
                     handleSubmit(e);
                   }
+                }}
+                onBlur={(e) => {
+                  const related = e.relatedTarget as HTMLElement | null;
+                  if (related && (related.tagName === 'BUTTON' || related.tagName === 'A' || related.tagName === 'SELECT' || related.closest?.('[role="menu"]') || related.closest?.('[data-no-autofocus]'))) return;
+                  setTimeout(() => textareaRef.current?.focus(), 0);
                 }}
                 placeholder={t('message_placeholder')}
                 disabled={isLoading}

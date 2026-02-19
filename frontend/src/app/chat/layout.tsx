@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ChatSidebar from '@/components/chat/ChatSidebar';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 import { SidebarContext } from '@/contexts/SidebarContext';
 import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
@@ -40,7 +41,7 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
     </SidebarContext.Provider>

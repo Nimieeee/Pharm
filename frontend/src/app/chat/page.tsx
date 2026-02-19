@@ -19,7 +19,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, deleteMessage } = useChatContext();
+  const { messages, isLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, deleteMessage, branchMap, navigateBranch } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { t, language } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -154,10 +154,15 @@ function ChatContent() {
                   transition={{ duration: 0.3 }}
                 >
                   <MemoizedChatMessage
-                    message={msg}
+                    message={{
+                      ...msg,
+                      branchIndex: branchMap[msg.id]?.branchIndex,
+                      branchCount: branchMap[msg.id]?.branchCount,
+                    }}
                     isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
                     onEdit={editMessage}
                     onDelete={deleteMessage}
+                    onBranchNavigate={navigateBranch}
                   />
                 </motion.div>
               ))}
