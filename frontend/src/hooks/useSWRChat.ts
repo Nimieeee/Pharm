@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 import { API_BASE_URL } from '@/config/api';
@@ -91,10 +92,13 @@ export function addConversationToList(conversation: { id: string; title: string;
  * Uses stable cache key - only fetches after client-side hydration
  */
 export function useConversations() {
-    // Compute isReady synchronously to avoid a double-mount hydration render penalty.
-    // On the server, typeof window is 'undefined' so isReady is false.
-    // On the client, this immediately checks localStorage, avoiding an extra render.
-    const isReady = typeof window !== 'undefined' && !!getToken();
+    // Must use useState+useEffect to avoid SSR hydration mismatch:
+    // Server renders with isReady=false, client hydrates with same, then useEffect sets true.
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        setIsReady(!!getToken());
+    }, []);
 
     // Use stable cache key - only enabled when ready
     const { data, error, mutate, isLoading } = useSWR<any[]>(
@@ -122,7 +126,11 @@ export function useConversations() {
  * Hook for conversation messages
  */
 export function useConversationMessages(conversationId: string | null) {
-    const isReady = typeof window !== 'undefined' && !!getToken();
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        setIsReady(!!getToken());
+    }, []);
 
     const { data, error, mutate, isLoading } = useSWR(
         isReady && conversationId ? `messages-${conversationId}` : null,
