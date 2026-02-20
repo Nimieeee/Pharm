@@ -64,7 +64,7 @@ export function useChatState() {
     const currentConvIdRef = useRef<string | null>(null);
     const uploadAbortRef = useRef<AbortController | null>(null);
     const lastUpdateRef = useRef<number>(0);
-    const isSendingRef = useRef(false);
+    const isSendingRef = useRef<Set<string>>(new Set<string>());
     const modeRef = useRef<Mode>('detailed');
 
     // Cache syncer

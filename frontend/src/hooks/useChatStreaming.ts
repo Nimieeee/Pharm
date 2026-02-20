@@ -26,7 +26,7 @@ export function useChatStreaming(state: any) {
         branchMap, setBranchMap,
         currentConvIdRef,
         lastUpdateRef,
-        isSendingRef,
+        isSendingRef, // Now a Set<string>
         modeRef
     } = state;
 
@@ -83,10 +83,10 @@ export function useChatStreaming(state: any) {
     }, [conversationId, setIsLoading, setMessages, setDeepResearchProgress]);
 
     const sendMessage = useCallback(async (content: string, mode: Mode = 'detailed', language: string = 'en') => {
-        const currentConvLoading = isConversationStreaming(conversationId);
-        if (isSendingRef.current || !content.trim() || currentConvLoading) return;
+        const targetConvId = conversationId || 'new';
+        if (isSendingRef.current.has(targetConvId) || !content.trim()) return;
 
-        isSendingRef.current = true;
+        isSendingRef.current.add(targetConvId);
         modeRef.current = mode;
 
         try {
@@ -294,7 +294,8 @@ export function useChatStreaming(state: any) {
                 setIsLoading(false);
             }
         } finally {
-            isSendingRef.current = false;
+            isSendingRef.current.delete(conversationId || 'new');
+            if (conversationId) isSendingRef.current.delete(conversationId);
         }
     }, [conversationId, uploadedFiles, messages]);
 
