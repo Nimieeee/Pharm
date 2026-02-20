@@ -197,7 +197,9 @@ export function useChat() {
       );
       if (res.ok) {
         const threadData = await res.json();
-        const threadMessages: Message[] = threadData.map((msg: any) => ({
+        // Backend returns { messages: [...] }, not a raw array
+        const rawMessages = Array.isArray(threadData) ? threadData : (threadData.messages || []);
+        const threadMessages: Message[] = rawMessages.map((msg: any) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
