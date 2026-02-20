@@ -49,7 +49,7 @@ export async function processSSEStream(
                     }
 
                     // Handle Meta events
-                    if (data.startsWith('{"type": "meta"')) {
+                    if (data.includes('"user_message_id"') || data.startsWith('{"type": "meta"')) {
                         try {
                             const meta = JSON.parse(data);
                             handlers.onMeta?.(meta);
