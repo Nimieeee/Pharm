@@ -115,7 +115,7 @@ export function MermaidRenderer({ code }: { code: string }) {
 
                 {/* Benchside Watermark */}
                 <div className="absolute bottom-2 right-3 flex items-center gap-1.5 pointer-events-none select-none opacity-40">
-                    <img src="/Benchside.png" alt="Benchside" className="w-[14px] h-[14px] object-contain grayscale" />
+                    <img src="/Benchside.png" alt="Benchside" className="w-[14px] h-[14px] object-contain" />
                     <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-secondary)]">Benchside</span>
                 </div>
             </div>
