@@ -106,11 +106,19 @@ export function MermaidRenderer({ code }: { code: string }) {
                     </button>
                 </div>
             </div>
-            <div
-                ref={containerRef}
-                className="p-4 flex justify-center overflow-x-auto [&_svg]:max-w-full"
-                dangerouslySetInnerHTML={{ __html: svg }}
-            />
+            <div className="relative p-4 pb-8 flex justify-center overflow-x-auto min-h-[80px]">
+                <div
+                    ref={containerRef}
+                    className="flex justify-center [&_svg]:max-w-full"
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                />
+
+                {/* Benchside Watermark */}
+                <div className="absolute bottom-2 right-3 flex items-center gap-1.5 pointer-events-none select-none opacity-40">
+                    <img src="/Benchside.png" alt="Benchside" className="w-[14px] h-[14px] object-contain grayscale" />
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-secondary)]">Benchside</span>
+                </div>
+            </div>
         </div>
     );
 }

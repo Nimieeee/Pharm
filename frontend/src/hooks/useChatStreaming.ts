@@ -310,26 +310,16 @@ export function useChatStreaming(state: any) {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat/conversations/${conversationId}/messages/${messageId}/edit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ new_content: newContent, mode: targetMode }),
-            });
-
-            if (!response.ok) {
-                setMessages((prev: Message[]) => prev.map(msg => msg.id === messageId ? { ...msg, content: newContent } : msg));
-                return;
-            }
-
-            const branchData = await response.json();
+            // Replace the local user message immediately with a temporary ID
+            const tempBranchId = 'branch_' + Date.now().toString();
             setMessages((prev: Message[]) => {
                 const editIdx = prev.findIndex(m => m.id === messageId);
                 if (editIdx < 0) return prev;
                 const before = prev.slice(0, editIdx);
                 const newUserMsg: Message = {
-                    id: branchData.id, role: 'user', content: newContent,
-                    parentId: branchData.parent_id || undefined,
-                    timestamp: new Date(branchData.created_at || Date.now()),
+                    id: tempBranchId, role: 'user', content: newContent,
+                    parentId: messageToEdit?.parentId || undefined,
+                    timestamp: new Date(),
                     mode: targetMode,
                 };
                 return [...before, newUserMsg];
@@ -347,7 +337,7 @@ export function useChatStreaming(state: any) {
                     body: JSON.stringify({
                         message: newContent, conversation_id: streamConversationId,
                         mode: targetMode, use_rag: true, language: 'en',
-                        parent_id: branchData.id,
+                        parent_id: messageToEdit?.parentId || undefined,
                     }),
                     signal: abortController.signal,
                 });
@@ -360,6 +350,12 @@ export function useChatStreaming(state: any) {
 
                     let lastContent = '';
                     await processSSEStream(streamResponse, {
+                        onMeta: (meta) => {
+                            if (meta.user_message_id) {
+                                // Update the newly created user message ID to match what the backend says
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === tempBranchId ? { ...msg, id: meta.user_message_id } : msg));
+                            }
+                        },
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
