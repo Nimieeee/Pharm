@@ -129,6 +129,32 @@ function ChatContent() {
         >
           <Edit3 size={24} strokeWidth={1.5} />
         </button>
+
+        {/* Export Options (Desktop mostly, or right side) */}
+        {conversationId && messages.length > 0 && (
+          <div className="absolute top-3 right-16 sm:right-4 z-50 pointer-events-auto group">
+            <button className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--background)]/50 hover:text-[var(--text-primary)] transition-all flex items-center gap-1">
+              <span className="text-xs font-medium">Export</span>
+              <ChevronDown size={14} />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-36 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col py-1 overflow-hidden">
+              <a
+                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/ai/conversations/${conversationId}/export/docx?token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
+                className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] hover:text-[var(--text-primary)] text-left flex items-center justify-between"
+                target="_blank"
+              >
+                Word (.docx)
+              </a>
+              <a
+                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/ai/conversations/${conversationId}/export/pdf?token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
+                className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] hover:text-[var(--text-primary)] text-left flex items-center justify-between"
+                target="_blank"
+              >
+                PDF (.pdf)
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Messages Area - Scrollable */}
