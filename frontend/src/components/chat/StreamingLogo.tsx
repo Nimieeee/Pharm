@@ -2,22 +2,14 @@
 
 import { motion } from 'framer-motion';
 
-export default function StreamingLogo() {
+export default function StreamingLogo({ className = "inline-block w-6 h-6 ml-1 align-middle" }: { className?: string }) {
     return (
-        <motion.div
+        <motion.img
+            src="/benchside-ring.png"
+            alt="Streaming Indicator"
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            className="inline-block w-4 h-4 ml-1 align-baseline bg-[var(--accent)]"
-            style={{
-                WebkitMaskImage: 'url("/benchside-ring.png")',
-                WebkitMaskSize: 'contain',
-                WebkitMaskRepeat: 'no-repeat',
-                WebkitMaskPosition: 'center',
-                maskImage: 'url("/benchside-ring.png")',
-                maskSize: 'contain',
-                maskRepeat: 'no-repeat',
-                maskPosition: 'center',
-            }}
+            className={className}
         />
     );
 }

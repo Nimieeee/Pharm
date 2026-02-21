@@ -11,6 +11,7 @@ import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useTranslation } from '@/hooks/use-translation';
+import StreamingLogo from '@/components/chat/StreamingLogo';
 
 import confetti from 'canvas-confetti';
 import { getSuggestionPool } from '@/config/suggestionPrompts';
@@ -236,11 +237,9 @@ function ChatContent() {
               animate={{ opacity: 1 }}
               className="py-4"
             >
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '300ms' }} />
-                <span className="text-xs text-[var(--text-secondary)] ml-2">{t('thinking')}</span>
+              <div className="flex items-center gap-2 text-slate-500">
+                <StreamingLogo className="w-5 h-5 opacity-80" />
+                <span className="text-xs text-[var(--text-secondary)]">{t('thinking')}</span>
               </div>
             </motion.div>
           )}
