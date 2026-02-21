@@ -265,6 +265,11 @@ export function useChatStreaming(state: any) {
                             if (meta.user_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
                             }
+                            if (meta.assistant_message_id) {
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessageId ? { ...msg, id: meta.assistant_message_id } : msg));
+                                // Update our local ref to the new DB ID so future chunks update the correct message
+                                assistantMessage.id = meta.assistant_message_id;
+                            }
                         },
                         onContent: (fullContent) => {
                             lastContent = fullContent;
@@ -355,6 +360,10 @@ export function useChatStreaming(state: any) {
                             if (meta.user_message_id) {
                                 // Update the newly created user message ID to match what the backend says
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === tempBranchId ? { ...msg, id: meta.user_message_id } : msg));
+                            }
+                            if (meta.assistant_message_id) {
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessageId ? { ...msg, id: meta.assistant_message_id } : msg));
+                                assistantMessage.id = meta.assistant_message_id;
                             }
                         },
                         onContent: (fullContent) => {
