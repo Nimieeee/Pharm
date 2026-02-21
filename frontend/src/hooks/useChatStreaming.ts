@@ -251,8 +251,9 @@ export function useChatStreaming(state: any) {
                         const newMsg = { ...assistantMessage, content: fullContent };
                         if (isCurrentConv()) {
                             setMessages((prev: Message[]) => {
-                                const exists = prev.some(m => m.id === assistantMessageId);
-                                return exists ? prev.map(m => m.id === assistantMessageId ? newMsg : m) : [...prev, newMsg];
+                                const targetId = assistantMessage.id;
+                                const exists = prev.some(m => m.id === targetId);
+                                return exists ? prev.map(m => m.id === targetId ? newMsg : m) : [...prev, newMsg];
                             });
                         }
                     };
@@ -264,17 +265,16 @@ export function useChatStreaming(state: any) {
                         onMeta: (meta) => {
                             if (meta.user_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
+                                userMessage.id = meta.user_message_id;
                             }
                             if (meta.assistant_message_id) {
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessageId ? { ...msg, id: meta.assistant_message_id } : msg));
-                                // Update our local ref to the new DB ID so future chunks update the correct message
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, id: meta.assistant_message_id } : msg));
                                 assistantMessage.id = meta.assistant_message_id;
                             }
                         },
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
-                            // Increased throttle from 100ms to 150ms for better markdown chunk completeness
                             if (now - lastUpdateRef.current >= 150) {
                                 updateMessage(fullContent);
                                 lastUpdateRef.current = now;
@@ -352,36 +352,41 @@ export function useChatStreaming(state: any) {
                     const assistantMessageId = (Date.now() + 1).toString();
                     const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date() };
 
+                    const updateMessage = (fullContent: string) => {
+                        const newMsg = { ...assistantMessage, content: fullContent };
+                        if (currentConvIdRef.current === streamConversationId) {
+                            setMessages((prev: Message[]) => {
+                                const targetId = assistantMessage.id;
+                                const exists = prev.some(m => m.id === targetId);
+                                return exists ? prev.map(m => m.id === targetId ? newMsg : m) : [...prev, newMsg];
+                            });
+                        }
+                    };
+
                     if (currentConvIdRef.current === streamConversationId) setMessages((prev: Message[]) => [...prev, assistantMessage]);
 
+                    let currentUserMsgId = tempBranchId;
                     let lastContent = '';
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
                             if (meta.user_message_id) {
-                                // Update the newly created user message ID to match what the backend says
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === tempBranchId ? { ...msg, id: meta.user_message_id } : msg));
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === currentUserMsgId ? { ...msg, id: meta.user_message_id } : msg));
+                                currentUserMsgId = meta.user_message_id;
                             }
                             if (meta.assistant_message_id) {
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessageId ? { ...msg, id: meta.assistant_message_id } : msg));
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, id: meta.assistant_message_id } : msg));
                                 assistantMessage.id = meta.assistant_message_id;
                             }
                         },
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
-                            // Increased throttle from 100ms to 150ms for better markdown chunk completeness
                             if (now - lastUpdateRef.current >= 150) {
-                                if (currentConvIdRef.current === streamConversationId) {
-                                    setMessages((prev: Message[]) => prev.map(m => m.id === assistantMessageId ? { ...assistantMessage, content: fullContent } : m));
-                                }
+                                updateMessage(fullContent);
                                 lastUpdateRef.current = now;
                             }
                         },
-                        onDone: () => {
-                            if (currentConvIdRef.current === streamConversationId) {
-                                setMessages((prev: Message[]) => prev.map(m => m.id === assistantMessageId ? { ...assistantMessage, content: lastContent } : m));
-                            }
-                        }
+                        onDone: () => updateMessage(lastContent)
                     });
 
                     fetchBranchInfo(streamConversationId);
