@@ -91,6 +91,7 @@ export function useChatStreaming(state: any) {
 
         try {
             const token = localStorage.getItem('token');
+            const parentId = messages.length > 0 && messages[messages.length - 1].id.includes('-') ? messages[messages.length - 1].id : undefined;
 
             const userMessage: Message = {
                 id: Date.now().toString(),
@@ -98,6 +99,7 @@ export function useChatStreaming(state: any) {
                 content: content.trim(),
                 timestamp: new Date(),
                 attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
+                parentId: parentId,
             };
 
             setMessages((prev: Message[]) => [...prev, userMessage]);
@@ -244,7 +246,7 @@ export function useChatStreaming(state: any) {
                 });
 
                 if (streamResponse.ok && streamResponse.body) {
-                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date() };
+                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessage.id };
                     const isCurrentConv = () => currentConvIdRef.current === streamConversationId;
 
                     const updateMessage = (fullContent: string) => {
@@ -266,6 +268,8 @@ export function useChatStreaming(state: any) {
                             if (meta.user_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
                                 userMessage.id = meta.user_message_id;
+                                assistantMessage.parentId = meta.user_message_id;
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, parentId: meta.user_message_id } : msg));
                             }
                             if (meta.assistant_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, id: meta.assistant_message_id } : msg));
@@ -350,7 +354,7 @@ export function useChatStreaming(state: any) {
 
                 if (streamResponse.ok && streamResponse.body) {
                     const assistantMessageId = (Date.now() + 1).toString();
-                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date() };
+                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: tempBranchId };
 
                     const updateMessage = (fullContent: string) => {
                         const newMsg = { ...assistantMessage, content: fullContent };
@@ -372,6 +376,8 @@ export function useChatStreaming(state: any) {
                             if (meta.user_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === currentUserMsgId ? { ...msg, id: meta.user_message_id } : msg));
                                 currentUserMsgId = meta.user_message_id;
+                                assistantMessage.parentId = meta.user_message_id;
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, parentId: meta.user_message_id } : msg));
                             }
                             if (meta.assistant_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, id: meta.assistant_message_id } : msg));
