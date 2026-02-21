@@ -255,10 +255,8 @@ function repairIncompleteMarkdown(content: string): string {
   }
 
   // Fix unclosed headers (#)
-  const headerMatch = repaired.match(/#+(?!#)[^\n]*$/);
-  if (headerMatch && !repaired.endsWith('\n')) {
-    repaired += '\n\n';
-  }
+  // We do not need to forcibly append \n\n for headers, as it breaks streaming paragraphs
+  // by prematurely splitting blocks. Let's just rely on remark-breaks.
 
   // Fix unclosed lists (-, *, +)
   const listMatch = repaired.match(/^[\s]*(?:[-+*]|\d+\.)[\s]+[^\n]*$/);
