@@ -269,7 +269,8 @@ export function useChatStreaming(state: any) {
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
-                            if (now - lastUpdateRef.current >= 100) {
+                            // Increased throttle from 100ms to 150ms for better markdown chunk completeness
+                            if (now - lastUpdateRef.current >= 150) {
                                 updateMessage(fullContent);
                                 lastUpdateRef.current = now;
                             }
@@ -359,7 +360,8 @@ export function useChatStreaming(state: any) {
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
-                            if (now - lastUpdateRef.current >= 100) {
+                            // Increased throttle from 100ms to 150ms for better markdown chunk completeness
+                            if (now - lastUpdateRef.current >= 150) {
                                 if (currentConvIdRef.current === streamConversationId) {
                                     setMessages((prev: Message[]) => prev.map(m => m.id === assistantMessageId ? { ...assistantMessage, content: fullContent } : m));
                                 }

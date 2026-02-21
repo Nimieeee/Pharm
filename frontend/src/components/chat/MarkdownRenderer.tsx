@@ -211,28 +211,77 @@ function EnhancedImage({ src, alt, isAnimating }: { src?: string; alt?: string; 
 function repairIncompleteMarkdown(content: string): string {
   let repaired = content;
 
-  // Fix unclosed bold (**)
-  const boldCount = (repaired.match(/\*\*/g) || []).length;
-  if (boldCount % 2 !== 0) {
-    repaired += '**';
+  // Fix unclosed bold (**) - more sophisticated detection
+  const boldMatches = repaired.match(/\*\*[^\*]*$/);
+  if (boldMatches && boldMatches.length > 0) {
+    // Check if we have an odd number of bold markers
+    const boldCount = (repaired.match(/\*\*/g) || []).length;
+    if (boldCount % 2 !== 0) {
+      repaired += '**';
+    }
   }
 
-  // Fix unclosed code blocks (```)
+  // Fix unclosed code blocks (```) - handle language specifiers
   const codeBlockMatches = repaired.match(/```/g) || [];
   if (codeBlockMatches.length % 2 !== 0) {
-    repaired += '\n```';
+    // Check if the last code block is unclosed
+    const lastCodeBlockMatch = repaired.lastIndexOf('```');
+    if (lastCodeBlockMatch !== -1 && lastCodeBlockMatch === repaired.length - 3) {
+      // It's already a closing ``` at the end, don't add another
+    } else {
+      repaired += '\n```';
+    }
   }
 
-  // Fix unclosed inline code (`) - check total backticks
-  const backtickCount = (repaired.match(/`/g) || []).length;
-  if (backtickCount % 2 !== 0) {
-    repaired += '`';
+  // Fix unclosed inline code (`) - more sophisticated detection
+  const backtickMatches = repaired.match(/`[^`]*$/);
+  if (backtickMatches && backtickMatches.length > 0) {
+    const backtickCount = (repaired.match(/`/g) || []).length;
+    if (backtickCount % 2 !== 0) {
+      repaired += '`';
+    }
   }
 
   // Fix unclosed LaTeX ($$)
   const latexCount = (repaired.match(/\$\$/g) || []).length;
   if (latexCount % 2 !== 0) {
     repaired += '$$';
+  }
+
+  // Fix unclosed italic (*)
+  const italicCount = (repaired.match(/\*(?!\*)[^\s][^\*]*$/g) || []).length;
+  if (italicCount % 2 !== 0) {
+    repaired += '*';
+  }
+
+  // Fix unclosed headers (#)
+  const headerMatch = repaired.match(/#+(?!#)[^\n]*$/);
+  if (headerMatch && !repaired.endsWith('\n')) {
+    repaired += '\n\n';
+  }
+
+  // Fix unclosed lists (-, *, +)
+  const listMatch = repaired.match(/^[\s]*(?:[-+*]|\d+\.)[\s]+[^\n]*$/);
+  if (listMatch && !repaired.endsWith('\n')) {
+    repaired += '\n';
+  }
+
+  // Fix unclosed blockquotes (>)
+  const blockquoteMatches = repaired.match(/^>[^\n]*(?:\n>[^\n]*)*$/);
+  if (blockquoteMatches && !repaired.endsWith('\n')) {
+    repaired += '\n';
+  }
+
+  // Fix unclosed links [text](url
+  const linkMatch = repaired.match(/\[[^\]]*\]\([^\)]*$/);
+  if (linkMatch) {
+    repaired += ')';
+  }
+
+  // Fix unclosed images ![alt](url
+  const imageMatch = repaired.match(/!\[[^\]]*\]\([^\)]*$/);
+  if (imageMatch) {
+    repaired += ')';
   }
 
   return repaired;
