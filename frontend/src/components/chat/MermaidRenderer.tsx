@@ -14,7 +14,19 @@ import { Download, Check, RefreshCw } from 'lucide-react';
  *  - Download as SVG
  *  - Error handling + fallback to code block
  *  - Theme-aware (adapts to dark/light mode)
+ *  - Syntax auto-correction for AI generated spaces
  */
+
+function cleanMermaidSyntax(raw: string): string {
+    return raw
+        // Fix spaces between node ID and the opening bracket/parentheses e.g. A ["Text"] -> A["Text"]
+        .replace(/([A-Za-z0-9_]+)\s+\[/g, '$1[')
+        .replace(/([A-Za-z0-9_]+)\s+\(/g, '$1(')
+        .replace(/([A-Za-z0-9_]+)\s+\{/g, '$1{')
+        .replace(/([A-Za-z0-9_]+)\s+\>/g, '$1>')
+        .trim();
+}
+
 export function MermaidRenderer({ code }: { code: string }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [svg, setSvg] = useState<string>('');
@@ -32,12 +44,42 @@ export function MermaidRenderer({ code }: { code: string }) {
 
             mermaid.initialize({
                 startOnLoad: false,
-                theme: isDark ? 'dark' : 'default',
+                theme: 'base',
+                themeVariables: isDark ? {
+                    background: 'transparent',
+                    primaryColor: '#1e293b',
+                    primaryTextColor: '#f8fafc',
+                    primaryBorderColor: '#3b82f6',
+                    lineColor: '#94a3b8',
+                    secondaryColor: '#334155',
+                    tertiaryColor: '#0f172a',
+                    edgeLabelBackground: '#1e293b',
+                    nodeBorder: '#3b82f6',
+                    clusterBkg: '#0f172a',
+                    clusterBorder: '#3b82f6',
+                    fontSize: '16px',
+                    fontFamily: 'inherit',
+                } : {
+                    background: 'transparent',
+                    primaryColor: '#ffffff',
+                    primaryTextColor: '#0f172a',
+                    primaryBorderColor: '#2563eb',
+                    lineColor: '#64748b',
+                    secondaryColor: '#f8fafc',
+                    tertiaryColor: '#e2e8f0',
+                    edgeLabelBackground: '#ffffff',
+                    nodeBorder: '#2563eb',
+                    clusterBkg: '#f1f5f9',
+                    clusterBorder: '#2563eb',
+                    fontSize: '16px',
+                    fontFamily: 'inherit',
+                },
                 securityLevel: 'loose',
                 fontFamily: 'inherit',
             });
 
-            const { svg: renderedSvg } = await mermaid.render(idRef.current, code.trim());
+            const cleanedCode = cleanMermaidSyntax(code);
+            const { svg: renderedSvg } = await mermaid.render(idRef.current, cleanedCode);
             setSvg(renderedSvg);
         } catch (err: any) {
             console.error('Mermaid render error:', err);
@@ -56,7 +98,16 @@ export function MermaidRenderer({ code }: { code: string }) {
 
     const handleDownload = useCallback(() => {
         if (!svg) return;
-        const blob = new Blob([svg], { type: 'image/svg+xml' });
+
+        // Inject watermark into the SVG native code before download
+        let svgWithWatermark = svg;
+        const watermarkNode = `
+            <g transform="translate(100%, 100%)">
+               <text x="-15" y="-15" text-anchor="end" fill="#888888" opacity="0.6" font-size="14px" font-weight="900" font-family="sans-serif" letter-spacing="2px">BENCHSIDE</text>
+            </g>`;
+        svgWithWatermark = svg.replace(/<\/svg>$/, `${watermarkNode}</svg>`);
+
+        const blob = new Blob([svgWithWatermark], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -106,10 +157,10 @@ export function MermaidRenderer({ code }: { code: string }) {
                     </button>
                 </div>
             </div>
-            <div className="relative p-4 pb-8 flex justify-center overflow-x-auto min-h-[80px]">
+            <div className="relative p-6 px-8 pb-10 flex justify-center overflow-x-auto min-h-[140px] w-full">
                 <div
                     ref={containerRef}
-                    className="flex justify-center [&_svg]:max-w-full"
+                    className="flex justify-center w-full [&_svg]:w-full [&_svg]:max-w-4xl [&_svg]:h-auto transition-all"
                     dangerouslySetInnerHTML={{ __html: svg }}
                 />
 
