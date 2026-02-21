@@ -10,6 +10,7 @@ import { Copy, Check, Download, ExternalLink } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { MermaidRenderer } from './MermaidRenderer';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
+import StreamingLogo from './StreamingLogo';
 
 interface MarkdownRendererProps {
   content: string;
@@ -476,12 +477,13 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
       </ReactMarkdown>
 
       {/* Streaming cursor */}
-      {isAnimating && (
-        <span className="inline-block w-2 h-5 bg-[var(--accent)] animate-pulse ml-0.5 align-middle" />
-      )}
+      {isAnimating && <StreamingLogo />}
     </div>
   );
-}, (prevProps, nextProps) => {
+}, (
+  prevProps: MarkdownRendererProps & { mode?: 'normal' | 'deep_research' | 'fast' },
+  nextProps: MarkdownRendererProps & { mode?: 'normal' | 'deep_research' | 'fast' }
+) => {
   // Strict Memoization
   // Only re-render if the content string has actually changed
   // OR if the 'isAnimating' status has changed.
