@@ -23,11 +23,18 @@ export async function processSSEStream(
     let fullContent = '';
     let buffer = '';
     let isDone = false;
+    let lineCount = 0;
+
+    console.log('🔄 Stream reader initialized');
 
     try {
         while (!isDone) {
             const { done, value } = await reader.read();
-            if (done) break;
+            
+            if (done) {
+                console.log(`📭 Stream ended naturally (${lineCount} lines processed)`);
+                break;
+            }
 
             const chunk = decoder.decode(value, { stream: true });
             buffer += chunk;
@@ -35,10 +42,13 @@ export async function processSSEStream(
             buffer = lines.pop() || '';
 
             for (const line of lines) {
+                lineCount++;
+                
                 if (line.startsWith('data: ')) {
                     const data = line.slice(6).trim();
 
                     if (data === '[DONE]') {
+                        console.log('🏁 Received [DONE] signal');
                         isDone = true;
                         break;
                     }
@@ -99,12 +109,14 @@ export async function processSSEStream(
             }
         }
 
+        console.log('✅ Calling onDone handler');
         handlers.onDone?.();
 
     } catch (error: any) {
         if (error.name === 'AbortError') {
-            console.log('Stream aborted');
+            console.log('⚠️ Stream aborted');
         } else {
+            console.error('❌ Stream error:', error);
             handlers.onError?.(error);
             throw error;
         }
