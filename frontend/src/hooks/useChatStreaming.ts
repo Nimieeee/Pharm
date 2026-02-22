@@ -263,8 +263,12 @@ export function useChatStreaming(state: any) {
                     if (isCurrentConv()) setMessages((prev: Message[]) => [...prev, assistantMessage]);
 
                     let lastContent = '';
+                    let chunkCount = 0;
+                    console.log('📡 Starting SSE stream processing...');
+                    
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
+                            console.log('📋 Received meta:', meta);
                             if (meta.user_message_id) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
                                 userMessage.id = meta.user_message_id;
@@ -277,6 +281,10 @@ export function useChatStreaming(state: any) {
                             }
                         },
                         onContent: (fullContent) => {
+                            chunkCount++;
+                            if (chunkCount === 1) {
+                                console.log('🎉 First content chunk received!');
+                            }
                             lastContent = fullContent;
                             const now = Date.now();
                             if (now - lastUpdateRef.current >= 150) {
@@ -284,9 +292,17 @@ export function useChatStreaming(state: any) {
                                 lastUpdateRef.current = now;
                             }
                         },
-                        onDone: () => updateMessage(lastContent)
+                        onDone: () => {
+                            console.log(`✅ Stream complete! Total chunks: ${chunkCount}`);
+                            updateMessage(lastContent);
+                        },
+                        onError: (error) => {
+                            console.error('❌ Stream error:', error);
+                            throw error;
+                        }
                     });
                     updateMessage(lastContent);
+                    console.log(`📊 Final update: ${lastContent.length} chars`);
                     return;
                 } else {
                     throw new Error('Streaming not available or response failed');

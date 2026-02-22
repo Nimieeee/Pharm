@@ -261,12 +261,12 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   return (
     <motion.article
       {...animationProps}
-      className="py-5 sm:py-6 w-full pl-2 sm:pl-0"
+      className="py-5 sm:py-6 w-full pl-2 sm:pl-0 min-h-[3rem]"
     >
       {/* AI Response - Editorial style, transparent background */}
       <div
         ref={contentRef}
-        className="text-[var(--text-primary)] leading-relaxed w-full"
+        className="text-[var(--text-primary)] leading-relaxed w-full min-h-[2rem]"
       >
         <MarkdownRenderer
           content={displayContent}
