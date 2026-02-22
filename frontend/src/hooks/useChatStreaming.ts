@@ -249,29 +249,63 @@ export function useChatStreaming(state: any) {
                     let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessage.id };
                     const isCurrentConv = () => currentConvIdRef.current === streamConversationId;
 
+                    // Track the message by position instead of ID to avoid race conditions
+                    let messagePosition = -1;
+
                     const updateMessage = (fullContent: string) => {
-                        const newMsg = { ...assistantMessage, content: fullContent };
+                        console.log(`🔄 updateMessage called: ${fullContent.length} chars, ID: ${assistantMessage.id}`);
                         if (isCurrentConv()) {
                             setMessages((prev: Message[]) => {
-                                // Use the current assistantMessage.id (which may have been updated by meta)
-                                const targetId = assistantMessage.id;
-                                const exists = prev.some(m => m.id === targetId);
-                                if (exists) {
-                                    return prev.map(m => m.id === targetId ? newMsg : m);
-                                } else {
-                                    // Message not found, might have been updated with new ID
-                                    // Try to find by looking for assistant message with empty or matching content
-                                    const lastAssistant = prev.filter(m => m.role === 'assistant').pop();
-                                    if (lastAssistant && lastAssistant.content.length === 0) {
-                                        return prev.map(m => m.id === lastAssistant.id ? { ...newMsg, id: lastAssistant.id } : m);
+                                console.log(`  📊 State has ${prev.length} messages`);
+                                
+                                // If we know the position, use it directly
+                                if (messagePosition >= 0 && messagePosition < prev.length) {
+                                    const msg = prev[messagePosition];
+                                    if (msg.role === 'assistant') {
+                                        console.log(`  ✅ Updating by position ${messagePosition}, ID: ${msg.id}`);
+                                        const updated = [...prev];
+                                        updated[messagePosition] = { ...msg, content: fullContent };
+                                        return updated;
                                     }
-                                    return [...prev, newMsg];
                                 }
+                                
+                                // Fallback: find by ID
+                                const targetId = assistantMessage.id;
+                                const index = prev.findIndex(m => m.id === targetId);
+                                if (index >= 0) {
+                                    console.log(`  ✅ Found by ID at position ${index}`);
+                                    messagePosition = index; // Cache the position
+                                    const updated = [...prev];
+                                    updated[index] = { ...prev[index], content: fullContent };
+                                    return updated;
+                                }
+                                
+                                // Last resort: find last assistant message
+                                const lastAssistantIndex = prev.length - 1;
+                                if (lastAssistantIndex >= 0 && prev[lastAssistantIndex].role === 'assistant') {
+                                    console.log(`  ⚠️ Using last assistant message at position ${lastAssistantIndex}`);
+                                    messagePosition = lastAssistantIndex;
+                                    const updated = [...prev];
+                                    updated[lastAssistantIndex] = { ...prev[lastAssistantIndex], content: fullContent };
+                                    return updated;
+                                }
+                                
+                                console.error(`  ❌ Could not find message to update!`);
+                                return prev;
                             });
+                        } else {
+                            console.log(`  ⚠️ Not current conversation, skipping update`);
                         }
                     };
 
-                    if (isCurrentConv()) setMessages((prev: Message[]) => [...prev, assistantMessage]);
+                    if (isCurrentConv()) {
+                        setMessages((prev: Message[]) => {
+                            const newMessages = [...prev, assistantMessage];
+                            messagePosition = newMessages.length - 1; // Cache the position
+                            console.log(`📍 Added assistant message at position ${messagePosition}`);
+                            return newMessages;
+                        });
+                    }
 
                     let lastContent = '';
                     let chunkCount = 0;
@@ -284,13 +318,21 @@ export function useChatStreaming(state: any) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
                                 userMessage.id = meta.user_message_id;
                                 assistantMessage.parentId = meta.user_message_id;
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, parentId: meta.user_message_id } : msg));
                             }
                             if (meta.assistant_message_id) {
                                 const oldId = assistantMessage.id;
                                 assistantMessage.id = meta.assistant_message_id;
                                 console.log(`🔄 Updated assistant message ID: ${oldId} -> ${meta.assistant_message_id}`);
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === oldId ? { ...msg, id: meta.assistant_message_id } : msg));
+                                // Update the ID in state using position
+                                setMessages((prev: Message[]) => {
+                                    if (messagePosition >= 0 && messagePosition < prev.length) {
+                                        const updated = [...prev];
+                                        updated[messagePosition] = { ...prev[messagePosition], id: meta.assistant_message_id, parentId: meta.user_message_id };
+                                        return updated;
+                                    }
+                                    // Fallback to ID-based update
+                                    return prev.map(msg => msg.id === oldId ? { ...msg, id: meta.assistant_message_id, parentId: meta.user_message_id } : msg);
+                                });
                             }
                         },
                         onContent: (fullContent) => {
