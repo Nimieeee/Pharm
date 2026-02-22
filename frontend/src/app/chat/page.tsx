@@ -25,6 +25,17 @@ function ChatContent() {
   const { t, language } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
   const [mode, setMode] = useState<Mode>('fast'); // Lifted mode state
+  const renderCountRef = useRef(0);
+
+  // DEBUG: Monitor messages state changes
+  useEffect(() => {
+    renderCountRef.current++;
+    console.log(`🎨 [RENDER #${renderCountRef.current}] ChatContent rendered, messages.length: ${messages.length}`);
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      console.log(`🎨 [RENDER #${renderCountRef.current}] Last message: role=${lastMsg.role}, id=${lastMsg.id.substring(0, 8)}, contentLen=${lastMsg.content.length}`);
+    }
+  }, [messages]);
 
   // Handle Confetti on first load after registration
   useEffect(() => {
