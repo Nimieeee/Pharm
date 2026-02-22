@@ -246,16 +246,27 @@ export function useChatStreaming(state: any) {
                 });
 
                 if (streamResponse.ok && streamResponse.body) {
-                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessage.id };
+                    let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessage.id };
                     const isCurrentConv = () => currentConvIdRef.current === streamConversationId;
 
                     const updateMessage = (fullContent: string) => {
                         const newMsg = { ...assistantMessage, content: fullContent };
                         if (isCurrentConv()) {
                             setMessages((prev: Message[]) => {
+                                // Use the current assistantMessage.id (which may have been updated by meta)
                                 const targetId = assistantMessage.id;
                                 const exists = prev.some(m => m.id === targetId);
-                                return exists ? prev.map(m => m.id === targetId ? newMsg : m) : [...prev, newMsg];
+                                if (exists) {
+                                    return prev.map(m => m.id === targetId ? newMsg : m);
+                                } else {
+                                    // Message not found, might have been updated with new ID
+                                    // Try to find by looking for assistant message with empty or matching content
+                                    const lastAssistant = prev.filter(m => m.role === 'assistant').pop();
+                                    if (lastAssistant && lastAssistant.content.length === 0) {
+                                        return prev.map(m => m.id === lastAssistant.id ? { ...newMsg, id: lastAssistant.id } : m);
+                                    }
+                                    return [...prev, newMsg];
+                                }
                             });
                         }
                     };
@@ -276,8 +287,10 @@ export function useChatStreaming(state: any) {
                                 setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, parentId: meta.user_message_id } : msg));
                             }
                             if (meta.assistant_message_id) {
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, id: meta.assistant_message_id } : msg));
+                                const oldId = assistantMessage.id;
                                 assistantMessage.id = meta.assistant_message_id;
+                                console.log(`🔄 Updated assistant message ID: ${oldId} -> ${meta.assistant_message_id}`);
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === oldId ? { ...msg, id: meta.assistant_message_id } : msg));
                             }
                         },
                         onContent: (fullContent) => {
