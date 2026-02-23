@@ -476,8 +476,8 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
         {displayContent}
       </ReactMarkdown>
 
-      {/* Streaming cursor */}
-      {isAnimating && <StreamingLogo />}
+      {/* Streaming cursor - only show when actively streaming AND content exists */}
+      {isAnimating && displayContent.length > 0 && <StreamingLogo />}
     </div>
   );
 }, (

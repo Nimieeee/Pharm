@@ -244,12 +244,11 @@ function ChatContent() {
           {/* Loading indicator - minimal, no avatar */}
           {/* Show "Thinking..." ONLY when:
               1. isLoading is true AND
-              2. Either no messages exist OR last message is assistant with NO content yet
-              This ensures the loader disappears immediately when streaming starts */}
+              2. No assistant message exists yet (waiting for stream to start)
+              Once assistant message is added, hide this and wait for content to stream */}
           {!deepResearchProgress && isLoading && (
             messages.length === 0 ||
-            (messages[messages.length - 1]?.role === 'assistant' &&
-             messages[messages.length - 1]?.content.length === 0)
+            messages[messages.length - 1]?.role !== 'assistant'
           ) && (
             <motion.div
               initial={{ opacity: 0 }}
