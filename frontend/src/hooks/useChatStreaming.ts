@@ -144,6 +144,8 @@ export function useChatStreaming(state: any) {
                         throw new Error('Failed to create conversation');
                     }
                 } else {
+                    // CRITICAL FIX: Set currentConvIdRef for existing conversations too!
+                    currentConvIdRef.current = streamConversationId;
                     moveConversationToTop(streamConversationId);
                 }
 

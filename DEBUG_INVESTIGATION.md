@@ -1,62 +1,54 @@
 # Systematic Debug Investigation: UI Not Updating During Document Upload Streaming
 
-## Symptom
-- **WHAT**: AI response doesn't appear in UI until page refresh
-- **WHEN**: Only when uploading a document (works fine without document)
-- **WHERE**: Frontend React state management
-- **EVIDENCE**: Console logs show streaming completes successfully (810 chunks, 6064 chars, [DONE] received)
+## ROOT CAUSE IDENTIFIED ✅
 
-## Phase 1: Root Cause Investigation
+**The Bug**: `currentConvIdRef.current` was NOT being set for existing conversations, only for new ones.
 
-### 1.1 Error Messages
-Console logs show:
-```
-✅ Stream complete! Total chunks: 810
-✅ 6064 chars received  
-✅ [DONE] signal received
-✅ onDone handler called
-```
-No errors - stream completes successfully but UI doesn't update.
+**Why it only happened with documents**:
+1. First message (without document) creates NEW conversation → `currentConvIdRef.current` IS set
+2. Second message (with document) uses EXISTING conversation → `currentConvIdRef.current` NOT set (remains from previous)
+3. But when you upload document and send immediately, conversation already exists from upload
+4. So `currentConvIdRef.current` is `null`
+5. `isCurrentConv()` returns `false`
+6. ALL `updateMessage` calls are skipped
+7. Content never appears in UI
 
-### 1.2 Reproduction Steps
-1. Upload document (PDF/PPTX) in Fast mode
-2. Type prompt "explain well"
-3. Send message
-4. UI shows "Thinking..." indefinitely
-5. Refresh page → content appears correctly
-
-**Reproducible**: YES, 100% with document uploads
-**Without document**: NO, works perfectly
-
-### 1.3 Recent Changes
-- Fixed RPC parameter mismatch
-- Fixed PDF tuple structure
-- Added streaming diagnostics
-- Modified "Thinking..." UI logic
-- **Attempted fix**: Position-based message tracking (DIDN'T WORK)
-
-### 1.4 Component Boundaries to Investigate
-
-```
-[Backend] → [SSE Stream] → [Frontend streamReader] → [useChatStreaming] → [React State] → [UI Render]
-    ✓           ✓                  ✓                      ?                  ?              ✗
+**The Code**:
+```typescript
+if (!streamConversationId) {
+    // Create new conversation
+    currentConvIdRef.current = convData.id;  // ← Set here
+} else {
+    moveConversationToTop(streamConversationId);  // ← BUG: NOT set here!
+}
 ```
 
-Need to add diagnostics at each boundary to find WHERE it breaks.
+**The Fix**:
+```typescript
+} else {
+    currentConvIdRef.current = streamConversationId;  // ← FIXED!
+    moveConversationToTop(streamConversationId);
+}
+```
 
-### 1.5 Key Question
-**WHY does it work without documents but fail with documents?**
+## Evidence from Logs
 
-Hypothesis areas to investigate:
-1. Timing difference (RAG processing delay)
-2. Message size difference (large context)
-3. State update batching issues
-4. React re-render not triggering
-5. Closure capturing stale state
+```
+⚠️ Not current conversation when adding assistant message
+⚠️ [1] Not current conversation (current: null, target: a258bc11-0bf7-4ff3-8eda-db4b67c28c1c), skipping update
+```
 
-## Next Steps
-1. Add comprehensive logging to track state updates
-2. Verify React re-renders are happening
-3. Check if setMessages is actually being called
-4. Verify message exists in state after updates
-5. Compare behavior with/without documents
+Every single update was skipped because `currentConvIdRef.current === null`.
+
+## Why Systematic Debugging Worked
+
+1. Added comprehensive logging at every boundary
+2. Logs revealed `convMatch: false` on every update
+3. Traced back to `isCurrentConv()` check
+4. Found `currentConvIdRef.current` was `null`
+5. Searched codebase for where it's set
+6. Found it's only set for NEW conversations, not existing ones
+7. Fixed by setting it for existing conversations too
+
+## File Changed
+- `frontend/src/hooks/useChatStreaming.ts` - Line 147
