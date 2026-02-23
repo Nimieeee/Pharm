@@ -242,19 +242,19 @@ function ChatContent() {
           )}
 
           {/* Loading indicator - minimal, no avatar */}
-          {/* Show "Thinking..." if:
-              1. isLoading is true (waiting for stream to start)
-              2. OR last message is assistant with empty content (stream started but no text yet)
-              This prevents the flicker when transitioning from loading to streaming */}
-          {!deepResearchProgress && (
-            isLoading ||
-            (messages.length > 0 &&
-             messages[messages.length - 1]?.role === 'assistant' &&
+          {/* Show "Thinking..." ONLY when:
+              1. isLoading is true AND
+              2. Either no messages exist OR last message is assistant with NO content yet
+              This ensures the loader disappears immediately when streaming starts */}
+          {!deepResearchProgress && isLoading && (
+            messages.length === 0 ||
+            (messages[messages.length - 1]?.role === 'assistant' &&
              messages[messages.length - 1]?.content.length === 0)
           ) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="py-4 min-h-[3rem]"
             >
               <div className="flex items-center gap-2 text-slate-500">

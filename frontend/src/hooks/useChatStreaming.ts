@@ -377,6 +377,8 @@ export function useChatStreaming(state: any) {
                             chunkCount++;
                             if (chunkCount === 1) {
                                 console.log('🎉 First content chunk received!');
+                                // CRITICAL: Unmount "Thinking..." loader immediately when streaming starts
+                                setIsLoading(false);
                             }
                             lastContent = fullContent;
                             const now = Date.now();
