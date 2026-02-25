@@ -18,13 +18,44 @@ import { Download, Check, RefreshCw } from 'lucide-react';
  */
 
 function cleanMermaidSyntax(raw: string): string {
-    return raw
-        // Fix spaces between node ID and the opening bracket/parentheses e.g. A ["Text"] -> A["Text"]
-        .replace(/([A-Za-z0-9_]+)\s+\[/g, '$1[')
-        .replace(/([A-Za-z0-9_]+)\s+\(/g, '$1(')
-        .replace(/([A-Za-z0-9_]+)\s+\{/g, '$1{')
-        .replace(/([A-Za-z0-9_]+)\s+\>/g, '$1>')
-        .trim();
+    // Process line-by-line for precision
+    const lines = raw.split('\n');
+    const cleaned = lines.map(line => {
+        // Skip lines inside quoted labels (don't break label text)
+        // We only fix structural syntax, not content inside ["..."]
+
+        // --- FIX 1: Spaces inside node IDs ---
+        // e.g. "F --> F 1[" → "F --> F1["  or  "-->|label| V[" → "-->|label| V["
+        // Match: word boundary, then uppercase letter(s), space(s), digit(s), then bracket
+        line = line.replace(/\b([A-Za-z]+)\s+(\d+)\s*(\[|\(|\{)/g, '$1$2$3');
+
+        // --- FIX 2: Spaces between node ID and opening bracket ---
+        // e.g. "AC [" → "AC[",  "AF [" → "AF["
+        line = line.replace(/([A-Za-z0-9_]+)\s+(\[")/g, '$1$2');
+        line = line.replace(/([A-Za-z0-9_]+)\s+(\[)/g, '$1$2');
+        line = line.replace(/([A-Za-z0-9_]+)\s+(\()/g, '$1$2');
+        line = line.replace(/([A-Za-z0-9_]+)\s+(\{)/g, '$1$2');
+
+        // --- FIX 3: Spaces after pipe closing in edge labels ---
+        // e.g. "-->|Kidney| V[" → "-->|Kidney|V["
+        line = line.replace(/\|\s+([A-Za-z0-9_]+)(\[|\(|\{)/g, '|$1$2');
+
+        // --- FIX 4: Style line fixes ---
+        // 4a. Extra spaces between "style" and node ID: "style  B fill" → "style B fill"
+        line = line.replace(/^(\s*style)\s{2,}([A-Za-z0-9_-]+)/g, '$1 $2');
+        // 4b. Spaces inside hex color values: "fill:# f88" or "fill:#f 88" → "fill:#f88"
+        line = line.replace(/(fill|stroke|color):#\s+([a-fA-F0-9])/g, '$1:#$2');
+        line = line.replace(/(fill|stroke|color):#([a-fA-F0-9]+)\s+([a-fA-F0-9]+)/g, '$1:#$2$3');
+        // 4c. Spaces around colon in style props: "fill: #fff" → "fill:#fff"
+        line = line.replace(/(fill|stroke|color)\s*:\s+#/g, '$1:#');
+        // 4d. Spaces around comma in style defs: "#fff, stroke" → "#fff,stroke"
+        line = line.replace(/(fill|stroke|color):#[a-fA-F0-9]+,\s+(fill|stroke|color)/g,
+            (match) => match.replace(', ', ','));
+
+        return line;
+    });
+
+    return cleaned.join('\n').trim();
 }
 
 export function MermaidRenderer({ code }: { code: string }) {
