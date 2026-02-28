@@ -263,71 +263,39 @@ export function useChatStreaming(state: any) {
 
                     // Track the message by position instead of ID to avoid race conditions
                     let messagePosition = -1;
-                    let updateCallCount = 0;
-                    let lastStateSnapshot: Message[] | null = null;
 
                     const updateMessage = (fullContent: string) => {
-                        updateCallCount++;
-                        console.log(`🔄 [${updateCallCount}] updateMessage called: ${fullContent.length} chars, ID: ${assistantMessage.id}, convMatch: ${isCurrentConv()}`);
-
-                        if (!isCurrentConv()) {
-                            console.log(`  ⚠️ [${updateCallCount}] Not current conversation (current: ${currentConvIdRef.current}, target: ${streamConversationId}), skipping update`);
-                            return;
-                        }
+                        if (!isCurrentConv()) return;
 
                         setMessages((prev: Message[]) => {
-                            console.log(`  📊 [${updateCallCount}] setMessages callback executing, prev.length: ${prev.length}`);
-
-                            // Check if state actually changed since last update
-                            if (lastStateSnapshot && prev === lastStateSnapshot) {
-                                console.warn(`  ⚠️ [${updateCallCount}] State reference unchanged - React may not be re-rendering!`);
-                            }
-
-                            // Log all message IDs in current state
-                            console.log(`  📋 [${updateCallCount}] Current message IDs:`, prev.map(m => `${m.role}:${m.id.substring(0, 8)}`));
-
                             // If we know the position, use it directly
                             if (messagePosition >= 0 && messagePosition < prev.length) {
                                 const msg = prev[messagePosition];
-                                console.log(`  🎯 [${updateCallCount}] Checking position ${messagePosition}: role=${msg.role}, id=${msg.id.substring(0, 8)}, contentLen=${msg.content.length}`);
                                 if (msg.role === 'assistant') {
-                                    console.log(`  ✅ [${updateCallCount}] Updating by position ${messagePosition}, old content: ${msg.content.length} chars, new: ${fullContent.length} chars`);
                                     const updated = [...prev];
                                     updated[messagePosition] = { ...msg, content: fullContent };
-                                    lastStateSnapshot = updated;
                                     return updated;
-                                } else {
-                                    console.warn(`  ⚠️ [${updateCallCount}] Position ${messagePosition} is not assistant (role: ${msg.role}), falling back to ID search`);
                                 }
                             }
 
                             // Fallback: find by ID
-                            const targetId = assistantMessage.id;
-                            console.log(`  🔍 [${updateCallCount}] Searching for ID: ${targetId.substring(0, 8)}`);
-                            const index = prev.findIndex(m => m.id === targetId);
+                            const index = prev.findIndex(m => m.id === assistantMessage.id);
                             if (index >= 0) {
-                                console.log(`  ✅ [${updateCallCount}] Found by ID at position ${index}`);
-                                messagePosition = index; // Cache the position
+                                messagePosition = index;
                                 const updated = [...prev];
                                 updated[index] = { ...prev[index], content: fullContent };
-                                lastStateSnapshot = updated;
                                 return updated;
                             }
 
                             // Last resort: find last assistant message
                             const lastAssistantIndex = prev.length - 1;
                             if (lastAssistantIndex >= 0 && prev[lastAssistantIndex].role === 'assistant') {
-                                console.log(`  ⚠️ [${updateCallCount}] Using last assistant message at position ${lastAssistantIndex}, id: ${prev[lastAssistantIndex].id.substring(0, 8)}`);
                                 messagePosition = lastAssistantIndex;
                                 const updated = [...prev];
                                 updated[lastAssistantIndex] = { ...prev[lastAssistantIndex], content: fullContent };
-                                lastStateSnapshot = updated;
                                 return updated;
                             }
 
-                            console.error(`  ❌ [${updateCallCount}] Could not find message to update! Looking for ID: ${targetId.substring(0, 8)}`);
-                            console.error(`  ❌ [${updateCallCount}] Available IDs:`, prev.map(m => m.id.substring(0, 8)));
-                            lastStateSnapshot = prev;
                             return prev;
                         });
                     };
@@ -335,79 +303,56 @@ export function useChatStreaming(state: any) {
                     if (isCurrentConv()) {
                         setMessages((prev: Message[]) => {
                             const newMessages = [...prev, assistantMessage];
-                            messagePosition = newMessages.length - 1; // Cache the position
-                            console.log(`📍 Added assistant message at position ${messagePosition}, ID: ${assistantMessage.id.substring(0, 8)}, total messages: ${newMessages.length}`);
-                            console.log(`📍 Message IDs after add:`, newMessages.map(m => `${m.role}:${m.id.substring(0, 8)}`));
+                            messagePosition = newMessages.length - 1;
                             return newMessages;
                         });
-                    } else {
-                        console.warn(`⚠️ Not current conversation when adding assistant message`);
                     }
 
                     let lastContent = '';
-                    let chunkCount = 0;
-                    console.log('📡 Starting SSE stream processing...');
 
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
-                            console.log('📋 Received meta:', meta);
                             if (meta.user_message_id) {
-                                console.log(`🔄 Updating user message ID: ${userMessage.id.substring(0, 8)} -> ${meta.user_message_id.substring(0, 8)}`);
                                 setMessages((prev: Message[]) => {
                                     const updated = prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg);
-                                    console.log(`  User message updated in state, new IDs:`, updated.map(m => `${m.role}:${m.id.substring(0, 8)}`));
+                                    // Also update assistant ID in the same pass if available
+                                    if (meta.assistant_message_id && messagePosition >= 0 && messagePosition < updated.length) {
+                                        updated[messagePosition] = { ...updated[messagePosition], id: meta.assistant_message_id, parentId: meta.user_message_id };
+                                        assistantMessage.id = meta.assistant_message_id;
+                                    }
                                     return updated;
                                 });
                                 userMessage.id = meta.user_message_id;
                                 assistantMessage.parentId = meta.user_message_id;
-                            }
-                            if (meta.assistant_message_id) {
+                            } else if (meta.assistant_message_id) {
                                 const oldId = assistantMessage.id;
                                 assistantMessage.id = meta.assistant_message_id;
-                                console.log(`🔄 Updated assistant message ID: ${oldId.substring(0, 8)} -> ${meta.assistant_message_id.substring(0, 8)}`);
-                                console.log(`🔄 Message position cached: ${messagePosition}`);
-                                // Update the ID in state using position
                                 setMessages((prev: Message[]) => {
-                                    console.log(`  Updating assistant ID in state, position: ${messagePosition}, prev.length: ${prev.length}`);
                                     if (messagePosition >= 0 && messagePosition < prev.length) {
                                         const updated = [...prev];
                                         updated[messagePosition] = { ...prev[messagePosition], id: meta.assistant_message_id, parentId: meta.user_message_id };
-                                        console.log(`  ✅ Updated by position, new IDs:`, updated.map(m => `${m.role}:${m.id.substring(0, 8)}`));
                                         return updated;
                                     }
-                                    // Fallback to ID-based update
-                                    console.log(`  ⚠️ Position invalid, using ID-based update`);
-                                    const updated = prev.map(msg => msg.id === oldId ? { ...msg, id: meta.assistant_message_id, parentId: meta.user_message_id } : msg);
-                                    console.log(`  Updated by ID, new IDs:`, updated.map(m => `${m.role}:${m.id.substring(0, 8)}`));
-                                    return updated;
+                                    return prev.map(msg => msg.id === oldId ? { ...msg, id: meta.assistant_message_id, parentId: meta.user_message_id } : msg);
                                 });
                             }
                         },
                         onContent: (fullContent) => {
-                            chunkCount++;
-                            if (chunkCount === 1) {
-                                console.log('🎉 First content chunk received!');
-                                // Don't set isLoading=false here - keep it true during streaming
-                                // The loader visibility is controlled by the condition in chat page
-                            }
                             lastContent = fullContent;
                             const now = Date.now();
-                            if (now - lastUpdateRef.current >= 150) {
+                            if (now - lastUpdateRef.current >= 32) {
                                 updateMessage(fullContent);
                                 lastUpdateRef.current = now;
                             }
                         },
                         onDone: () => {
-                            console.log(`✅ Stream complete! Total chunks: ${chunkCount}`);
                             updateMessage(lastContent);
                         },
                         onError: (error) => {
-                            console.error('❌ Stream error:', error);
                             throw error;
                         }
                     });
                     updateMessage(lastContent);
-                    console.log(`📊 Final update: ${lastContent.length} chars`);
                     return;
                 } else {
                     throw new Error('Streaming not available or response failed');

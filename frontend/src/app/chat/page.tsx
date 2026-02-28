@@ -193,15 +193,9 @@ function ChatContent() {
               currentMode={mode}
             />
           ) : (
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="sync">
               {messages.map((msg, index) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
+                <div key={msg.id}>
                   <MemoizedChatMessage
                     message={{
                       ...msg,
@@ -214,7 +208,7 @@ function ChatContent() {
                     onDelete={deleteMessage}
                     onBranchNavigate={navigateBranch}
                   />
-                </motion.div>
+                </div>
               ))}
             </AnimatePresence>
           )}
