@@ -195,7 +195,17 @@ export function useChatStreaming(state: any) {
                     }
 
                     let finalReport = '';
+                    let assistantMessageId = (Date.now() + 1).toString();
                     await processSSEStream(response, {
+                        onMeta: (meta) => {
+                            if (meta.user_message_id) {
+                                setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
+                                userMessage.id = meta.user_message_id;
+                            }
+                            if (meta.assistant_message_id) {
+                                assistantMessageId = meta.assistant_message_id;
+                            }
+                        },
                         onContent: () => { },
                         customParser: (data) => {
                             try {
@@ -211,7 +221,7 @@ export function useChatStreaming(state: any) {
                                     citations: currentCitations,
                                     plan_overview: progress.plan_overview || accumulatedState.plan_overview,
                                 };
-
+                                
                                 const now = Date.now();
                                 if (now - lastUpdateRef.current >= 50) {
                                     setDeepResearchProgress({ ...accumulatedState });
@@ -226,7 +236,7 @@ export function useChatStreaming(state: any) {
                     });
 
                     setDeepResearchProgress(null);
-                    const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: finalReport || 'Deep research completed.', timestamp: new Date() };
+                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: finalReport || 'Deep research completed.', timestamp: new Date(), parentId: userMessage.id };
                     setMessages((prev: Message[]) => [...prev, assistantMessage]);
                     return;
                 }
