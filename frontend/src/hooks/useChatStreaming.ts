@@ -121,7 +121,7 @@ export function useChatStreaming(state: any) {
 
             try {
                 if (!token) {
-                    const authMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Please sign in to use PharmGPT. Go to /login to authenticate.', timestamp: new Date() };
+                    const authMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Please sign in to use Benchside. Go to /login to authenticate.', timestamp: new Date() };
                     setMessages((prev: Message[]) => [...prev, authMessage]);
                     setIsLoading(false);
                     return;
@@ -221,7 +221,7 @@ export function useChatStreaming(state: any) {
                                     citations: currentCitations,
                                     plan_overview: progress.plan_overview || accumulatedState.plan_overview,
                                 };
-                                
+
                                 const now = Date.now();
                                 if (now - lastUpdateRef.current >= 50) {
                                     setDeepResearchProgress({ ...accumulatedState });
@@ -269,23 +269,23 @@ export function useChatStreaming(state: any) {
                     const updateMessage = (fullContent: string) => {
                         updateCallCount++;
                         console.log(`🔄 [${updateCallCount}] updateMessage called: ${fullContent.length} chars, ID: ${assistantMessage.id}, convMatch: ${isCurrentConv()}`);
-                        
+
                         if (!isCurrentConv()) {
                             console.log(`  ⚠️ [${updateCallCount}] Not current conversation (current: ${currentConvIdRef.current}, target: ${streamConversationId}), skipping update`);
                             return;
                         }
-                        
+
                         setMessages((prev: Message[]) => {
                             console.log(`  📊 [${updateCallCount}] setMessages callback executing, prev.length: ${prev.length}`);
-                            
+
                             // Check if state actually changed since last update
                             if (lastStateSnapshot && prev === lastStateSnapshot) {
                                 console.warn(`  ⚠️ [${updateCallCount}] State reference unchanged - React may not be re-rendering!`);
                             }
-                            
+
                             // Log all message IDs in current state
                             console.log(`  📋 [${updateCallCount}] Current message IDs:`, prev.map(m => `${m.role}:${m.id.substring(0, 8)}`));
-                            
+
                             // If we know the position, use it directly
                             if (messagePosition >= 0 && messagePosition < prev.length) {
                                 const msg = prev[messagePosition];
@@ -300,7 +300,7 @@ export function useChatStreaming(state: any) {
                                     console.warn(`  ⚠️ [${updateCallCount}] Position ${messagePosition} is not assistant (role: ${msg.role}), falling back to ID search`);
                                 }
                             }
-                            
+
                             // Fallback: find by ID
                             const targetId = assistantMessage.id;
                             console.log(`  🔍 [${updateCallCount}] Searching for ID: ${targetId.substring(0, 8)}`);
@@ -313,7 +313,7 @@ export function useChatStreaming(state: any) {
                                 lastStateSnapshot = updated;
                                 return updated;
                             }
-                            
+
                             // Last resort: find last assistant message
                             const lastAssistantIndex = prev.length - 1;
                             if (lastAssistantIndex >= 0 && prev[lastAssistantIndex].role === 'assistant') {
@@ -324,7 +324,7 @@ export function useChatStreaming(state: any) {
                                 lastStateSnapshot = updated;
                                 return updated;
                             }
-                            
+
                             console.error(`  ❌ [${updateCallCount}] Could not find message to update! Looking for ID: ${targetId.substring(0, 8)}`);
                             console.error(`  ❌ [${updateCallCount}] Available IDs:`, prev.map(m => m.id.substring(0, 8)));
                             lastStateSnapshot = prev;
@@ -347,7 +347,7 @@ export function useChatStreaming(state: any) {
                     let lastContent = '';
                     let chunkCount = 0;
                     console.log('📡 Starting SSE stream processing...');
-                    
+
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
                             console.log('📋 Received meta:', meta);

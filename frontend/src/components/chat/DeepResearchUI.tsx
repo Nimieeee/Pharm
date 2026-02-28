@@ -13,6 +13,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
+import StreamingLogo from "./StreamingLogo";
 
 // --- Types ---
 
@@ -56,7 +57,7 @@ const CitationRenderer = ({
             <button
               key={index}
               onClick={() => onCitationClick(id)}
-              className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-xs font-bold text-emerald-600 bg-emerald-50 rounded cursor-pointer hover:bg-emerald-100 hover:text-emerald-800 transition-colors border border-emerald-200 align-baseline dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-800/60"
+              className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-xs font-bold text-amber-600 bg-amber-50 rounded cursor-pointer hover:bg-amber-100 hover:text-amber-800 transition-colors border border-amber-200 align-baseline dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-800/60"
               title={`Jump to Source ${id}`}
             >
               {id}
@@ -130,14 +131,14 @@ export default function DeepResearchUI({
         <div className="flex items-center gap-2">
           {isLoading ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
               <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
                 {t('researching')}
               </h3>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <div className="p-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 rounded-md">
+              <div className="p-1 bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 rounded-md">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
               <h3 className="font-medium text-slate-800 dark:text-slate-200 text-sm">
@@ -148,7 +149,7 @@ export default function DeepResearchUI({
         </div>
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-sm transition-all active:scale-95"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-xs font-semibold shadow-sm transition-all active:scale-95"
           title={sidebarCollapsed ? t('sources') : t('close')}
         >
           <BookOpen className="w-3.5 h-3.5" />
@@ -174,7 +175,7 @@ export default function DeepResearchUI({
 
         {/* LEFT PANEL: The Report */}
         <div className={`flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth bg-surface ${sidebarCollapsed ? 'w-full' : ''}`}>
-          <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-img:rounded-xl">
+          <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-amber-600 dark:prose-a:text-amber-400 prose-img:rounded-xl">
             {isLoading && !reportContent ? (
               <LoadingState progress={progressStep} progressPercent={progressPercent} />
             ) : (
@@ -205,8 +206,8 @@ export default function DeepResearchUI({
                       {children}
                     </h3>
                   ),
-                  ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5 my-3 marker:text-emerald-500/50 text-slate-600 dark:text-slate-300">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5 my-3 marker:text-emerald-500/50 text-slate-600 dark:text-slate-300">{children}</ol>,
+                  ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5 my-3 marker:text-amber-500/50 text-slate-600 dark:text-slate-300">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5 my-3 marker:text-amber-500/50 text-slate-600 dark:text-slate-300">{children}</ol>,
                   li: ({ children }) => (
                     <li className="pl-1">
                       {React.Children.map(children, (child) => {
@@ -218,14 +219,14 @@ export default function DeepResearchUI({
                     </li>
                   ),
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-emerald-500 pl-4 py-1 my-4 bg-surface-highlight text-foreground-muted italic rounded-r text-sm">
+                    <blockquote className="border-l-2 border-amber-500 pl-4 py-1 my-4 bg-surface-highlight text-foreground-muted italic rounded-r text-sm">
                       {children}
                     </blockquote>
                   ),
                   code: ({ children, className }) => {
                     const isInline = !className;
                     if (isInline) {
-                      return <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[11px] font-mono text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700/50">{children}</code>;
+                      return <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[11px] font-mono text-amber-600 dark:text-amber-400 border border-slate-200 dark:border-slate-700/50">{children}</code>;
                     }
                     return <code className={className}>{children}</code>;
                   },
@@ -234,7 +235,7 @@ export default function DeepResearchUI({
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 no-underline hover:underline inline-flex items-center gap-0.5 transition-colors"
+                      className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 no-underline hover:underline inline-flex items-center gap-0.5 transition-colors"
                     >
                       {children}
                       <ExternalLink className="w-2.5 h-2.5 opacity-70" />
@@ -312,8 +313,8 @@ export default function DeepResearchUI({
                 className={`
                   p-2.5 rounded-lg border text-sm transition-all duration-200 cursor-pointer group
                   ${activeSourceId === source.id
-                    ? 'bg-surface border-emerald-500/50 ring-1 ring-emerald-500/20 shadow-md transform scale-[1.02]'
-                    : 'bg-surface/40 border-border hover:border-emerald-500/30'
+                    ? 'bg-surface border-amber-500/50 ring-1 ring-amber-500/20 shadow-md transform scale-[1.02]'
+                    : 'bg-surface/40 border-border hover:border-amber-500/30'
                   }
                 `}
                 onClick={() => setActiveSourceId(activeSourceId === source.id ? null : source.id)}
@@ -321,12 +322,12 @@ export default function DeepResearchUI({
                 <div className="flex items-start gap-2.5">
                   <div className={`
                       flex-shrink-0 w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold mt-0.5 transition-colors
-                      ${activeSourceId === source.id ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 group-hover:text-emerald-500'}
+                      ${activeSourceId === source.id ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 group-hover:text-amber-500'}
                    `}>
                     {source.id}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h5 className={`text-xs font-medium leading-snug line-clamp-2 mb-0.5 ${activeSourceId === source.id ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <h5 className={`text-xs font-medium leading-snug line-clamp-2 mb-0.5 ${activeSourceId === source.id ? 'text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
                       {source.title}
                     </h5>
                     <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500">
@@ -352,7 +353,7 @@ export default function DeepResearchUI({
                           href={source.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:underline mt-2 opacity-80 hover:opacity-100"
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 hover:underline mt-2 opacity-80 hover:opacity-100"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink className="w-2.5 h-2.5" /> {t('open_source')}
@@ -377,14 +378,14 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[400px] w-full max-w-md mx-auto px-4 animate-in fade-in duration-700">
 
-      {/* Search Icon with Pulse Ring */}
+      {/* Animated Brand Logo with Pulse Ring */}
       <div className="relative mb-8">
-        <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse"></div>
-        <div className="relative w-16 h-16 bg-surface rounded-2xl shadow-lg border border-slate-100 dark:border-border flex items-center justify-center group">
-          <Search className="w-6 h-6 text-emerald-500 group-hover:scale-110 transition-transform duration-500" />
+        <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse"></div>
+        <div className="relative w-16 h-16 bg-surface rounded-2xl shadow-lg border border-slate-100 dark:border-border flex items-center justify-center group overflow-hidden">
+          <StreamingLogo className="w-10 h-10 group-hover:scale-110 transition-transform duration-500" />
 
           {/* Spinner Ring */}
-          <div className="absolute inset-0 -m-1 rounded-[1.2rem] border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
+          <div className="absolute inset-0 -m-1 rounded-[1.2rem] border-2 border-amber-500/20 border-t-amber-500 animate-spin"></div>
         </div>
       </div>
 
@@ -395,13 +396,13 @@ function LoadingState({ progress, progressPercent }: { progress: string; progres
 
       {/* Secondary Progress Detail */}
       <p className="text-sm text-foreground-muted mb-8 text-center font-light">
-        {t('processing_sources')} <span className="font-mono text-emerald-600 dark:text-emerald-400 ml-1">{progressPercent}%</span>
+        {t('processing_sources')} <span className="font-mono text-amber-600 dark:text-amber-400 ml-1">{progressPercent}%</span>
       </p>
 
       {/* Sleek Progress Bar */}
       <div className="w-full h-1 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden mb-8">
         <motion.div
-          className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
+          className="h-full bg-gradient-to-r from-amber-500 to-orange-400"
           initial={{ width: 0 }}
           animate={{ width: `${Math.max(progressPercent, 5)}%` }} // Always show a little
           transition={{ duration: 0.5, ease: "easeOut" }}
