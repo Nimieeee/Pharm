@@ -405,7 +405,7 @@ export default function ProfilePage() {
                         </form>
 
                         {/* Notification/Preferences placeholder */}
-                        <div className="p-8 bg-gradient-to-br from-orange-500/5 to-purple-500/5 border border-orange-500/10 rounded-3xl">
+                        <div className="p-8 bg-gradient-to-br from-orange-500/5 to-orange-500/5 border border-orange-500/10 rounded-3xl">
                             <h3 className="font-serif font-medium text-[var(--text-primary)] mb-2">{t('security_privacy')}</h3>
                             <p className="text-sm text-[var(--text-secondary)] mb-4">
                                 {t('security_desc')}

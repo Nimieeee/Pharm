@@ -78,7 +78,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg overflow-hidden shrink-0">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-medium text-lg overflow-hidden shrink-0">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
@@ -104,7 +104,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
             >
               <div className="flex items-center gap-3">
-                <HelpCircle size={18} className="text-blue-500" />
+                <HelpCircle size={18} className="text-orange-500" />
                 <span className="text-sm text-foreground">{t('help_center')}</span>
               </div>
               <ChevronsRight size={14} className="text-foreground-muted" />

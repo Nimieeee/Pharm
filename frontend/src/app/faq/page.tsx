@@ -71,10 +71,10 @@ export default function FAQPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <div className="inline-flex items-center justify-center p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-                        <HelpCircle className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    <div className="inline-flex items-center justify-center p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+                        <HelpCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-teal-500">
+                    <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-teal-500">
                         Frequently Asked Questions
                     </h1>
                     <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -97,7 +97,7 @@ export default function FAQPage() {
                             >
                                 <span className="text-lg font-semibold text-foreground">{faq.question}</span>
                                 {openIndex === index ? (
-                                    <ChevronUp className="w-5 h-5 text-blue-500" />
+                                    <ChevronUp className="w-5 h-5 text-orange-500" />
                                 ) : (
                                     <ChevronDown className="w-5 h-5 text-gray-400" />
                                 )}
@@ -113,8 +113,8 @@ export default function FAQPage() {
                 </div>
 
                 <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                        <Database className="w-8 h-8 text-blue-600 mb-3" />
+                    <div className="p-6 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                        <Database className="w-8 h-8 text-orange-600 mb-3" />
                         <h3 className="font-semibold mb-2">Deep Research</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Autonomous multi-step research across PubMed & Google Scholar.</p>
                     </div>
@@ -123,8 +123,8 @@ export default function FAQPage() {
                         <h3 className="font-semibold mb-2">Multimodal Analysis</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Upload images, PDFs, and slides. The AI sees what you see.</p>
                     </div>
-                    <div className="p-6 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
-                        <Zap className="w-8 h-8 text-purple-600 mb-3" />
+                    <div className="p-6 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                        <Zap className="w-8 h-8 text-orange-600 mb-3" />
                         <h3 className="font-semibold mb-2">Real-time Data</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Live web search integration ensures answers are never outdated.</p>
                     </div>

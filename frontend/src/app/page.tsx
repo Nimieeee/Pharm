@@ -231,7 +231,7 @@ export default function HomePage() {
       < section className="py-24 px-6" >
         <div className="max-w-[1200px] mx-auto">
           <GlassCard className="p-12 md:p-20 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-purple-500/10 to-pink-500/10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-orange-500/10 to-pink-500/10" />
             <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-8 relative z-10">Start accelerating your research today</h2>
             <button onClick={() => router.push('/register')} className="px-8 py-4 rounded-full bg-foreground text-background font-bold text-lg hover:scale-105 transition-transform shadow-lg relative z-10">
               Start Free Research

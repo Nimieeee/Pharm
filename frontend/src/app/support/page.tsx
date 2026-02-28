@@ -169,7 +169,7 @@ export default function SupportPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'open': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+            case 'open': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
             case 'in_progress': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
             case 'resolved': return 'text-green-500 bg-green-500/10 border-green-500/20';
             case 'closed': return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
@@ -461,7 +461,7 @@ export default function SupportPage() {
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div
                                             className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user'
-                                                ? 'bg-blue-600 text-white rounded-tr-none'
+                                                ? 'bg-orange-600 text-white rounded-tr-none'
                                                 : 'bg-[var(--surface-highlight)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border)]'
                                                 }`}
                                         >
@@ -519,7 +519,7 @@ export default function SupportPage() {
                     <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <button
                             onClick={() => window.location.href = '/faq'}
-                            className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-blue-500/30 transition-all text-left"
+                            className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-orange-500/30 transition-all text-left"
                         >
                             <HelpCircle className="text-orange-500 mb-4" size={24} />
                             <h3 className="font-medium text-[var(--text-primary)] mb-2">FAQs</h3>
@@ -527,9 +527,9 @@ export default function SupportPage() {
                         </button>
                         <button
                             onClick={() => setView('chat')}
-                            className={`p-6 rounded-2xl border transition-all text-left ${view === 'chat' ? 'bg-orange-500/5 border-orange-500 ring-1 ring-orange-500/20' : 'bg-[var(--surface)] border-[var(--border)] hover:border-purple-500/30'}`}
+                            className={`p-6 rounded-2xl border transition-all text-left ${view === 'chat' ? 'bg-orange-500/5 border-orange-500 ring-1 ring-orange-500/20' : 'bg-[var(--surface)] border-[var(--border)] hover:border-orange-500/30'}`}
                         >
-                            <MessageSquare className="text-purple-500 mb-4" size={24} />
+                            <MessageSquare className="text-orange-500 mb-4" size={24} />
                             <h3 className="font-medium text-[var(--text-primary)] mb-2">Live Chat</h3>
                             <p className="text-sm text-[var(--text-secondary)]">Chat with our AI support agent for instant assistance 24/7.</p>
                         </button>

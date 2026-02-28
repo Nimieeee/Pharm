@@ -297,7 +297,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
   const getFileVisuals = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (ext === 'pdf') return { color: 'bg-red-500', icon: FileText };
-    if (['doc', 'docx'].includes(ext || '')) return { color: 'bg-blue-500', icon: File };
+    if (['doc', 'docx'].includes(ext || '')) return { color: 'bg-orange-500', icon: File };
     if (['xls', 'xlsx', 'csv'].includes(ext || '')) return { color: 'bg-green-500', icon: Table };
     return { color: 'bg-gray-500', icon: File };
   };

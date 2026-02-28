@@ -37,8 +37,8 @@ export default function DocsPage() {
                     {/* Getting Started */}
                     <section id="getting-started" className="scroll-mt-24">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                <Book className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                                <Book className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                             </div>
                             <h2 className="text-2xl font-bold">Getting Started</h2>
                         </div>
@@ -57,11 +57,11 @@ export default function DocsPage() {
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">2. Chat Modes</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                    <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">Fast Mode</h4>
+                                    <h4 className="font-bold text-orange-600 dark:text-orange-400 mb-2">Fast Mode</h4>
                                     <p className="text-sm">Optimized for speed. Use this for quick definitions, checking drug interactions, or simple fact retrieval. It uses a lightweight model to deliver near-instant responses.</p>
                                 </div>
                                 <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                    <h4 className="font-bold text-purple-600 dark:text-purple-400 mb-2">Detailed Mode</h4>
+                                    <h4 className="font-bold text-orange-600 dark:text-orange-400 mb-2">Detailed Mode</h4>
                                     <p className="text-sm">Optimized for depth. Use this for complex explanations, learning new mechanisms, or when you need the AI to "think" through a problem step-by-step.</p>
                                 </div>
                             </div>
@@ -71,8 +71,8 @@ export default function DocsPage() {
                     {/* Deep Research */}
                     <section id="deep-research" className="scroll-mt-24">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                <Search className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                                <Search className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                             </div>
                             <h2 className="text-2xl font-bold">Deep Research</h2>
                         </div>
@@ -84,21 +84,21 @@ export default function DocsPage() {
                             <h3 className="text-lg font-semibold mt-6 mb-3 text-foreground">How It Works</h3>
                             <div className="bg-surface-highlight p-6 rounded-xl border border-border space-y-4">
                                 <div className="flex gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">1</div>
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center font-bold text-orange-600">1</div>
                                     <div>
                                         <h4 className="font-semibold text-foreground">Planning</h4>
                                         <p className="text-sm mt-1">The AI analyzes your request and breaks it down into sub-questions. It decides which databases to search (e.g., PubMed for clinical data, Google Scholar for broader literature).</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">2</div>
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center font-bold text-orange-600">2</div>
                                     <div>
                                         <h4 className="font-semibold text-foreground">Execution</h4>
                                         <p className="text-sm mt-1">It executes parallel search queries in real-time. It reads abstracts, snippets, and open-access full text to gather evidence.</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-600">3</div>
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center font-bold text-orange-600">3</div>
                                     <div>
                                         <h4 className="font-semibold text-foreground">Synthesis</h4>
                                         <p className="text-sm mt-1">The AI compiles the findings into a cohesive report. It resolves conflicting data and highlights consensus in the literature.</p>

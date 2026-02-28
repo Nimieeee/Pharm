@@ -239,7 +239,7 @@ export default function AdminPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'open': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+            case 'open': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
             case 'in_progress': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
             case 'resolved': return 'text-green-500 bg-green-500/10 border-green-500/20';
             case 'closed': return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
@@ -384,7 +384,7 @@ export default function AdminPage() {
                                     value={stats.users.total}
                                     subtext={`${stats.users.new_this_month} new this month`}
                                     icon={Users}
-                                    color="blue"
+                                    color="orange"
                                 />
                                 <StatsCard
                                     title="Conversations"
@@ -398,7 +398,7 @@ export default function AdminPage() {
                                     value={stats.documents.total}
                                     subtext={`${stats.documents.new_this_month} uploaded this month`}
                                     icon={FileText}
-                                    color="purple"
+                                    color="orange"
                                 />
                                 <StatsCard
                                     title="Open Tickets"
@@ -441,7 +441,7 @@ export default function AdminPage() {
                                                 <tr key={u.id} className="hover:bg-[var(--surface-highlight)]/50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-purple-500 flex items-center justify-center text-white font-medium text-xs">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-500 flex items-center justify-center text-white font-medium text-xs">
                                                                 {u.first_name?.[0] || u.email[0].toUpperCase()}
                                                             </div>
                                                             <div>
@@ -452,7 +452,7 @@ export default function AdminPage() {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {u.is_admin ? (
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-500">
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-500">
                                                                 <ShieldAlert size={12} /> Admin
                                                             </span>
                                                         ) : (
@@ -503,7 +503,7 @@ export default function AdminPage() {
                                 </button>
                                 <button
                                     onClick={() => setTicketFilter('open')}
-                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${ticketFilter === 'open' ? 'bg-blue-500 text-white' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${ticketFilter === 'open' ? 'bg-orange-500 text-white' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                                 >
                                     Open
                                 </button>
@@ -655,9 +655,9 @@ export default function AdminPage() {
 
 function StatsCard({ title, value, subtext, icon: Icon, color }: any) {
     const colorStyles = {
-        blue: "bg-blue-500/10 text-blue-500",
+        orange: "bg-orange-500/10 text-orange-500",
         indigo: "bg-orange-500/10 text-orange-500",
-        purple: "bg-purple-500/10 text-purple-500",
+        orange: "bg-orange-500/10 text-orange-500",
         amber: "bg-amber-500/10 text-amber-500",
     }[color as string] || "bg-gray-500/10 text-gray-500";
 

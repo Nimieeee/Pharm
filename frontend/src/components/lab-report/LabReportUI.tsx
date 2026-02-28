@@ -282,7 +282,7 @@ export default function LabReportUI() {
                         {/* Data Upload */}
                         <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
                             <h2 className="text-lg font-medium text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                                <Upload size={20} className="text-blue-500" />
+                                <Upload size={20} className="text-orange-500" />
                                 Data Sources
                             </h2>
 
@@ -312,10 +312,10 @@ export default function LabReportUI() {
                                         type="file"
                                         accept=".pdf,.docx,.doc"
                                         onChange={(e) => setMethodologyFile(e.target.files?.[0] || null)}
-                                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500/10 file:text-blue-600 dark:file:text-blue-400 hover:file:bg-blue-500/20"
+                                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-orange-500/10 file:text-orange-600 dark:file:text-orange-400 hover:file:bg-orange-500/20"
                                     />
                                     {methodologyFile && (
-                                        <p className="text-xs text-blue-500 mt-1">✓ {methodologyFile.name}</p>
+                                        <p className="text-xs text-orange-500 mt-1">✓ {methodologyFile.name}</p>
                                     )}
                                 </div>
 
@@ -328,10 +328,10 @@ export default function LabReportUI() {
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => setDataImage(e.target.files?.[0] || null)}
-                                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-500/10 file:text-purple-600 dark:file:text-purple-400 hover:file:bg-purple-500/20"
+                                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-orange-500/10 file:text-orange-600 dark:file:text-orange-400 hover:file:bg-orange-500/20"
                                     />
                                     {dataImage && (
-                                        <p className="text-xs text-purple-500 mt-1">✓ {dataImage.name}</p>
+                                        <p className="text-xs text-orange-500 mt-1">✓ {dataImage.name}</p>
                                     )}
                                 </div>
                             </div>
