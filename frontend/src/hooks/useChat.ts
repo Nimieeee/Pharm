@@ -48,11 +48,21 @@ export function useChat() {
 
   // Sync isLoading
   useEffect(() => {
-    const update = () => { if (conversationId) { setIsLoading(isConversationStreaming(conversationId)); } else { setIsLoading(false); } };
+    const update = () => {
+      // Use the ref to check the current conversation's actual streaming state
+      if (currentConvIdRef.current) {
+        setIsLoading(isConversationStreaming(currentConvIdRef.current));
+      } else {
+        setIsLoading(false);
+      }
+    };
     update();
     const subscribers = (globalThis as any).__streamSubscribers;
-    if (subscribers) { subscribers.add(update); return () => { subscribers.delete(update); }; }
-  }, [conversationId, setIsLoading]);
+    if (subscribers) {
+      subscribers.add(update);
+      return () => { subscribers.delete(update); };
+    }
+  }, [setIsLoading, currentConvIdRef]);
 
   const loadConversation = useCallback(async (convId: string) => {
     const token = localStorage.getItem('token');
@@ -61,6 +71,9 @@ export function useChat() {
     currentConvIdRef.current = convId;
     setConversationId(convId);
     setDeepResearchProgress(null);
+
+    // Immediately reset loading state to avoid cross-conversation blocking
+    setIsLoading(isConversationStreaming(convId));
 
     if (isConversationStreaming(convId)) setIsLoading(true);
 

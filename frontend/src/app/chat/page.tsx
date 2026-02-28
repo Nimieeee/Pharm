@@ -12,6 +12,7 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useTranslation } from '@/hooks/use-translation';
 import StreamingLogo from '@/components/chat/StreamingLogo';
+import { isConversationStreaming } from '@/hooks/useStreamingState';
 
 import confetti from 'canvas-confetti';
 import { getSuggestionPool } from '@/config/suggestionPrompts';
@@ -250,18 +251,18 @@ function ChatContent() {
             messages.length === 0 ||
             messages[messages.length - 1]?.role !== 'assistant'
           ) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="py-4 min-h-[3rem]"
-            >
-              <div className="flex items-center gap-2 text-slate-500">
-                <StreamingLogo className="w-5 h-5 opacity-80" />
-                <span className="text-xs text-[var(--text-secondary)]">{t('thinking')}</span>
-              </div>
-            </motion.div>
-          )}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="py-4 min-h-[3rem]"
+              >
+                <div className="flex items-center gap-2 text-slate-500">
+                  <StreamingLogo className="w-5 h-5 opacity-80" />
+                  <span className="text-xs text-[var(--text-secondary)]">{t('thinking')}</span>
+                </div>
+              </motion.div>
+            )}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -277,7 +278,7 @@ function ChatContent() {
         onFileUpload={uploadFiles}
         onCancelUpload={cancelUpload}
         onRemoveFile={removeFile}
-        isLoading={conversationId ? isConversationLoading(conversationId) : false}
+        isLoading={conversationId ? isConversationStreaming(conversationId) : false}
         isUploading={isUploading}
         mode={mode}
         setMode={setMode}

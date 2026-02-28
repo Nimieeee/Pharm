@@ -11,12 +11,20 @@ rsync -avz -e "ssh -i ~/.ssh/lightsail_key" --exclude 'venv' --exclude '.venv' -
 ```
 
 2. **Restart the backend service via PM2**
+*Note: We use `pharmgpt-api` bound to port 7860 to match the Nginx configuration block.*
 // turbo
 ```bash
-ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 restart pharmgpt-backend"
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 restart pharmgpt-api"
 ```
 
 3. **Verify the service is online**
 ```bash
-ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 status"
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 logs pharmgpt-api --lines 20 --nostream"
+```
+
+4. **Deploy the frontend changes to GitHub (triggers Vercel)**
+*Note: Always verify the frontend build locally before pushing to prevent Vercel TypeErrors.*
+// turbo
+```bash
+cd frontend && npm run build && cd .. && git add . && git commit -m "chore(deploy): trigger Vercel deployment" && git push origin master
 ```
