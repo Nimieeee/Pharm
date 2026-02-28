@@ -240,16 +240,11 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
   // Strip markdown code block wrappers if present (Deep Research fix)
   const cleanContent = (content: string) => {
     if (!content) return '';
+    // Use regex to safely strip outer ```markdown or ``` if the ENTIRE block is wrapped
     let cleaned = content;
-    // Remove starting ```markdown or ```
-    if (cleaned.startsWith('```markdown')) {
-      cleaned = cleaned.slice(11);
-    } else if (cleaned.startsWith('```')) {
-      cleaned = cleaned.slice(3);
-    }
-    // Remove ending ```
-    if (cleaned.endsWith('```')) {
-      cleaned = cleaned.slice(0, -3);
+    const match = cleaned.match(/^```(?:markdown)?\s*\n([\s\S]*?)```$/i);
+    if (match && match[1]) {
+      cleaned = match[1];
     }
     return cleaned.trim();
   };

@@ -1,0 +1,173 @@
+# Deep Research Diagnostic Report
+
+> Investigation into two critical bugs: **output degradation** and **missing conversation history**.
+
+---
+
+## Bug 1: Severe Output Degradation
+
+### Root Cause: Incorrect Provider Routing + Model Mismatch
+
+The pipeline is routing Deep Research LLM calls to the **wrong provider**, and the models assigned are not capable of following the highly detailed system prompts.
+
+#### Finding 1.1 — `MODE_PRIORITIES` Routes to Mistral First
+
+[multi_provider.py:58-62](file:///Users/mac/Desktop/phhh/backend/app/services/multi_provider.py#L58-L62)
+
+```python
+MODE_PRIORITIES = {
+    "fast": [Provider.GROQ, Provider.MISTRAL, Provider.NVIDIA],
+    "detailed": [Provider.NVIDIA, Provider.GROQ, Provider.MISTRAL],
+    "deep_research": [Provider.MISTRAL, Provider.NVIDIA, Provider.GROQ],  # ← BUG
+}
+```
+
+> [!CAUTION]
+> The docstring at line 6 says *"Research→NVIDIA"*, but the actual priority sends [deep_research](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#30-69) to **Mistral first**. Mistral's model for this mode is `mistral-large-latest` — a general-purpose model that has no biomedical specialization and will produce generic summaries.
+
+**If Mistral is healthy, every single Deep Research LLM call (planner, query generator, reviewer, writer) goes through `mistral-large-latest`.**  The pipeline makes **~10-15 LLM calls** per research session through this route.
+
+#### Finding 1.2 — Groq Fallback Uses a 32B Distilled Model
+
+If Mistral is rate-limited, the next fallback is NVIDIA (`meta/llama-3.3-70b-instruct`), then Groq (`deepseek-r1-distill-qwen-32b`). The Groq model is a **32B parameter distilled** model — significantly weaker than needed for 3000-4000 word analytical reports with 35+ citations.
+
+#### Finding 1.3 — Writer Node Token Limit May Truncate Output
+
+[deep_research.py:1147](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#L1147)
+
+```python
+response = await self._call_llm(system_prompt, user_prompt, json_mode=False, max_tokens=8192)
+```
+
+The writer's system prompt demands a 3000-4000 word report (~4000-5500 tokens). With `max_tokens=8192` this *should* be sufficient, but combined with the weaker Mistral model, the output quality drops dramatically. The model simply ignores the structural directives.
+
+#### Finding 1.4 — Silent Tool Failures Are Swallowed
+
+Every search tool ([search_pubmed](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#152-262), [search_web](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#263-339), [search_google_scholar](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#372-470), [search_serper](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#471-505)) wraps exceptions in bare `except` blocks that `print()` and return empty lists. Example:
+
+[deep_research.py:318-319](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#L318-L319)
+```python
+except Exception as e:
+    print(f"Tavily search error: {e}")
+```
+
+If API keys are missing or expired (Tavily, SERP API, Serper), those tools fail **silently**, returning `[]`. The researcher node then has minimal or no real findings, forcing the writer to rely on the LLM's base training data — producing the "textbook summary" output you're seeing.
+
+### Fix Plan for Bug 1
+
+| Step | File | Change |
+|------|------|--------|
+| 1 | `multi_provider.py:61` | Change [deep_research](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#30-69) priority to `[Provider.NVIDIA, Provider.MISTRAL, Provider.GROQ]` |
+| 2 | `multi_provider.py:78` | Consider using a more capable model for [deep_research](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#30-69) on NVIDIA |
+| 3 | [deep_research.py](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py) (all search methods) | Replace `print()` in exception handlers with `logger.warning()` so failures are visible in logs |
+| 4 | `deep_research.py:_node_researcher` | Add a check after all searches: if `len(state.findings) < 5`, log a critical warning indicating tool failures |
+| 5 | `deep_research.py:_node_writer` | Consider increasing `max_tokens` to 12288-16384 for higher fidelity output |
+
+---
+
+## Bug 2: Messages Missing from History
+
+### Root Cause: Deep Research Bypasses the Entire Database Persistence Layer
+
+This is a **design-level gap**, not a simple bug. The normal chat flow and the Deep Research flow use completely different code paths, and only the normal flow saves to Supabase.
+
+#### Finding 2.1 — Normal Chat Flow (Works ✅)
+
+```mermaid
+sequenceDiagram
+    participant FE as Frontend
+    participant Orch as ChatOrchestrator
+    participant DB as Supabase
+    FE->>Orch: POST /api/v1/ai/chat/stream
+    Orch->>DB: save user message (add_message)
+    Orch->>DB: pre-create empty assistant message
+    Orch-->>FE: stream SSE (meta + content chunks)
+    Orch->>DB: update assistant message with final content
+```
+
+The [ChatOrchestratorService.stream_chat_request](file:///Users/mac/Desktop/phhh/backend/app/services/chat_orchestrator.py#L90-L219):
+1. Saves the user message to Supabase with `parent_id` (line 155)
+2. Pre-creates an empty assistant message linked via `parent_id` (line 159)
+3. Sends both UUIDs to the frontend via a `meta` SSE event
+4. After streaming completes, updates the assistant message content via [post_stream_processing](file:///Users/mac/Desktop/phhh/backend/app/services/chat_orchestrator.py#164-176) (line 164)
+
+#### Finding 2.2 — Deep Research Flow (Broken ❌)
+
+```mermaid
+sequenceDiagram
+    participant FE as Frontend
+    participant EP as research.py endpoint
+    participant DR as DeepResearchService
+    FE->>EP: POST /api/v1/ai/deep-research/stream
+    EP->>DR: run_research_streaming(question, user_id)
+    DR-->>FE: stream JSON progress events
+    Note over FE: Frontend creates local-only message<br/>with Date.now() ID — never saved!
+    Note over DB: ❌ No database interaction at all
+```
+
+**Three specific failures:**
+
+**A. The endpoint never saves anything:**
+
+[research.py:30-68](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#L30-L68) — The endpoint receives `conversation_id` in the request body but never uses it for database persistence. It only uses it for RAG context retrieval.
+
+**B. `DeepResearchService.__init__` expects `db` but doesn't receive it:**
+
+[research.py:24-25](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#L24-L25)
+```python
+def get_research_service() -> DeepResearchService:
+    return DeepResearchService()  # ← No db argument!
+```
+
+[deep_research.py:517-518](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#L517-L518)
+```python
+def __init__(self, db: Client):  # ← Expects db: Client
+    self.db = db
+```
+
+> [!WARNING]
+> This should be raising a `TypeError` at instantiation time. The fact that it's not means either: (a) Python is somehow accepting `db=None` implicitly, or (b) this code path is dead and [DeepResearchService](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#511-1356) is being instantiated differently elsewhere. **This needs immediate verification.**
+
+**C. Frontend creates ephemeral-only messages:**
+
+[useChatStreaming.ts:229-231](file:///Users/mac/Desktop/phhh/frontend/src/hooks/useChatStreaming.ts#L229-L231)
+```typescript
+const assistantMessage: Message = {
+    id: (Date.now() + 1).toString(),  // ← Local timestamp ID, not a Supabase UUID
+    role: 'assistant',
+    content: finalReport || 'Deep research completed.',
+    timestamp: new Date()
+};
+setMessages((prev: Message[]) => [...prev, assistantMessage]);
+return;  // ← Returns immediately — no save call, no backend update
+```
+
+The standard chat flow receives real Supabase UUIDs via the [onMeta](file:///Users/mac/Desktop/phhh/frontend/src/hooks/useChatStreaming.ts#342-376) callback and uses them to replace the temporary IDs. Deep Research skips this entirely — messages exist only in React state and vanish on page refresh.
+
+### Fix Plan for Bug 2
+
+| Step | File | Change |
+|------|------|--------|
+| 1 | [research.py](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py) | Fix [get_research_service()](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#24-26) to inject `db: Client` via `Depends(get_db)` |
+| 2 | `research.py:stream_deep_research` | Before streaming, save the user message to Supabase using `ChatService.add_message()` with proper `parent_id` |
+| 3 | `research.py:stream_deep_research` | Pre-create an empty assistant message in Supabase (same pattern as [ChatOrchestratorService](file:///Users/mac/Desktop/phhh/backend/app/services/chat_orchestrator.py#19-220)) |
+| 4 | `research.py:stream_deep_research` | Yield a `meta` SSE event with `user_message_id` and `assistant_message_id` |
+| 5 | `research.py:stream_deep_research` | After streaming completes, update the assistant message with the final report content |
+| 6 | [useChatStreaming.ts](file:///Users/mac/Desktop/phhh/frontend/src/hooks/useChatStreaming.ts) (deep_research block) | Handle the `meta` event to receive real Supabase UUIDs, same as the standard chat flow |
+
+---
+
+## Summary of All Affected Files
+
+| File | Bug | Issue |
+|------|-----|-------|
+| [multi_provider.py](file:///Users/mac/Desktop/phhh/backend/app/services/multi_provider.py) | Bug 1 | [deep_research](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py#30-69) priority routes to Mistral first |
+| [deep_research.py](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py) | Bug 1 | Silent search tool failures, token limits |
+| [research.py](file:///Users/mac/Desktop/phhh/backend/app/api/v1/endpoints/research.py) | Bug 2 | No database persistence, broken `db` injection |
+| [useChatStreaming.ts](file:///Users/mac/Desktop/phhh/frontend/src/hooks/useChatStreaming.ts) | Bug 2 | Creates local-only messages with no backend save |
+
+## Recommended Investigation Order
+
+1. **Verify API key status** — Check if `TAVILY_API_KEY`, `SERP_API_KEY`, and `SERPER_API_KEY` are set and valid in the environment. If these are all missing/expired, the research tools return nothing and the LLM generates from base knowledge only.
+2. **Check server logs** — Look for `✅ Selected mistral with model mistral-large-latest` log lines during Deep Research. This confirms the wrong provider is being selected.
+3. **Verify the [DeepResearchService()](file:///Users/mac/Desktop/phhh/backend/app/services/deep_research.py#511-1356) instantiation** — The missing `db` argument should be causing a runtime error. Check if there's error suppression happening.

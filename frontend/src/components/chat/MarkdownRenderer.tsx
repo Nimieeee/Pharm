@@ -321,13 +321,9 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
 
   // Strip code block wrappers for Deep Research
   if (isDeepResearch) {
-    if (displayContent.startsWith('```markdown')) {
-      displayContent = displayContent.slice(11);
-    } else if (displayContent.startsWith('```')) {
-      displayContent = displayContent.slice(3);
-    }
-    if (displayContent.endsWith('```')) {
-      displayContent = displayContent.slice(0, -3);
+    const match = displayContent.match(/^```(?:markdown)?\s*\n([\s\S]*?)```$/i);
+    if (match && match[1]) {
+      displayContent = match[1];
     }
     displayContent = displayContent.trim();
   }

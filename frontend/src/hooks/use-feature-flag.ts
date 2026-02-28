@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context';
  * To release a feature to all users, change its gate from 'admin' to 'all'.
  */
 const FEATURE_FLAGS: Record<string, 'admin' | 'all' | 'none'> = {
-    'mermaid-diagrams': 'admin',    // Phase 3: Mermaid diagram rendering
+    'mermaid-diagrams': 'all',    // Phase 3: Mermaid diagram rendering
     'chart-generation': 'admin',    // Phase 2: Matplotlib/Seaborn charts
     'image-generation': 'admin',    // Phase 4: Hugging Face image gen
 };
