@@ -40,7 +40,12 @@ function cleanMermaidSyntax(raw: string): string {
         // e.g. "-->|Kidney| V[" → "-->|Kidney|V["
         line = line.replace(/\|\s+([A-Za-z0-9_]+)(\[|\(|\{)/g, '|$1$2');
 
-        // --- FIX 4: Style line fixes ---
+        // --- FIX 4: Hallucinated arrow heads ---
+        // e.g. "-->|Label|> B[" → "-->|Label| B["
+        line = line.replace(/\|>/g, '|');
+        line = line.replace(/->>/g, '-->');
+
+        // --- FIX 5: Style line fixes ---
         // 4a. Extra spaces between "style" and node ID: "style  B fill" → "style B fill"
         line = line.replace(/^(\s*style)\s{2,}([A-Za-z0-9_-]+)/g, '$1 $2');
         // 4b. Spaces inside hex color values: "fill:# f88" or "fill:#f 88" → "fill:#f88"
