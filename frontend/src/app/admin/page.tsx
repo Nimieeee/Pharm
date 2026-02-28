@@ -657,7 +657,6 @@ function StatsCard({ title, value, subtext, icon: Icon, color }: any) {
     const colorStyles = {
         orange: "bg-orange-500/10 text-orange-500",
         indigo: "bg-orange-500/10 text-orange-500",
-        orange: "bg-orange-500/10 text-orange-500",
         amber: "bg-amber-500/10 text-amber-500",
     }[color as string] || "bg-gray-500/10 text-gray-500";
 
