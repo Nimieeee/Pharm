@@ -80,12 +80,12 @@ export function MermaidRenderer({ code }: { code: string }) {
                     background: 'transparent',
                     primaryColor: '#0f172a',        // slate-950
                     primaryTextColor: '#f8fafc',
-                    primaryBorderColor: '#6366f1',  // indigo-500
+                    primaryBorderColor: '#6366f1',  // orange-500
                     lineColor: '#64748b',           // slate-500
                     secondaryColor: '#1e293b',      // slate-800
                     tertiaryColor: '#020617',       // slate-950 darker
                     edgeLabelBackground: '#0f172a',
-                    nodeBorder: '#818cf8',          // indigo-400
+                    nodeBorder: '#818cf8',          // orange-400
                     clusterBkg: '#020617',
                     clusterBorder: '#6366f1',
                     fontSize: '16px',
@@ -94,12 +94,12 @@ export function MermaidRenderer({ code }: { code: string }) {
                     background: 'transparent',
                     primaryColor: '#ffffff',
                     primaryTextColor: '#0f172a',
-                    primaryBorderColor: '#4f46e5',  // indigo-600
+                    primaryBorderColor: '#4f46e5',  // orange-600
                     lineColor: '#475569',           // slate-600
                     secondaryColor: '#f8fafc',      // slate-50
                     tertiaryColor: '#f1f5f9',       // slate-100
                     edgeLabelBackground: '#ffffff',
-                    nodeBorder: '#4338ca',          // indigo-700
+                    nodeBorder: '#4338ca',          // orange-700
                     clusterBkg: '#f8fafc',
                     clusterBorder: '#4f46e5',
                     fontSize: '16px',

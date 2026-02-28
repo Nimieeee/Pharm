@@ -261,7 +261,7 @@ export default function AdminPage() {
                 <button
                     onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'overview'
-                        ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                        ? 'bg-orange-500/10 text-orange-500 font-medium'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
                         }`}
                 >
@@ -271,7 +271,7 @@ export default function AdminPage() {
                 <button
                     onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'users'
-                        ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                        ? 'bg-orange-500/10 text-orange-500 font-medium'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
                         }`}
                 >
@@ -281,7 +281,7 @@ export default function AdminPage() {
                 <button
                     onClick={() => { setActiveTab('support'); setSidebarOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'support'
-                        ? 'bg-indigo-500/10 text-indigo-500 font-medium'
+                        ? 'bg-orange-500/10 text-orange-500 font-medium'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)]'
                         }`}
                 >
@@ -302,7 +302,7 @@ export default function AdminPage() {
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
         );
     }
@@ -368,7 +368,7 @@ export default function AdminPage() {
                             <RefreshCw size={18} className={isStatsLoading ? 'animate-spin' : ''} />
                         </button>
                         <ThemeToggle />
-                        <div className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-medium">
+                        <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-medium">
                             A
                         </div>
                     </div>
@@ -441,7 +441,7 @@ export default function AdminPage() {
                                                 <tr key={u.id} className="hover:bg-[var(--surface-highlight)]/50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-medium text-xs">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-purple-500 flex items-center justify-center text-white font-medium text-xs">
                                                                 {u.first_name?.[0] || u.email[0].toUpperCase()}
                                                             </div>
                                                             <div>
@@ -581,8 +581,8 @@ export default function AdminPage() {
                                                                 </div>
 
                                                                 {ticket.admin_response && (
-                                                                    <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20">
-                                                                        <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                                    <div className="bg-orange-500/10 p-4 rounded-xl border border-orange-500/20">
+                                                                        <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                                                                             <ShieldAlert size={12} />
                                                                             Previous Response
                                                                         </p>
@@ -600,7 +600,7 @@ export default function AdminPage() {
                                                                             value={replyMessage}
                                                                             onChange={(e) => setReplyMessage(e.target.value)}
                                                                             placeholder="Type your response here..."
-                                                                            className="w-full h-32 p-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 mb-4 resize-none"
+                                                                            className="w-full h-32 p-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 mb-4 resize-none"
                                                                         />
                                                                         <div className="flex items-center justify-between">
                                                                             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -610,7 +610,7 @@ export default function AdminPage() {
                                                                                         name="status"
                                                                                         checked={replyStatus === 'resolved'}
                                                                                         onChange={() => setReplyStatus('resolved')}
-                                                                                        className="text-indigo-500 focus:ring-indigo-500"
+                                                                                        className="text-orange-500 focus:ring-orange-500"
                                                                                     />
                                                                                     <span className="text-sm text-[var(--text-primary)]">Mark Resolved</span>
                                                                                 </label>
@@ -620,7 +620,7 @@ export default function AdminPage() {
                                                                                         name="status"
                                                                                         checked={replyStatus === 'in_progress'}
                                                                                         onChange={() => setReplyStatus('in_progress')}
-                                                                                        className="text-indigo-500 focus:ring-indigo-500"
+                                                                                        className="text-orange-500 focus:ring-orange-500"
                                                                                     />
                                                                                     <span className="text-sm text-[var(--text-primary)]">In Progress</span>
                                                                                 </label>
@@ -628,7 +628,7 @@ export default function AdminPage() {
                                                                             <button
                                                                                 onClick={() => handleReplyTicket(ticket.id)}
                                                                                 disabled={isSubmittingReply || !replyMessage.trim()}
-                                                                                className="px-6 py-2.5 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                                                className="px-6 py-2.5 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                                                             >
                                                                                 {isSubmittingReply ? 'Sending...' : 'Send Response'}
                                                                                 {!isSubmittingReply && <Send size={16} />}
@@ -656,7 +656,7 @@ export default function AdminPage() {
 function StatsCard({ title, value, subtext, icon: Icon, color }: any) {
     const colorStyles = {
         blue: "bg-blue-500/10 text-blue-500",
-        indigo: "bg-indigo-500/10 text-indigo-500",
+        indigo: "bg-orange-500/10 text-orange-500",
         purple: "bg-purple-500/10 text-purple-500",
         amber: "bg-amber-500/10 text-amber-500",
     }[color as string] || "bg-gray-500/10 text-gray-500";

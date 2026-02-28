@@ -193,7 +193,7 @@ export default function SupportPage() {
             <aside className="w-64 border-r border-[var(--border)] bg-[var(--surface)] p-6 hidden md:flex flex-col">
                 <div className="mb-8">
                     <h1 className="text-xl font-serif font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <LifeBuoy className="text-indigo-500" />
+                        <LifeBuoy className="text-orange-500" />
                         Help Center
                     </h1>
                     <p className="text-xs text-[var(--text-secondary)] mt-1">We are here to help</p>
@@ -278,7 +278,7 @@ export default function SupportPage() {
                                     <div className="flex flex-col gap-3">
                                         <button
                                             onClick={() => setSuccess(false)}
-                                            className="text-indigo-500 font-medium hover:underline"
+                                            className="text-orange-500 font-medium hover:underline"
                                         >
                                             Send another message
                                         </button>
@@ -308,7 +308,7 @@ export default function SupportPage() {
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             disabled={!!user} // Auto-filled for logged in users
-                                            className="w-full rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] px-4 h-12 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all placeholder:text-[var(--text-secondary)]"
+                                            className="w-full rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] px-4 h-12 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all placeholder:text-[var(--text-secondary)]"
                                             placeholder="you@example.com"
                                         />
                                         {user && <p className="text-xs text-[var(--text-secondary)] mt-1 ml-1">Logged in as {user.first_name}</p>}
@@ -321,7 +321,7 @@ export default function SupportPage() {
                                             required
                                             value={subject}
                                             onChange={(e) => setSubject(e.target.value)}
-                                            className="w-full rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] px-4 h-12 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all placeholder:text-[var(--text-secondary)]"
+                                            className="w-full rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] px-4 h-12 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all placeholder:text-[var(--text-secondary)]"
                                             placeholder="Brief summary of the issue"
                                             minLength={5}
                                         />
@@ -334,7 +334,7 @@ export default function SupportPage() {
                                             value={message}
                                             onChange={(e) => setMessage(e.target.value)}
                                             rows={6}
-                                            className="w-full rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] p-4 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all resize-none placeholder:text-[var(--text-secondary)]"
+                                            className="w-full rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] p-4 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all resize-none placeholder:text-[var(--text-secondary)]"
                                             placeholder="Describe your issue in detail..."
                                             minLength={10}
                                         />
@@ -362,7 +362,7 @@ export default function SupportPage() {
                             {/* ... List view content (same as before) ... */}
                             {isLoadingTickets ? (
                                 <div className="flex justify-center py-12">
-                                    <Loader2 className="animate-spin text-indigo-500" size={32} />
+                                    <Loader2 className="animate-spin text-orange-500" size={32} />
                                 </div>
                             ) : tickets.length === 0 ? (
                                 <div className="text-center py-12 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
@@ -371,7 +371,7 @@ export default function SupportPage() {
                                     <p className="text-[var(--text-secondary)] mb-6">You haven't submitted any support requests yet.</p>
                                     <button
                                         onClick={() => setView('create')}
-                                        className="text-indigo-500 font-medium hover:underline"
+                                        className="text-orange-500 font-medium hover:underline"
                                     >
                                         Create a new ticket
                                     </button>
@@ -380,7 +380,7 @@ export default function SupportPage() {
                                 tickets.map((ticket) => (
                                     <div
                                         key={ticket.id}
-                                        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden transition-all hover:border-indigo-500/30"
+                                        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden transition-all hover:border-orange-500/30"
                                     >
                                         <div
                                             onClick={() => setExpandedTicketId(expandedTicketId === ticket.id ? null : ticket.id)}
@@ -418,8 +418,8 @@ export default function SupportPage() {
                                                             <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{ticket.message}</p>
                                                         </div>
                                                         {ticket.admin_response && (
-                                                            <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-lg p-3">
-                                                                <p className="text-xs font-medium text-indigo-500 uppercase tracking-wider mb-1 flex items-center gap-2">
+                                                            <div className="bg-orange-500/5 border border-orange-500/10 rounded-lg p-3">
+                                                                <p className="text-xs font-medium text-orange-500 uppercase tracking-wider mb-1 flex items-center gap-2">
                                                                     <LifeBuoy size={12} />
                                                                     Benchside Support Response
                                                                 </p>
@@ -437,7 +437,7 @@ export default function SupportPage() {
                     ) : (
                         <div className="flex flex-col h-[600px] bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
                             <div className="p-4 border-b border-[var(--border)] bg-[var(--surface-highlight)]/30 flex items-center gap-3">
-                                <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-500">
+                                <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
                                     <MessageSquare size={20} />
                                 </div>
                                 <div>
@@ -449,7 +449,7 @@ export default function SupportPage() {
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                 {chatMessages.length === 0 && (
                                     <div className="text-center py-8 opacity-60">
-                                        <LifeBuoy className="mx-auto text-indigo-500 mb-2" size={32} />
+                                        <LifeBuoy className="mx-auto text-orange-500 mb-2" size={32} />
                                         <p className="text-sm text-[var(--text-secondary)]">
                                             Hi! I'm your Benchside Support Agent.<br />
                                             Ask me anything about how to use the platform!
@@ -485,9 +485,9 @@ export default function SupportPage() {
                                     <div className="flex justify-start">
                                         <div className="bg-[var(--surface-highlight)] rounded-2xl rounded-tl-none px-4 py-2 border border-[var(--border)]">
                                             <div className="flex gap-1">
-                                                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                             </div>
                                         </div>
                                     </div>
@@ -501,13 +501,13 @@ export default function SupportPage() {
                                         value={chatInput}
                                         onChange={(e) => setChatInput(e.target.value)}
                                         placeholder="Ask a question..."
-                                        className="flex-1 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="flex-1 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-orange-500/20"
                                         disabled={isChatLoading}
                                     />
                                     <button
                                         type="submit"
                                         disabled={!chatInput.trim() || isChatLoading}
-                                        className="p-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+                                        className="p-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
                                     >
                                         <Send size={18} />
                                     </button>
@@ -521,13 +521,13 @@ export default function SupportPage() {
                             onClick={() => window.location.href = '/faq'}
                             className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-blue-500/30 transition-all text-left"
                         >
-                            <HelpCircle className="text-indigo-500 mb-4" size={24} />
+                            <HelpCircle className="text-orange-500 mb-4" size={24} />
                             <h3 className="font-medium text-[var(--text-primary)] mb-2">FAQs</h3>
                             <p className="text-sm text-[var(--text-secondary)]">Check our knowledge base for quick answers to common questions.</p>
                         </button>
                         <button
                             onClick={() => setView('chat')}
-                            className={`p-6 rounded-2xl border transition-all text-left ${view === 'chat' ? 'bg-indigo-500/5 border-indigo-500 ring-1 ring-indigo-500/20' : 'bg-[var(--surface)] border-[var(--border)] hover:border-purple-500/30'}`}
+                            className={`p-6 rounded-2xl border transition-all text-left ${view === 'chat' ? 'bg-orange-500/5 border-orange-500 ring-1 ring-orange-500/20' : 'bg-[var(--surface)] border-[var(--border)] hover:border-purple-500/30'}`}
                         >
                             <MessageSquare className="text-purple-500 mb-4" size={24} />
                             <h3 className="font-medium text-[var(--text-primary)] mb-2">Live Chat</h3>

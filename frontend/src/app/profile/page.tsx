@@ -149,7 +149,7 @@ export default function ProfilePage() {
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-                <Loader2 size={32} className="text-indigo-500 animate-spin" />
+                <Loader2 size={32} className="text-orange-500 animate-spin" />
             </div>
         );
     }
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                                 </button>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-indigo-500 text-white shadow-lg hover:bg-indigo-600 transition-all btn-press z-20"
+                                    className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-orange-500 text-white shadow-lg hover:bg-orange-600 transition-all btn-press z-20"
                                 >
                                     <Camera size={18} />
                                 </button>
@@ -279,7 +279,7 @@ export default function ProfilePage() {
                                     Joined {new Date(user.created_at).toLocaleDateString()}
                                 </div>
                                 {user.is_admin && (
-                                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/10 text-indigo-500 text-xs font-semibold">
+                                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 text-orange-500 text-xs font-semibold">
                                         <Shield size={14} />
                                         Administrator
                                     </div>
@@ -310,7 +310,7 @@ export default function ProfilePage() {
                     <div className="md:col-span-2 space-y-6">
                         <form onSubmit={handleUpdateProfile} className="p-8 bg-[var(--surface)] border border-[var(--border)] rounded-3xl">
                             <h3 className="text-lg font-serif font-medium text-[var(--text-primary)] mb-6 flex items-center gap-2">
-                                <User size={20} className="text-indigo-500" />
+                                <User size={20} className="text-orange-500" />
                                 {t('personal_info')}
                             </h3>
 
@@ -321,7 +321,7 @@ export default function ProfilePage() {
                                         type="text"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-orange-500 transition-all font-medium"
                                         placeholder="Your first name"
                                     />
                                 </div>
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                                         type="text"
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-orange-500 transition-all font-medium"
                                         placeholder="Your last name"
                                     />
                                 </div>
@@ -355,7 +355,7 @@ export default function ProfilePage() {
                                         <select
                                             value={language}
                                             onChange={(e) => setLanguage(e.target.value)}
-                                            className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition-all font-medium appearance-none"
+                                            className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-orange-500 transition-all font-medium appearance-none"
                                         >
                                             <option value="en">English</option>
                                             <option value="es">Spanish (Español)</option>
@@ -405,14 +405,14 @@ export default function ProfilePage() {
                         </form>
 
                         {/* Notification/Preferences placeholder */}
-                        <div className="p-8 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 rounded-3xl">
+                        <div className="p-8 bg-gradient-to-br from-orange-500/5 to-purple-500/5 border border-orange-500/10 rounded-3xl">
                             <h3 className="font-serif font-medium text-[var(--text-primary)] mb-2">{t('security_privacy')}</h3>
                             <p className="text-sm text-[var(--text-secondary)] mb-4">
                                 {t('security_desc')}
                             </p>
                             <button
                                 onClick={() => router.push('/docs')}
-                                className="text-sm font-medium text-indigo-500 hover:underline"
+                                className="text-sm font-medium text-orange-500 hover:underline"
                             >
                                 {t('data_protocol')} →
                             </button>

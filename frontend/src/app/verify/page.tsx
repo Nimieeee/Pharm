@@ -57,7 +57,7 @@ function ResendButton({ email }: { email: string }) {
                     type="button"
                     onClick={handleResend}
                     disabled={loading || cooldown > 0}
-                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-orange-600 dark:text-orange-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? 'Sending...' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
                 </button>
@@ -150,7 +150,7 @@ function VerifyContent() {
                             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                             required
                             placeholder="Enter 6-digit code"
-                            className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-center tracking-[0.5em] text-lg font-mono"
+                            className="w-full h-12 px-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-center tracking-[0.5em] text-lg font-mono"
                             maxLength={6}
                         />
                     </div>

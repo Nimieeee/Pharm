@@ -121,7 +121,7 @@ function LoginContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all"
               />
             </div>
           </div>
@@ -138,11 +138,11 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all"
               />
             </div>
             <div className="flex justify-end mt-2">
-              <Link href="/forgot-password" className="text-sm text-indigo-500 hover:text-indigo-600 transition-colors">
+              <Link href="/forgot-password" className="text-sm text-orange-500 hover:text-orange-600 transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -168,7 +168,7 @@ function LoginContent() {
       {/* Footer */}
       <p className="text-center mt-6 text-[var(--text-secondary)]">
         Don't have an account?{' '}
-        <Link href="/register" className="text-indigo-500 hover:underline">
+        <Link href="/register" className="text-orange-500 hover:underline">
           Sign up
         </Link>
       </p>

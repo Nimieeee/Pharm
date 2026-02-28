@@ -63,7 +63,7 @@ export default function HomePage() {
 
 
   return (
-    <div className="min-h-screen bg-atmospheric text-foreground selection:bg-indigo-500/20">
+    <div className="min-h-screen bg-atmospheric text-foreground selection:bg-orange-500/20">
 
       {/* Navbar with Pill Design - Liquid Glass */}
       <nav className="!fixed top-0 left-0 right-0 rounded-none md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl md:rounded-full z-50 glass-effect transition-all duration-300">
@@ -167,13 +167,13 @@ export default function HomePage() {
             </div>
 
             <GlassCard className="w-full max-w-3xl aspect-[16/9] md:aspect-[2/1] p-8 flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-10 bg-indigo-500/5 px-4 flex items-center gap-2 border-b border-indigo-500/10">
+              <div className="absolute top-0 left-0 right-0 h-10 bg-orange-500/5 px-4 flex items-center gap-2 border-b border-orange-500/10">
                 <div className="w-3 h-3 rounded-full bg-red-400/80" />
                 <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
                 <div className="w-3 h-3 rounded-full bg-green-400/80" />
               </div>
               <div className="mt-8 font-mono text-sm md:text-base text-foreground/90 whitespace-pre-wrap">
-                <span className="text-indigo-500 mr-2">{'>'}</span>
+                <span className="text-orange-500 mr-2">{'>'}</span>
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={activeDemoTab}
@@ -188,7 +188,7 @@ export default function HomePage() {
                 <motion.span
                   animate={{ opacity: [0, 1, 0] }}
                   transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="inline-block w-2.5 h-4 ml-1 mx-1 bg-indigo-500 align-middle"
+                  className="inline-block w-2.5 h-4 ml-1 mx-1 bg-orange-500 align-middle"
                 />
               </div>
             </GlassCard>
@@ -231,7 +231,7 @@ export default function HomePage() {
       < section className="py-24 px-6" >
         <div className="max-w-[1200px] mx-auto">
           <GlassCard className="p-12 md:p-20 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-purple-500/10 to-pink-500/10" />
             <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-8 relative z-10">Start accelerating your research today</h2>
             <button onClick={() => router.push('/register')} className="px-8 py-4 rounded-full bg-foreground text-background font-bold text-lg hover:scale-105 transition-transform shadow-lg relative z-10">
               Start Free Research

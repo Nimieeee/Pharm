@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
                             </p>
                             <button
                                 onClick={() => setIsSent(false)}
-                                className="text-indigo-500 hover:text-indigo-600 font-medium"
+                                className="text-orange-500 hover:text-orange-600 font-medium"
                             >
                                 Try inputting another email
                             </button>
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
                                             onChange={(e) => setEmail(e.target.value)}
                                             placeholder="you@example.com"
                                             required
-                                            className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                                            className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all"
                                         />
                                     </div>
                                 </div>

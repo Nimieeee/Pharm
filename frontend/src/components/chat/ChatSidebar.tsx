@@ -71,14 +71,14 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">{t('account')}</p>
               <button
                 onClick={() => { onClose(); router.push('/profile'); }}
-                className="text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors"
+                className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors"
                 role="link"
               >
                 {t('manage_profile')}
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg overflow-hidden shrink-0">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg overflow-hidden shrink-0">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
@@ -114,7 +114,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface transition-colors text-left"
             >
               <div className="flex items-center gap-3">
-                <Book size={18} className="text-indigo-500" />
+                <Book size={18} className="text-orange-500" />
                 <span className="text-sm text-foreground">{t('documentation')}</span>
               </div>
               <ChevronsRight size={14} className="text-foreground-muted" />
@@ -432,7 +432,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
         >
           {/* Streaming indicator */}
           {isStreaming && (
-            <Loader2 size={14} className="mr-2 animate-spin text-indigo-500 flex-shrink-0" />
+            <Loader2 size={14} className="mr-2 animate-spin text-orange-500 flex-shrink-0" />
           )}
 
           {isEditing ? (
@@ -625,7 +625,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     router.push('/chat');
                     setActiveChatId(null);
                   }}
-                  className="w-full h-10 px-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-all"
+                  className="w-full h-10 px-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-all"
                 >
                   <Plus size={18} strokeWidth={2} />
                   {t('new_chat')}
@@ -637,7 +637,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     placeholder={t('search_chats')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-9 pl-9 pr-4 rounded-lg bg-[var(--surface-highlight)] dark:bg-zinc-800/50 border border-[var(--border)] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all"
+                    className="w-full h-9 pl-9 pr-4 rounded-lg bg-[var(--surface-highlight)] dark:bg-zinc-800/50 border border-[var(--border)] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all"
                   />
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground-muted"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
@@ -661,7 +661,7 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
                     <p className="text-sm">{t('could_not_load')}</p>
                     <button
                       onClick={() => mutateConversations()}
-                      className="text-xs px-3 py-1.5 bg-indigo-500/10 text-indigo-500 rounded-md hover:bg-indigo-500/20 transition-colors"
+                      className="text-xs px-3 py-1.5 bg-orange-500/10 text-orange-500 rounded-md hover:bg-orange-500/20 transition-colors"
                     >
                       {t('retry')}
                     </button>

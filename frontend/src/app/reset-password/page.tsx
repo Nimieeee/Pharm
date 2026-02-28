@@ -26,7 +26,7 @@ function ResetPasswordContent() {
                     <p className="text-red-500">Invalid or missing reset token.</p>
                 </div>
                 <div>
-                    <Link href="/forgot-password" className="text-indigo-500 hover:text-indigo-600 font-medium">
+                    <Link href="/forgot-password" className="text-orange-500 hover:text-orange-600 font-medium">
                         Request a new link
                     </Link>
                 </div>
@@ -119,7 +119,7 @@ function ResetPasswordContent() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="At least 8 characters"
                                 required
-                                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all"
                             />
                         </div>
                     </div>
@@ -136,7 +136,7 @@ function ResetPasswordContent() {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="Confirm new password"
                                 required
-                                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                                className="w-full h-12 pl-12 pr-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all"
                             />
                         </div>
                     </div>

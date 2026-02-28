@@ -184,7 +184,7 @@ function ChatContent() {
         <div className="max-w-3xl mx-auto">
           {isLoadingConversation ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-500 opacity-50" />
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500 opacity-50" />
             </div>
           ) : messages.length === 0 ? (
             <EmptyState
