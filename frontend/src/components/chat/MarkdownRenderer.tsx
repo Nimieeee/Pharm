@@ -316,10 +316,8 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   // 3. Deep Research specific handling
   const isDeepResearch = mode === 'deep_research';
 
-  // Force Prose for Deep Research
-  const finalClassName = isDeepResearch
-    ? "prose prose-lg dark:prose-invert max-w-none"
-    : `markdown-content ${className}`;
+  // Use the custom markdown-content class for all modes to preserve brand styling
+  const finalClassName = `markdown-content ${className}`;
 
   // Strip code block wrappers for Deep Research
   if (isDeepResearch) {

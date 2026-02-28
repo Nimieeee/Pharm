@@ -38,11 +38,11 @@
   --text-secondary: var(--foreground-muted);
 
   /* Accent colors */
-  --accent: #6366f1;
-  --accent-light: #818cf8;
+  --accent: #d97757;
+  --accent-light: #e89a80;
 
   /* Gradient color for atmospheric background */
-  --gradient-color: rgba(99, 102, 241, 0.08);
+  --gradient-color: rgba(217, 119, 87, 0.08);
 
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
