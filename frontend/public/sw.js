@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pharmgpt-v2-https';
+const CACHE_NAME = 'benchside-v2-https';
 
 // Assets to cache on install
 const STATIC_ASSETS = [

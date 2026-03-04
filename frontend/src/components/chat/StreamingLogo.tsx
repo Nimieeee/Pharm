@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 export default function StreamingLogo({ className = "inline-block w-5 h-5 ml-1 align-text-bottom" }: { className?: string }) {
   // Exact Benchside brand orange
-  const brandOrange = "#D86B27";
+  const brandOrange = "#D7712A";
   // 4x4 Grid Coordinates mapped to a 100x100 viewBox
   const gridPoints = [
     { cx: 20, cy: 20 }, { cx: 40, cy: 20 }, { cx: 60, cy: 20 }, { cx: 80, cy: 20 },

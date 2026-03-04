@@ -38,11 +38,11 @@
   --text-secondary: var(--foreground-muted);
 
   /* Accent colors */
-  --accent: #d97757;
-  --accent-light: #e89a80;
+  --accent: #D7712A;
+  --accent-light: #e09a5e;
 
   /* Gradient color for atmospheric background */
-  --gradient-color: rgba(217, 119, 87, 0.08);
+  --gradient-color: rgba(215, 113, 42, 0.08);
 
   /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -101,6 +101,12 @@
 }
 
 html {
+  scroll-behavior: auto;
+  /* Changed from smooth to prevent JS scroll conflicts */
+}
+
+/* Smooth scroll only for anchor links, not for programmatic scrolling */
+html.smooth-scroll {
   scroll-behavior: smooth;
 }
 

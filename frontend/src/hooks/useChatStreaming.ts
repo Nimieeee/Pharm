@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 import { API_BASE_URL, UPLOAD_BASE_URL } from '@/config/api';
 import { processSSEStream } from '@/utils/streamReader';
 import { activeStreams, registerStream, unregisterStream, isConversationStreaming } from './useStreamingState';
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
-import { Mode, cacheSet, DeepResearchProgress } from './useChatState';
+import { Mode, cacheSet, DeepResearchProgress, generateStableClientId } from './useChatState';
 
 function generateConversationTitle(message: string): string {
     const cleaned = message.trim().replace(/\s+/g, ' ');
@@ -15,6 +15,10 @@ function generateConversationTitle(message: string): string {
     const lastSpace = truncated.lastIndexOf(' ');
     return lastSpace > 30 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
 }
+
+// Throttle scroll updates
+const SCROLL_THROTTLE_MS = 50;
+const CONTENT_UPDATE_THROTTLE_MS = 32; // ~30fps
 
 export function useChatStreaming(state: any) {
     const {
@@ -27,8 +31,13 @@ export function useChatStreaming(state: any) {
         currentConvIdRef,
         lastUpdateRef,
         isSendingRef, // Now a Set<string>
-        modeRef
+        modeRef,
+        mapMessageId,  // NEW: for stable ID mapping
+        getStableKey,  // NEW: for stable React keys
     } = state;
+
+    // Track scroll position to prevent jitter
+    const lastScrollTimeRef = useRef<number>(0);
 
     const fetchBranchInfo = useCallback(async (convId: string) => {
         try {
@@ -93,8 +102,10 @@ export function useChatStreaming(state: any) {
             const token = localStorage.getItem('token');
             const parentId = messages.length > 0 && messages[messages.length - 1].id.includes('-') ? messages[messages.length - 1].id : undefined;
 
+            // FIX: Use stable client-side ID that won't change on server response
+            const userMessageId = generateStableClientId();
             const userMessage: Message = {
-                id: Date.now().toString(),
+                id: userMessageId,
                 role: 'user',
                 content: content.trim(),
                 timestamp: new Date(),
@@ -121,7 +132,7 @@ export function useChatStreaming(state: any) {
 
             try {
                 if (!token) {
-                    const authMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Please sign in to use Benchside. Go to /login to authenticate.', timestamp: new Date() };
+                    const authMessage: Message = { id: generateStableClientId(), role: 'assistant', content: 'Please sign in to use Benchside. Go to /login to authenticate.', timestamp: new Date() };
                     setMessages((prev: Message[]) => [...prev, authMessage]);
                     setIsLoading(false);
                     return;
@@ -157,7 +168,8 @@ export function useChatStreaming(state: any) {
                     const prompt = content.replace('/image', '').trim();
                     if (!prompt) { setIsLoading(false); return; }
                     try {
-                        const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: '_Generating image..._', timestamp: new Date() };
+                        const assistantMessageId = generateStableClientId();
+                        const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '_Generating image..._', timestamp: new Date() };
                         if (currentConvIdRef.current === streamConversationId) setMessages((prev: Message[]) => [...prev, assistantMessage]);
                         const result = await generateImage(prompt, streamConversationId);
                         const finalMessage: Message = { ...assistantMessage, content: result.markdown || result.image_url || 'Image generated.' };
@@ -165,7 +177,7 @@ export function useChatStreaming(state: any) {
                         setIsLoading(false);
                         return;
                     } catch (error) {
-                        const errorMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Failed to generate image. Please try again.', timestamp: new Date() };
+                        const errorMessage: Message = { id: generateStableClientId(), role: 'assistant', content: 'Failed to generate image. Please try again.', timestamp: new Date() };
                         if (currentConvIdRef.current === streamConversationId) setMessages((prev: Message[]) => prev.filter(m => m.content !== '_Generating image..._').concat(errorMessage));
                         setIsLoading(false);
                         return;
@@ -195,15 +207,16 @@ export function useChatStreaming(state: any) {
                     }
 
                     let finalReport = '';
-                    let assistantMessageId = (Date.now() + 1).toString();
+                    const assistantMessageId = generateStableClientId();
                     await processSSEStream(response, {
                         onMeta: (meta) => {
+                            // FIX: Don't change user message ID - keep stable client ID
+                            // Just update the mapping if needed for backend references
                             if (meta.user_message_id) {
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg));
-                                userMessage.id = meta.user_message_id;
+                                mapMessageId?.(userMessageId, meta.user_message_id);
                             }
                             if (meta.assistant_message_id) {
-                                assistantMessageId = meta.assistant_message_id;
+                                mapMessageId?.(assistantMessageId, meta.assistant_message_id);
                             }
                         },
                         onContent: () => { },
@@ -236,13 +249,13 @@ export function useChatStreaming(state: any) {
                     });
 
                     setDeepResearchProgress(null);
-                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: finalReport || 'Deep research completed.', timestamp: new Date(), parentId: userMessage.id };
+                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: finalReport || 'Deep research completed.', timestamp: new Date(), parentId: userMessageId };
                     setMessages((prev: Message[]) => [...prev, assistantMessage]);
                     return;
                 }
 
                 // Standard Stream
-                const assistantMessageId = (Date.now() + 1).toString();
+                const assistantMessageId = generateStableClientId();
                 const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -258,7 +271,7 @@ export function useChatStreaming(state: any) {
                 });
 
                 if (streamResponse.ok && streamResponse.body) {
-                    let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessage.id };
+                    let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessageId };
                     const isCurrentConv = () => currentConvIdRef.current === streamConversationId;
 
                     // Track the message by position instead of ID to avoid race conditions
@@ -300,59 +313,59 @@ export function useChatStreaming(state: any) {
                         });
                     };
 
-                    if (isCurrentConv()) {
-                        setMessages((prev: Message[]) => {
-                            const newMessages = [...prev, assistantMessage];
-                            messagePosition = newMessages.length - 1;
-                            return newMessages;
-                        });
-                    }
-
+                    let messageInserted = false;
                     let lastContent = '';
+
+                    const insertOrUpdateMessage = (fullContent: string) => {
+                        if (!isCurrentConv()) return;
+                        if (!messageInserted) {
+                            // Insert on first token to prevent flicker
+                            assistantMessage = { ...assistantMessage, content: fullContent };
+                            setMessages((prev: Message[]) => {
+                                const newMessages = [...prev, assistantMessage];
+                                messagePosition = newMessages.length - 1;
+                                return newMessages;
+                            });
+                            messageInserted = true;
+                        } else {
+                            updateMessage(fullContent);
+                        }
+                    };
 
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
+                            // FIX: Don't change user message ID - just map it for backend references
                             if (meta.user_message_id) {
-                                setMessages((prev: Message[]) => {
-                                    const updated = prev.map(msg => msg.id === userMessage.id ? { ...msg, id: meta.user_message_id } : msg);
-                                    // Also update assistant ID in the same pass if available
-                                    if (meta.assistant_message_id && messagePosition >= 0 && messagePosition < updated.length) {
-                                        updated[messagePosition] = { ...updated[messagePosition], id: meta.assistant_message_id, parentId: meta.user_message_id };
-                                        assistantMessage.id = meta.assistant_message_id;
-                                    }
-                                    return updated;
-                                });
-                                userMessage.id = meta.user_message_id;
-                                assistantMessage.parentId = meta.user_message_id;
-                            } else if (meta.assistant_message_id) {
-                                const oldId = assistantMessage.id;
-                                assistantMessage.id = meta.assistant_message_id;
-                                setMessages((prev: Message[]) => {
-                                    if (messagePosition >= 0 && messagePosition < prev.length) {
-                                        const updated = [...prev];
-                                        updated[messagePosition] = { ...prev[messagePosition], id: meta.assistant_message_id, parentId: meta.user_message_id };
-                                        return updated;
-                                    }
-                                    return prev.map(msg => msg.id === oldId ? { ...msg, id: meta.assistant_message_id, parentId: meta.user_message_id } : msg);
-                                });
+                                mapMessageId?.(userMessageId, meta.user_message_id);
+                            }
+                            if (meta.assistant_message_id) {
+                                mapMessageId?.(assistantMessageId, meta.assistant_message_id);
                             }
                         },
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
-                            if (now - lastUpdateRef.current >= 32) {
-                                updateMessage(fullContent);
+                            // Always insert on first token (bypass throttle to prevent flicker)
+                            if (!messageInserted || now - lastUpdateRef.current >= CONTENT_UPDATE_THROTTLE_MS) {
+                                insertOrUpdateMessage(fullContent);
                                 lastUpdateRef.current = now;
                             }
                         },
                         onDone: () => {
-                            updateMessage(lastContent);
+                            if (!messageInserted) {
+                                insertOrUpdateMessage(lastContent || 'No response generated.');
+                            } else {
+                                updateMessage(lastContent);
+                            }
                         },
                         onError: (error) => {
                             throw error;
                         }
                     });
-                    updateMessage(lastContent);
+
+                    if (messageInserted) {
+                        updateMessage(lastContent);
+                    }
                     return;
                 } else {
                     throw new Error('Streaming not available or response failed');
@@ -363,7 +376,7 @@ export function useChatStreaming(state: any) {
                     currentConvIdRef.current = null;
                     if (typeof window !== 'undefined') localStorage.removeItem('currentConversationId');
                 }
-                const errorMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: error.message || 'Connection error', timestamp: new Date() };
+                const errorMessage: Message = { id: generateStableClientId(), role: 'assistant', content: error.message || 'Connection error', timestamp: new Date() };
                 setMessages((prev: Message[]) => [...prev, errorMessage]);
             } finally {
                 if (streamConversationId) unregisterStream(streamConversationId);
@@ -373,7 +386,7 @@ export function useChatStreaming(state: any) {
             isSendingRef.current.delete(conversationId || 'new');
             if (conversationId) isSendingRef.current.delete(conversationId);
         }
-    }, [conversationId, uploadedFiles, messages]);
+    }, [conversationId, uploadedFiles, messages, mapMessageId]);
 
     const editMessage = useCallback(async (messageId: string, newContent: string) => {
         const messageToEdit = messages.find((m: Message) => m.id === messageId);
@@ -420,20 +433,25 @@ export function useChatStreaming(state: any) {
 
                 if (streamResponse.ok && streamResponse.body) {
                     const assistantMessageId = (Date.now() + 1).toString();
-                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: tempBranchId };
+                    let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: tempBranchId };
 
-                    const updateMessage = (fullContent: string) => {
-                        const newMsg = { ...assistantMessage, content: fullContent };
-                        if (currentConvIdRef.current === streamConversationId) {
+                    let messageInserted = false;
+
+                    const insertOrUpdateMessage = (fullContent: string) => {
+                        if (currentConvIdRef.current !== streamConversationId) return;
+
+                        assistantMessage = { ...assistantMessage, content: fullContent };
+                        if (!messageInserted) {
+                            setMessages((prev: Message[]) => [...prev, assistantMessage]);
+                            messageInserted = true;
+                        } else {
                             setMessages((prev: Message[]) => {
                                 const targetId = assistantMessage.id;
                                 const exists = prev.some(m => m.id === targetId);
-                                return exists ? prev.map(m => m.id === targetId ? newMsg : m) : [...prev, newMsg];
+                                return exists ? prev.map(m => m.id === targetId ? assistantMessage : m) : [...prev, assistantMessage];
                             });
                         }
                     };
-
-                    if (currentConvIdRef.current === streamConversationId) setMessages((prev: Message[]) => [...prev, assistantMessage]);
 
                     let currentUserMsgId = tempBranchId;
                     let lastContent = '';
@@ -453,13 +471,24 @@ export function useChatStreaming(state: any) {
                         onContent: (fullContent) => {
                             lastContent = fullContent;
                             const now = Date.now();
-                            if (now - lastUpdateRef.current >= 150) {
-                                updateMessage(fullContent);
+                            // Always insert on first token (bypass throttle to prevent flicker)
+                            if (!messageInserted || now - lastUpdateRef.current >= 150) {
+                                insertOrUpdateMessage(fullContent);
                                 lastUpdateRef.current = now;
                             }
                         },
-                        onDone: () => updateMessage(lastContent)
+                        onDone: () => {
+                            if (!messageInserted) {
+                                insertOrUpdateMessage(lastContent || 'No response generated.');
+                            } else {
+                                insertOrUpdateMessage(lastContent);
+                            }
+                        }
                     });
+
+                    if (messageInserted) {
+                        insertOrUpdateMessage(lastContent);
+                    }
 
                     fetchBranchInfo(streamConversationId);
                     moveConversationToTop(streamConversationId);

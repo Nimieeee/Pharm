@@ -64,14 +64,14 @@
             "sizes": "1280x720",
             "type": "image/png",
             "form_factor": "wide",
-            "label": "PharmGPT Desktop View"
+            "label": "Benchside Desktop View"
         },
         {
             "src": "/screenshots/mobile.png",
             "sizes": "750x1334",
             "type": "image/png",
             "form_factor": "narrow",
-            "label": "PharmGPT Mobile View"
+            "label": "Benchside Mobile View"
         }
     ],
     "categories": [

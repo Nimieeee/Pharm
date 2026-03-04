@@ -150,7 +150,7 @@ export default function HomePage() {
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-serif text-foreground mb-4">Research at the Speed of Thought</h2>
-            <p className="text-foreground-muted text-lg">See how PharmGPT adapts to your workflow.</p>
+            <p className="text-foreground-muted text-lg">See how Benchside adapts to your workflow.</p>
           </div>
 
           <div className="flex flex-col items-center">

@@ -56,7 +56,7 @@ export default function MobileNav({
         </button>
 
         <div className="font-semibold text-lg text-[var(--text-primary)]">
-          PharmGPT
+          Benchside
         </div>
 
         <button

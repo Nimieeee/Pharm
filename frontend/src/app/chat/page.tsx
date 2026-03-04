@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal, PanelLeft } from 'lucide-react';
 
 import { MemoizedChatMessage } from '@/components/chat/ChatMessage';
-import ChatInput, { Mode } from '@/components/chat/ChatInput';
+import { MemoizedChatInput, Mode } from '@/components/chat/ChatInput';
 import DeepResearchUI from '@/components/chat/DeepResearchUI';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -98,10 +98,21 @@ function ChatContent() {
     clearMessages();
   };
 
+  // Throttled scroll - only scroll every 500ms during streaming to prevent layout thrashing
   useEffect(() => {
-    // efficient scroll without animation jitter during streaming
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [messages]);
+    if (!isLoading) {
+      // Always scroll when not streaming
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    } else {
+      // During streaming, throttle scroll updates
+      const now = Date.now();
+      const lastScroll = (messagesEndRef.current as any)?._lastScroll || 0;
+      if (now - lastScroll >= 500) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        if (messagesEndRef.current) (messagesEndRef.current as any)._lastScroll = now;
+      }
+    }
+  }, [messages, isLoading]);
 
   // Reset mode when conversation changes
   useEffect(() => {
@@ -193,24 +204,24 @@ function ChatContent() {
               currentMode={mode}
             />
           ) : (
-            <AnimatePresence mode="sync">
-              {messages.map((msg, index) => (
-                <div key={msg.id}>
-                  <MemoizedChatMessage
-                    message={{
-                      ...msg,
-                      branchIndex: branchMap[msg.id]?.branchIndex,
-                      branchCount: branchMap[msg.id]?.branchCount,
-                    }}
-                    isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
-                    onEdit={editMessage}
-                    onRegenerate={msg.role === 'assistant' ? () => regenerateMessage(msg.id) : undefined}
-                    onDelete={deleteMessage}
-                    onBranchNavigate={navigateBranch}
-                  />
-                </div>
-              ))}
-            </AnimatePresence>
+            // FIX: Remove AnimatePresence during streaming to prevent exit/enter animation conflicts
+            // Messages use stable IDs so React doesn't remount them unnecessarily
+            messages.map((msg, index) => (
+              <div key={msg.id}>
+                <MemoizedChatMessage
+                  message={{
+                    ...msg,
+                    branchIndex: branchMap[msg.id]?.branchIndex,
+                    branchCount: branchMap[msg.id]?.branchCount,
+                  }}
+                  isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
+                  onEdit={editMessage}
+                  onRegenerate={msg.role === 'assistant' ? () => regenerateMessage(msg.id) : undefined}
+                  onDelete={deleteMessage}
+                  onBranchNavigate={navigateBranch}
+                />
+              </div>
+            ))
           )}
 
           {/* Deep Research Progress */}
@@ -241,28 +252,31 @@ function ChatContent() {
               1. isLoading is true AND
               2. No assistant message exists yet (waiting for stream to start)
               Once assistant message is added, hide this and wait for content to stream */}
-          {!deepResearchProgress && isLoading && (
-            messages.length === 0 ||
-            messages[messages.length - 1]?.role !== 'assistant'
-          ) && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="py-4 min-h-[3rem]"
-              >
-                <div className="flex items-center gap-2 text-slate-500">
-                  <StreamingLogo className="w-5 h-5 opacity-80" />
-                  <span className="text-xs text-[var(--text-secondary)]">{t('thinking')}</span>
-                </div>
-              </motion.div>
-            )}
+          <AnimatePresence>
+            {!deepResearchProgress && isLoading && (
+              messages.length === 0 ||
+              messages[messages.length - 1]?.role !== 'assistant'
+            ) && (
+                <motion.div
+                  key="thinking-indicator"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                  className="py-4 min-h-[3rem]"
+                >
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <StreamingLogo className="w-5 h-5 opacity-80" />
+                    <span className="text-xs text-[var(--text-secondary)]">{t('thinking')}</span>
+                  </div>
+                </motion.div>
+              )}
+          </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Input Area */}
-      <ChatInput
+      <MemoizedChatInput
         onSend={(content, mode) => {
           // Update mode implementation
           setMode(mode);

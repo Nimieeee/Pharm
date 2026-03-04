@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -735,3 +736,14 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
     </>
   );
 }
+
+// Memoize ChatInput to prevent re-renders during streaming
+// Only re-render when isLoading, mode, or message changes
+export const MemoizedChatInput = React.memo(ChatInput, (prev, next) => {
+  return (
+    prev.isLoading === next.isLoading &&
+    prev.isUploading === next.isUploading &&
+    prev.mode === next.mode &&
+    prev.setMode === next.setMode
+  );
+});

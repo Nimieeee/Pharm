@@ -1,6 +1,6 @@
-# PharmGPT Next.js - OpenAI & ChatGPT-Inspired Design
+# Benchside Next.js - OpenAI & ChatGPT-Inspired Design
 
-A modern Next.js implementation of PharmGPT with OpenAI-inspired homepage and ChatGPT-inspired chat interface.
+A modern Next.js implementation of Benchside with OpenAI-inspired homepage and ChatGPT-inspired chat interface.
 
 ## Architecture Overview
 

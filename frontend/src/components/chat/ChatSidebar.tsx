@@ -158,7 +158,7 @@ const getRelativeDateCategory = (dateString: string, t: (key: string) => string)
   return date.toLocaleString('default', { month: 'long' });
 };
 
-export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, currentChatId }: ChatSidebarProps) {
+function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, currentChatId }: ChatSidebarProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, token, logout } = useAuth();
@@ -762,3 +762,5 @@ export default function ChatSidebar({ isOpen, onToggle, onSelectConversation, on
     </>
   );
 }
+
+export default ChatSidebar;
