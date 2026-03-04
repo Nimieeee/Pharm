@@ -1,0 +1,1125 @@
+From Malaria Drug to Anticancer Agent: A
+Five-Year Review of Artemisinin's
+Evolving Role in Oncology (2021-2026
+Molecular Mechanisms of Action: The Dominance of
+Ferroptosis and Beyond
+The investigation into artemisinin and its derivatives as anticancer agents has matured
+significantly over the past five years, shifting from broad observations of cytotoxicity to a
+deeply nuanced understanding of their specific molecular mechanisms. While the
+foundational principle of iron-dependent activation remains central, recent research has
+firmly established iron-dependent programmed cell death, or ferroptosis, as the dominant
+pathway through which these compounds exert their selective toxicity against malignant
+cells 2 3 . This mechanistic clarity provides a robust framework for rationalizing
+therapeutic applications and designing novel strategies to enhance their efficacy. The
+sesquiterpene lactone core of artemisinin, particularly its essential 1,2,4-trioxane
+pharmacophore containing an endoperoxide bridge, is the chemical basis for all its
+biological activities 2 6 . This peroxide bridge is activated upon interaction with
+intracellular iron species, primarily heme or free ferrous iron (Fe²⁺), leading to its
+cleavage and the generation of cytotoxic carbon-centered free radicals and a subsequent
+surge of reactive oxygen species (ROS) 10 14 21 . This oxidative burst is the initial trigger
+for a cascade of downstream cellular damage that culminates in multiple forms of
+regulated cell death.
+The induction of ferroptosis represents a paradigm shift in understanding artemisinin's
+action. Unlike classical apoptosis, ferroptosis is characterized by the iron-dependent
+accumulation of lethal levels of lipid peroxides on cellular membranes, leading to
+membrane rupture and cell death 2 3 . Artemisinins are potent inducers of this
+pathway, acting at several critical junctures. A primary mechanism involves the
+disruption of intracellular iron homeostasis. Studies have shown that artemisinins
+promote the lysosomal degradation of ferritin, the principal protein responsible for
+storing intracellular iron 2
+
+3 . This process, termed ferritinophagy, results in the release
+
+of a large pool of free iron into the cytosol 2
+
+6 . The sudden increase in labile iron fuels
+
+the Fenton reaction, a chemical process where Fe²⁺ catalyzes the conversion of less
+
+reactive hydrogen peroxide into highly destructive hydroxyl radicals 2 . These radicals
+initiate and propagate the peroxidation of polyunsaturated fatty acids within cellular
+membranes, causing catastrophic oxidative damage 2
+
+3 .
+
+Crucially, artemisinins simultaneously disarm the cell's primary defense system against
+lipid peroxidation. The glutathione peroxidase 4 (GPX4) enzyme, often referred to as the
+guardian of ferroptosis, relies on glutathione (GSH) to neutralize lipid hydroperoxides
+and repair membrane damage 2 . Artemisinins can downregulate the system Xctransporter, which imports cystine for GSH synthesis, and directly inhibit GPX4 activity
+2
+
+4 . By crippling this antioxidant axis, artemisinins push the cell beyond its capacity to
+
+manage oxidative stress, sealing its fate through ferroptosis 2 7 . This dual action—
+flooding the cell with pro-oxidant iron while disabling its anti-oxidant machinery—is a
+hallmark of artemisinin's ferroptotic mechanism. The sensitivity of cancer cells to this
+process is often heightened due to their "iron addiction," a state of elevated intracellular
+iron required for rapid proliferation, making them more vulnerable than normal cells 9
+14 .
+
+While ferroptosis is the principal mode of action, artemisinins engage a complex network
+of ancillary mechanisms that collectively contribute to their anti-tumor efficacy.
+Apoptosis, a form of caspase-dependent programmed cell death, is frequently induced as
+a secondary effect 1 3 . The initial ROS burst and DNA damage caused by artemisininderived radicals can activate intrinsic apoptotic pathways, leading to mitochondrial outer
+membrane permeabilization, cytochrome c release, and the activation of executioner
+caspases like caspase-3 3 14 . For instance, exposure of HepG2 liver cancer cells to
+artemisinins resulted in a dose-dependent increase in caspase-3 cleavage, confirming the
+involvement of apoptosis 3 . Both ROS-dependent and ROS-independent apoptotic
+pathways have been documented, indicating the versatility of this mechanism 3 .
+Autophagy, a process of cellular self-degradation, is another pathway modulated by
+artemisinins, though its role is context-dependent and described as "double-edged" 21 . In
+some scenarios, autophagy serves as a pro-survival mechanism, allowing cancer cells to
+recycle damaged components and resist cell death. However, in other contexts, it can
+proceed to a point where it becomes a form of programmed cell death itself 3 .
+Dihydroartemisinin (DHA) has been shown to induce autophagy in leukemia K562 cells
+and breast cancer cells, evidenced by increased LC3-II protein expression and the
+degradation of p62/SQSTM1 3 . In breast cancer cells, this autophagic response was
+dependent on ROS generation and could even sensitize the cells to chemotherapeutic
+
+agents like epirubicin 3 . Conversely, in glioma cells, DHA induces autophagy, but
+whether this promotes survival or death requires further clarification 14 .
+Cell cycle arrest is a consistent and well-documented effect of artemisinin treatment
+across a wide array of cancer cell lines 1 3 . Artemisinins can halt the proliferation of
+cancer cells by inducing arrest at specific checkpoints. A predominant finding is the
+induction of G1-phase cell cycle arrest, observed in gallbladder, prostate, lung,
+pancreatic, hepatoma, ovarian, and endometrial cancer cell lines 3 . This arrest is
+typically mediated by the downregulation of key regulatory proteins, including cyclindependent kinase 4 (CDK4) and cyclin D1, which are essential for the transition from the
+G1 phase to the S phase of the cell cycle 3 . In contrast, G2/M-phase arrest has been
+reported in osteosarcoma, breast cancer, renal carcinoma, and neuroblastoma cells 3 .
+For example, artemisinin was found to cause G2/M-phase arrest in breast cancer cells, an
+effect that was linked to its regulation of autophagy 3 . This ability to halt cell division
+provides a crucial anti-proliferative effect alongside direct cytotoxic actions.
+Furthermore, artemisinins exhibit potent anti-angiogenic activity, which is critical for
+inhibiting tumor growth and metastasis 12 . Tumors require the formation of new blood
+vessels (angiogenesis) to supply nutrients and oxygen for expansion beyond a minimal
+size. Artemisinins disrupt this process by modulating key signaling pathways and factors
+involved in angiogenesis 12 . One major mechanism involves the inhibition of the NF-κB
+transcription factor, a master regulator of inflammation and pro-survival genes 3 . By
+suppressing NF-κB, artemisinins downregulate the expression of a suite of downstream
+pro-angiogenic factors, including vascular endothelial growth factor (VEGF),
+interleukin-8 (IL-8), cyclooxygenase-2 (COX-2), and matrix metalloproteinase-9 (MMP-9)
+3 . Dihydroartemisinin (DHA) has demonstrated significant anti-angiogenic effects in
+
+both in vitro models and in vivo pancreatic cancer-derived tumors 3 . Similarly,
+artesunate (ART) has been shown to inhibit VEGF expression, highlighting its potential
+utility in treating hyper-vascularized cancers such as Kaposi’s sarcoma 3 . By starving the
+tumor of its blood supply, artemisinins can exert a powerful indirect anti-tumor effect.
+The complexity of these mechanisms is underscored by their modulation through various
+signaling pathways. For instance, artemisinins can regulate the PI3K/AKT/mTOR
+pathway, which is a central hub for cell growth and survival, and inhibit STAT3 signaling,
+a transcription factor often constitutively active in cancers 5 8 . They also activate
+AMPK signaling, which acts as an energy sensor and can suppress anabolic processes like
+cell proliferation 8 . In lung cancer, DHA has been shown to inhibit STAT3 signaling 5 ,
+while in epithelial ovarian cancer, it inhibits the hedgehog signaling pathway 1 . In
+
+prostate cancer cells, artesunate suppresses viability and mobility through the UCA1/
+miR-184 axis, where a long non-coding RNA (UCA1) acts as a sponge for a microRNA
+(miR-184) 1 . This intricate web of interactions demonstrates that artemisinins do not
+act through a single monolithic pathway but rather perturb multiple interconnected
+nodes within the cancer cell's signaling network, leading to a multi-pronged attack on
+malignancy. This promiscuous targeting of over 300 specific proteins in colorectal cancer
+cells further supports the idea that their efficacy stems from overwhelming the cell's
+adaptive capacity 9 .
+Mechanism
+
+Key Molecules/Pathways Involved
+
+Cellular Outcome
+
+Ferroptosis Induction
+
+Endoperoxide bridge, Iron (heme/Fe²⁺), Ferritinophagy,
+
+Iron-dependent programmed cell death via
+
+GPX4, System Xc-, Lipid Peroxidation
+
+membrane damage
+
+Reactive Oxygen Species (ROS), Caspase-3, Cytochrome c,
+
+Classical programmed cell death via caspase
+
+Bax-mediated intrinsic pathway
+
+activation
+
+CDK4, Cyclin D1, Autophagy
+
+Inhibition of cancer cell proliferation; arrest at
+
+Apoptosis Induction
+
+Cell Cycle Arrest
+
+1
+
+3
+
+2
+
+NF-κB, VEGF, IL-8, COX-2, MMP-9
+
+LC3-II, p62, JNK pathway
+
+Modulation
+Signaling Pathway
+Inhibition
+
+3
+
+3 12
+
+Double-edged sword; can promote either cell
+survival or death
+
+PI3K/AKT/mTOR, STAT3, Hedgehog, NF-κB, AMPK
+
+1
+
+Inhibition of new blood vessel formation,
+starving the tumor
+
+Autophagy
+
+6
+
+8
+
+G1/S or G2/M phases
+Anti-Angiogenesis
+
+3
+
+3 21
+
+Suppression of pro-survival and proliferative
+signaling
+
+1
+
+5
+
+8
+
+This comprehensive mechanistic profile reveals why artemisinin is considered a versatile
+tool in oncology. Its ability to trigger multiple, convergent death pathways makes it
+difficult for cancer cells to develop resistance through a single mutation. The dominance
+of ferroptosis, however, offers a clear and actionable target. Future therapeutic strategies
+will likely focus on identifying biomarkers that predict a tumor's susceptibility to this
+form of cell death, such as high baseline iron levels, low GPX4 expression, or mutations
+in key regulators like p53, which can sensitize cells to ferroptosis 2 . Understanding
+these context-dependent nuances is paramount for moving artemisinin therapy from a
+generalized cytotoxic approach to a more precise and effective anticancer strategy.
+
+Clinical Translation and Efficacy Outcomes in Human
+Trials
+The translation of artemisinin's promising preclinical activity into tangible clinical
+benefits has been a methodical and cautious process, with research from 2021 to 2026
+primarily focused on establishing safety profiles and exploring niche applications in
+advanced or pre-malignant conditions. While large-scale efficacy trials demonstrating
+survival benefits are still awaited, a growing body of evidence from early-phase human
+studies provides valuable insights into the potential of these compounds. The clinical
+journey has largely followed two paths: investigating intravenous (IV) administration for
+refractory solid tumors and evaluating oral formulations as add-on therapy for specific
+cancers or as chemopreventive agents. The collective data indicate that artemisinins are
+generally well-tolerated, but their efficacy as monotherapy appears modest, suggesting
+their greatest potential lies in combination regimens or specific patient populations.
+Phase I clinical trials have been instrumental in defining the safety, tolerability, and
+pharmacokinetics of both IV and oral artemisinin formulations. For intravenous
+artesunate (IV AS), a pivotal Phase I accelerated titration study enrolled 19 patients with
+advanced solid malignancies to determine the maximum tolerated dose (MTD) 14 15 .
+Patients received escalating doses of artesunate (from 8 mg/kg up to 45 mg/kg) on days
+1 and 8 of a 21-day cycle 15 . Dose-limiting toxicities (DLTs) were observed at doses of 12
+mg/kg, 18 mg/kg, and 25 mg/kg, including neutropenic fever, hypersensitivity reactions,
+liver function test abnormalities, and severe nausea/vomiting 15 21 . Based on these
+findings, the MTD was established at 18 mg/kg 3 14 15 . At this dose, the maximum
+plasma concentration (Cmax) was 415 ng/ml, and the treatment was deemed generally
+well-tolerated 3 . Notably, auditory and vestibular system adverse events were noted but
+were reversible upon discontinuation of the drug 21 . Another trial confirmed the MTD at
+18 mg/kg, reinforcing this as a safe dose level for further investigation 21 .
+In parallel, studies on oral artemisinin and its derivatives have established different safety
+benchmarks. A prospective open-label Phase I study evaluated escalating daily oral doses
+of artemisinin (up to 200 mg/d, equivalent to 2.2-3.9 mg/kg/d) in patients with
+advanced non-small cell lung cancer (NSCLC) 16 . The study concluded that doses up to
+200 mg/day were safe and well-tolerated, and this dose was recommended for
+consideration in future Phase II/III trials 16 . Similarly, multiple Phase I studies
+conducted in patients with metastatic breast cancer investigated oral artesunate at doses
+of 100 mg/day, 150 mg/day, and 200 mg/day 14 . These studies consistently found the
+treatment to be well-tolerated over periods ranging from four weeks to over three years
+
+in compassionate use settings 14 18 21 . Any dose-limiting adverse events observed were
+completely reversible upon cessation of the drug 14 . However, one compassionate use
+study did report that the incidence of grade ≥2 adverse events increased with dosage,
+rising from two events in the 100 mg group to six in the 150 mg group and seventeen in
+the 200 mg group, although no event was considered definitively related to artesunate
+21 . These findings suggest that while oral artemisinins have a favorable safety profile,
+
+higher doses may be associated with an increased burden of side effects.
+Despite the establishment of safe dosing levels, objective tumor responses have been rare
+in these early-phase trials, pointing towards a more subtle role for artemisinins in cancer
+management. In the Phase I trial of IV artesunate in refractory solid tumors, no complete
+or partial remissions were observed 15 . However, four patients achieved stable disease,
+resulting in a disease control rate of 27% and including three patients with prolonged
+stable disease lasting 8, 10, and 11 cycles 15 . This suggests that artesunate can
+temporarily halt tumor progression in a subset of patients. A similar pattern was seen in
+NSCLC, where adding oral artesunate at 120 mg/day to standard vinorelbine plus
+cisplatin chemotherapy failed to significantly improve short-term or mean survival 3 .
+Nevertheless, the artesunate group showed a significantly higher disease control rate and
+a longer time to disease progression, hinting at a disease-stabilizing effect 3 .
+In metastatic breast cancer, a Phase I study of oral artesunate found that after four weeks
+of treatment, 10 out of 23 patients had stable disease, but again, no complete or partial
+remissions were recorded 3 . This aligns with the concept of artemisinins as agents that
+control rather than eradicate disease in heavily pre-treated populations. A particularly
+interesting finding came from a Phase I dose-finding study in women with cervical
+intraepithelial neoplasia grade 2/3 (CIN2/3), a pre-malignant condition 3 . After
+treatment with intravaginal artemisinin, histologic regression to CIN1 or less was
+observed in 68% of subjects, with no intolerable side effects reported 3 . This highlights
+a potentially significant role for artemisinins in chemoprevention or the treatment of
+early-stage lesions.
+Perhaps the most compelling signal of efficacy comes from a randomized, double-blind,
+placebo-controlled pilot study in colorectal cancer (CRC) patients 3 14 . In this study,
+patients received oral artesunate at 200 mg/day for 14 days 5 . Bayesian analysis
+revealed a high probability (97%) of a decrease in the tumor proliferation marker Ki-67
+and a moderate probability (79%) of increased microvessel density (CD31 expression) 3
+14 . More strikingly, during a follow-up period, the recurrence-free survival probability
+
+was dramatically higher in the artesunate group compared to the placebo group at both 2
+
+and 3 years (0.89 vs. 0.5) 3 14 . No deaths were reported in the artesunate group versus
+three in the placebo group during the study period 14 . While preliminary, these results
+strongly suggest that adjuvant artesunate therapy may reduce the risk of CRC recurrence
+and warrant larger confirmatory trials.
+Other clinical investigations have yielded mixed or negative results. A clinical controlled
+trial (CCT) for prostate cancer assessed oral artemisinin (300–400 mg, t.i.d.) over three
+years, with outcomes measured by PSA doubling time and signs of metastasis, but the
+provided sources do not contain the final results of this trial 5 . A CCT for metastatic
+breast cancer evaluated oral artesunate at 100, 150, and 200 mg/day for four weeks,
+focusing on safety and tolerability, but again, the detailed efficacy outcomes are not
+specified in the provided text 5 . A pilot study of Artenimol-R (oral artemisinin) in 28
+patients with advanced cervical cancer reported clinical remission with a median
+symptom disappearance time of 7 days, indicating good tolerability with no grade 3 or 4
+adverse events 14 .
+Study Type / Cancer
+
+Intervention
+
+Dose / Schedule
+
+Key Safety Finding
+
+Key Efficacy Finding
+
+Phase I / Advanced
+
+Intravenous
+
+18 mg/kg, days 1 &
+
+Maximum Tolerated Dose (MTD)
+
+Disease control rate of 27%; 4
+
+Solid Tumors
+
+Artesunate
+
+8, every 21 days
+
+established. DLTs included
+
+patients had stable disease
+
+3 15 .
+
+myelosuppression and
+hypersensitivity.
+Phase I / Metastatic
+
+Oral Artesunate
+
+Breast Cancer
+
+200 mg/day, 4
+
+Safe and well-tolerated up to 200
+
+10 of 23 patients had stable
+
+weeks
+
+mg/day 16 .
+
+disease; no partial or complete
+remissions
+
+Pilot Study /
+
+Oral Artesunate
+
+Colorectal Cancer
+
+200 mg/day, 14
+
+Well-tolerated.
+
+days
+
+3 .
+
+Decreased Ki-67 (97%
+probability). Recurrence-free
+survival at 3 years was 0.89 vs.
+0.5 for placebo
+
+Phase I / NSCLC
+
+3 14 .
+
+Oral Artesunate
+
+120 mg/day added
+
+Information not available in
+
+Higher disease control rate and
+
++ Chemo
+
+to vinorelbine/
+
+provided sources
+
+longer time to progression, but no
+
+cisplatin
+Phase I / Cervical
+
+Intravaginal
+
+Information not
+
+Intraepithelial
+
+Artemisinin
+
+available in
+
+Neoplasia
+
+improvement in survival
+No intolerable side effects reported.
+
+3 .
+
+68% histologic regression to CIN1
+or less
+
+3 .
+
+provided sources
+
+Pilot Study /
+
+Oral Artenimol-
+
+Information not
+
+Good tolerability; no grade 3 or 4
+
+Clinical remission achieved with
+
+Advanced Cervical
+
+R
+
+available in
+
+adverse events.
+
+median symptom disappearance
+
+Cancer
+
+provided sources
+
+of 7 days 14 .
+
+In summary, the clinical evidence accumulated between 2021 and 2026 positions
+artemisinins as relatively safe agents whose primary demonstrated value is in disease
+stabilization and prevention rather than tumor eradication. The lack of robust objective
+responses in monotherapy settings for advanced cancers underscores the need for more
+
+sophisticated application strategies. The most encouraging data come from niche
+indications, such as the reduction of recurrence in colorectal cancer and the regression of
+pre-malignant cervical lesions. These findings provide a strong rationale for advancing
+artemisinins into larger, randomized Phase II and III trials, particularly as adjunctive
+therapy in the adjuvant setting and in combination with conventional treatments where
+they may act as sensitizing agents. The path forward requires a shift from proving basic
+safety to validating these promising signals of efficacy in rigorously designed clinical
+studies.
+
+Synergistic Combination Therapies and Overcoming
+Resistance
+Recognizing the limitations of artemisinin monotherapy, a significant portion of recent
+research has focused on leveraging its unique mechanisms of action within synergistic
+combination regimens. The goal is to enhance efficacy, overcome intrinsic or acquired
+resistance, and broaden the therapeutic window. Preclinical and early clinical data
+overwhelmingly support the concept that artemisinins can potentiate the effects of a wide
+range of anticancer agents, including conventional chemotherapeutics, targeted
+therapies, and radiotherapy. This strategic integration positions artemisinins not as
+standalone cures but as versatile partners in multimodal cancer treatment protocols.
+A large body of evidence demonstrates synergistic interactions between artemisinins and
+standard chemotherapeutic drugs. Synergy, defined as a Combination Index (CI) of less
+than 1, has been observed in numerous in vitro and in vivo models 3 . For example,
+dihydroartemisinin (DHA) combined with gemcitabine showed synergistic effects in both
+ovarian and pancreatic cancer cells 3 . In pancreatic cancer, DHA was also found to work
+synergistically with Apo2L/TRAIL, a death receptor ligand, by up-regulating death
+receptor 5 in a ROS-dependent manner 1 3 . Perhaps one of the most compelling
+examples is the combination of artesunate (ART) and sorafenib in hepatocellular
+carcinoma (HCC) 3 . This pairing enhances the anticancer effect by inducing oxidative
+stress and promoting lysosome-mediated ferritinophagy, leading to the release of lethal
+iron stores that fuel ferroptosis 3 21 . In acute myeloid leukemia (AML), ART combined
+with bortezomib exhibited synergistic anti-proliferative effects 3 . Furthermore, DHAcarboplatin conjugates have been developed to overcome platinum resistance in ovarian
+cancer cells, representing a more advanced approach to combination therapy 21 .
+
+Artemisinins also show great promise in overcoming chemoresistance, a major obstacle in
+cancer treatment. In colorectal cancer, DHA was shown to restore sensitivity to 5fluorouracil (5-FU) in TP53-deficient cells, which are often notoriously resistant to
+therapy 14 . A synergistic combination of ART and halofuginone (HF) promoted caspasedependent apoptosis in both parental and oxaliplatin-resistant CRC cells, suggesting its
+potential to re-sensitize tumors to platinum-based chemotherapy 14 . In esophageal
+cancer, DHA attenuated the sonic hedgehog (Shh) signaling pathway, which is often
+activated by cisplatin and contributes to resistance. By inhibiting this pathway, DHA
+effectively sensitized cisplatin-resistant ESCC cells to the chemotherapy 14 . This ability to
+target and inhibit survival pathways that are upregulated in response to chemotherapy is
+a key advantage of incorporating artemisinins into treatment schedules.
+Another critical area of synergy is with targeted therapies. The combination of
+osimertinib, a third-generation tyrosine kinase inhibitor (TKI) for EGFR-mutant non-small
+cell lung cancer (NSCLC), with dihydroartemisinin (DHA) has been proposed as a novel
+therapeutic strategy 13 . This repurposing approach aims to exploit the complementary
+mechanisms of these agents to achieve a more durable response. In liver cancer, the
+synergy between ART and sorafenib, another multikinase inhibitor, has been highlighted,
+where the combination induces ferroptosis 3 21 . In prostate cancer, DHA was found to
+synergize with docetaxel, a standard chemotherapy, to enhance survival rates in
+xenograft mouse models, offering a potential strategy to improve outcomes in metastatic
+castration-resistant disease 14 .
+The ability of artemisinins to act as potent radiosensitizers is another important avenue of
+research. Radiation therapy kills cancer cells primarily by inducing DNA damage, and
+artemisinins can amplify this effect. Artesunate has been shown to enhance the
+radiosensitivity of esophageal cancer cells by inhibiting the repair of radiation-induced
+DNA damage 5 . This suggests that artemisinins could be used concurrently with
+radiotherapy to allow for lower radiation doses, thereby reducing normal tissue toxicity,
+or to increase the efficacy of standard radiation protocols. This property is particularly
+relevant given the central role of radiation in the treatment of many solid tumors.
+Beyond direct synergistic killing, innovative strategies are being developed to enhance
+the selectivity and potency of artemisinins themselves. A particularly clever approach
+involves exploiting the metabolic differences between cancer and normal cells. In
+colorectal cancer (CRC) cells, which have a high capacity for heme synthesis, artemisinin
+activation is significantly greater than in normal colon epithelial cells 9 . Researchers
+have leveraged this by co-administering aminolevulinic acid (ALA), a clinically used
+precursor in the heme biosynthesis pathway. In HCT116 CRC cells, adding ALA to
+
+artesunate treatment lowered the IC50 from approximately 2 μM to just 200 nM, a tenfold increase in potency 9 . This combination preferentially increased intracellular heme
+levels and ART activation specifically within the cancer cells, leading to significant tumor
+growth delay in a mouse xenograft model compared to either agent alone 9 . This
+strategy effectively turns a cancer cell's own metabolic vulnerability against it,
+dramatically improving the therapeutic index of artemisinin.
+The table below summarizes key synergistic combinations that have been investigated,
+highlighting the breadth of this approach.
+Combination Partner
+
+Cancer Type(s)
+
+Proposed Mechanism of Synergy
+
+Gemcitabine
+
+Ovarian, Pancreatic
+
+Enhanced apoptosis and anti-proliferative effects
+
+Sorafenib
+
+Hepatocellular Carcinoma
+
+Induction of oxidative stress and lysosome-mediated ferritinophagy,
+
+(HCC)
+
+promoting ferroptosis
+
+Pancreatic
+
+Up-regulation of death receptor 5 (DR5) via ROS, enhancing extrinsic
+
+Apo2L/TRAIL
+
+apoptosis
+Cisplatin
+
+Esophageal, Ovarian
+
+1
+
+3
+
+3 21
+
+3
+
+Overcoming chemoresistance by inhibiting survival pathways (e.g., Shh);
+enhanced DNA damage 14 21
+
+Docetaxel
+
+Prostate
+
+Enhanced anti-tumor efficacy and improved survival in preclinical models 14
+
+Bortezomib
+
+Acute Myeloid Leukemia
+
+Synergistic anti-proliferative effects
+
+3
+
+(AML)
+Halofuginone (HF)
+
+Colorectal Cancer
+
+Promotes caspase-dependent apoptosis in both parental and oxaliplatinresistant cells 14
+
+Osimertinib
+
+Non-Small Cell Lung Cancer
+
+Novel drug combination strategy for EGFR-mutant NSCLC 13
+
+(NSCLC)
+Radiation Therapy
+
+Esophageal Cancer
+
+Inhibition of DNA damage repair, increasing radiosensitivity
+
+Aminolevulinic Acid
+
+Colorectal Cancer
+
+Selective enhancement of artemisinin activation via increased heme synthesis
+
+(ALA)
+
+in cancer cells
+
+5
+
+9
+
+These findings collectively argue that the future of artemisinin-based oncology lies in
+intelligent combination strategies. Rather than viewing artemisinins as a replacement for
+existing therapies, they should be seen as powerful adjuvants that can make conventional
+treatments more effective, help overcome resistance, and potentially reduce side effects.
+The development of these combinations requires careful preclinical validation to identify
+optimal dosing schedules and sequences. For instance, sequencing matters when
+combining agents that induce DNA damage with those that affect DNA repair. The most
+successful clinical applications will likely emerge from personalized combination
+regimens tailored to the specific genetic and metabolic vulnerabilities of an individual's
+tumor.
+
+Novel Derivatives and Advanced Delivery Systems
+A major thrust of contemporary artemisinin research is dedicated to overcoming the
+inherent pharmacological limitations of the natural compounds, namely their poor
+aqueous solubility, short plasma half-life, and limited tissue distribution 3 . To address
+these challenges and unlock the full therapeutic potential of the artemisinin scaffold,
+scientists are pursuing two parallel and highly innovative strategies: the rational design
+of novel synthetic derivatives and hybrids, and the development of advanced
+nanoformulations for targeted drug delivery. These efforts aim to create next-generation
+artemisinin-based therapeutics with improved potency, selectivity, and pharmacokinetic
+profiles.
+The creation of novel chemical entities derived from the artemisinin structure is a rapidly
+expanding field. Researchers are employing medicinal chemistry principles to modify the
+parent molecule to enhance its anticancer properties. One prominent strategy is the
+synthesis of artemisinin dimers, which have been shown to be significantly more potent
+than their monomeric counterparts, sometimes exhibiting activity several orders of
+magnitude higher 10 . A prime example is ZQJ29, a novel cyano-substituted artemisinin
+dimer designed for pancreatic cancer 7 . In vitro studies revealed that ZQJ29 possessed
+extraordinary cytotoxicity against PANC-1 and KP4 pancreatic cancer cell lines, with an
+IC50 of 0.120 µM, representing approximately 100-fold greater potency than the
+standard chemotherapy drug oxaliplatin against PANC-1 cells 7 . In vivo experiments in
+mice bearing subcutaneous PANC-1 tumors confirmed its efficacy, with oral
+administration producing tumor reduction comparable to intraperitoneal injections of
+oxaliplatin 7 . Crucially, ZQJ29 demonstrated a superior safety profile, with treated mice
+showing no significant organ damage or body weight loss, unlike the oxaliplatin-treated
+group which exhibited severe toxicity 7 .
+Further investigation into ZQJ29's mechanism uncovered a novel molecular target:
+Poly(ADP-ribose) polymerase 1 (PARP1) 7 . Using Surface Plasmon Resonance analysis,
+researchers quantified its binding affinity to PARP1 with a dissociation constant (KD) of
+2.86 µM 7 . This discovery links artemisinin's activity to the classic DNA damage
+response pathway, as PARP1 is a key enzyme in DNA single-strand break repair. The
+antitumor effect of ZQJ29 was shown to be dependent on its inhibition of PARP1, which
+led to the upregulation of the tumor suppressor gene TP53 and subsequent
+downregulation of the SLC7A11/GPX4 ferroptosis pathway, ultimately promoting cell
+death 7 . This identification of a specific protein target provides a clear mechanistic
+rationale for its activity and opens avenues for its use in tumors with specific
+
+vulnerabilities, such as those with defective homologous recombination repair (e.g.,
+BRCA-mutated cancers).
+Beyond simple dimers, pharmacophore hybridization is being used to create "hybrid
+molecules" that combine the artemisinin endoperoxide bridge with other bioactive
+moieties to generate dual-acting or multi-targeting agents 21 . Examples include ART–
+daumone hybrids, which inhibit osteoclast formation, and DHA–coumarin hybrids that
+can induce both apoptosis and ferroptosis 21 . Other hybrids, such as DHA–cinnamic acid
+conjugates, have been designed to induce autophagy, while ART-derivative-NHC-gold(I)
+hybrids have shown strong anticancer activity with high selectivity 21 . This modular
+approach allows for the fine-tuning of a compound's biological profile, enabling
+researchers to design molecules with optimized potency, selectivity, and mechanisms of
+action tailored to specific cancer types. For instance, a synthesized derivative containing a
+naphthalene unit showed potent activity against lung cancer cells with an IC50 of 0.09
+µM, while other novel ester derivatives were effective against A549 lung cancer cells at
+concentrations of 126.3 nM and 138.0 nM, respectively 5 .
+The second major innovation wave focuses on nanotechnology-based drug delivery
+systems to overcome artemisinin's poor pharmacokinetics. Encapsulating artemisinins
+within nanocarriers such as liposomes, polymeric nanoparticles, and other nanocarriers
+addresses multiple issues simultaneously 3 . These formulations improve the water
+solubility of the otherwise hydrophobic drugs, enhance their stability in circulation, and
+prolong their half-life 3 . Most importantly, they facilitate targeted delivery to the tumor
+site. Many nanocarriers are engineered to be pH-sensitive, remaining stable in the neutral
+pH of the bloodstream but releasing their payload in the slightly acidic tumor
+microenvironment, thereby increasing local drug concentration while minimizing
+systemic exposure and off-target toxicity 3 .
+The impact of these nanoformulations on antitumor efficacy is profound. In vivo studies
+have demonstrated markedly superior performance compared to the free drugs. For
+example, one study using polyethylene glycol-conjugated DHA nanoparticles reported an
+84.6% tumor growth inhibition rate in animal models, whereas the same dose of free
+DHA only achieved 29.9% inhibition 3 . This dramatic improvement is attributed to
+enhanced cellular uptake and more efficient drug accumulation within the tumor tissue.
+The development of mitochondria-targeted artemisinin derivatives, such as conjugates
+with triphenylphosphonium (TPP) moieties (e.g., ART-TPP, ARL-TPP), represents another
+sophisticated delivery strategy 21 . By directing the drug specifically to the mitochondria
+—the powerhouse of the cell and a key organelle in apoptosis—these compounds can
+induce a localized and potent burst of ROS, leading to highly efficient cancer cell killing
+
+with IC50 values in the low micromolar range in various cancer cell lines 21 . Fluorescent
+coumarin-artemisinin conjugates have also been developed to simultaneously increase
+intracellular ROS and induce apoptosis, providing a built-in imaging capability to track
+drug distribution and efficacy 21 .
+The following table compares the properties of natural/artemisinin derivatives with novel
+synthetic derivatives and nanoformulations.
+Feature
+
+Potency (IC50)
+
+Natural Artemisinins (ART,
+
+Novel Synthetic Derivatives (e.g.,
+
+Nanoformulations (e.g., Liposomes,
+
+DHA, AS)
+
+ZQJ29)
+
+Nanoparticles)
+
+Micromolar to low
+
+Nanomolar to sub-micromolar range
+
+Improved cellular uptake leads to
+
+micromolar range (e.g., 7-40
+
+(e.g., 0.12 µM)
+
+higher efficacy at lower doses
+
+µM)
+Selectivity
+
+Pharmacokinetics
+
+Toxicity Profile
+
+7
+
+3
+
+5
+
+Moderate, based on iron/
+
+Potentially higher, through rational
+
+High, via passive (EPR effect) and
+
+heme levels
+
+design and targeting
+
+active targeting strategies
+
+9
+
+7
+
+3
+
+Short half-life, poor solubility
+
+Can be improved; e.g., ZQJ29 has a
+
+Significantly improved half-life and
+
+3
+
+longer half-life than DHA
+
+stability
+
+Generally well-tolerated 16
+
+Often shows reduced toxicity compared
+
+Reduced systemic toxicity due to
+
+21
+
+to standard chemo in preclinical models
+
+targeted delivery
+
+7
+
+3
+
+3
+
+7
+
+Mechanism of
+
+Primarily ferroptosis via iron
+
+Multi-faceted; can include PARP1
+
+Same as parent compound, but with
+
+Action
+
+activation
+
+inhibition, dual apoptosis/ferroptosis
+
+enhanced intracellular delivery
+
+2
+
+induction
+
+3
+
+7 21
+
+These strategic innovations represent a clear departure from simply testing the natural
+products. The field is now engaged in the deliberate engineering of artemisinin-based
+therapeutics. By creating more potent and selective synthetic analogs and packaging
+them into smart delivery systems, researchers are transforming artemisinin from a
+moderately effective cytotoxin into a precision oncology tool. This "second wave" of
+research is critical for bridging the gap between the promising preclinical data and the
+clinical success required for widespread adoption. The future of artemisinin in oncology
+is likely to be defined not by the plant-derived compound itself, but by the sophisticated,
+engineered versions that build upon its foundational chemistry.
+
+Immunomodulatory Effects and Impact on the Tumor
+Microenvironment
+Emerging research over the last five years has unveiled a sophisticated and multifaceted
+role for artemisinin and its derivatives in modulating the immune system and reshaping
+the tumor microenvironment (TME). Beyond their direct cytotoxic effects on cancer cells,
+these compounds are increasingly recognized as immunomodulatory agents capable of
+stimulating anti-tumor immunity, dismantling immunosuppressive networks, and altering
+the behavior of key stromal components within the TME. This evolving understanding
+positions artemisinins not merely as chemotherapeutic agents but as potential allies in
+the burgeoning field of cancer immunotherapy.
+One of the most significant immunomodulatory effects is the ability of artemisinins to
+induce immunogenic cell death (ICD), particularly through the induction of ferroptosis
+14 19 . ICD is a form of cell death that is not only lethal to the cancer cell but also serves
+
+as an "eat me" signal to the immune system. When cancer cells undergo ICD, they release
+damage-associated molecular patterns (DAMPs), which are endogenous molecules that
+act as danger signals to alert and activate antigen-presenting cells like dendritic cells 19 .
+A study on lung cancer demonstrated that DHA-triggered ferroptosis promotes ICD by
+eliciting ER stress and DNA damage, which in turn facilitates the release of DAMPs 19 .
+This process enhances the immunogenicity of the tumor, boosting anticancer
+immunosurveillance and potentially priming the immune system for a more robust and
+sustained response against residual cancer cells 19 . This mechanism is distinct from
+traditional apoptosis, which is often immunologically silent or even tolerogenic, making
+the ferroptotic pathway a highly desirable route for engaging the immune system.
+Artemisinins also appear to directly influence the balance between effector and
+regulatory immune cells. They have been shown to regulate immune cell heterogeneity
+by triggering a cascade of phosphorylation events involving CDK and MAPK pathways 1 .
+Specifically, DHA has been reported to promote the activity of CD8(+) T lymphocytes,
+which are critical for directly recognizing and killing cancer cells, while simultaneously
+suppressing B cell responses 1 . This shift in the immune landscape can tilt the scales
+from an immunosuppressive to an immunostimulatory state within the TME.
+Furthermore, artemisinins can remodel the phenotype of tumor-associated macrophages
+(TAMs). TAMs often exist in an M2 phenotype, which promotes tumor growth,
+angiogenesis, and immunosuppression. DHA has been shown to remodel TAMs into an
+anti-tumor M1 phenotype, a process that involves inducing ferroptosis in the TAMs
+
+themselves, leading to DNA damage and NF-κB activation that drives this phenotypic
+switch 14 .
+Another crucial aspect of artemisinin's immunomodulatory action is its ability to quell the
+activity of immunosuppressive cell populations. Regulatory T cells (Tregs) and myeloidderived suppressor cells (MDSCs) are major barriers to effective anti-tumor immunity,
+and artemisinins have been shown to counteract their function 21 . In a 4T1 tumor
+model, artesunate was found to inhibit prostaglandin production, which in turn
+decreased the expression of Foxp3, a key transcription factor for Treg development and
+function 21 . By dampening the immunosuppressive influence of Tregs and MDSCs,
+artemisinins can help unmask the tumor to the host's immune system, allowing effector T
+cells to function more effectively 21 .
+The impact of artemisinins extends to the non-cancerous cellular components of the TME,
+such as cancer-associated fibroblasts (CAFs). CAFs are a dominant stromal cell type that
+can support tumor progression and confer resistance to therapy. A study in breast cancer
+revealed that artemisinin derivatives can inactivate CAFs by suppressing the TGF-β
+signaling pathway, a key driver of CAF activation and function 11 . By targeting this
+supportive stroma, artemisinins can disrupt the physical and biochemical scaffolding that
+sustains the tumor, potentially enhancing the penetration and efficacy of other
+therapeutic agents.
+Artemisinins also modulate the expression of key immune-related molecules. For
+instance, DHA has been shown to restore immunogenicity and enhance anticancer
+immunosurveillance of cisplatin-treated cells by activating the PERK/eIF2alpha pathway
+1 . In colorectal cancer, artesunate was found to downregulate the levels of
+
+immunosuppressive cytokines TGF-β1 and IL-10 21 . Additionally, artemisinins can inhibit
+angiogenesis, a process that is not only vital for tumor growth but also shapes the TME by
+influencing immune cell infiltration; by inhibiting VEGF, they can normalize vasculature
+and improve immune cell access to the tumor 3 12 .
+The table below outlines the diverse immunomodulatory effects of artemisinins and their
+mechanisms.
+
+Immunomodulatory Effect
+
+Cancer
+
+Key Mechanism(s)
+
+Type(s)
+Induction of Immunogenic Cell
+
+Lung Cancer
+
+Death (ICD)
+Macrophage Phenotype
+
+DHA-triggered ferroptosis elicits ER stress and DNA damage, promoting DAMPs
+release 19 .
+
+Lung Cancer
+
+Remodeling
+
+Induces ferroptosis in TAMs, causing DNA damage and NF-κB activation, leading
+to an M1 anti-tumor phenotype 14 .
+
+Regulation of Immune Cell Balance
+
+General
+
+Promotes CD8(+) T cell activity; suppresses B cell responses
+
+Suppression of Immunosuppressive
+
+4T1 Tumor
+
+Inhibits prostaglandin production, decreasing Foxp3 expression in Tregs 21 .
+
+Cells
+
+Model
+
+Quells immunosuppression from Tregs and MDSCs 21 .
+
+Inactivation of Cancer-Associated
+
+Breast Cancer
+
+Suppresses TGF-β signaling in CAFs, leading to their inactivation 11 .
+
+Downregulation of
+
+Colorectal
+
+Downregulates TGF-β1 and IL-10 levels 21 .
+
+Immunosuppressive Cytokines
+
+Cancer
+
+Angiogenesis Inhibition
+
+Various
+
+1 .
+
+Fibroblasts (CAFs)
+
+Inhibits pro-angiogenic factors like VEGF, potentially normalizing vasculature to
+improve immune cell infiltration
+
+Targeting Cancer Stem Cells (CSCs)
+
+General
+
+3 12 .
+
+Inhibits CSC markers (e.g., Nanog, Oct3/4, ALDH1) and sphere formation ability,
+depleting a key source of tumor initiation and immune evasion 21 .
+
+These findings collectively paint a picture of artemisinins as multi-targeting agents that
+can remodel the TME from a hostile, immunosuppressive fortress into a more permissive
+environment for anti-tumor immunity. This immunomodulatory capacity provides a
+strong rationale for exploring artemisinin-based combination therapies with immune
+checkpoint inhibitors (ICIs), such as anti-PD-1 or anti-CTLA-4 antibodies. The theory is
+that by inducing ICD and reducing immunosuppression, artemisinins could convert "cold"
+tumors (non-inflamed, non-responsive to ICIs) into "hot" tumors (inflamed, likely to
+respond to ICIs). While this specific combination is more speculative based on the
+provided sources, the mechanistic groundwork has been laid. The ability to target not
+only the cancer cells but also the surrounding stroma and the infiltrating immune cells
+positions artemisinins as uniquely suited for modern, integrated cancer treatment
+paradigms that seek to harness the power of the patient's own immune system.
+
+Research Landscape, Future Directions, and Unresolved
+Challenges
+The five-year period from 2021 to 2026 has been transformative for artemisinin-based
+oncology, marking a maturation of the field from initial curiosity about its anticancer
+potential to a sophisticated, mechanism-driven research program. The global research
+
+landscape, as analyzed through bibliometric studies, reveals a vibrant and growing
+scientific community, with China leading in publication output, followed by the United
+States and Germany 8 . The intense focus on topics such as 'ferroptosis', 'nanoparticles',
+'combination therapy', and specific cancers like 'lung' and 'colorectal' underscores the key
+thematic pillars driving current investigation 8 . As the field moves forward, it is guided
+by a clear set of future directions aimed at translating promising preclinical and early
+clinical findings into validated clinical practice, while grappling with significant
+unresolved challenges.
+A comprehensive review of the literature and citation bursts from 2018–2023 highlights
+several key future directions for artemisinin-based cancer therapy 8 . The first and most
+critical is the expansion and optimization of clinical trials. While Phase I studies have
+successfully established safety, there is an urgent need for larger, randomized, and
+controlled Phase II and Phase III trials to validate the modest efficacy signals observed in
+smaller studies, particularly in the adjuvant setting for cancers like colorectal cancer 3
+14 . These trials must be designed to assess hard endpoints like disease-free and overall
+
+survival to provide definitive proof of clinical benefit. A second major direction is the
+continued development of optimized drug delivery systems, especially nanoparticles and
+other nanocarriers 3 8 . The profound improvements in efficacy and reductions in
+toxicity seen in preclinical models with nanoformulations demand their translation into
+clinical development to fully realize the therapeutic potential of artemisinins 3 .
+Thirdly, there is a concerted effort to elucidate the intricate molecular mechanisms of
+action in greater detail and to expand the portfolio of novel derivatives and hybrid
+molecules 8 . The discovery of new targets, such as PARP1 for the dimer ZQJ29, opens
+new avenues for application and provides a basis for selecting appropriate patient
+populations 7 . Finally, a growing focus is being placed on targeting the tumor
+microenvironment, including cancer-associated fibroblasts and the immune cell infiltrate,
+as a strategy to overcome resistance and enhance the durability of responses 8 11 21 .
+The overarching vision is to move away from artemisinin as a simple cytotoxic agent and
+toward its use as a precision tool in multimodal regimens, informed by predictive
+biomarkers.
+Despite this forward momentum, several critical gaps and unresolved challenges remain.
+The most significant is the lack of large-scale efficacy data in humans 8 . All claims of
+clinical benefit are currently based on preliminary, small-scale studies, and the absence of
+positive Phase III trial results means that artemisinins cannot yet be considered standardof-care anticancer agents. Bridging this translational gap is the single most important task
+for the field.
+
+A second major challenge is the identification and validation of reliable predictive
+biomarkers. The heterogeneous responses to artemisinin therapy suggest that not all
+patients or tumors will benefit equally. Research indicates that biomarkers related to iron
+metabolism (e.g., high TfR1 expression, high labile iron pools), the ferroptosis pathway
+(e.g., low GPX4 or SLC7A11 expression), and p53 status could be indicative of sensitivity
+2 14 . However, these hypotheses require rigorous clinical validation in prospective trials
+
+to guide patient selection and ensure that future studies enroll the patients most likely to
+respond.
+Optimal dosing and scheduling present another set of practical challenges. The ideal
+dose, route of administration (oral vs. IV), frequency, and duration of treatment for
+different cancer types are largely unknown 8 . While Phase I studies provide starting
+points, these parameters will need to be optimized through dose-ranging studies to
+maximize efficacy while managing toxicity. The observation that adverse events can
+increase with higher oral doses of artesunate highlights the importance of finding the
+right therapeutic window for each indication 21 .
+The long-term safety profile of chronic oral artemisinin administration is also not fully
+understood. While short-to-medium term studies have shown good tolerability, the
+potential for cumulative toxicity, particularly concerning the neurological and auditory
+systems which have shown transient adverse events in some trials, warrants careful
+monitoring in long-term studies 21 . Understanding and mitigating these long-term risks
+is essential for applications like chemoprevention or adjuvant maintenance therapy.
+Finally, the inevitable development of resistance poses a long-term threat to the utility of
+any single-agent therapy. Cancer cells possess remarkable adaptability and can
+upregulate antioxidant pathways, alter iron metabolism, or mutate key signaling nodes to
+evade cell death 14 . Future research must focus on understanding these resistance
+mechanisms and designing rational combination strategies that preempt or overcome
+them. For example, combining artemisinins with inhibitors of compensatory survival
+pathways could prevent resistance from emerging.
+In conclusion, the five-year period from 2021 to 2026 has solidified artemisinin's position
+as a compelling and versatile platform for anticancer drug development. The field has
+gained a deep mechanistic understanding centered on ferroptosis, initiated the crucial
+work of clinical translation with a focus on safety, and launched an innovative second
+wave of research focused on novel derivatives and advanced delivery systems. The path
+ahead is clear but demanding. It requires a bifurcated approach: on one hand, conducting
+rigorous, large-scale clinical trials to validate the promising signals already observed; and
+
+on the other, continuing to leverage cutting-edge chemistry and nanotechnology to
+engineer the next generation of artemisinin-based therapeutics. By addressing the critical
+challenges of efficacy, biomarker identification, and long-term safety, artemisinin-based
+therapies hold the potential to become a meaningful addition to the oncologist's arsenal
+in the coming decade.
+
+Reference
+1. Artemisinin derivatives differently affect cell death of lung cancer ... https://
+www.nature.com/articles/s41420-025-02537-2
+2. The Potential Mechanisms by which Artemisinin and Its Derivatives ... https://
+pmc.ncbi.nlm.nih.gov/articles/PMC8752222/
+3. Repurposing Artemisinin and its Derivatives as Anticancer Drugs https://
+www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2021.828856/
+full
+4. Ferroptosis triggered by dihydroartemisinin facilitates chlorin e6 ... https://
+www.sciencedirect.com/science/article/abs/pii/S0014299922000589
+5. Artemisinin and Its Derivatives as Potential Anticancer Agents - MDPI https://
+www.mdpi.com/1420-3049/29/16/3886
+6. Insights into emerging mechanisms of ferroptosis: new regulators for ... https://
+link.springer.com/article/10.1007/s10565-025-10010-0
+7. Novel Cyano‐Artemisinin Dimer ZQJ29 Targets PARP1 to Induce ... https://
+advanced.onlinelibrary.wiley.com/doi/10.1002/advs.202501935
+8. Bibliometric and Visualized Analysis of Artemisinin and Its ... - PMC https://
+pmc.ncbi.nlm.nih.gov/articles/PMC12227322/
+9. Mechanistic Investigation of the Specific Anticancer Property of ... https://
+pubs.acs.org/doi/10.1021/acscentsci.7b00156
+10. A comprehensive overview of Artemisinin and its derivatives as ... https://
+www.sciencedirect.com/science/article/abs/pii/S0223523422009023
+11. Medicinal and mechanistic overview of artemisinin in the treatment ... https://
+www.sciencedirect.com/science/article/pii/S075333222300656X
+12. Artemisinin and Its Derivatives from Molecular Mechanisms ... - MDPI https://
+www.mdpi.com/1422-0067/26/17/8409
+
+13. Osimertinib and dihydroartemisinin: a novel drug combination ... - ATM https://
+atm.amegroups.org/article/view/31490/html
+14. Full article: Repurposing Artemisinin-Based Drugs from Antimalarial ... https://
+www.tandfonline.com/doi/full/10.2147/DDDT.S545163
+15. A phase I study of intravenous artesunate in patients with ... - PubMed https://
+pubmed.ncbi.nlm.nih.gov/29392450/
+16. Prospective open uncontrolled phase I study to define a ... - PubMed https://
+pubmed.ncbi.nlm.nih.gov/28439738/
+17. Artemisinins as a novel anti-cancer therapy: Targeting a global ... https://
+pmc.ncbi.nlm.nih.gov/articles/PMC7564301/
+18. Long-term add-on therapy (compassionate use) with oral artesunate ... https://
+pubmed.ncbi.nlm.nih.gov/30668363/
+19. Dihydroartemisinin elicits immunogenic death through ferroptosis ... https://
+www.sciencedirect.com/science/article/abs/pii/S0944711323000429
+20. Artemisinin and its derivatives in cancer therapy: status of progress ... https://
+www.semanticscholar.org/paper/ef4d3a45e4e63bb66861942263745be03acb1de5
+21. Artemisinins as Anticancer Drugs: Novel Therapeutic Approaches ... https://
+www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2020.529881/
+full
+
+

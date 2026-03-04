@@ -1,0 +1,58 @@
+# Benchside Codebase Overview
+
+Benchside is a full-stack AI platform designed for high-density academic and medical research. It features a sophisticated "Deep Research" pipeline that performs multi-step planning, parallel searching across scientific databases, and synthesis into 25k-token academic reports.
+
+## Tech Stack
+
+### Backend
+- **Framework**: FastAPI (Python)
+- **Runtime**: Uvicorn
+- **Database**: Supabase (PostgreSQL)
+- **AI Providers**: Multi-provider routing (NVIDIA NIM, Groq, Pollinations, Mistral AI)
+- **Embeddings**: Mistral Embeddings (1024 dimensions)
+- **Research Tools**: PubMed API, Semantic Scholar, Tavily, Serper, DuckDuckGo
+
+### Frontend
+- **Framework**: Next.js (TypeScript/React)
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **State Management**: Custom React Contexts and Hooks
+
+## Directory Structure
+
+- `/backend`: FastAPI application
+    - `/app/api`: REST and SSE endpoints
+    - `/app/services`: Core logic (Deep Research, RAG, Auth, Multi-provider routing)
+    - `/app/models`: Database and Pydantic models
+- `/frontend`: Next.js application
+    - `/src/app/chat`: Main chat interface and routing
+    - `/src/components/chat`: UI components for chat, streaming, and research progress
+    - `/src/hooks`: Custom hooks for state management and streaming
+- `/deployment`: Configuration for Lightsail VPS and PM2
+
+## Key Service Components
+
+### 🧠 Deep Research Service (`backend/app/services/deep_research.py`)
+Orchestrates the multi-phase research pipeline:
+1. **Planner**: Breaks down complex queries into research steps.
+2. **Researcher**: Executes parallel searches across PubMed, Semantic Scholar, and Web.
+3. **Reviewer**: Evaluates finding sufficiency and triggers recursion if gaps exist.
+4. **Writer**: Synthesizes 25k-token academic reports with full APA citations.
+
+### 📡 Multi-Provider Service (`backend/app/services/multi_provider.py`)
+Handles intelligent routing between AI providers:
+- **Fast Mode**: Groq/Llama-8B
+- **Detailed Mode**: NVIDIA/Llama-70B
+- **Elite Mode**: Pollinations/Gemini-Fast (used for 25k token report synthesis)
+
+### 📂 Enhanced RAG Service (`backend/app/services/enhanced_rag.py`)
+Manages document ingestion and retrieval:
+- Supports PDF, DOCX, PPTX, XLSX, CSV, and SDF.
+- Uses Mistral-Embed for vectorization and Supabase for storage.
+
+## Developer Instructions
+
+- **Deployment**: Use `rsync` to sync `/backend` to the VPS and restart via PM2 (`pm2 restart benchside-api`). Path: `/var/www/benchside-backend/`.
+- **Frontend Build**: Always run `npm run build` locally before pushing to verify type safety.
+- **Environment Variables**: Managed via `.env`. Requires keys for NVIDIA, Groq, Pollinations, and PubMed.

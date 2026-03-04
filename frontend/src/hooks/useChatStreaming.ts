@@ -396,16 +396,14 @@ export function useChatStreaming(state: any) {
                             }
                         },
                         onDone: () => {
-                            streamer.flush();
+                            streamer.markComplete();
                         },
                         onError: (error) => {
+                            streamer.flush(); // On error, dump immediately
                             throw error;
                         }
                     });
 
-                    if (messageInserted) {
-                        updateMessage(lastContent);
-                    }
                     return;
                 } else {
                     throw new Error('Streaming not available or response failed');
@@ -546,7 +544,7 @@ export function useChatStreaming(state: any) {
                             }
                         },
                         onDone: () => {
-                            streamer.flush();
+                            streamer.markComplete();
                         }
                     });
 
