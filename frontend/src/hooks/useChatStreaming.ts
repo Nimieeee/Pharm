@@ -98,6 +98,8 @@ export function useChatStreaming(state: any) {
         isSendingRef.current.add(targetConvId);
         modeRef.current = mode;
 
+        let streamConversationId = conversationId;
+
         try {
             const token = localStorage.getItem('token');
             const parentId = messages.length > 0 && messages[messages.length - 1].id.includes('-') ? messages[messages.length - 1].id : undefined;
@@ -116,8 +118,6 @@ export function useChatStreaming(state: any) {
             setMessages((prev: Message[]) => [...prev, userMessage]);
             setUploadedFiles([]);
             setIsLoading(true);
-
-            let streamConversationId = conversationId;
 
             if (streamConversationId) {
                 const existingStream = activeStreams.get(streamConversationId);
@@ -150,6 +150,9 @@ export function useChatStreaming(state: any) {
                         streamConversationId = convData.id;
                         setConversationId(convData.id);
                         currentConvIdRef.current = convData.id;
+                        // Swap isSendingRef key so 'new' is no longer locked
+                        isSendingRef.current.delete('new');
+                        isSendingRef.current.add(streamConversationId);
                         addConversationToList({ id: convData.id, title: convData.title || generateConversationTitle(content) });
                     } else {
                         throw new Error('Failed to create conversation');
@@ -404,8 +407,8 @@ export function useChatStreaming(state: any) {
                 setIsLoading(false);
             }
         } finally {
-            isSendingRef.current.delete(conversationId || 'new');
-            if (conversationId) isSendingRef.current.delete(conversationId);
+            isSendingRef.current.delete(targetConvId);
+            if (streamConversationId) isSendingRef.current.delete(streamConversationId);
         }
     }, [conversationId, uploadedFiles, messages, mapMessageId]);
 
