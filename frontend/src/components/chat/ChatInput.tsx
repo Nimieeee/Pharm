@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Loader2, Zap, BookOpen, Search, Send, Square,
-  Paperclip, FileText, File, Table, XCircle, X
+  Paperclip, FileText, File, Table, XCircle, X, Mic, MicOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -45,8 +45,12 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Refs for click-outside detection
   const desktopMenuRef = useRef<HTMLDivElement>(null);
@@ -203,6 +207,89 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
     setMessage(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  };
+
+  // Audio recording handlers
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast.info(t('recording_start'));
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast.error(t('mic_error'));
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
+
+      const token = localStorage.getItem('token');
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      // Ensure HTTPS to prevent Mixed Content errors
+      if (apiUrl.startsWith('http://')) {
+        apiUrl = apiUrl.replace('http://', 'https://');
+      }
+
+      const response = await fetch(`${apiUrl}/api/v1/audio/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.text) {
+        setMessage(prev => prev ? `${prev} ${data.text}` : data.text);
+        toast.success(t('transcription_done'));
+        // Focus textarea
+        textareaRef.current?.focus();
+      } else {
+        toast.error(data.error || 'Transcription failed');
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      toast.error('Failed to transcribe audio');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   const currentMode = modes.find(m => m.id === mode)!;
@@ -397,6 +484,28 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
               {/* Right: Mic + Send/Stop Buttons */}
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10">
+                {/* Microphone Button */}
+                <motion.button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={isLoading || isTranscribing}
+                  whileTap={{ scale: 0.95 }}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : isTranscribing
+                      ? 'bg-[var(--surface-highlight)] text-[var(--accent)]'
+                      : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  title={isRecording ? t('stop_recording') : isTranscribing ? 'Transcribing...' : t('voice_input')}
+                >
+                  {isTranscribing ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff size={18} />
+                  ) : (
+                    <Mic size={18} />
+                  )}
+                </motion.button>
 
                 {/* Send/Stop Button */}
                 {isLoading ? (
@@ -575,7 +684,27 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
               {/* Right: Mic + Send/Stop Buttons */}
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
-
+                {/* Mobile Mic Button */}
+                <motion.button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={isLoading || isTranscribing}
+                  whileTap={{ scale: 0.95 }}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isRecording
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : isTranscribing
+                      ? 'bg-[var(--surface-highlight)] text-[var(--accent)] dark:bg-[#2A2A2A]'
+                      : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] dark:hover:bg-[#2A2A2A]'
+                    }`}
+                >
+                  {isTranscribing ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff size={16} />
+                  ) : (
+                    <Mic size={16} />
+                  )}
+                </motion.button>
                 {isLoading ? (
                   <motion.button
                     type="button"
