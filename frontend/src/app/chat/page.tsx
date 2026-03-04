@@ -264,7 +264,10 @@ function ChatContent() {
           <AnimatePresence>
             {!deepResearchProgress && isLoading && (
               messages.length === 0 ||
-              messages[messages.length - 1]?.role !== 'assistant'
+              (() => {
+                const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+                return !lastUserMsg || !branchData.get(lastUserMsg.id)?.length;
+              })()
             ) && (
                 <motion.div
                   key="thinking-indicator"

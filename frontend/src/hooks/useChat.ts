@@ -119,13 +119,15 @@ export function useChat() {
       if (response.ok) {
         const data = await response.json();
 
-        // 1. Process base messages
-        const loadedMessages: Message[] = (data.messages || []).map((msg: any) => ({
-          id: msg.id, role: msg.role, content: msg.content,
-          parentId: msg.parent_id || undefined, translations: msg.translations || undefined,
-          timestamp: new Date(msg.created_at), attachments: msg.metadata?.attachments || undefined,
-          mode: msg.metadata?.mode || undefined,
-        }));
+        // 1. Process base messages (only user messages belong in the layout loop now)
+        const loadedMessages: Message[] = (data.messages || [])
+          .filter((msg: any) => msg.role === 'user')
+          .map((msg: any) => ({
+            id: msg.id, role: msg.role, content: msg.content,
+            parentId: msg.parent_id || undefined, translations: msg.translations || undefined,
+            timestamp: new Date(msg.created_at), attachments: msg.metadata?.attachments || undefined,
+            mode: msg.metadata?.mode || undefined,
+          }));
         setMessages(loadedMessages);
 
         // 2. Process branchData mapping
