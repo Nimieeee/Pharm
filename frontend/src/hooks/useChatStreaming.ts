@@ -357,6 +357,11 @@ export function useChatStreaming(state: any) {
                         }
                     };
 
+                    let resolveStreamer: () => void;
+                    const streamerCompletePromise = new Promise<void>((resolve) => {
+                        resolveStreamer = resolve;
+                    });
+
                     const streamer = new TokenStreamer({
                         speed: mode === 'detailed' ? 15 : 25,
                         onUpdate: (streamedText) => {
@@ -372,6 +377,7 @@ export function useChatStreaming(state: any) {
                             } else {
                                 updateMessage(lastContent);
                             }
+                            resolveStreamer();
                         }
                     });
 
@@ -404,6 +410,7 @@ export function useChatStreaming(state: any) {
                         }
                     });
 
+                    await streamerCompletePromise;
                     return;
                 } else {
                     throw new Error('Streaming not available or response failed');
@@ -495,11 +502,15 @@ export function useChatStreaming(state: any) {
                     let currentUserMsgId = tempBranchId;
                     let lastContent = '';
 
+                    let resolveStreamer: () => void;
+                    const streamerCompletePromise = new Promise<void>((resolve) => {
+                        resolveStreamer = resolve;
+                    });
+
                     const streamer = new TokenStreamer({
                         speed: targetMode === 'deep_research' || targetMode === 'detailed' ? 15 : 25,
                         onUpdate: (streamedText) => {
                             const now = Date.now();
-                            // Ensure Thinking indicator shows for at least 400ms
                             if (!messageInserted) {
                                 const elapsed = now - editStartTime;
                                 if (elapsed < 400) {
@@ -507,7 +518,6 @@ export function useChatStreaming(state: any) {
                                     return;
                                 }
                             }
-                            // Always insert on first token (bypass throttle to prevent flicker)
                             if (!messageInserted || now - lastUpdateRef.current >= 150) {
                                 insertOrUpdateMessage(streamedText);
                                 lastUpdateRef.current = now;
@@ -519,6 +529,7 @@ export function useChatStreaming(state: any) {
                             } else {
                                 insertOrUpdateMessage(lastContent);
                             }
+                            resolveStreamer();
                         }
                     });
 
@@ -550,6 +561,7 @@ export function useChatStreaming(state: any) {
 
                     fetchBranchInfo(streamConversationId);
                     moveConversationToTop(streamConversationId);
+                    await streamerCompletePromise;
                 }
             } catch (streamError: any) {
                 if (streamError.name !== 'AbortError') {
