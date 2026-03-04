@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 
 // Shared store for active streams - allows sidebar to show spinners
+// and preserves stream state across conversation switches
 export const activeStreams = new Map<string, {
     abortController: AbortController;
     isLoading: boolean;
+    deepResearchProgress?: any;       // Preserved across conv switches
+    pendingMessages?: any[];           // Messages accumulated while user was away
 }>();
 
 // Subscribers for reactive updates

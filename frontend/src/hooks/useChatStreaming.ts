@@ -235,9 +235,18 @@ export function useChatStreaming(state: any) {
                                     plan_overview: progress.plan_overview || accumulatedState.plan_overview,
                                 };
 
+                                // ALWAYS write to global store (survives conversation switches)
+                                const streamEntry = activeStreams.get(streamConversationId);
+                                if (streamEntry) {
+                                    streamEntry.deepResearchProgress = { ...accumulatedState };
+                                }
+
                                 const now = Date.now();
                                 if (now - lastUpdateRef.current >= 50) {
-                                    setDeepResearchProgress({ ...accumulatedState });
+                                    // Only update React state if user is viewing this conversation
+                                    if (currentConvIdRef.current === streamConversationId) {
+                                        setDeepResearchProgress({ ...accumulatedState });
+                                    }
                                     lastUpdateRef.current = now;
                                 }
 
@@ -248,9 +257,21 @@ export function useChatStreaming(state: any) {
                         }
                     });
 
-                    setDeepResearchProgress(null);
+                    // Research complete — clear progress and add final message
                     const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: finalReport || 'Deep research completed.', timestamp: new Date(), parentId: userMessageId };
-                    setMessages((prev: Message[]) => [...prev, assistantMessage]);
+
+                    if (currentConvIdRef.current === streamConversationId) {
+                        // User is viewing this conversation — update React state directly
+                        setDeepResearchProgress(null);
+                        setMessages((prev: Message[]) => [...prev, assistantMessage]);
+                    } else {
+                        // User navigated away — store the final message for retrieval
+                        const streamEntry = activeStreams.get(streamConversationId);
+                        if (streamEntry) {
+                            streamEntry.deepResearchProgress = null;
+                            streamEntry.pendingMessages = [assistantMessage];
+                        }
+                    }
                     return;
                 }
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { API_BASE_URL, UPLOAD_BASE_URL } from '@/config/api';
 import { useChatState, clearMessageCache } from './useChatState';
 import { useChatStreaming } from './useChatStreaming';
-import { isConversationStreaming } from './useStreamingState';
+import { isConversationStreaming, activeStreams } from './useStreamingState';
 import { Message } from '@/components/chat/ChatMessage';
 
 export { clearMessageCache };
@@ -70,12 +70,36 @@ export function useChat() {
 
     currentConvIdRef.current = convId;
     setConversationId(convId);
-    setDeepResearchProgress(null);
 
-    // Immediately reset loading state to avoid cross-conversation blocking
-    setIsLoading(isConversationStreaming(convId));
+    // Check if this conversation has an active stream with preserved state
+    const streamState = activeStreams.get(convId);
+    if (streamState && isConversationStreaming(convId)) {
+      // Restore deep research progress from global store
+      if (streamState.deepResearchProgress) {
+        setDeepResearchProgress(streamState.deepResearchProgress);
+      } else {
+        setDeepResearchProgress(null);
+      }
+      setIsLoading(true);
+    } else {
+      // No active stream — reset progress
+      setDeepResearchProgress(null);
+      setIsLoading(false);
+    }
 
-    if (isConversationStreaming(convId)) setIsLoading(true);
+    // Check for pending messages (e.g., deep research completed while user was away)
+    if (streamState?.pendingMessages && streamState.pendingMessages.length > 0) {
+      const pending = [...streamState.pendingMessages];
+      streamState.pendingMessages = []; // Clear after consuming
+      // Will be merged after loading messages from API below
+      setTimeout(() => {
+        setMessages((prev: Message[]) => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMsgs = pending.filter(m => !existingIds.has(m.id));
+          return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
+        });
+      }, 500); // Small delay to let API messages load first
+    }
 
     import('./useChatState').then(({ cacheGet }) => {
       const cachedMessages = cacheGet(convId);
