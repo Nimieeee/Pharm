@@ -266,7 +266,7 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
         <MarkdownRenderer
           content={displayContent}
           isAnimating={isStreaming}
-          className="markdown-content w-full"
+          className={`markdown-content w-full ${isStreaming ? 'streaming-text' : ''}`}
         />
       </div>
 

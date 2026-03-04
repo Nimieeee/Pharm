@@ -1,5 +1,5 @@
 export interface StreamHandlers<T = any> {
-    onContent: (content: string) => void;
+    onContent: (content: string, token?: string) => void;
     onMeta?: (meta: any) => void;
     onDone?: () => void;
     onError?: (error: Error) => void;
@@ -75,7 +75,7 @@ export async function processSSEStream(
                     }
 
                     fullContent += textContent;
-                    handlers.onContent(fullContent);
+                    handlers.onContent(fullContent, textContent);
                 }
             }
         }
@@ -95,7 +95,7 @@ export async function processSSEStream(
                         textContent = data.replace(/\\n/g, '\n');
                     }
                     fullContent += textContent;
-                    handlers.onContent(fullContent);
+                    handlers.onContent(fullContent, textContent);
                 }
             }
         }

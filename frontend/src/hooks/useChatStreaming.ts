@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { Message } from '@/components/chat/ChatMessage';
 import { API_BASE_URL, UPLOAD_BASE_URL } from '@/config/api';
 import { processSSEStream } from '@/utils/streamReader';
+import { TokenStreamer } from '@/utils/TokenStreamer';
 import { activeStreams, registerStream, unregisterStream, isConversationStreaming } from './useStreamingState';
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
 import { Mode, cacheSet, DeepResearchProgress, generateStableClientId } from './useChatState';
@@ -356,6 +357,24 @@ export function useChatStreaming(state: any) {
                         }
                     };
 
+                    const streamer = new TokenStreamer({
+                        speed: mode === 'detailed' ? 15 : 25,
+                        onUpdate: (streamedText) => {
+                            const now = Date.now();
+                            if (!messageInserted || now - lastUpdateRef.current >= CONTENT_UPDATE_THROTTLE_MS) {
+                                insertOrUpdateMessage(streamedText);
+                                lastUpdateRef.current = now;
+                            }
+                        },
+                        onComplete: (finalText) => {
+                            if (!messageInserted) {
+                                insertOrUpdateMessage(lastContent || 'No response generated.');
+                            } else {
+                                updateMessage(lastContent);
+                            }
+                        }
+                    });
+
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
                             // FIX: Don't change user message ID - just map it for backend references
@@ -366,21 +385,18 @@ export function useChatStreaming(state: any) {
                                 mapMessageId?.(assistantMessageId, meta.assistant_message_id);
                             }
                         },
-                        onContent: (fullContent) => {
+                        onContent: (fullContent, token) => {
                             lastContent = fullContent;
-                            const now = Date.now();
-                            // Always insert on first token (bypass throttle to prevent flicker)
-                            if (!messageInserted || now - lastUpdateRef.current >= CONTENT_UPDATE_THROTTLE_MS) {
-                                insertOrUpdateMessage(fullContent);
-                                lastUpdateRef.current = now;
+                            // Add tokens to the buffer
+                            if (token) {
+                                streamer.addTokens([token]);
+                            } else if (!messageInserted) {
+                                // Fallback if no specific token provided on first chunk
+                                streamer.addTokens([fullContent]);
                             }
                         },
                         onDone: () => {
-                            if (!messageInserted) {
-                                insertOrUpdateMessage(lastContent || 'No response generated.');
-                            } else {
-                                updateMessage(lastContent);
-                            }
+                            streamer.flush();
                         },
                         onError: (error) => {
                             throw error;
@@ -439,6 +455,7 @@ export function useChatStreaming(state: any) {
             });
 
             setIsLoading(true);
+            const editStartTime = Date.now();
             const streamConversationId = conversationId;
             const abortController = new AbortController();
             registerStream(streamConversationId, abortController);
@@ -479,6 +496,34 @@ export function useChatStreaming(state: any) {
 
                     let currentUserMsgId = tempBranchId;
                     let lastContent = '';
+
+                    const streamer = new TokenStreamer({
+                        speed: targetMode === 'deep_research' || targetMode === 'detailed' ? 15 : 25,
+                        onUpdate: (streamedText) => {
+                            const now = Date.now();
+                            // Ensure Thinking indicator shows for at least 400ms
+                            if (!messageInserted) {
+                                const elapsed = now - editStartTime;
+                                if (elapsed < 400) {
+                                    setTimeout(() => insertOrUpdateMessage(streamedText), 400 - elapsed);
+                                    return;
+                                }
+                            }
+                            // Always insert on first token (bypass throttle to prevent flicker)
+                            if (!messageInserted || now - lastUpdateRef.current >= 150) {
+                                insertOrUpdateMessage(streamedText);
+                                lastUpdateRef.current = now;
+                            }
+                        },
+                        onComplete: (finalText) => {
+                            if (!messageInserted) {
+                                insertOrUpdateMessage(lastContent || 'No response generated.');
+                            } else {
+                                insertOrUpdateMessage(lastContent);
+                            }
+                        }
+                    });
+
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
                             if (meta.user_message_id) {
@@ -492,27 +537,18 @@ export function useChatStreaming(state: any) {
                                 assistantMessage.id = meta.assistant_message_id;
                             }
                         },
-                        onContent: (fullContent) => {
+                        onContent: (fullContent, token) => {
                             lastContent = fullContent;
-                            const now = Date.now();
-                            // Always insert on first token (bypass throttle to prevent flicker)
-                            if (!messageInserted || now - lastUpdateRef.current >= 150) {
-                                insertOrUpdateMessage(fullContent);
-                                lastUpdateRef.current = now;
+                            if (token) {
+                                streamer.addTokens([token]);
+                            } else if (!messageInserted) {
+                                streamer.addTokens([fullContent]);
                             }
                         },
                         onDone: () => {
-                            if (!messageInserted) {
-                                insertOrUpdateMessage(lastContent || 'No response generated.');
-                            } else {
-                                insertOrUpdateMessage(lastContent);
-                            }
+                            streamer.flush();
                         }
                     });
-
-                    if (messageInserted) {
-                        insertOrUpdateMessage(lastContent);
-                    }
 
                     fetchBranchInfo(streamConversationId);
                     moveConversationToTop(streamConversationId);
