@@ -35,6 +35,7 @@ function cleanMermaidSyntax(raw: string): string {
         line = line.replace(/([A-Za-z0-9_]+)\s+(\[)/g, '$1$2');
         line = line.replace(/([A-Za-z0-9_]+)\s+(\()/g, '$1$2');
         line = line.replace(/([A-Za-z0-9_]+)\s+(\{)/g, '$1$2');
+        line = line.replace(/([A-Za-z0-9_]+)\s+(\))/g, '$1$2');
 
         // --- FIX 3: Spaces after pipe closing in edge labels ---
         // e.g. "-->|Kidney| V[" → "-->|Kidney|V["
@@ -44,18 +45,32 @@ function cleanMermaidSyntax(raw: string): string {
         // e.g. "-->|Label|> B[" → "-->|Label| B["
         line = line.replace(/\|>/g, '|');
         line = line.replace(/->>/g, '-->');
+        
+        // --- FIX 5: Invalid arrow patterns ---
+        // Fix multiple dashes or dots
+        line = line.replace(/-+>/g, '-->');
+        line = line.replace(/<-+/g, '<--');
+        line = line.replace(/=\s*=/g, '==');
+        line = line.replace(/\.\s*\./g, '..');
 
-        // --- FIX 5: Style line fixes ---
-        // 4a. Extra spaces between "style" and node ID: "style  B fill" → "style B fill"
+        // --- FIX 6: Style line fixes ---
+        // 6a. Extra spaces between "style" and node ID: "style  B fill" → "style B fill"
         line = line.replace(/^(\s*style)\s{2,}([A-Za-z0-9_-]+)/g, '$1 $2');
-        // 4b. Spaces inside hex color values: "fill:# f88" or "fill:#f 88" → "fill:#f88"
+        // 6b. Spaces inside hex color values: "fill:# f88" or "fill:#f 88" → "fill:#f88"
         line = line.replace(/(fill|stroke|color):#\s+([a-fA-F0-9])/g, '$1:#$2');
         line = line.replace(/(fill|stroke|color):#([a-fA-F0-9]+)\s+([a-fA-F0-9]+)/g, '$1:#$2$3');
-        // 4c. Spaces around colon in style props: "fill: #fff" → "fill:#fff"
+        // 6c. Spaces around colon in style props: "fill: #fff" → "fill:#fff"
         line = line.replace(/(fill|stroke|color)\s*:\s+#/g, '$1:#');
-        // 4d. Spaces around comma in style defs: "#fff, stroke" → "#fff,stroke"
+        // 6d. Spaces around comma in style defs: "#fff, stroke" → "#fff,stroke"
         line = line.replace(/(fill|stroke|color):#[a-fA-F0-9]+,\s+(fill|stroke|color)/g,
             (match) => match.replace(', ', ','));
+        
+        // --- FIX 7: Invalid node ID characters (hyphens) ---
+        // Replace hyphens in node IDs with underscores (but not in labels)
+        line = line.replace(/(^|-->|--|<-->|<--|\.->|-.->)\s*([A-Za-z][A-Za-z0-9-]*)\s*(\[|\(|\{|\))/g, 
+            (match, prefix, id, bracket) => {
+                return `${prefix}${id.replace(/-/g, '_')}${bracket}`;
+            });
 
         return line;
     });
