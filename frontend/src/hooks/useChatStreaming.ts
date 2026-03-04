@@ -28,33 +28,20 @@ export function useChatStreaming(state: any) {
         conversationId, setConversationId,
         deepResearchProgress, setDeepResearchProgress,
         uploadedFiles, setUploadedFiles,
-        branchMap, setBranchMap,
+        branchData, setBranchData,
+        activeBranches, setActiveBranches,
         currentConvIdRef,
         lastUpdateRef,
-        isSendingRef, // Now a Set<string>
+        isSendingRef,
         modeRef,
-        mapMessageId,  // NEW: for stable ID mapping
-        getStableKey,  // NEW: for stable React keys
+        mapMessageId,
+        getStableKey,
     } = state;
 
     // Track scroll position to prevent jitter
     const lastScrollTimeRef = useRef<number>(0);
 
-    const fetchBranchInfo = useCallback(async (convId: string) => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-            const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat/conversations/${convId}/branch-info`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setBranchMap(data);
-            }
-        } catch (e) {
-            console.error('Failed to fetch branch info', e);
-        }
-    }, [setBranchMap]);
+    // fetchBranchInfo was removed as it is obsolete
 
     const generateImage = async (prompt: string, convId: string) => {
         const token = localStorage.getItem('token');
@@ -113,7 +100,6 @@ export function useChatStreaming(state: any) {
                 content: content.trim(),
                 timestamp: new Date(),
                 attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
-                parentId: parentId,
             };
 
             setMessages((prev: Message[]) => [...prev, userMessage]);
@@ -261,19 +247,40 @@ export function useChatStreaming(state: any) {
                         }
                     });
 
-                    // Research complete — clear progress and add final message
-                    const assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: finalReport || 'Deep research completed.', timestamp: new Date(), parentId: userMessageId };
+                    // Research complete — clear progress and add final branch
+                    const tempResponseId = assistantMessageId;
+                    const finalReportStr = finalReport || 'Deep research completed.';
 
                     if (currentConvIdRef.current === streamConversationId) {
-                        // User is viewing this conversation — update React state directly
                         setDeepResearchProgress(null);
-                        setMessages((prev: Message[]) => [...prev, assistantMessage]);
+                        setBranchData((prev: Map<string, any[]>) => {
+                            const newMap = new Map(prev);
+                            const branches = newMap.get(userMessageId) || [];
+                            const newBranch = {
+                                id: tempResponseId,
+                                user_message_id: userMessageId,
+                                branch_label: String.fromCharCode(65 + Math.min(branches.length, 25)),
+                                content: finalReportStr,
+                                is_active: true,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            };
+                            newMap.set(userMessageId, [...branches, newBranch]);
+                            return newMap;
+                        });
+                        setActiveBranches((prev: Map<string, string>) => {
+                            const newMap = new Map(prev);
+                            newMap.set(userMessageId, tempResponseId);
+                            return newMap;
+                        });
                     } else {
-                        // User navigated away — store the final message for retrieval
+                        // User navigated away — store the final message for retrieval.
+                        // Ideally we should refetch conversation on load, but we can stick it in messages as a fallback
                         const streamEntry = activeStreams.get(streamConversationId);
                         if (streamEntry) {
                             streamEntry.deepResearchProgress = null;
-                            streamEntry.pendingMessages = [assistantMessage];
+                            const fallbackMsg: Message = { id: assistantMessageId, role: 'assistant', content: finalReportStr, timestamp: new Date() };
+                            streamEntry.pendingMessages = [fallbackMsg];
                         }
                     }
                     return;
@@ -296,66 +303,50 @@ export function useChatStreaming(state: any) {
                 });
 
                 if (streamResponse.ok && streamResponse.body) {
-                    let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: userMessageId };
+                    const tempResponseId = assistantMessageId;
+                    let currentUserMsgId = userMessageId; // Will map to server ID on meta
                     const isCurrentConv = () => currentConvIdRef.current === streamConversationId;
 
-                    // Track the message by position instead of ID to avoid race conditions
-                    let messagePosition = -1;
-
-                    const updateMessage = (fullContent: string) => {
-                        if (!isCurrentConv()) return;
-
-                        setMessages((prev: Message[]) => {
-                            // If we know the position, use it directly
-                            if (messagePosition >= 0 && messagePosition < prev.length) {
-                                const msg = prev[messagePosition];
-                                if (msg.role === 'assistant') {
-                                    const updated = [...prev];
-                                    updated[messagePosition] = { ...msg, content: fullContent };
-                                    return updated;
-                                }
-                            }
-
-                            // Fallback: find by ID
-                            const index = prev.findIndex(m => m.id === assistantMessage.id);
-                            if (index >= 0) {
-                                messagePosition = index;
-                                const updated = [...prev];
-                                updated[index] = { ...prev[index], content: fullContent };
-                                return updated;
-                            }
-
-                            // Last resort: find last assistant message
-                            const lastAssistantIndex = prev.length - 1;
-                            if (lastAssistantIndex >= 0 && prev[lastAssistantIndex].role === 'assistant') {
-                                messagePosition = lastAssistantIndex;
-                                const updated = [...prev];
-                                updated[lastAssistantIndex] = { ...prev[lastAssistantIndex], content: fullContent };
-                                return updated;
-                            }
-
-                            return prev;
-                        });
-                    };
-
                     let messageInserted = false;
-                    let lastContent = '';
 
                     const insertOrUpdateMessage = (fullContent: string) => {
                         if (!isCurrentConv()) return;
+
+                        setBranchData((prev: Map<string, any[]>) => {
+                            const newMap = new Map(prev);
+                            const branches = newMap.get(currentUserMsgId) || [];
+                            const existingIndex = branches.findIndex(b => b.id === tempResponseId);
+
+                            if (existingIndex >= 0) {
+                                const newBranches = [...branches];
+                                newBranches[existingIndex] = { ...newBranches[existingIndex], content: fullContent };
+                                newMap.set(currentUserMsgId, newBranches);
+                            } else {
+                                const newBranch = {
+                                    id: tempResponseId,
+                                    user_message_id: currentUserMsgId,
+                                    branch_label: String.fromCharCode(65 + Math.min(branches.length, 25)),
+                                    content: fullContent,
+                                    is_active: true,
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString(),
+                                };
+                                newMap.set(currentUserMsgId, [...branches, newBranch]);
+                            }
+                            return newMap;
+                        });
+
                         if (!messageInserted) {
-                            // Insert on first token to prevent flicker
-                            assistantMessage = { ...assistantMessage, content: fullContent };
-                            setMessages((prev: Message[]) => {
-                                const newMessages = [...prev, assistantMessage];
-                                messagePosition = newMessages.length - 1;
-                                return newMessages;
+                            setActiveBranches((prev: Map<string, string>) => {
+                                const newMap = new Map(prev);
+                                newMap.set(currentUserMsgId, tempResponseId);
+                                return newMap;
                             });
                             messageInserted = true;
-                        } else {
-                            updateMessage(fullContent);
                         }
                     };
+
+                    let lastContent = '';
 
                     let resolveStreamer: () => void;
                     const streamerCompletePromise = new Promise<void>((resolve) => {
@@ -372,11 +363,7 @@ export function useChatStreaming(state: any) {
                             }
                         },
                         onComplete: (finalText) => {
-                            if (!messageInserted) {
-                                insertOrUpdateMessage(lastContent || 'No response generated.');
-                            } else {
-                                updateMessage(lastContent);
-                            }
+                            insertOrUpdateMessage(lastContent || 'No response generated.');
                             resolveStreamer();
                         }
                     });
@@ -433,32 +420,18 @@ export function useChatStreaming(state: any) {
         }
     }, [conversationId, uploadedFiles, messages, mapMessageId]);
 
-    const editMessage = useCallback(async (messageId: string, newContent: string) => {
-        const messageToEdit = messages.find((m: Message) => m.id === messageId);
-        const targetMode = messageToEdit?.mode || modeRef.current;
+    // editMessage was repurposed to regenerateResponse, since users no longer edit their own messages
+    // instead, they regenerate a new branch off an existing user message
+    const regenerateResponse = useCallback(async (userMessageId: string) => {
+        const userMessage = messages.find((m: Message) => m.id === userMessageId);
+        if (!userMessage) return;
+
+        const targetMode = userMessage.mode || modeRef.current;
         const token = localStorage.getItem('token');
 
-        if (!token || !conversationId) {
-            setMessages((prev: Message[]) => prev.map(msg => msg.id === messageId ? { ...msg, content: newContent } : msg));
-            return;
-        }
+        if (!token || !conversationId) return;
 
         try {
-            // Replace the local user message immediately with a temporary ID
-            const tempBranchId = 'branch_' + Date.now().toString();
-            setMessages((prev: Message[]) => {
-                const editIdx = prev.findIndex(m => m.id === messageId);
-                if (editIdx < 0) return prev;
-                const before = prev.slice(0, editIdx);
-                const newUserMsg: Message = {
-                    id: tempBranchId, role: 'user', content: newContent,
-                    parentId: messageToEdit?.parentId || undefined,
-                    timestamp: new Date(),
-                    mode: targetMode,
-                };
-                return [...before, newUserMsg];
-            });
-
             setIsLoading(true);
             const editStartTime = Date.now();
             const streamConversationId = conversationId;
@@ -470,36 +443,55 @@ export function useChatStreaming(state: any) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({
-                        message: newContent, conversation_id: streamConversationId,
+                        message: userMessage.content, conversation_id: streamConversationId,
                         mode: targetMode, use_rag: true, language: 'en',
-                        parent_id: messageToEdit?.parentId || undefined,
+                        parent_id: userMessage.parentId || undefined,
                     }),
                     signal: abortController.signal,
                 });
 
                 if (streamResponse.ok && streamResponse.body) {
-                    const assistantMessageId = (Date.now() + 1).toString();
-                    let assistantMessage: Message = { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date(), parentId: tempBranchId };
-
+                    const tempResponseId = generateStableClientId();
+                    let currentUserMsgId = userMessage.id;
                     let messageInserted = false;
 
                     const insertOrUpdateMessage = (fullContent: string) => {
                         if (currentConvIdRef.current !== streamConversationId) return;
 
-                        assistantMessage = { ...assistantMessage, content: fullContent };
+                        setBranchData((prev: Map<string, any[]>) => {
+                            const newMap = new Map(prev);
+                            const branches = newMap.get(currentUserMsgId) || [];
+                            const existingIndex = branches.findIndex(b => b.id === tempResponseId);
+
+                            if (existingIndex >= 0) {
+                                const newBranches = [...branches];
+                                newBranches[existingIndex] = { ...newBranches[existingIndex], content: fullContent };
+                                newMap.set(currentUserMsgId, newBranches);
+                            } else {
+                                const newBranch = {
+                                    id: tempResponseId,
+                                    user_message_id: currentUserMsgId,
+                                    branch_label: String.fromCharCode(65 + Math.min(branches.length, 25)),
+                                    content: fullContent,
+                                    is_active: true,
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString(),
+                                };
+                                newMap.set(currentUserMsgId, [...branches, newBranch]);
+                            }
+                            return newMap;
+                        });
+
                         if (!messageInserted) {
-                            setMessages((prev: Message[]) => [...prev, assistantMessage]);
-                            messageInserted = true;
-                        } else {
-                            setMessages((prev: Message[]) => {
-                                const targetId = assistantMessage.id;
-                                const exists = prev.some(m => m.id === targetId);
-                                return exists ? prev.map(m => m.id === targetId ? assistantMessage : m) : [...prev, assistantMessage];
+                            setActiveBranches((prev: Map<string, string>) => {
+                                const newMap = new Map(prev);
+                                newMap.set(currentUserMsgId, tempResponseId);
+                                return newMap;
                             });
+                            messageInserted = true;
                         }
                     };
 
-                    let currentUserMsgId = tempBranchId;
                     let lastContent = '';
 
                     let resolveStreamer: () => void;
@@ -524,11 +516,7 @@ export function useChatStreaming(state: any) {
                             }
                         },
                         onComplete: (finalText) => {
-                            if (!messageInserted) {
-                                insertOrUpdateMessage(lastContent || 'No response generated.');
-                            } else {
-                                insertOrUpdateMessage(lastContent);
-                            }
+                            insertOrUpdateMessage(lastContent || 'No response generated.');
                             resolveStreamer();
                         }
                     });
@@ -536,14 +524,7 @@ export function useChatStreaming(state: any) {
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
                             if (meta.user_message_id) {
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === currentUserMsgId ? { ...msg, id: meta.user_message_id } : msg));
                                 currentUserMsgId = meta.user_message_id;
-                                assistantMessage.parentId = meta.user_message_id;
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, parentId: meta.user_message_id } : msg));
-                            }
-                            if (meta.assistant_message_id) {
-                                setMessages((prev: Message[]) => prev.map(msg => msg.id === assistantMessage.id ? { ...msg, id: meta.assistant_message_id } : msg));
-                                assistantMessage.id = meta.assistant_message_id;
                             }
                         },
                         onContent: (fullContent, token) => {
@@ -559,23 +540,20 @@ export function useChatStreaming(state: any) {
                         }
                     });
 
-                    fetchBranchInfo(streamConversationId);
                     moveConversationToTop(streamConversationId);
                     await streamerCompletePromise;
                 }
             } catch (streamError: any) {
-                if (streamError.name !== 'AbortError') {
-                    setMessages((prev: Message[]) => [...prev, { id: 'err', role: 'assistant', content: 'Connection lost.', timestamp: new Date() }]);
-                }
+                // Ignore aborts
             } finally {
                 unregisterStream(streamConversationId);
                 setIsLoading(false);
             }
         } catch (error) {
-            console.error('Edit error:', error);
+            console.error('Regenerate error:', error);
             setIsLoading(false);
         }
-    }, [conversationId, messages]);
+    }, [conversationId, messages, setBranchData, setActiveBranches]);
 
-    return { sendMessage, stopGeneration, editMessage, fetchBranchInfo };
+    return { sendMessage, stopGeneration, regenerateResponse };
 }

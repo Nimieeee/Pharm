@@ -21,7 +21,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isConversationLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, editMessage, regenerateMessage, deleteMessage, branchMap, navigateBranch } = useChatContext();
+  const { messages, isLoading, isConversationLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, regenerateMessage, deleteMessage, branchData, activeBranches, regenerateResponse, switchBranch, deleteBranch } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { t, language } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -180,24 +180,57 @@ function ChatContent() {
               currentMode={mode}
             />
           ) : (
-            // FIX: Remove AnimatePresence during streaming to prevent exit/enter animation conflicts
-            // Messages use stable IDs so React doesn't remount them unnecessarily
-            messages.map((msg, index) => (
-              <div key={msg.id}>
-                <MemoizedChatMessage
-                  message={{
-                    ...msg,
-                    branchIndex: branchMap[msg.id]?.branchIndex,
-                    branchCount: branchMap[msg.id]?.branchCount,
-                  }}
-                  isStreaming={isLoading && index === messages.length - 1 && msg.role === 'assistant'}
-                  onEdit={editMessage}
-                  onRegenerate={msg.role === 'assistant' ? () => regenerateMessage(msg.id) : undefined}
-                  onDelete={deleteMessage}
-                  onBranchNavigate={navigateBranch}
-                />
-              </div>
-            ))
+            messages.map((msg, index) => {
+              if (msg.role !== 'user') {
+                return (
+                  <div key={msg.id}>
+                    <MemoizedChatMessage
+                      message={msg}
+                      isStreaming={isLoading && index === messages.length - 1}
+                      onDelete={deleteMessage}
+                    />
+                  </div>
+                );
+              }
+
+              const userMsg = msg;
+              const branches = branchData.get(userMsg.id) || [];
+              const activeBranchId = activeBranches.get(userMsg.id);
+              const activeResponse = activeBranchId
+                ? branches.find(b => b.id === activeBranchId)
+                : branches[branches.length - 1];
+
+              return (
+                <div key={userMsg.id}>
+                  <MemoizedChatMessage
+                    message={userMsg}
+                    isStreaming={false}
+                    onEdit={undefined}
+                    onDelete={deleteMessage}
+                  />
+                  {activeResponse && (
+                    <MemoizedChatMessage
+                      message={{
+                        id: activeResponse.id,
+                        role: 'assistant',
+                        content: activeResponse.content,
+                        timestamp: new Date(activeResponse.created_at),
+                        mode: activeResponse.metadata?.mode,
+                        translations: activeResponse.metadata?.translations,
+                        citations: activeResponse.metadata?.citations
+                      }}
+                      isStreaming={isLoading && index === messages.length - 1}
+                      onRegenerate={() => regenerateResponse(userMsg.id)}
+                      onDelete={() => deleteBranch(activeResponse.id)}
+                      branches={branches}
+                      activeBranchId={activeResponse.id}
+                      onSwitchBranch={(newBranchId) => switchBranch(userMsg.id, newBranchId)}
+                      onDeleteBranch={deleteBranch}
+                    />
+                  )}
+                </div>
+              );
+            })
           )}
 
           {/* Deep Research Progress */}

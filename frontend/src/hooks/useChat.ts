@@ -22,12 +22,13 @@ export function useChat() {
     deepResearchProgress, setDeepResearchProgress,
     isDeleting, setIsDeleting,
     uploadedFiles, setUploadedFiles,
-    branchMap,
+    branchData, setBranchData,
+    activeBranches, setActiveBranches,
     currentConvIdRef, uploadAbortRef,
     clearMessages
   } = state;
 
-  const { sendMessage, stopGeneration, editMessage, fetchBranchInfo } = streaming;
+  const { sendMessage, stopGeneration, regenerateResponse } = streaming;
 
   // Keep-alive ping
   useEffect(() => {
@@ -112,19 +113,42 @@ export function useChat() {
     });
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/conversations/${convId}/branched-messages`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
         const data = await response.json();
-        const loadedMessages: Message[] = data.map((msg: any) => ({
+
+        // 1. Process base messages
+        const loadedMessages: Message[] = (data.messages || []).map((msg: any) => ({
           id: msg.id, role: msg.role, content: msg.content,
           parentId: msg.parent_id || undefined, translations: msg.translations || undefined,
           timestamp: new Date(msg.created_at), attachments: msg.metadata?.attachments || undefined,
           mode: msg.metadata?.mode || undefined,
         }));
         setMessages(loadedMessages);
-        fetchBranchInfo(convId);
+
+        // 2. Process branchData mapping
+        const newBranchData = new Map<string, any[]>();
+        if (data.responses) {
+          data.responses.forEach((resp: any) => {
+            const arr = newBranchData.get(resp.user_message_id) || [];
+            arr.push(resp);
+            newBranchData.set(resp.user_message_id, arr);
+          });
+        }
+        setBranchData(newBranchData);
+
+        // 3. Process activeBranches mapping
+        const newActiveBranches = new Map<string, string>();
+        if (data.selections) {
+          data.selections.forEach((sel: any) => {
+            if (sel.active_response_id) {
+              newActiveBranches.set(sel.user_message_id, sel.active_response_id);
+            }
+          });
+        }
+        setActiveBranches(newActiveBranches);
       } else if (response.status === 401) {
         localStorage.removeItem('token');
       } else if (response.status === 404) {
@@ -137,7 +161,7 @@ export function useChat() {
     } finally {
       setIsLoadingConversation(false);
     }
-  }, [currentConvIdRef, setConversationId, setDeepResearchProgress, setIsLoading, setMessages, setIsLoadingConversation, fetchBranchInfo]);
+  }, [currentConvIdRef, setConversationId, setDeepResearchProgress, setIsLoading, setMessages, setIsLoadingConversation, setBranchData, setActiveBranches]);
 
   const selectConversation = useCallback((convId: string) => { loadConversation(convId); }, [loadConversation]);
 
@@ -207,50 +231,80 @@ export function useChat() {
     setIsUploading(false); cancelledUploadsRef.current.clear();
   }, [uploadAbortRef, setIsUploading]);
 
-  const regenerateMessage = useCallback(async (assistantMessageId: string) => {
-    const msgIndex = messages.findIndex((m: Message) => m.id === assistantMessageId);
-    if (msgIndex <= 0) return;
-    const precedingUserMsg = messages[msgIndex - 1];
-    if (precedingUserMsg.role !== 'user') return;
-    await editMessage(precedingUserMsg.id, precedingUserMsg.content);
-  }, [messages, editMessage]);
+  const regenerateMessage = useCallback(async (userMessageId: string) => {
+    // With independent branching, `messages` array only contains user messages.
+    // So the UI will pass the userMessageId directly.
+    await regenerateResponse(userMessageId);
+  }, [regenerateResponse]);
 
-  const navigateBranch = useCallback(async (messageId: string, direction: 'prev' | 'next') => {
-    const info = branchMap[messageId];
-    if (!info) return;
+  const switchBranch = useCallback(async (userMessageId: string, responseId: string) => {
+    setActiveBranches((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(userMessageId, responseId);
+      return newMap;
+    });
 
-    const currentIdx = info.siblingIds.indexOf(messageId);
-    const newIdx = direction === 'prev' ? currentIdx - 1 : currentIdx + 1;
-    if (newIdx < 0 || newIdx >= info.siblingIds.length) return;
-
-    const siblingId = info.siblingIds[newIdx];
     const token = localStorage.getItem('token');
-    if (!token || !conversationId) return;
+    if (!token) return;
 
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/ai/chat/conversations/${conversationId}/messages/${siblingId}/thread`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      if (res.ok) {
-        const threadData = await res.json();
-        // Backend returns { messages: [...] }, not a raw array
-        const rawMessages = Array.isArray(threadData) ? threadData : (threadData.messages || []);
-        const threadMessages: Message[] = rawMessages.map((msg: any) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          parentId: msg.parent_id || undefined,
-          translations: msg.translations || msg.metadata?.translations || undefined,
-          timestamp: new Date(msg.created_at),
-          attachments: msg.metadata?.attachments || undefined,
-        }));
-        setMessages(threadMessages);
-      }
+      const formData = new FormData();
+      formData.append('response_id', responseId);
+      formData.append('conversation_id', conversationId || '');
+
+      await fetch(`${API_BASE_URL}/api/v1/chat/messages/${userMessageId}/branch`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
     } catch (e) {
-      console.error('Branch navigation failed:', e);
+      console.error("Failed to switch branch", e);
     }
-  }, [branchMap, conversationId, setMessages]);
+  }, [setActiveBranches, conversationId]);
+
+  const deleteBranch = useCallback(async (responseId: string) => {
+    let ownerMsgId: string | null = null;
+    let newBranches: any[] = [];
+
+    for (const [uid, branches] of Array.from(branchData.entries())) {
+      if (branches.some((b: any) => b.id === responseId)) {
+        ownerMsgId = uid;
+        newBranches = branches.filter((b: any) => b.id !== responseId);
+        break;
+      }
+    }
+
+    if (!ownerMsgId) return;
+
+    const fallbackId = newBranches.length > 0 ? newBranches[newBranches.length - 1].id : undefined;
+
+    setBranchData((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(ownerMsgId as string, newBranches);
+      return newMap;
+    });
+
+    if (activeBranches.get(ownerMsgId) === responseId) {
+      setActiveBranches((prev) => {
+        const newMap = new Map(prev);
+        if (fallbackId) newMap.set(ownerMsgId as string, fallbackId);
+        else newMap.delete(ownerMsgId as string);
+        return newMap;
+      });
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/chat/responses/${responseId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (e) {
+      console.error("Failed to delete branch", e);
+    }
+  }, [branchData, activeBranches, setBranchData, setActiveBranches]);
 
   const deleteMessage = useCallback((messageId: string) => {
     setMessages((prev: Message[]) => prev.filter((msg: Message) => msg.id !== messageId));
@@ -258,10 +312,10 @@ export function useChat() {
 
   return {
     messages, isLoading, isLoadingConversation, isUploading, conversationId, deepResearchProgress,
-    isDeleting, uploadedFiles, branchMap,
-    sendMessage, stopGeneration, editMessage, clearMessages, loadConversation, selectConversation,
+    isDeleting, uploadedFiles, branchData, activeBranches,
+    sendMessage, stopGeneration, clearMessages, loadConversation, selectConversation,
     deleteConversation, uploadFiles, cancelUpload, removeFile,
-    regenerateMessage, deleteMessage, navigateBranch,
+    regenerateMessage, regenerateResponse, deleteMessage, switchBranch, deleteBranch,
     isConversationLoading: (id: string) => isConversationStreaming(id) || (id === conversationId && isLoading),
   };
 }

@@ -3,6 +3,19 @@ import { Message } from '@/components/chat/ChatMessage';
 
 export type Mode = 'fast' | 'detailed' | 'deep_research';
 
+export interface AssistantResponse {
+    id: string;
+    user_message_id: string;
+    branch_label: string;
+    content: string;
+    model_used?: string;
+    token_count?: number;
+    metadata?: Record<string, any>;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface DeepResearchProgress {
     type: string;
     status?: string;
@@ -79,8 +92,10 @@ export function useChatState() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; size: string; type: string }>>([]);
 
-    // Branch navigation maps
-    const [branchMap, setBranchMap] = useState<Record<string, { branchIndex: number; branchCount: number; siblingIds: string[] }>>({});
+    // NEW Independent Branching State
+    // Original messages array now only contains user messages (and optimistic assistant messages temporarily)
+    const [branchData, setBranchData] = useState<Map<string, AssistantResponse[]>>(new Map());
+    const [activeBranches, setActiveBranches] = useState<Map<string, string>>(new Map());
 
     // Refs for stable callbacks and async tracking
     const currentConvIdRef = useRef<string | null>(null);
@@ -102,14 +117,14 @@ export function useChatState() {
             if (cacheTimeoutRef.current) {
                 clearTimeout(cacheTimeoutRef.current);
             }
-            
+
             // Only sync to cache after 1 second of no updates
             cacheTimeoutRef.current = setTimeout(() => {
                 cacheSet(conversationId, messages);
                 lastCacheSyncRef.current = Date.now();
             }, CACHE_WRITE_DELAY);
         }
-        
+
         return () => {
             if (cacheTimeoutRef.current) {
                 clearTimeout(cacheTimeoutRef.current);
@@ -128,6 +143,8 @@ export function useChatState() {
 
     const clearMessages = useCallback(() => {
         setMessages([]);
+        setBranchData(new Map());
+        setActiveBranches(new Map());
         setConversationId(null);
         currentConvIdRef.current = null;
         setDeepResearchProgress(null);
@@ -167,8 +184,12 @@ export function useChatState() {
         setIsDeleting,
         uploadedFiles,
         setUploadedFiles,
-        branchMap,
-        setBranchMap,
+
+        // Branch State
+        branchData,
+        setBranchData,
+        activeBranches,
+        setActiveBranches,
 
         // Refs
         currentConvIdRef,

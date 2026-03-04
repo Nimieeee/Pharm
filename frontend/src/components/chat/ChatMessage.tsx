@@ -12,9 +12,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   mode?: string;      // The generation mode used for this message
-  parentId?: string;  // DAG branching: links to preceding message
-  branchIndex?: number;  // Current branch position (1-based)
-  branchCount?: number;  // Total sibling branches
+  // Branching is now handled via separate props for assistant messages
   translations?: Record<string, string>;
   citations?: Array<{
     id: number;
@@ -32,16 +30,27 @@ export interface Message {
   attachments?: Array<{ name: string; size: string; type: string }>;
 }
 
+import BranchMenu from './BranchMenu';
+import { AssistantResponse } from '@/hooks/useChatState';
+
 interface ChatMessageProps {
-  message: Message;
+  message: Message | { id: string; role: 'assistant'; content: string; timestamp: Date; mode?: string; translations?: Record<string, string>; citations?: any[] };
   isStreaming?: boolean;
   onRegenerate?: () => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onDelete?: (messageId: string) => void;
-  onBranchNavigate?: (messageId: string, direction: 'prev' | 'next') => void;
+
+  // Independent Branching Props
+  branches?: AssistantResponse[];
+  activeBranchId?: string;
+  onSwitchBranch?: (responseId: string) => void;
+  onDeleteBranch?: (responseId: string) => void;
 }
 
-export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit, onDelete, onBranchNavigate }: ChatMessageProps) {
+export default function ChatMessage({
+  message, isStreaming, onRegenerate, onEdit, onDelete,
+  branches, activeBranchId, onSwitchBranch, onDeleteBranch
+}: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -204,30 +213,6 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
           </span>
         </div>
 
-        {/* 4. Branch Navigation (← 1/3 →) */}
-        {message.branchCount && message.branchCount > 1 && (
-          <div className="flex items-center gap-1 mt-1 justify-end">
-            <button
-              onClick={() => onBranchNavigate?.(message.id, 'prev')}
-              disabled={!message.branchIndex || message.branchIndex <= 1}
-              className="p-1 rounded hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
-              title="Previous branch"
-            >
-              <ChevronLeft size={14} className="text-[var(--text-secondary)]" />
-            </button>
-            <span className="text-[10px] text-[var(--text-secondary)] font-medium min-w-[28px] text-center">
-              {message.branchIndex || 1}/{message.branchCount}
-            </span>
-            <button
-              onClick={() => onBranchNavigate?.(message.id, 'next')}
-              disabled={!message.branchIndex || message.branchIndex >= message.branchCount}
-              className="p-1 rounded hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
-              title="Next branch"
-            >
-              <ChevronRight size={14} className="text-[var(--text-secondary)]" />
-            </button>
-          </div>
-        )}
       </motion.div>
     );
   }
@@ -287,12 +272,52 @@ export default function ChatMessage({ message, isStreaming, onRegenerate, onEdit
           {onRegenerate && (
             <button
               onClick={onRegenerate}
-              className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors group"
+              className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors group mr-2"
               title={t('regenerate')}
             >
               <RefreshCw size={14} strokeWidth={1.5} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
             </button>
           )}
+
+          {branches && branches.length > 1 && onSwitchBranch && onDeleteBranch && activeBranchId && (
+            <BranchMenu
+              branches={branches}
+              activeBranchId={activeBranchId}
+              onSwitchBranch={onSwitchBranch}
+              onDeleteBranch={onDeleteBranch}
+            />
+          )}
+
+          {branches && branches.length > 1 && onSwitchBranch && activeBranchId && (
+            <div className="flex items-center gap-0.5 ml-1">
+              <button
+                onClick={() => {
+                  const idx = branches.findIndex(b => b.id === activeBranchId);
+                  if (idx > 0) onSwitchBranch(branches[idx - 1].id);
+                }}
+                disabled={branches.findIndex(b => b.id === activeBranchId) <= 0}
+                className="p-1 rounded hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
+                title="Previous branch"
+              >
+                <ChevronLeft size={14} className="text-[var(--text-secondary)]" />
+              </button>
+              <span className="text-[10px] text-[var(--text-secondary)] font-medium min-w-[24px] text-center">
+                {branches.findIndex(b => b.id === activeBranchId) + 1}/{branches.length}
+              </span>
+              <button
+                onClick={() => {
+                  const idx = branches.findIndex(b => b.id === activeBranchId);
+                  if (idx < branches.length - 1) onSwitchBranch(branches[idx + 1].id);
+                }}
+                disabled={branches.findIndex(b => b.id === activeBranchId) >= branches.length - 1}
+                className="p-1 rounded hover:bg-[var(--surface-highlight)] transition-colors disabled:opacity-30"
+                title="Next branch"
+              >
+                <ChevronRight size={14} className="text-[var(--text-secondary)]" />
+              </button>
+            </div>
+          )}
+
           <span className="text-xs text-[var(--text-secondary)] ml-auto">
             {formatTime(message.timestamp)}
           </span>
@@ -417,8 +442,8 @@ export const MemoizedChatMessage = React.memo(ChatMessage, (prev, next) => {
     prev.message.content === next.message.content &&
     prev.message.id === next.message.id &&
     prev.message.translations === next.message.translations &&
-    prev.message.branchIndex === next.message.branchIndex &&
-    prev.message.branchCount === next.message.branchCount
+    prev.activeBranchId === next.activeBranchId &&
+    prev.branches?.length === next.branches?.length
   );
 });
 
