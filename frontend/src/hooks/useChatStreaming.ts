@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { Message } from '@/components/chat/ChatMessage';
 import { API_BASE_URL, UPLOAD_BASE_URL } from '@/config/api';
 import { processSSEStream } from '@/utils/streamReader';
