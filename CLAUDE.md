@@ -204,5 +204,6 @@ Symptom fixes are a failure. Never apply a patch without fully understanding *wh
 - **Confusion Management**: When encountering inconsistencies or conflicting requirements, STOP. Name the confusion and ask for clarification. Do not guess.
 - **Simplicity Enforcement**: Resist overcomplication. Prefer the boring, obvious solution. 
 - **Scope Discipline**: Touch only what is requested. Overly ambitious refactoring introduces regressions.
+- **Documentation Maintenance**: ALWAYS update this `CLAUDE.md` file whenever there is a massive update to the codebase architecture, a new technology is added to the stack, or core deployment commands change.
 
 This artifact will be read at the start of every Claude session to maintain context of the Benchside codebase.
