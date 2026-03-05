@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Download, Check, RefreshCw } from 'lucide-react';
+import { Download, Check, RefreshCw, ZoomIn, ZoomOut, Maximize, Image as ImageIcon, FileCode2 } from 'lucide-react';
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * MermaidRenderer
@@ -82,8 +84,32 @@ export function MermaidRenderer({ code }: { code: string }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [svg, setSvg] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
-    const [downloaded, setDownloaded] = useState(false);
+    const [downloaded, setDownloaded] = useState<'svg' | 'png' | null>(null);
     const idRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 9)}`);
+    const [tooltip, setTooltip] = useState<{ x: number, y: number, text: string } | null>(null);
+
+    // Attach click events for Node Tooltips
+    useEffect(() => {
+        if (!svg || !containerRef.current) return;
+
+        const svgElement = containerRef.current.querySelector('svg');
+        if (!svgElement) return;
+
+        const handleNodeClick = (e: MouseEvent) => {
+            const target = e.target as Element;
+            const node = target.closest('.node');
+            if (node) {
+                const label = node.querySelector('.label')?.textContent || node.getAttribute('id') || '';
+                setTooltip({ x: e.clientX, y: e.clientY - 40, text: label.trim() });
+                setTimeout(() => setTooltip(null), 2500);
+            } else {
+                setTooltip(null);
+            }
+        };
+
+        svgElement.addEventListener('click', handleNodeClick);
+        return () => svgElement.removeEventListener('click', handleNodeClick);
+    }, [svg]);
 
     const renderDiagram = useCallback(async () => {
         try {
@@ -100,28 +126,28 @@ export function MermaidRenderer({ code }: { code: string }) {
                     background: 'transparent',
                     primaryColor: '#0f172a',        // slate-950
                     primaryTextColor: '#f8fafc',
-                    primaryBorderColor: '#6366f1',  // orange-500
+                    primaryBorderColor: '#f97316',  // orange-500
                     lineColor: '#64748b',           // slate-500
                     secondaryColor: '#1e293b',      // slate-800
                     tertiaryColor: '#020617',       // slate-950 darker
                     edgeLabelBackground: '#0f172a',
-                    nodeBorder: '#818cf8',          // orange-400
+                    nodeBorder: '#fb923c',          // orange-400
                     clusterBkg: '#020617',
-                    clusterBorder: '#6366f1',
+                    clusterBorder: '#f97316',
                     fontSize: '16px',
                     fontFamily: 'inherit',
                 } : {
                     background: 'transparent',
                     primaryColor: '#ffffff',
                     primaryTextColor: '#0f172a',
-                    primaryBorderColor: '#4f46e5',  // orange-600
+                    primaryBorderColor: '#ea580c',  // orange-600
                     lineColor: '#475569',           // slate-600
                     secondaryColor: '#f8fafc',      // slate-50
                     tertiaryColor: '#f1f5f9',       // slate-100
                     edgeLabelBackground: '#ffffff',
-                    nodeBorder: '#4338ca',          // orange-700
+                    nodeBorder: '#c2410c',          // orange-700
                     clusterBkg: '#f8fafc',
-                    clusterBorder: '#4f46e5',
+                    clusterBorder: '#ea580c',
                     fontSize: '16px',
                     fontFamily: 'inherit',
                 },
@@ -149,57 +175,69 @@ export function MermaidRenderer({ code }: { code: string }) {
         return () => clearTimeout(timeoutId);
     }, [renderDiagram]);
 
-    const handleDownload = useCallback(() => {
+    const handleDownloadSvg = useCallback(() => {
+        if (!svg) return;
+        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'diagram.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setDownloaded('svg');
+        setTimeout(() => setDownloaded(null), 2000);
+    }, [svg]);
+
+    const handleDownloadPng = useCallback(() => {
         if (!svg) return;
 
-        // Base64 encoded Benchside logo
-
-
-        // Parse SVG to get dimensions
-        const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(svg, "image/svg+xml");
-        const svgElement = svgDoc.documentElement;
-
-        // Force explicit width/height to avoid cutoff in canvas
-        let width = parseInt(svgElement.getAttribute('width') || '0', 10);
-        let height = parseInt(svgElement.getAttribute('height') || '0', 10);
-
-        if (!width || !height) {
-            const viewBox = svgElement.getAttribute('viewBox');
-            if (viewBox) {
-                const parts = viewBox.split(/[ ,]+/);
-                width = parseInt(parts[2], 10);
-                height = parseInt(parts[3], 10);
-            } else {
-                const rect = containerRef.current?.getBoundingClientRect();
-                width = rect?.width || 800;
-                height = rect?.height || 600;
-            }
-        }
-
-        // Add padding
-        const padding = 40;
-        const finalWidth = width + (padding * 2);
-        const finalHeight = height + (padding * 2);
-
-        // Create canvas for JPEG conversion
-        const canvas = document.createElement('canvas');
-        canvas.width = finalWidth;
-        canvas.height = finalHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        // Fill background
-        const isDark = document.documentElement.classList.contains('dark');
-        ctx.fillStyle = isDark ? '#020617' : '#ffffff';
-        ctx.fillRect(0, 0, finalWidth, finalHeight);
-
         const img = new Image();
+
         img.onload = () => {
-            // Draw SVG onto canvas with padding
+            const canvas = document.createElement('canvas');
+
+            // Get dimensions
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svg, "image/svg+xml");
+            const svgElement = svgDoc.documentElement;
+
+            let width = parseInt(svgElement.getAttribute('width') || '0', 10);
+            let height = parseInt(svgElement.getAttribute('height') || '0', 10);
+
+            if (!width || !height) {
+                const viewBox = svgElement.getAttribute('viewBox');
+                if (viewBox) {
+                    const parts = viewBox.split(/[ ,]+/);
+                    width = parseInt(parts[2], 10);
+                    height = parseInt(parts[3], 10);
+                } else {
+                    const rect = containerRef.current?.getBoundingClientRect();
+                    width = rect?.width || 800;
+                    height = rect?.height || 600;
+                }
+            }
+
+            const padding = 40;
+            const finalWidth = width + (padding * 2);
+            const finalHeight = height + (padding * 2);
+
+            canvas.width = finalWidth;
+            canvas.height = finalHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // Fill background based on theme
+            const isDark = document.documentElement.classList.contains('dark');
+            ctx.fillStyle = isDark ? '#020617' : '#ffffff';
+            ctx.fillRect(0, 0, finalWidth, finalHeight);
+
+            // Draw SVG
             ctx.drawImage(img, padding, padding, width, height);
 
-            // Draw Benchside watermark at bottom right
+            // Draw Watermark
             const wText = "BENCHSIDE";
             ctx.font = "800 12px sans-serif";
             const textMetrics = ctx.measureText(wText);
@@ -211,7 +249,6 @@ export function MermaidRenderer({ code }: { code: string }) {
             const logoImg = new Image();
             logoImg.onload = () => {
                 ctx.drawImage(logoImg, wx, wy - 11, 14, 14);
-
                 ctx.globalAlpha = 0.5;
                 ctx.fillStyle = "#888888";
                 ctx.textBaseline = "middle";
@@ -223,18 +260,17 @@ export function MermaidRenderer({ code }: { code: string }) {
                 }
                 ctx.globalAlpha = 1.0;
 
-                // Export to JPEG
-                const jpegUrl = canvas.toDataURL('image/jpeg', 0.95);
+                // Export to PNG
+                const pngUrl = canvas.toDataURL('image/png');
                 const a = document.createElement('a');
-                a.href = jpegUrl;
-                a.download = 'diagram.jpg';
+                a.href = pngUrl;
+                a.download = 'diagram.png';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
 
-                URL.revokeObjectURL(url);
-                setDownloaded(true);
-                setTimeout(() => setDownloaded(false), 2000);
+                setDownloaded('png');
+                setTimeout(() => setDownloaded(null), 2000);
             };
             logoImg.src = "/Benchside.png";
         };
@@ -276,25 +312,69 @@ export function MermaidRenderer({ code }: { code: string }) {
         <div className="my-4 relative group rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 bg-[var(--surface-highlight)] border-b border-[var(--border)]">
                 <span className="text-xs font-mono text-[var(--text-secondary)] uppercase">diagram</span>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                        onClick={handleDownload}
-                        className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                        onClick={handleDownloadSvg}
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1.5"
                         title="Download SVG"
                     >
-                        {downloaded ? <Check size={14} className="text-emerald-500" /> : <Download size={14} />}
+                        {downloaded === 'svg' ? <Check size={14} className="text-emerald-500" /> : <FileCode2 size={14} />}
+                        <span className="text-[10px] uppercase font-bold">SVG</span>
+                    </button>
+                    <button
+                        onClick={handleDownloadPng}
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1.5"
+                        title="Download PNG"
+                    >
+                        {downloaded === 'png' ? <Check size={14} className="text-emerald-500" /> : <ImageIcon size={14} />}
+                        <span className="text-[10px] uppercase font-bold">PNG</span>
                     </button>
                 </div>
             </div>
-            <div className="relative p-6 px-8 pb-10 flex justify-center overflow-x-auto min-h-[140px] w-full">
-                <div
-                    ref={containerRef}
-                    className="flex justify-center w-full [&_svg]:w-full [&_svg]:max-w-4xl [&_svg]:h-auto transition-all"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                />
+            <div className="relative flex justify-center overflow-hidden min-h-[300px] w-full bg-[var(--background)]">
+                <TransformWrapper
+                    initialScale={1}
+                    minScale={0.2}
+                    maxScale={4}
+                    centerOnInit
+                    wheel={{ step: 0.1 }}
+                >
+                    {({ zoomIn, zoomOut, resetTransform }: any) => (
+                        <>
+                            <div className="absolute top-4 right-4 z-[40] flex flex-col gap-1 bg-[var(--surface)]/80 backdrop-blur-md border border-[var(--border)] rounded-lg p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => zoomIn()} className="p-1.5 hover:bg-[var(--surface-highlight)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><ZoomIn size={14} /></button>
+                                <button onClick={() => zoomOut()} className="p-1.5 hover:bg-[var(--surface-highlight)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><ZoomOut size={14} /></button>
+                                <button onClick={() => resetTransform()} className="p-1.5 hover:bg-[var(--surface-highlight)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><Maximize size={14} /></button>
+                            </div>
+
+                            <TransformComponent wrapperStyle={{ width: "100%", height: "100%", cursor: "grab" }} contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", padding: "40px" }}>
+                                <div
+                                    ref={containerRef}
+                                    className="flex justify-center w-full [&_svg]:max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: svg }}
+                                />
+                            </TransformComponent>
+                        </>
+                    )}
+                </TransformWrapper>
+
+                {/* Tooltip */}
+                <AnimatePresence>
+                    {tooltip && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed z-[60] px-3 py-1.5 bg-[var(--foreground)] text-[var(--background)] text-xs font-medium rounded-md shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-full"
+                            style={{ left: tooltip.x, top: tooltip.y }}
+                        >
+                            {tooltip.text}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Benchside Watermark */}
-                <div className="absolute bottom-2 right-3 flex items-center gap-1.5 pointer-events-none select-none opacity-40">
+                <div className="absolute bottom-2 right-3 flex items-center gap-1.5 pointer-events-none select-none opacity-40 z-10">
                     <img src="/Benchside.png" alt="Benchside" className="w-[14px] h-[14px] object-contain" />
                     <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-secondary)]">Benchside</span>
                 </div>

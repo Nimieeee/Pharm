@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Moon, Sun, LogIn, LogOut, Database, ChevronDown, User, MessageSquare } from 'lucide-react';
+import { Moon, Sun, LogIn, LogOut, Database, ChevronDown, User, MessageSquare, ArrowRight, Clock, Plus, Zap, Search, Beaker } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { HeroQupe } from '@/components/landing/HeroQupe';
+import { useConversations } from '@/hooks/useSWRChat';
+import { getSuggestionPool } from '@/config/suggestionPrompts';
 import { API_BASE_URL } from '@/config/api';
 
 const faqs = [
@@ -31,9 +33,28 @@ export default function HomePage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  const { conversations } = useConversations();
+  const recentConversations = conversations?.slice(0, 5) || [];
+  const suggestions = getSuggestionPool().slice(0, 4);
+
+  const isLoggedIn = isClient && (user || localStorage.getItem('token'));
+
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleSuggestionClick = (suggestion: any) => {
+    router.push(`/chat?q=${encodeURIComponent(suggestion.text)}`);
+  };
+
+  const handleNewSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get('q') as string;
+    if (query?.trim()) {
+      router.push(`/chat?q=${encodeURIComponent(query)}`);
+    }
+  };
 
   // Warm up backend immediately when landing page loads
   // This ensures backend is ready by the time user logs in
@@ -141,142 +162,223 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <HeroQupe />
+      {isLoggedIn ? (
+        <div className="pt-24 md:pt-32 px-4 md:px-6 max-w-4xl mx-auto flex flex-col gap-10 min-h-screen">
+          {/* Compact Header & Input */}
+          <div className="flex flex-col items-center text-center mt-6 md:mt-10">
+            <h1 className="text-3xl md:text-5xl font-serif text-foreground mb-4">What shall we research today?</h1>
+            <p className="text-foreground-muted mb-8 text-sm md:text-base">Deep clinical insights, literature analysis, and trial data.</p>
 
-
-      {/* Interactive Demo Section */}
-      < section className="py-24 px-6 relative" >
-        <div className="max-w-[1200px] mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-serif text-foreground mb-4">Research at the Speed of Thought</h2>
-            <p className="text-foreground-muted text-lg">See how Benchside adapts to your workflow.</p>
+            <form onSubmit={handleNewSearch} className="w-full relative max-w-2xl">
+              <input
+                name="q"
+                type="text"
+                placeholder="Ask Benchside anything..."
+                className="w-full h-14 pl-6 pr-14 rounded-full bg-[var(--surface-highlight)] border border-[var(--border)] shadow-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 text-foreground text-sm md:text-base transition-all"
+              />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors">
+                <ArrowRight size={18} />
+              </button>
+            </form>
           </div>
 
-          <div className="flex flex-col items-center">
-            <div className="flex flex-wrap justify-center gap-2 mb-8 bg-surface/50 p-1.5 rounded-full border border-border backdrop-blur-sm">
-              {demoTabs.map((tab) => (
+          {/* Smart Suggestions */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <Zap size={16} className="text-orange-500" />
+              <h3 className="text-sm font-medium text-foreground-muted uppercase tracking-wider">Suggestions</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {suggestions.map((suggestion, idx) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveDemoTab(tab.id)}
-                  className={`px-6 py-2 rounded-full text-sm font-serif font-medium transition-all duration-300 ${activeDemoTab === tab.id ? 'bg-foreground text-background shadow-lg' : 'text-foreground-muted hover:text-foreground'}`}
+                  key={idx}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="flex items-start gap-4 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-orange-500/50 hover:bg-[var(--surface-highlight)] transition-all text-left group"
                 >
-                  {tab.label}
+                  <div className="p-2.5 rounded-xl bg-[var(--surface-highlight)] group-hover:bg-orange-500/10 transition-colors shrink-0">
+                    {suggestion.mode === 'deep_research' ? <Beaker size={18} className="text-orange-500" /> : <Search size={18} className="text-foreground-muted group-hover:text-orange-500" />}
+                  </div>
+                  <div>
+                    <p className="text-sm text-foreground font-medium mb-1 line-clamp-2">{suggestion.text}</p>
+                    <p className="text-[10px] text-foreground-muted uppercase tracking-wider font-semibold">{suggestion.mode.replace('_', ' ')}</p>
+                  </div>
                 </button>
               ))}
             </div>
+          </div>
 
-            <GlassCard className="w-full max-w-3xl aspect-[16/9] md:aspect-[2/1] p-8 flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-10 bg-orange-500/5 px-4 flex items-center gap-2 border-b border-orange-500/10">
-                <div className="w-3 h-3 rounded-full bg-red-400/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
-                <div className="w-3 h-3 rounded-full bg-green-400/80" />
+          {/* Recent Conversations */}
+          {recentConversations.length > 0 && (
+            <div className="mb-20">
+              <div className="flex items-center gap-2 mb-4 px-2">
+                <Clock size={16} className="text-foreground-muted" />
+                <h3 className="text-sm font-medium text-foreground-muted uppercase tracking-wider">Recent Conversations</h3>
               </div>
-              <div className="mt-8 font-mono text-sm md:text-base text-foreground/90 whitespace-pre-wrap">
-                <span className="text-orange-500 mr-2">{'>'}</span>
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={activeDemoTab}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.2 }}
+              <div className="flex flex-col gap-2">
+                {recentConversations.map((chat: any) => (
+                  <button
+                    key={chat.id}
+                    onClick={() => {
+                      localStorage.setItem('currentConversationId', chat.id);
+                      router.push('/chat');
+                    }}
+                    className="flex items-center justify-between p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-highlight)] transition-colors text-left group"
                   >
-                    {demoTabs.find(t => t.id === activeDemoTab)?.content}
-                  </motion.span>
-                </AnimatePresence>
-                <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="inline-block w-2.5 h-4 ml-1 mx-1 bg-orange-500 align-middle"
-                />
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-8 h-8 rounded-full bg-[var(--surface-highlight)] flex items-center justify-center shrink-0 group-hover:bg-[var(--background)] transition-colors">
+                        <MessageSquare size={14} className="text-foreground-muted group-hover:text-foreground transition-colors" />
+                      </div>
+                      <span className="text-sm text-foreground truncate font-medium">{chat.title || 'Untitled Chat'}</span>
+                    </div>
+                    <span className="text-xs text-foreground-muted shrink-0 whitespace-nowrap pl-4">{new Date(chat.created_at).toLocaleDateString()}</span>
+                  </button>
+                ))}
               </div>
-            </GlassCard>
-          </div>
+            </div>
+          )}
         </div>
-      </section >
+      ) : (
+        <>
+          {/* Hero Section */}
+          <HeroQupe />
 
 
+          {/* Interactive Demo Section */}
+          < section className="py-24 px-6 relative" >
+            <div className="max-w-[1200px] mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-serif text-foreground mb-4">Research at the Speed of Thought</h2>
+                <p className="text-foreground-muted text-lg">See how Benchside adapts to your workflow.</p>
+              </div>
 
-      {/* FAQ Section */}
-      < section className="py-24 px-6" >
-        <div className="max-w-[800px] mx-auto">
-          <h2 className="text-4xl font-serif text-foreground mb-12 text-center">Frequently Asked Questions</h2>
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <GlassCard key={i} className="px-6 py-4 cursor-pointer overflow-hidden" onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-lg text-foreground">{faq.q}</span>
-                  <ChevronDown className={`text-foreground-muted transition-transform duration-300 ${openFaqIndex === i ? 'rotate-180' : ''}`} />
-                </div>
-                <AnimatePresence>
-                  {openFaqIndex === i && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="mt-4 text-foreground-muted border-t border-border/50 pt-4"
+              <div className="flex flex-col items-center">
+                <div className="flex flex-wrap justify-center gap-2 mb-8 bg-surface/50 p-1.5 rounded-full border border-border backdrop-blur-sm">
+                  {demoTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveDemoTab(tab.id)}
+                      className={`px-6 py-2 rounded-full text-sm font-serif font-medium transition-all duration-300 ${activeDemoTab === tab.id ? 'bg-foreground text-background shadow-lg' : 'text-foreground-muted hover:text-foreground'}`}
                     >
-                      {faq.a}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <GlassCard className="w-full max-w-3xl aspect-[16/9] md:aspect-[2/1] p-8 flex flex-col relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 right-0 h-10 bg-orange-500/5 px-4 flex items-center gap-2 border-b border-orange-500/10">
+                    <div className="w-3 h-3 rounded-full bg-red-400/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-400/80" />
+                  </div>
+                  <div className="mt-8 font-mono text-sm md:text-base text-foreground/90 whitespace-pre-wrap">
+                    <span className="text-orange-500 mr-2">{'>'}</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={activeDemoTab}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {demoTabs.find(t => t.id === activeDemoTab)?.content}
+                      </motion.span>
+                    </AnimatePresence>
+                    <motion.span
+                      animate={{ opacity: [0, 1, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.8 }}
+                      className="inline-block w-2.5 h-4 ml-1 mx-1 bg-orange-500 align-middle"
+                    />
+                  </div>
+                </GlassCard>
+              </div>
+            </div>
+          </section >
+
+
+
+          {/* FAQ Section */}
+          < section className="py-24 px-6" >
+            <div className="max-w-[800px] mx-auto">
+              <h2 className="text-4xl font-serif text-foreground mb-12 text-center">Frequently Asked Questions</h2>
+              <div className="space-y-4">
+                {faqs.map((faq, i) => (
+                  <GlassCard key={i} className="px-6 py-4 cursor-pointer overflow-hidden" onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-lg text-foreground">{faq.q}</span>
+                      <ChevronDown className={`text-foreground-muted transition-transform duration-300 ${openFaqIndex === i ? 'rotate-180' : ''}`} />
+                    </div>
+                    <AnimatePresence>
+                      {openFaqIndex === i && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="mt-4 text-foreground-muted border-t border-border/50 pt-4"
+                        >
+                          {faq.a}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </GlassCard>
+                ))}
+              </div>
+            </div>
+          </section >
+
+          {/* CTA Banner */}
+          < section className="py-24 px-6" >
+            <div className="max-w-[1200px] mx-auto">
+              <GlassCard className="p-12 md:p-20 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-orange-500/10 to-pink-500/10" />
+                <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-8 relative z-10">Start accelerating your research today</h2>
+                <button onClick={() => router.push('/register')} className="px-8 py-4 rounded-full bg-foreground text-background font-bold text-lg hover:scale-105 transition-transform shadow-lg relative z-10">
+                  Start Free Research
+                </button>
               </GlassCard>
-            ))}
-          </div>
-        </div>
-      </section >
-
-      {/* CTA Banner */}
-      < section className="py-24 px-6" >
-        <div className="max-w-[1200px] mx-auto">
-          <GlassCard className="p-12 md:p-20 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-orange-500/10 to-pink-500/10" />
-            <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-8 relative z-10">Start accelerating your research today</h2>
-            <button onClick={() => router.push('/register')} className="px-8 py-4 rounded-full bg-foreground text-background font-bold text-lg hover:scale-105 transition-transform shadow-lg relative z-10">
-              Start Free Research
-            </button>
-          </GlassCard>
-        </div>
-      </section >
-
-      {/* Footer */}
-      < footer className="py-20 border-t border-border bg-surface/20" >
-        <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-3 gap-12">
-          <div className="col-span-2 md:col-span-1">
-            {/* Logo area */}
-            <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <img
-                src="/Benchside.png"
-                alt="Benchside Logo"
-                className="w-8 h-8 md:w-10 md:h-10 opacity-90"
-              />
-              <span className="font-serif font-bold text-xl text-foreground">Benchside</span>
             </div>
+          </section >
 
-            <p className="text-foreground-muted max-w-xs mb-6">
-              Pioneering the future of pharmacological intelligence with autonomous AI agents.
-            </p>
-            {/* Copyright */}
-            <div className="text-sm text-foreground-muted opacity-60">
-              © 2026 Benchside. All rights reserved.
+          {/* Footer */}
+          < footer className="py-20 border-t border-border bg-surface/20" >
+            <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-3 gap-12">
+              <div className="col-span-2 md:col-span-1">
+                {/* Logo area */}
+                <div className="flex items-center gap-3 mb-4 md:mb-0">
+                  <img
+                    src="/Benchside.png"
+                    alt="Benchside Logo"
+                    className="w-8 h-8 md:w-10 md:h-10 opacity-90"
+                  />
+                  <span className="font-serif font-bold text-xl text-foreground">Benchside</span>
+                </div>
+
+                <p className="text-foreground-muted max-w-xs mb-6">
+                  Pioneering the future of pharmacological intelligence with autonomous AI agents.
+                </p>
+                {/* Copyright */}
+                <div className="text-sm text-foreground-muted opacity-60">
+                  © 2026 Benchside. All rights reserved.
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold text-foreground mb-6">Product</h4>
+                <ul className="space-y-4 text-foreground-muted text-sm">
+                  <li onClick={() => router.push('/chat')} className="hover:text-foreground cursor-pointer transition-colors">Deep Research</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-bold text-foreground mb-6">Resources</h4>
+                <ul className="space-y-4 text-foreground-muted text-sm">
+                  <li onClick={() => router.push('/docs')} className="hover:text-foreground cursor-pointer transition-colors">Documentation</li>
+                  <li onClick={() => router.push('/faq')} className="hover:text-foreground cursor-pointer transition-colors">FAQ</li>
+                </ul>
+              </div>
             </div>
-          </div>
-          <div>
-            <h4 className="font-bold text-foreground mb-6">Product</h4>
-            <ul className="space-y-4 text-foreground-muted text-sm">
-              <li onClick={() => router.push('/chat')} className="hover:text-foreground cursor-pointer transition-colors">Deep Research</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-foreground mb-6">Resources</h4>
-            <ul className="space-y-4 text-foreground-muted text-sm">
-              <li onClick={() => router.push('/docs')} className="hover:text-foreground cursor-pointer transition-colors">Documentation</li>
-              <li onClick={() => router.push('/faq')} className="hover:text-foreground cursor-pointer transition-colors">FAQ</li>
-            </ul>
-          </div>
-        </div>
-      </footer >
+          </footer >
+
+          {/* End of Logged-Out Block */}
+        </>
+      )}
     </div >
   );
 }

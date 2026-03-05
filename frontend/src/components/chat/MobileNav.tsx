@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, Plus, MessageSquare, Calendar,
-  Search, Moon, Sun, Settings, LogOut, User, Folder
+  Search, Moon, Sun, Settings, LogOut, User, Folder, MoreVertical, LogIn
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,7 @@ export default function MobileNav({
   onDeleteConversation
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isOverflowOpen, setIsOverflowOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -44,6 +45,9 @@ export default function MobileNav({
     conv.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const currentChat = conversations.find(c => c.id === currentConversationId);
+  const headerTitle = currentChat ? currentChat.title : "Benchside";
+
   return (
     <>
       {/* Mobile Top Bar */}
@@ -55,16 +59,83 @@ export default function MobileNav({
           <Menu size={24} />
         </button>
 
-        <div className="font-semibold text-lg text-[var(--text-primary)]">
-          Benchside
+        <div className="font-semibold text-lg text-[var(--text-primary)] truncate px-2 max-w-[200px]">
+          {headerTitle}
         </div>
 
-        <button
-          onClick={onNewChat}
-          className="w-10 h-10 -mr-2 flex items-center justify-center text-[var(--accent)]"
-        >
-          <Plus size={24} />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setIsOverflowOpen(!isOverflowOpen)}
+            className="w-10 h-10 -mr-2 flex items-center justify-center text-[var(--text-primary)] transition-transform active:scale-95"
+          >
+            <MoreVertical size={24} />
+          </button>
+
+          <AnimatePresence>
+            {isOverflowOpen && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsOverflowOpen(false)}
+                  className="fixed inset-0 z-[60]"
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl z-[61] overflow-hidden flex flex-col"
+                >
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                      setIsOverflowOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+                    <span className="font-medium text-sm">
+                      {theme === 'dark' ? t('dark_mode') : t('light_mode')}
+                    </span>
+                  </button>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsOverflowOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 border-t border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                  >
+                    <User size={16} />
+                    <span className="font-medium text-sm">{t('profile')}</span>
+                  </Link>
+
+                  {user ? (
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        setIsOverflowOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 border-t border-[var(--border)] text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-left"
+                    >
+                      <LogOut size={16} />
+                      <span className="font-medium text-sm">Sign Out</span>
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOverflowOpen(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 border-t border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface-highlight)] transition-colors text-left"
+                    >
+                      <LogIn size={16} />
+                      <span className="font-medium text-sm">{t('sign_in')}</span>
+                    </Link>
+                  )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Mobile Drawer */}
@@ -171,50 +242,10 @@ export default function MobileNav({
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="p-4 border-t border-[var(--border)] space-y-2">
-                <button
-                  onClick={toggleTheme}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors"
-                >
-                  {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-                  <span className="font-medium text-sm">
-                    {theme === 'dark' ? t('dark_mode') : t('light_mode')}
-                  </span>
-                </button>
-
-                <Link
-                  href="/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-highlight)] transition-colors"
-                >
-                  <User size={18} />
-                  <span className="font-medium text-sm">{t('profile')}</span>
-                </Link>
-
-                {user ? (
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-                  >
-                    <LogOut size={18} />
-                    <span className="font-medium text-sm">Sign Out</span>
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
-                  >
-                    <User size={18} />
-                    <span className="font-medium text-sm">{t('sign_in')}</span>
-                  </Link>
-                )}
-              </div>
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence >
     </>
   );
 }

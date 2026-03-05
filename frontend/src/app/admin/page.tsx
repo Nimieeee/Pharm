@@ -24,7 +24,8 @@ import {
     ChevronDown,
     ChevronUp,
     Menu,
-    X
+    X,
+    Key
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
@@ -179,6 +180,23 @@ export default function AdminPage() {
             }
         } catch (err) {
             alert('An error occurred while deleting user');
+        }
+    };
+
+    const handleResetPassword = async (userId: string, email: string) => {
+        if (!confirm(`Send password reset email to ${email}?`)) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/reset-password`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert(`Password reset email sent to ${email}`);
+            } else {
+                alert('Failed to send password reset');
+            }
+        } catch (err) {
+            alert('An error occurred while resetting password');
         }
     };
 
@@ -392,6 +410,15 @@ export default function AdminPage() {
                                     subtext={`${stats.conversations.new_this_month} new this month`}
                                     icon={MessageSquare}
                                     color="indigo"
+                                    sparklineData={[3, 5, 4, 8, 7, 10, 15]}
+                                />
+                                <StatsCard
+                                    title="Messages"
+                                    value={stats.messages.total}
+                                    subtext={`${stats.messages.new_this_month} new this month`}
+                                    icon={MessageSquare}
+                                    color="indigo"
+                                    sparklineData={[20, 35, 45, 60, 55, 80, 120]}
                                 />
                                 <StatsCard
                                     title="Documents"
@@ -467,15 +494,24 @@ export default function AdminPage() {
                                                     <td className="px-6 py-4 text-[var(--text-secondary)] text-sm">
                                                         {new Date(u.created_at).toLocaleDateString()}
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
+                                                    <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                                                         {!u.is_admin && (
-                                                            <button
-                                                                onClick={() => handleDeleteUser(u.id, u.email)}
-                                                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                                title="Delete User"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleResetPassword(u.id, u.email)}
+                                                                    className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                                                                    title="Reset Password directly"
+                                                                >
+                                                                    <Key size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteUser(u.id, u.email)}
+                                                                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                                    title="Delete User"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -653,24 +689,55 @@ export default function AdminPage() {
     );
 }
 
-function StatsCard({ title, value, subtext, icon: Icon, color }: any) {
+const Sparkline = ({ data }: { data: number[] }) => {
+    if (!data || data.length === 0) return null;
+    const max = Math.max(...data) || 1;
+    const points = data.map((d, i) => `${(i / (data.length - 1)) * 100},${100 - (d / max) * 100}`).join(' ');
+
+    return (
+        <svg viewBox="0 -10 100 120" className="w-full h-8 overflow-visible mt-2" preserveAspectRatio="none">
+            <polyline
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={points}
+                className="text-orange-500 opacity-60"
+            />
+            {data.map((d, i) => (
+                <circle
+                    key={i}
+                    cx={(i / (data.length - 1)) * 100}
+                    cy={100 - (d / max) * 100}
+                    r="2"
+                    fill="currentColor"
+                    className="text-orange-500"
+                />
+            ))}
+        </svg>
+    );
+};
+
+function StatsCard({ title, value, subtext, icon: Icon, color, sparklineData }: any) {
     const colorStyles = {
         orange: "bg-orange-500/10 text-orange-500",
-        indigo: "bg-orange-500/10 text-orange-500",
+        indigo: "bg-indigo-500/10 text-indigo-500",
         amber: "bg-amber-500/10 text-amber-500",
     }[color as string] || "bg-gray-500/10 text-gray-500";
 
     return (
-        <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+        <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-sm flex flex-col">
+            <div className="flex items-center justify-between mb-2">
                 <div className={`p-3 rounded-xl ${colorStyles}`}>
                     <Icon size={24} />
                 </div>
                 <span className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-highlight)] px-2 py-1 rounded-full">+12%</span>
             </div>
-            <h3 className="text-3xl font-bold text-[var(--text-primary)] mb-1">{value}</h3>
-            <p className="text-sm text-[var(--text-secondary)]">{title}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-2">{subtext}</p>
+            <h3 className="text-3xl font-bold text-[var(--text-primary)]">{value}</h3>
+            {sparklineData && <Sparkline data={sparklineData} />}
+            <p className="text-sm text-[var(--text-secondary)] mt-1">{title}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">{subtext}</p>
         </div>
     );
 }

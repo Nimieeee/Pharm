@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Loader2, Zap, BookOpen, Search, Send, Square,
-  Paperclip, FileText, File, Table, XCircle, X, Mic, MicOff
+  Paperclip, FileText, File, Table, XCircle, X, Mic, MicOff, BarChart2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -365,7 +365,9 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
           <div
             className={`relative rounded-[28px] border-2 transition-all ${isDragging
               ? 'border-[var(--accent)] bg-[var(--accent)]/5'
-              : 'border-[var(--border)] hover:border-[var(--text-secondary)]/30'
+              : mode === 'deep_research'
+                ? 'border-[var(--accent)]/50 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
+                : 'border-[var(--border)] hover:border-[var(--text-secondary)]/30'
               } bg-[var(--surface)] shadow-2xl flex flex-col`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -547,10 +549,34 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-[40]">
         <div className="fixed bottom-0 left-0 right-0 h-24 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] to-transparent" />
 
+        {/* Top: Mobile Mode Selector Pill */}
+        <div className="flex items-center gap-2 px-2 pb-3 overflow-x-auto no-scrollbar">
+          {modes.map((m) => {
+            const Icon = m.icon;
+            const isActive = mode === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setMode(m.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${isActive
+                    ? 'bg-[var(--surface)] border-[var(--accent)] text-[var(--accent)] shadow-sm scale-105'
+                    : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-sm'
+                  }`}
+              >
+                <Icon size={12} strokeWidth={2} />
+                {m.label}
+              </button>
+            );
+          })}
+        </div>
+
         <form onSubmit={handleSubmit}>
           <div className={`relative rounded-[24px] border-2 transition-all ${isDragging
             ? 'border-[var(--accent)] bg-[var(--accent)]/5'
-            : 'border-[var(--border)]'
+            : mode === 'deep_research'
+              ? 'border-[var(--accent)]/50 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
+              : 'border-[var(--border)]'
             } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-xl flex flex-col`}>
 
             {/* Mobile File Attachment Grid */}
@@ -613,54 +639,69 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
                   <AnimatePresence>
                     {showAttachMenu && (
-                      <motion.div
-                        ref={mobileMenuRef}
-                        initial={{ opacity: 0, scale: 0, originX: 0, originY: 1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0, transition: { duration: 0.2, ease: "backIn" } }}
-                        className="absolute bottom-full left-0 mb-4 w-64 p-2 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[50] overflow-hidden"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50 transition-colors"
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowAttachMenu(false)}
+                          className="fixed inset-0 bg-black/50 z-[59] backdrop-blur-sm"
+                        />
+                        <motion.div
+                          ref={mobileMenuRef}
+                          initial={{ opacity: 0, y: 100 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 100 }}
+                          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                          className="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-[var(--surface)] border-t border-[var(--border)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[60] rounded-t-3xl"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
-                            <Paperclip size={16} strokeWidth={1.5} className="text-[var(--accent)]" />
-                          </div>
-                          <div className="text-left">
-                            <span className="text-sm font-medium block">{t('upload_file')}</span>
-                            <span className="text-[10px] text-[var(--text-secondary)]">{t('supported_files')}</span>
-                          </div>
-                        </button>
+                          <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mb-6" />
 
-                        <div className="h-px bg-[var(--border)]/50 my-1 mx-2" />
-
-                        {modes.map((m) => {
-                          const Icon = m.icon;
-                          const isActive = mode === m.id;
-                          return (
+                          <div className="flex flex-col gap-2">
                             <button
-                              key={m.id}
                               type="button"
-                              onClick={() => { setMode(m.id); setShowAttachMenu(false); }}
-                              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isActive
-                                ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
-                                : 'text-[var(--text-primary)] hover:bg-[var(--surface-highlight)]/50'
-                                }`}
+                              onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
                             >
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-[var(--accent)]/20' : 'bg-[var(--surface-highlight)]'
-                                }`}>
-                                <Icon size={16} strokeWidth={1.5} />
+                              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                <FileText size={20} className="text-blue-500" />
                               </div>
-                              <div className="text-left">
-                                <p className="text-sm font-medium">{m.label}</p>
-                                <p className="text-[10px] text-[var(--text-secondary)]">{m.desc}</p>
+                              <div className="flex flex-col text-left">
+                                <span className="font-semibold text-[var(--text-primary)] hover:text-blue-500 transition-colors">Upload Paper</span>
+                                <span className="text-xs text-[var(--text-secondary)]">PDF, DOCX format</span>
                               </div>
                             </button>
-                          );
-                        })}
-                      </motion.div>
+
+                            <button
+                              type="button"
+                              onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                                <BarChart2 size={20} className="text-green-500" />
+                              </div>
+                              <div className="flex flex-col text-left">
+                                <span className="font-semibold text-[var(--text-primary)] hover:text-green-500 transition-colors">Upload Data</span>
+                                <span className="text-xs text-[var(--text-secondary)]">CSV, Excel spreadsheets</span>
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => { toggleRecording(); setShowAttachMenu(false); }}
+                              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center">
+                                <Mic size={20} className="text-orange-500" />
+                              </div>
+                              <div className="flex flex-col text-left">
+                                <span className="font-semibold text-[var(--text-primary)] hover:text-orange-500 transition-colors">Voice Dictation</span>
+                                <span className="text-xs text-[var(--text-secondary)]">{isRecording ? 'Stop recording' : 'Speak your research query'}</span>
+                              </div>
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
                     )}
                   </AnimatePresence>
                 </div>
