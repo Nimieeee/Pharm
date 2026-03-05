@@ -175,4 +175,34 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
 - **Output Capacity**: Internal max_tokens expanded to 25k for detailed reports.
 - **Provider Redundancy**: Automatic failover to Groq/Kimi if Pollinations/Gemini fails.
 
+## REGRESSION PREVENTION & SYSTEMATIC DEBUGGING
+
+To maintain the integrity of the Benchside codebase, strict adherence to these principles is required:
+
+### 1. The Iron Law of Debugging
+**NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.**
+Symptom fixes are a failure. Never apply a patch without fully understanding *why* the bug occurred at the source.
+
+### 2. The Four Phases of Systematic Debugging
+1. **Root Cause**: Read errors fully, reproduce consistently, check recent changes, and gather evidence at component boundaries. Trace data flow backward.
+2. **Pattern Analysis**: Find working examples in the codebase. Compare broken vs. working code. Understand dependencies.
+3. **Hypothesis**: Form a single, specific hypothesis ("I think X is the root cause because Y"). Test minimally.
+4. **Implementation**: Create a failing test case *first*. Implement a single targeted fix. Verify. If 3+ fixes fail, **STOP** and question the architecture instead of continuing to patch.
+
+### 3. Core Regression Prevention Strategies
+- **Test-Driven Development (TDD)**: Write tests before code to establish expected behavior and prevent regressions.
+- **Automate Testing**: Implement automated tests (unit, integration, UI) that run frequently.
+- **CI/CD Integration**: Automatically validate code changes in the pipeline before deployment.
+- **Manage Technical Debt**: Regularly refactor code to improve maintainability.
+- **Feature Flags**: Safely deploy, test, and toggle features to mitigate failure impact.
+- **Analyze Escaped Bugs**: Treat bugs that reach production as learning opportunities to improve test coverage.
+
+### 4. Core Workflows & Output Standards
+- **Brainstorming First**: Before jumping into any creative work (new features, UI components, major refactors), ALWAYS pause to brainstorm. Ask clarifying questions about user intent, outline the architecture, and propose a design before writing implementation code.
+- **Test-Driven Development**: When implementing any logical feature or bug fix, you MUST write the test that defines success *first*. Implement the code only until the test passes. Correctness first, naive implementation second, optimization third.
+- **Assumption Surfacing**: Explicitly state assumptions ("ASSUMPTIONS I'M MAKING: 1...") before implementing non-trivial logic.
+- **Confusion Management**: When encountering inconsistencies or conflicting requirements, STOP. Name the confusion and ask for clarification. Do not guess.
+- **Simplicity Enforcement**: Resist overcomplication. Prefer the boring, obvious solution. 
+- **Scope Discipline**: Touch only what is requested. Overly ambitious refactoring introduces regressions.
+
 This artifact will be read at the start of every Claude session to maintain context of the Benchside codebase.

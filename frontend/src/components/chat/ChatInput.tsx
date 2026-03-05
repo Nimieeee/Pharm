@@ -560,8 +560,8 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                 type="button"
                 onClick={() => setMode(m.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${isActive
-                    ? 'bg-[var(--surface)] border-[var(--accent)] text-[var(--accent)] shadow-sm scale-105'
-                    : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-sm'
+                  ? 'bg-[var(--surface)] border-[var(--accent)] text-[var(--accent)] shadow-sm scale-105'
+                  : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-sm'
                   }`}
               >
                 <Icon size={12} strokeWidth={2} />
@@ -653,9 +653,9 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 100 }}
                           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                          className="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-[var(--surface)] border-t border-[var(--border)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[60] rounded-t-3xl"
+                          className="fixed bottom-0 left-0 right-0 p-4 pb-12 sm:pb-8 bg-[var(--surface)] border-t border-[var(--border)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[60] rounded-t-3xl max-h-[85vh] overflow-y-auto"
                         >
-                          <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mb-6" />
+                          <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mb-6 shrink-0" />
 
                           <div className="flex flex-col gap-2">
                             <button

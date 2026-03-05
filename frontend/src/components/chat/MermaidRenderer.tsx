@@ -20,52 +20,88 @@ import { motion, AnimatePresence } from 'framer-motion';
  */
 
 function cleanMermaidSyntax(raw: string): string {
-    // Process line-by-line for precision
-    const lines = raw.split('\n');
-    const cleaned = lines.map(line => {
-        // Skip lines inside quoted labels (don't break label text)
-        // We only fix structural syntax, not content inside ["..."]
+    // 1) Remove markdown backticks if present (e.g., ```mermaid ... ```)
+    let cleanedText = raw.replace(/^```mermaid\n?/im, '').replace(/```$/im, '');
 
-        // --- FIX 1: Spaces inside node IDs ---
-        // e.g. "F --> F 1[" → "F --> F1["  or  "-->|label| V[" → "-->|label| V["
-        // Match: word boundary, then uppercase letter(s), space(s), digit(s), then bracket
+    // 2) Initial trim & line split
+    let lines = cleanedText.trim().split('\n');
+    const cleanedLines: string[] = [];
+
+    // Process line-by-line for precision
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line) continue;
+
+        // Skip pure comments
+        if (line.startsWith('%%')) {
+            cleanedLines.push(line);
+            continue;
+        }
+
+        // --- HEURISTIC 1: Fix graph direction declarations ---
+        // Sometimes AI outputs "graphTD" instead of "graph TD"
+        if (/^(graph|flowchart)([A-Za-z]+)$/i.test(line)) {
+            line = line.replace(/^(graph|flowchart)([A-Za-z]+)$/i, '$1 $2');
+        }
+
+        // --- HEURISTIC 2: Spaces inside simple node IDs ---
+        // "F --> F 1[" → "F --> F1["
         line = line.replace(/\b([A-Za-z]+)\s+(\d+)\s*(\[|\(|\{)/g, '$1$2$3');
 
-        // --- FIX 2: Spaces between node ID and opening bracket ---
-        // e.g. "AC [" → "AC[",  "AF [" → "AF["
-        line = line.replace(/([A-Za-z0-9_]+)\s+(\[")/g, '$1$2');
-        line = line.replace(/([A-Za-z0-9_]+)\s+(\[)/g, '$1$2');
-        line = line.replace(/([A-Za-z0-9_]+)\s+(\()/g, '$1$2');
-        line = line.replace(/([A-Za-z0-9_]+)\s+(\{)/g, '$1$2');
-        line = line.replace(/([A-Za-z0-9_]+)\s+(\))/g, '$1$2');
+        // --- HEURISTIC 3: Remove spaces between node ID and opening bracket ---
+        // "Node1 [" → "Node1["
+        line = line.replace(/([A-Za-z0-9_]+)\s+(\[|\(|\{)/g, '$1$2');
 
-        // --- FIX 3: Spaces after pipe closing in edge labels ---
-        // e.g. "-->|Kidney| V[" → "-->|Kidney|V["
-        line = line.replace(/\|\s+([A-Za-z0-9_]+)(\[|\(|\{)/g, '|$1$2');
+        // --- HEURISTIC 4: Fix spaces after pipe in edge labels ---
+        // "-->|Label| V[" → "-->|Label|V["
+        line = line.replace(/\|\s+([A-Za-z0-9_]+)($|\[|\(|\{)/g, '|$1$2');
 
-        // --- FIX 4: Hallucinated arrow heads ---
-        // e.g. "-->|Label|> B[" → "-->|Label| B["
+        // --- HEURISTIC 5: Clean invalid arrow syntax (Hallucinations) ---
+        // "|>" → "|" ; "->>" → "-->" ; "-+>" → "-->" ; "<-+" → "<--"
         line = line.replace(/\|>/g, '|');
         line = line.replace(/->>/g, '-->');
-
-        // --- FIX 5: Invalid arrow patterns ---
-        // Fix multiple dashes or dots
         line = line.replace(/-+>/g, '-->');
         line = line.replace(/<-+/g, '<--');
         line = line.replace(/=\s*=/g, '==');
         line = line.replace(/\.\s*\./g, '..');
 
-        // --- FIX 6: Style line fixes ---
-        // 6a. Extra spaces between "style" and node ID: "style  B fill" → "style B fill"
+        // --- HEURISTIC 6: Fix unclosed/trailing labels or edges ---
+        // Removes stray trailing characters that break parsing
+        if (line.endsWith('|')) line = line.slice(0, -1);
+        if (line.endsWith('-->')) line = line.replace(/-->$/, '');
+
+        // --- HEURISTIC 7: Subgraph concatenation error ---
+        // AI sometimes outputs "subgraph Name [Label] \n" or "subgraph Name A --> B" on one line
+        // If line contains 'subgraph' but also has arrow relations, break them up
+        if (/^subgraph\b/.test(line) && /-->/.test(line)) {
+            const parts = line.split(/(?=[A-Za-z0-9_]+\s*-->)/);
+            if (parts.length > 1) {
+                cleanedLines.push(parts[0].trim());
+                cleanedLines.push(...parts.slice(1).map(p => p.trim()));
+                continue; // Skip the rest of loop for this line
+            }
+        }
+
+        // --- HEURISTIC 8: Escape characters inside node text (Labels) ---
+        // Node labels with quotes 'Node["Has "Quotes""]' fail. Need to convert inner double quotes to single or remove
+        const labelRegex = /(\[|\(|\{)(".*?)"(\]|\)|\})/g;
+        line = line.replace(labelRegex, (match, open, content, close) => {
+            // content includes the opening quote. Let's capture the inner part.
+            // If the format is ["Some text"], content is '"Some text'.
+            // More robust label extractor:
+            return match; // fallback
+        });
+        // Simpler string replace for quote collision:
+        // Match `["` or `("` ... `"]` or `")`
+        line = line.replace(/(\[|\()"(.*?)"(\]|\))/g, (match, open, innerText, close) => {
+            // Replace inner double quotes with single quotes to avoid breaking Mermaid syntax
+            const sanitizedText = innerText.replace(/"/g, "'");
+            return `${open}"${sanitizedText}"${close}`;
+        });
+
+        // --- HEURISTIC 9: Fix CSS styling syntax errors ---
+        // "style  B fill" → "style B fill"
         line = line.replace(/^(\s*style)\s{2,}([A-Za-z0-9_-]+)/g, '$1 $2');
-        // 6b. Spaces inside hex color values: "fill:# f88" or "fill:#f 88" → "fill:#f88"
-        line = line.replace(/(fill|stroke|color):#\s+([a-fA-F0-9])/g, '$1:#$2');
-        line = line.replace(/(fill|stroke|color):#([a-fA-F0-9]+)\s+([a-fA-F0-9]+)/g, '$1:#$2$3');
-        // 6c. Spaces around colon in style props: "fill: #fff" → "fill:#fff"
-        line = line.replace(/(fill|stroke|color)\s*:\s+#/g, '$1:#');
-        // 6d. Spaces around comma in style defs: "#fff, stroke" → "#fff,stroke"
-        line = line.replace(/(fill|stroke|color):#[a-fA-F0-9]+,\s+(fill|stroke|color)/g,
-            (match) => match.replace(', ', ','));
 
         // --- FIX 7: Invalid node ID characters (hyphens) ---
         // Replace hyphens in node IDs with underscores (but not in labels)
@@ -74,10 +110,31 @@ function cleanMermaidSyntax(raw: string): string {
                 return `${prefix}${id.replace(/-/g, '_')}${bracket}`;
             });
 
-        return line;
-    });
+        // --- HEURISTIC 13: Handle weird character encodings ---
+        line = line.replace(/&amp;/g, '&');
+        line = line.replace(/&lt;/g, '<');
+        line = line.replace(/&gt;/g, '>');
 
-    return cleaned.join('\n').trim();
+        cleanedLines.push(line);
+    }
+
+    // --- HEURISTIC 14: Ensure balanced subgraphs ---
+    const text = cleanedLines.join('\n');
+    const subgraphCount = (text.match(/^subgraph\b/gm) || []).length;
+    const endCount = (text.match(/^end\b/gm) || []).length;
+
+    // If missing ends, append them
+    for (let i = 0; i < (subgraphCount - endCount); i++) {
+        cleanedLines.push('end');
+    }
+
+    // --- HEURISTIC 15: Fallback syntax check ---
+    if (cleanedLines.length > 0 && !cleanedLines[0].match(/^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline)/i)) {
+        // Assume it's a flowchart if no type is declared
+        cleanedLines.unshift('flowchart TD');
+    }
+
+    return cleanedLines.join('\n').trim();
 }
 
 export function MermaidRenderer({ code }: { code: string }) {
@@ -239,16 +296,16 @@ export function MermaidRenderer({ code }: { code: string }) {
 
             // Draw Watermark
             const wText = "BENCHSIDE";
-            ctx.font = "800 12px sans-serif";
+            ctx.font = "800 18px sans-serif";
             const textMetrics = ctx.measureText(wText);
-            const wWidth = 14 + 6 + textMetrics.width + 10;
+            const wWidth = 22 + 8 + textMetrics.width + 10;
             const wx = finalWidth - padding - wWidth + 20;
             const wy = finalHeight - padding + 15;
 
             ctx.globalAlpha = 0.4;
             const logoImg = new Image();
             logoImg.onload = () => {
-                ctx.drawImage(logoImg, wx, wy - 11, 14, 14);
+                ctx.drawImage(logoImg, wx, wy - 16, 22, 22);
                 ctx.globalAlpha = 0.5;
                 ctx.fillStyle = "#888888";
                 ctx.textBaseline = "middle";

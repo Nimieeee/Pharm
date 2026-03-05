@@ -408,8 +408,9 @@ export function useChatStreaming(state: any) {
                     currentConvIdRef.current = null;
                     if (typeof window !== 'undefined') localStorage.removeItem('currentConversationId');
                 }
-                const errorMessage: Message = { id: generateStableClientId(), role: 'assistant', content: error.message || 'Connection error', timestamp: new Date() };
-                setMessages((prev: Message[]) => [...prev, errorMessage]);
+                // Do not insert an assistant message into the main array for errors anymore.
+                // We should alert via toast or let the branch show the error.
+                console.error("Connection error during generation:", error.message);
             } finally {
                 if (streamConversationId) unregisterStream(streamConversationId);
                 setIsLoading(false);
@@ -444,8 +445,9 @@ export function useChatStreaming(state: any) {
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({
                         message: userMessage.content, conversation_id: streamConversationId,
-                        mode: targetMode, use_rag: true, language: 'en',
+                        mode: targetMode, use_rag: true, language: userMessage.translations ? Object.keys(userMessage.translations)[0] || 'en' : 'en',
                         parent_id: userMessage.parentId || undefined,
+                        user_message_id: userMessage.id,
                     }),
                     signal: abortController.signal,
                 });
@@ -523,6 +525,7 @@ export function useChatStreaming(state: any) {
 
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
+                            // Map the returned IDs if present
                             if (meta.user_message_id) {
                                 currentUserMsgId = meta.user_message_id;
                             }
@@ -537,6 +540,10 @@ export function useChatStreaming(state: any) {
                         },
                         onDone: () => {
                             streamer.markComplete();
+                        },
+                        onError: (error) => {
+                            streamer.flush();
+                            throw error;
                         }
                     });
 

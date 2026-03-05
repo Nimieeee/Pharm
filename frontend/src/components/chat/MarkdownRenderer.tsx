@@ -188,16 +188,16 @@ function EnhancedImage({ src, alt, isAnimating }: { src?: string; alt?: string; 
 
         // Draw Benchside watermark at bottom right
         const wText = "BENCHSIDE";
-        ctx.font = "800 12px sans-serif";
+        ctx.font = "800 18px sans-serif";
         const textMetrics = ctx.measureText(wText);
-        const wWidth = 14 + 6 + textMetrics.width + 10;
+        const wWidth = 22 + 8 + textMetrics.width + 10;
         const wx = canvas.width - wWidth - 20;
         const wy = canvas.height - 20;
 
         ctx.globalAlpha = 0.4;
         const logoImg = new Image();
         logoImg.onload = () => {
-          ctx.drawImage(logoImg, wx, wy - 11, 14, 14);
+          ctx.drawImage(logoImg, wx, wy - 16, 22, 22);
 
           ctx.globalAlpha = 0.5;
           ctx.fillStyle = "#888888";

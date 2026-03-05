@@ -6,11 +6,10 @@ import { useAuth } from '@/lib/auth-context';
 import { useConversations, clearSWRCache } from '@/hooks/useSWRChat';
 import { useStreamingConversations } from '@/hooks/useStreamingState';
 import { useTranslation } from '@/hooks/use-translation';
-import { useProjects } from '@/hooks/useProjects';
 import * as RadixPopover from '@radix-ui/react-popover';
 import {
   ChevronsLeft, ChevronsRight, Plus, Moon, Sun, Settings, LogOut, X,
-  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert, PanelLeft, Folder, FolderOpen
+  MoreHorizontal, Pin, Pencil, Copy, Archive, Share2, Download, Trash2, Book, HelpCircle, Loader2, User, ShieldAlert, PanelLeft
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { API_BASE_URL } from '@/config/api';
@@ -171,13 +170,6 @@ function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, curren
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
-
-  const { projects, createProject, deleteProject, renameProject, addChatToProject, removeChatFromProject } = useProjects();
-  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-
-  const toggleProject = (id: string) => setExpandedProjects(prev => ({ ...prev, [id]: !prev[id] }));
 
   // SWR for conversation list - no token param needed (uses localStorage internally)
   const { conversations, isLoading: isLoadingHistory, isError, mutate: mutateConversations } = useConversations();
@@ -407,10 +399,7 @@ function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, curren
   const unpinnedChats = filteredHistory.filter((c: ChatHistory) => !c.is_pinned && !c.is_archived);
 
   // Group unassigned chats by date
-  const isChatInAnyProject = (id: string) => projects.some(p => p.chatIds.includes(id));
-  const unassignedChats = unpinnedChats.filter((c: ChatHistory) => !isChatInAnyProject(c.id));
-
-  const groupedChats = unassignedChats.reduce((acc: Record<string, ChatHistory[]>, chat: ChatHistory) => {
+  const groupedChats = unpinnedChats.reduce((acc: Record<string, ChatHistory[]>, chat: ChatHistory) => {
     const category = getRelativeDateCategory(chat.created_at, t);
     if (!acc[category]) acc[category] = [];
     acc[category].push(chat);
@@ -529,29 +518,6 @@ function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, curren
                     <Trash2 size={14} />
                     {t('delete')}
                   </button>
-
-                  {/* Projects Section in Popover */}
-                  <div className="h-px bg-border my-1" />
-                  <div className="px-2 py-1 text-[10px] font-semibold text-foreground-muted uppercase tracking-wider">Projects</div>
-                  {projects.map(p => {
-                    const inProject = p.chatIds.includes(chat.id);
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          inProject ? removeChatFromProject(p.id, chat.id) : addChatToProject(p.id, chat.id);
-                          setOpenPopoverId(null);
-                        }}
-                        className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm text-foreground rounded-md hover:bg-[var(--surface-highlight)] transition-colors text-left"
-                      >
-                        <span className="truncate">{p.name}</span>
-                        {inProject ? <X size={12} className="text-red-500" /> : <Plus size={12} className="text-foreground-muted" />}
-                      </button>
-                    );
-                  })}
-                  {projects.length === 0 && (
-                    <div className="px-2 py-1 text-xs text-foreground-muted italic">No projects yet</div>
-                  )}
                 </div>
               </RadixPopover.Content>
             </RadixPopover.Portal>
@@ -716,90 +682,6 @@ function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, curren
                         </div>
                       </div>
                     )}
-
-                    {/* Projects Section */}
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between px-3 py-2 mb-1 group/projheader">
-                        <p className="text-xs font-medium text-foreground-muted flex items-center gap-1">
-                          <Folder size={10} /> Projects
-                        </p>
-                        <button
-                          onClick={() => setIsCreatingProject(true)}
-                          className="opacity-0 group-hover/projheader:opacity-100 p-1 hover:bg-[var(--surface-highlight)] rounded text-foreground-muted transition-all"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-
-                      {isCreatingProject && (
-                        <div className="px-3 py-1 mb-2 flex items-center gap-2">
-                          <input
-                            autoFocus
-                            value={newProjectName}
-                            onChange={e => setNewProjectName(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter' && newProjectName.trim()) {
-                                createProject(newProjectName.trim());
-                                setNewProjectName('');
-                                setIsCreatingProject(false);
-                              } else if (e.key === 'Escape') {
-                                setNewProjectName('');
-                                setIsCreatingProject(false);
-                              }
-                            }}
-                            onBlur={() => {
-                              if (newProjectName.trim()) createProject(newProjectName.trim());
-                              setNewProjectName('');
-                              setIsCreatingProject(false);
-                            }}
-                            placeholder="Project name..."
-                            className="flex-1 bg-[var(--surface-highlight)] border border-[var(--border)] rounded px-2 py-1 text-xs outline-none focus:border-orange-500/50"
-                          />
-                        </div>
-                      )}
-
-                      <div className="space-y-1 block">
-                        {projects.map(project => {
-                          const isExpanded = expandedProjects[project.id];
-                          const pChats = filteredHistory.filter(c => project.chatIds.includes(c.id));
-
-                          if (searchQuery.trim() && pChats.length === 0 && !project.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-                            return null;
-                          }
-
-                          return (
-                            <div key={project.id} className="mb-1">
-                              <div className="group/proj flex items-center justify-between px-2 py-1.5 hover:bg-[var(--surface-highlight)]/50 rounded-md cursor-pointer transition-colors" onClick={() => toggleProject(project.id)}>
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  {isExpanded ? <FolderOpen size={14} className="text-orange-500 shrink-0" /> : <Folder size={14} className="text-orange-500 shrink-0" />}
-                                  <span className="text-sm text-foreground font-medium truncate">{project.name}</span>
-                                </div>
-                                <div className="flex items-center opacity-0 group-hover/proj:opacity-100 transition-opacity">
-                                  <button onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }} className="p-1 text-foreground-muted hover:text-red-500 rounded"><Trash2 size={12} /></button>
-                                </div>
-                              </div>
-                              <AnimatePresence>
-                                {isExpanded && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="pl-4 mt-1 overflow-hidden relative before:absolute before:left-[15px] before:top-0 before:bottom-2 before:w-px before:bg-[var(--border)]"
-                                  >
-                                    <div className="pt-1 space-y-1">
-                                      {pChats.length > 0 ? pChats.map(renderChatItem) : <div className="px-3 py-1 text-xs text-foreground-muted italic">Empty</div>}
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          );
-                        })}
-                        {projects.length === 0 && !isCreatingProject && (
-                          <div className="px-3 py-1 text-xs text-foreground-muted italic text-center opacity-50">No projects</div>
-                        )}
-                      </div>
-                    </div>
 
                     {/* Recent Chats */}
                     {sortedCategories.map((category) => (
