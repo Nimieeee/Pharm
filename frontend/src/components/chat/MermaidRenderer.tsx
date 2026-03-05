@@ -83,18 +83,20 @@ function cleanMermaidSyntax(raw: string): string {
         }
 
         // --- HEURISTIC 8: Escape characters inside node text (Labels) ---
-        // Node labels with quotes 'Node["Has "Quotes""]' fail. Need to convert inner double quotes to single or remove
-        const labelRegex = /(\[|\(|\{)(".*?)"(\]|\)|\})/g;
-        line = line.replace(labelRegex, (match, open, content, close) => {
-            // content includes the opening quote. Let's capture the inner part.
-            // If the format is ["Some text"], content is '"Some text'.
-            // More robust label extractor:
-            return match; // fallback
-        });
-        // Simpler string replace for quote collision:
-        // Match `["` or `("` ... `"]` or `")`
-        line = line.replace(/(\[|\()"(.*?)"(\]|\))/g, (match, open, innerText, close) => {
-            // Replace inner double quotes with single quotes to avoid breaking Mermaid syntax
+        // Match `[` or `(` ... `]` or `)`
+        line = line.replace(/(\[|\()(.*?)(\]|\))/g, (match, open, innerText, close) => {
+            // If it's already quoted, don't double quote
+            if (innerText.trim().startsWith('"') && innerText.trim().endsWith('"')) {
+                // Just sanitize inner quotes
+                const content = innerText.trim().slice(1, -1).replace(/"/g, "'");
+                return `${open}"${content}"${close}`;
+            }
+
+            // If it's a subgraph name or type, skip (heuristic: if it's just one word or looks like code)
+            if (/^subgraph\s/.test(match) || /^[A-Z0-9_]+$/.test(innerText)) return match;
+
+            // If it contains parentheses and is NOT quoted, wrap in double quotes
+            // and sanitize interior double quotes.
             const sanitizedText = innerText.replace(/"/g, "'");
             return `${open}"${sanitizedText}"${close}`;
         });

@@ -297,7 +297,7 @@ export function useChatStreaming(state: any) {
                         mode, use_rag: true,
                         metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
                         language,
-                        parent_id: messages.length > 0 && messages[messages.length - 1].id.includes('-') ? messages[messages.length - 1].id : undefined,
+                        parent_id: messages.length > 0 ? messages[messages.length - 1].id : undefined,
                     }),
                     signal,
                 });
@@ -562,5 +562,35 @@ export function useChatStreaming(state: any) {
         }
     }, [conversationId, messages, setBranchData, setActiveBranches]);
 
-    return { sendMessage, stopGeneration, regenerateResponse };
+    const editMessage = useCallback(async (messageId: string, newContent: string) => {
+        const token = localStorage.getItem('token');
+        if (!token || !conversationId) return;
+
+        try {
+            // 1. Update backend content
+            const formData = new FormData();
+            formData.append('content', newContent);
+
+            const patchResponse = await fetch(`${API_BASE_URL}/api/v1/chat/messages/${messageId}`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+
+            if (!patchResponse.ok) throw new Error('Failed to update message content');
+
+            // 2. Update local state
+            setMessages((prev: Message[]) =>
+                prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
+            );
+
+            // 3. Trigger regeneration
+            await regenerateResponse(messageId);
+        } catch (error) {
+            console.error('Edit error:', error);
+            toast.error('Failed to edit message');
+        }
+    }, [conversationId, setMessages, regenerateResponse]);
+
+    return { sendMessage, stopGeneration, regenerateResponse, editMessage };
 }

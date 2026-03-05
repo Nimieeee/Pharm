@@ -21,7 +21,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, isConversationLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, regenerateMessage, deleteMessage, branchData, activeBranches, regenerateResponse, switchBranch, deleteBranch } = useChatContext();
+  const { messages, isLoading, isConversationLoading, isLoadingConversation, isUploading, isDeleting, sendMessage, stopGeneration, uploadFiles, deepResearchProgress, deleteConversation, clearMessages, conversationId, selectConversation, cancelUpload, removeFile, regenerateMessage, deleteMessage, branchData, activeBranches, regenerateResponse, switchBranch, deleteBranch, editMessage } = useChatContext();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { t, language } = useTranslation();
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -205,7 +205,7 @@ function ChatContent() {
                   <MemoizedChatMessage
                     message={userMsg}
                     isStreaming={false}
-                    onEdit={undefined}
+                    onEdit={editMessage}
                     onDelete={deleteMessage}
                   />
                   {activeResponse && (

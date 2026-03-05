@@ -28,7 +28,7 @@ export function useChat() {
     clearMessages
   } = state;
 
-  const { sendMessage, stopGeneration, regenerateResponse } = streaming;
+  const { sendMessage, stopGeneration, regenerateResponse, editMessage } = streaming;
 
   // Keep-alive ping
   useEffect(() => {
@@ -317,7 +317,7 @@ export function useChat() {
     isDeleting, uploadedFiles, branchData, activeBranches,
     sendMessage, stopGeneration, clearMessages, loadConversation, selectConversation,
     deleteConversation, uploadFiles, cancelUpload, removeFile,
-    regenerateMessage, regenerateResponse, deleteMessage, switchBranch, deleteBranch,
+    regenerateMessage, regenerateResponse, deleteMessage, switchBranch, deleteBranch, editMessage,
     isConversationLoading: (id: string) => isConversationStreaming(id) || (id === conversationId && isLoading),
   };
 }

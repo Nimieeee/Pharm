@@ -549,35 +549,35 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-[40]">
         <div className="fixed bottom-0 left-0 right-0 h-24 pointer-events-none -z-10 bg-gradient-to-t from-[var(--background)] to-transparent" />
 
-        {/* Top: Mobile Mode Selector Pill */}
-        <div className="flex items-center gap-2 px-2 pb-3 overflow-x-auto no-scrollbar">
-          {modes.map((m) => {
-            const Icon = m.icon;
-            const isActive = mode === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setMode(m.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${isActive
-                  ? 'bg-[var(--surface)] border-[var(--accent)] text-[var(--accent)] shadow-sm scale-105'
-                  : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-sm'
-                  }`}
-              >
-                <Icon size={12} strokeWidth={2} />
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          {/* Top: Mobile Mode Selector Pill */}
+          <div className="flex items-center gap-1.5 px-0 overflow-x-auto no-scrollbar">
+            {modes.map((m) => {
+              const Icon = m.icon;
+              const isActive = mode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMode(m.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 border ${isActive
+                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white shadow-md scale-105'
+                    : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-md'
+                    }`}
+                >
+                  <Icon size={12} strokeWidth={2.5} />
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
 
-        <form onSubmit={handleSubmit}>
           <div className={`relative rounded-[24px] border-2 transition-all ${isDragging
             ? 'border-[var(--accent)] bg-[var(--accent)]/5'
             : mode === 'deep_research'
-              ? 'border-[var(--accent)]/50 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
+              ? 'border-[var(--accent)]/50 shadow-[0_0_20px_rgba(249,115,22,0.15)]'
               : 'border-[var(--border)]'
-            } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-xl flex flex-col`}>
+            } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-2xl flex flex-col overflow-hidden`}>
 
             {/* Mobile File Attachment Grid */}
             <AnimatePresence>
@@ -649,11 +649,10 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                         />
                         <motion.div
                           ref={mobileMenuRef}
-                          initial={{ opacity: 0, y: 100 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 100 }}
-                          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                          className="fixed bottom-0 left-0 right-0 p-4 pb-12 sm:pb-8 bg-[var(--surface)] border-t border-[var(--border)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[60] rounded-t-3xl max-h-[85vh] overflow-y-auto"
+                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                          className="absolute bottom-full left-0 mb-4 w-[280px] p-2 bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[60] rounded-2xl overflow-hidden"
                         >
                           <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mb-6 shrink-0" />
 
