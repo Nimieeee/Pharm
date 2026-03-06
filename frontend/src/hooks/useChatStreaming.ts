@@ -289,6 +289,7 @@ export function useChatStreaming(state: any) {
 
                 // Standard Stream
                 const assistantMessageId = generateStableClientId();
+                const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
                 const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -298,7 +299,8 @@ export function useChatStreaming(state: any) {
                         mode, use_rag: true,
                         metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
                         language,
-                        parent_id: messages.length > 0 ? messages[messages.length - 1].id : undefined,
+                        // Only include parent_id if last message exists and has valid id
+                        parent_id: (lastMessage && lastMessage.id && typeof lastMessage.id === 'string' && lastMessage.id.length > 0) ? lastMessage.id : undefined,
                     }),
                     signal,
                 });
@@ -448,9 +450,13 @@ export function useChatStreaming(state: any) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({
-                        message: contentToSend, conversation_id: streamConversationId,
-                        mode: targetMode, use_rag: true, language: userMessage.translations ? Object.keys(userMessage.translations)[0] || 'en' : 'en',
-                        parent_id: userMessage.parentId || undefined,
+                        message: contentToSend,
+                        conversation_id: streamConversationId,
+                        mode: targetMode,
+                        use_rag: true,
+                        language: userMessage.translations ? Object.keys(userMessage.translations)[0] || 'en' : 'en',
+                        // Only include parent_id if it's a valid UUID (not empty/null/undefined)
+                        parent_id: (userMessage.parentId && typeof userMessage.parentId === 'string' && userMessage.parentId.length > 0) ? userMessage.parentId : undefined,
                         user_message_id: userMessage.id,
                     }),
                     signal: abortController.signal,
