@@ -115,6 +115,11 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 7860
 ```
 
+**CoT Reasoning Engine**:
+```bash
+python3 /Users/mac/Desktop/phhh/scripts/cot_retriever.py "Your problem description"
+```
+
 ### Build Commands
 
 **Frontend Build**:
@@ -173,6 +178,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
    - **25k Token Reports**: Elite mode writer for massive academic reviews.
    - **PubMed Hardening**: API key integration for 10 req/s and 50 papers/query.
    - **Hybrid Routing**: Tier 1 (Gemini) vs Tier 2 (Kimi) fallback logic.
+   - **CoT Reasoning Store**: Local ChromaDB index of 400k reasoning patterns for expert-level logic.
    - **UI Decoupling**: Non-blocking research allowing parallel chat interaction.
    - **Full Decoupling**: All services use ServiceContainer with lazy loading.
 4. **Recent Fixes (Phase 30)**:
@@ -240,7 +246,7 @@ Symptom fixes are a failure. Never apply a patch without fully understanding *wh
 ### 2. The Four Phases of Systematic Debugging
 1. **Root Cause**: Read errors fully, reproduce consistently, check recent changes, and gather evidence at component boundaries. Trace data flow backward.
 2. **Pattern Analysis**: Find working examples in the codebase. Compare broken vs. working code. Understand dependencies.
-3. **Hypothesis**: Form a single, specific hypothesis ("I think X is the root cause because Y"). Test minimally.
+3. **Failure Mode Analysis (FMA)**: You MUST explicitly list 3 things that could go wrong with your proposed fix (e.g., race conditions, side effects, schema mismatch). Form a single, specific hypothesis based on this analysis.
 4. **Implementation**: Create a failing test case *first*. Implement a single targeted fix. Verify. If 3+ fixes fail, **STOP** and question the architecture instead of continuing to patch.
 
 ### 3. Core Regression Prevention Strategies
@@ -592,7 +598,23 @@ git diff HEAD~10..HEAD --stat
 - **Test-Driven Development**: When implementing any logical feature or bug fix, you MUST write the test that defines success *first*. Implement the code only until the test passes. Correctness first, naive implementation second, optimization third.
 - **Assumption Surfacing**: Explicitly state assumptions ("ASSUMPTIONS I'M MAKING: 1...") before implementing non-trivial logic.
 - **Confusion Management**: When encountering inconsistencies or conflicting requirements, STOP. Name the confusion and ask for clarification. Do not guess.
-- **Simplicity Enforcement**: Resist overcomplication. Prefer the boring, obvious solution.
+- **CoT reasoning mandate**: For ANY task involving complex architecture, algorithmic design, or deep logical debugging (e.g., branching bugs), you MUST first retrieve relevant reasoning patterns using:
+  `python3 /Users/mac/Desktop/phhh/scripts/cot_retriever.py "Task summary"`
+  **THE EVIDENCE RULE**: You MUST include the **raw terminal output (first 10 lines)** in your planning block as proof of retrieval. Analyze the retrieved "Internal thinking" and explicitly state how you are adopting those patterns in your implementation plan.
+
+---
+
+### 🔱 COT VERIFICATION LOCK
+**NO IMPLEMENTATION PLAN IS VALID WITHOUT A PRECEDING COT RETRIEVAL.**
+If you identify a task as "complex" but do not provide retrieval findings, the plan is rejected.
+
+#### **RED FLAGS (STOP and Start Over)**:
+- "I'll use CoT later in the implementation phase."
+- "The task is simple so I don't need expert reasoning." (Trust the Architect, not your confidence).
+- "I already know the solution." (Benchside relies on verified patterns, not individual intuition).
+
+---
+
 - **Scope Discipline**: Touch only what is requested. Overly ambitious refactoring introduces regressions.
 - **Documentation Maintenance**: ALWAYS update this `CLAUDE.md` file whenever there is a massive update to the codebase architecture, a new technology is added to the stack, or core deployment commands change.
 - **Regression Test Maintenance**: When adding new functionality, ALWAYS add corresponding regression tests. Run `./run_regression.sh` before any commit.
