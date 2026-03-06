@@ -424,12 +424,15 @@ export function useChatStreaming(state: any) {
 
     // editMessage was repurposed to regenerateResponse, since users no longer edit their own messages
     // instead, they regenerate a new branch off an existing user message
-    const regenerateResponse = useCallback(async (userMessageId: string) => {
+    const regenerateResponse = useCallback(async (userMessageId: string, overrideContent?: string) => {
         const userMessage = messages.find((m: Message) => m.id === userMessageId);
         if (!userMessage) return;
 
         const targetMode = userMessage.mode || modeRef.current;
         const token = localStorage.getItem('token');
+
+        // Use overrideContent if provided (for edits), otherwise use message from state
+        const contentToSend = overrideContent || userMessage.content;
 
         if (!token || !conversationId) return;
 
@@ -445,7 +448,7 @@ export function useChatStreaming(state: any) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({
-                        message: userMessage.content, conversation_id: streamConversationId,
+                        message: contentToSend, conversation_id: streamConversationId,
                         mode: targetMode, use_rag: true, language: userMessage.translations ? Object.keys(userMessage.translations)[0] || 'en' : 'en',
                         parent_id: userMessage.parentId || undefined,
                         user_message_id: userMessage.id,
@@ -585,8 +588,8 @@ export function useChatStreaming(state: any) {
                 prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
             );
 
-            // 3. Trigger regeneration
-            await regenerateResponse(messageId);
+            // 3. Trigger regeneration with edited content (fixes race condition)
+            await regenerateResponse(messageId, newContent);
         } catch (error) {
             console.error('Edit error:', error);
             toast.error('Failed to edit message');
