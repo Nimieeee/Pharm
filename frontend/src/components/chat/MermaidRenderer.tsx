@@ -56,6 +56,12 @@ function cleanMermaidSyntax(raw: string): string {
         // "-->|Label| V[" → "-->|Label|V["
         line = line.replace(/\|\s+([A-Za-z0-9_]+)($|\[|\(|\{)/g, '|$1$2');
 
+        // --- HEURISTIC 4.5: Fix concatenated node declarations (CRITICAL FIX) ---
+        // Example: B["vanRS (Two-component system)"]B --> C
+        // Result: B["vanRS (Two-component system)"]\nB --> C
+        // This fixes the "Expecting 'SQE', 'TAGEND' got 'PE'" parse error
+        line = line.replace(/([\]\)\}])\s*([A-Za-z0-9_-]+)\s*(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)/g, '$1\n$2 $3');
+
         // --- HEURISTIC 5: Clean invalid arrow syntax (Hallucinations) ---
         // "|>" → "|" ; "->>" → "-->" ; "-+>" → "-->" ; "<-+" → "<--"
         line = line.replace(/\|>/g, '|');
