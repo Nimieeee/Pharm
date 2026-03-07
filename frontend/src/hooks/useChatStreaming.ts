@@ -8,6 +8,15 @@ import { activeStreams, registerStream, unregisterStream, isConversationStreamin
 import { moveConversationToTop, addConversationToList } from './useSWRChat';
 import { Mode, cacheSet, DeepResearchProgress, generateStableClientId } from './useChatState';
 
+// Strict UUID validation regex (RFC 4122)
+// Prevents 422 errors from sending optimistic client IDs like "client_170000000_0"
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(id: string | null | undefined): boolean {
+    if (!id || typeof id !== 'string') return false;
+    return UUID_REGEX.test(id);
+}
+
 function generateConversationTitle(message: string): string {
     const cleaned = message.trim().replace(/\s+/g, ' ');
     if (cleaned.length <= 50) return cleaned;
@@ -290,6 +299,12 @@ export function useChatStreaming(state: any) {
                 // Standard Stream
                 const assistantMessageId = generateStableClientId();
                 const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+
+                // CRITICAL FIX: Validate parent_id is a real UUID, not optimistic client ID
+                // Optimistic IDs like "client_170000000_0" cause 422 errors on backend
+                const tempParentId = lastMessage && lastMessage.id ? getStableKey(lastMessage.id) : undefined;
+                const finalParentId = isValidUUID(tempParentId) ? tempParentId : undefined;
+
                 const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -299,8 +314,8 @@ export function useChatStreaming(state: any) {
                         mode, use_rag: true,
                         metadata: uploadedFiles.length > 0 ? { attachments: uploadedFiles } : undefined,
                         language,
-                        // Only include parent_id if last message exists and has valid id
-                        parent_id: (lastMessage && lastMessage.id && typeof lastMessage.id === 'string' && lastMessage.id.length > 0) ? lastMessage.id : undefined,
+                        // Only send parent_id if it's a valid UUID (not optimistic client ID)
+                        parent_id: finalParentId,
                     }),
                     signal,
                 });
@@ -455,8 +470,8 @@ export function useChatStreaming(state: any) {
                         mode: targetMode,
                         use_rag: true,
                         language: userMessage.translations ? Object.keys(userMessage.translations)[0] || 'en' : 'en',
-                        // Only include parent_id if it's a valid UUID (not empty/null/undefined)
-                        parent_id: (userMessage.parentId && typeof userMessage.parentId === 'string' && userMessage.parentId.length > 0) ? userMessage.parentId : undefined,
+                        // CRITICAL: Validate parent_id is a real UUID
+                        parent_id: isValidUUID(userMessage.parentId) ? userMessage.parentId : undefined,
                         user_message_id: userMessage.id,
                     }),
                     signal: abortController.signal,
