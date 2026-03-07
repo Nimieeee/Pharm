@@ -104,6 +104,9 @@ class ChatOrchestratorService:
             logger.error(f"Output security violation: {e}")
             ai_response = "I apologize, but I cannot provide that response as it may violate safety guidelines."
 
+        # Apply Mermaid fixes before saving to DB
+        ai_response = self.mermaid.fix_markdown_mermaid(ai_response)[0]
+
         branch_response = await self.chat.create_response_branch(
             user_message_id=saved_msg.id if saved_msg else None,
             content=ai_response,
@@ -195,6 +198,9 @@ class ChatOrchestratorService:
             if not is_final or not response_text or not saved_msg:
                 return
             try:
+                # Apply Mermaid fixes before saving to DB
+                response_text = self.mermaid.fix_markdown_mermaid(response_text)[0]
+                
                 # Create the branch in assistant_responses instead of messages
                 branch_response = await self.chat.create_response_branch(
                     user_message_id=saved_msg.id,

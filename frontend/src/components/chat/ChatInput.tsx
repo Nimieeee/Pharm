@@ -551,7 +551,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           {/* Top: Mobile Mode Selector Pill */}
-          <div className="flex items-center gap-1.5 px-0 overflow-x-auto no-scrollbar">
+          <div className="flex items-center justify-center gap-1.5 px-0 overflow-x-auto no-scrollbar">
             {modes.map((m) => {
               const Icon = m.icon;
               const isActive = mode === m.id;
@@ -561,7 +561,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                   type="button"
                   onClick={() => setMode(m.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 border ${isActive
-                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white shadow-md scale-105'
+                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white shadow-md'
                     : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-md'
                     }`}
                 >
@@ -577,7 +577,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
             : mode === 'deep_research'
               ? 'border-[var(--accent)]/50 shadow-[0_0_20px_rgba(249,115,22,0.15)]'
               : 'border-[var(--border)]'
-            } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-2xl flex flex-col overflow-hidden`}>
+            } bg-[var(--surface)] dark:bg-[#1E1E1E] shadow-2xl flex flex-col`}>
 
             {/* Mobile File Attachment Grid */}
             <AnimatePresence>

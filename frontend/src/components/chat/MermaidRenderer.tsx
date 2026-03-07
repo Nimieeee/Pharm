@@ -24,7 +24,8 @@ function cleanMermaidSyntax(raw: string): string {
     let cleanedText = raw.replace(/^```mermaid\n?/im, '').replace(/```$/im, '');
 
     // 2) Initial trim & line split
-    let lines = cleanedText.trim().split('\n');
+    // Normalize line endings to handle \r\n from some providers
+    let lines = cleanedText.trim().replace(/\r\n/g, '\n').split('\n');
     const cleanedLines: string[] = [];
 
     // Process line-by-line for precision
@@ -44,6 +45,16 @@ function cleanMermaidSyntax(raw: string): string {
             line = line.replace(/^(graph|flowchart)([A-Za-z]+)$/i, '$1 $2');
         }
 
+        // --- HEURISTIC 1B: Fix concatenated node-relation lines ---
+        // AI sometimes outputs: A["label"]B --> C
+        // This regex detects a closing bracket/paren/brace followed by an ID and arrow
+        line = line.replace(/([\]\)\}])\s*([A-Za-z0-9_-]+)\s*(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)/g, '$1\n$2 $3');
+
+        // --- HEURISTIC 1C: Fix malformed closing quotes/brackets ---
+        // Error seen: Pe")"] -->  or  Pe"] -->
+        // We ensure that if we have a quote followed by brackets, it's cleaned up
+        line = line.replace(/"\s*[\]\)\}]+\s*([\]\)\}]?)\s*(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)/g, '"] $2');
+
         // --- HEURISTIC 2: Spaces inside simple node IDs ---
         // "F --> F 1[" → "F --> F1["
         line = line.replace(/\b([A-Za-z]+)\s+(\d+)\s*(\[|\(|\{)/g, '$1$2$3');
@@ -55,12 +66,6 @@ function cleanMermaidSyntax(raw: string): string {
         // --- HEURISTIC 4: Fix spaces after pipe in edge labels ---
         // "-->|Label| V[" → "-->|Label|V["
         line = line.replace(/\|\s+([A-Za-z0-9_]+)($|\[|\(|\{)/g, '|$1$2');
-
-        // --- HEURISTIC 4.5: Fix concatenated node declarations (CRITICAL FIX) ---
-        // Example: B["vanRS (Two-component system)"]B --> C
-        // Result: B["vanRS (Two-component system)"]\nB --> C
-        // This fixes the "Expecting 'SQE', 'TAGEND' got 'PE'" parse error
-        line = line.replace(/([\]\)\}])\s*([A-Za-z0-9_-]+)\s*(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)/g, '$1\n$2 $3');
 
         // --- HEURISTIC 5: Clean invalid arrow syntax (Hallucinations) ---
         // "|>" → "|" ; "->>" → "-->" ; "-+>" → "-->" ; "<-+" → "<--"
@@ -98,11 +103,8 @@ function cleanMermaidSyntax(raw: string): string {
                 return `${open}"${content}"${close}`;
             }
 
-            // If it's a subgraph name or type, skip (heuristic: if it's just one word or looks like code)
-            if (/^subgraph\s/.test(match) || /^[A-Z0-9_]+$/.test(innerText)) return match;
-
-            // If it contains parentheses and is NOT quoted, wrap in double quotes
-            // and sanitize interior double quotes.
+            // If it contains unbalanced parentheses and is NOT quoted, wrap in double quotes
+            // This fix handles cases like B[walKR (yycFG)]
             const sanitizedText = innerText.replace(/"/g, "'");
             return `${open}"${sanitizedText}"${close}`;
         });
@@ -111,19 +113,28 @@ function cleanMermaidSyntax(raw: string): string {
         // "style  B fill" → "style B fill"
         line = line.replace(/^(\s*style)\s{2,}([A-Za-z0-9_-]+)/g, '$1 $2');
 
-        // --- FIX 7: Invalid node ID characters (hyphens) ---
+        // --- FIX 10: Invalid node ID characters (hyphens) ---
         // Replace hyphens in node IDs with underscores (but not in labels)
         line = line.replace(/(^|-->|--|<-->|<--|\.->|-.->)\s*([A-Za-z][A-Za-z0-9-]*)\s*(\[|\(|\{|\))/g,
             (match, prefix, id, bracket) => {
                 return `${prefix}${id.replace(/-/g, '_')}${bracket}`;
             });
 
+        // --- HEURISTIC 11: Remove trailing garbage after relation ---
+        // e.g. "A --> B ." or "A --> B ,"
+        line = line.replace(/(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)\s*([A-Za-z0-9_-]+)\s*[.,;:]\s*$/g, '$1 $2');
+
         // --- HEURISTIC 13: Handle weird character encodings ---
         line = line.replace(/&amp;/g, '&');
         line = line.replace(/&lt;/g, '<');
         line = line.replace(/&gt;/g, '>');
 
-        cleanedLines.push(line);
+        // Split by the newline we might have injected in HEURISTIC 1B
+        if (line.includes('\n')) {
+            cleanedLines.push(...line.split('\n'));
+        } else {
+            cleanedLines.push(line);
+        }
     }
 
     // --- HEURISTIC 14: Ensure balanced subgraphs ---
