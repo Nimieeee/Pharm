@@ -432,13 +432,13 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={desktopBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] hover:bg-[var(--border)]`}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] hover:bg-[var(--border)]"
                   >
-                    <Plus
-                      size={20}
-                      strokeWidth={2}
-                      className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
-                    />
+                    {showAttachMenu ? (
+                      <X size={20} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                    ) : (
+                      <Plus size={20} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                    )}
                   </button>
 
                   {/* Attach Menu Dropdown - Desktop (Upload Only) */}
@@ -551,7 +551,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           {/* Top: Mobile Mode Selector Pill */}
-          <div className="flex items-center justify-center gap-1.5 px-0 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 px-0 overflow-x-auto no-scrollbar justify-center w-full">
             {modes.map((m) => {
               const Icon = m.icon;
               const isActive = mode === m.id;
@@ -562,7 +562,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                   onClick={() => setMode(m.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all duration-200 border ${isActive
                     ? 'bg-[var(--accent)] border-[var(--accent)] text-white shadow-md'
-                    : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] backdrop-blur-md'
+                    : 'bg-[var(--surface)]/80 border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--primary)] backdrop-blur-md'
                     }`}
                 >
                   <Icon size={12} strokeWidth={2.5} />
@@ -628,13 +628,13 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={mobileBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]`}
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]"
                   >
-                    <Plus
-                      size={18}
-                      strokeWidth={2}
-                      className={`text-[var(--text-secondary)] transition-transform duration-200 ease-out ${showAttachMenu ? 'rotate-45' : 'rotate-0'}`}
-                    />
+                    {showAttachMenu ? (
+                      <X size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                    ) : (
+                      <Plus size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                    )}
                   </button>
 
                   <AnimatePresence>
@@ -682,20 +682,6 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                               <div className="flex flex-col text-left">
                                 <span className="font-semibold text-[var(--text-primary)] hover:text-green-500 transition-colors">Upload Data</span>
                                 <span className="text-xs text-[var(--text-secondary)]">CSV, Excel spreadsheets</span>
-                              </div>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => { toggleRecording(); setShowAttachMenu(false); }}
-                              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
-                            >
-                              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                                <Mic size={20} className="text-orange-500" />
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="font-semibold text-[var(--text-primary)] hover:text-orange-500 transition-colors">Voice Dictation</span>
-                                <span className="text-xs text-[var(--text-secondary)]">{isRecording ? 'Stop recording' : 'Speak your research query'}</span>
                               </div>
                             </button>
                           </div>
