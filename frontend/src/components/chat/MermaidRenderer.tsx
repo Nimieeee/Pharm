@@ -187,9 +187,15 @@ export function MermaidRenderer({ code }: { code: string }) {
         return () => svgElement.removeEventListener('click', handleNodeClick);
     }, [svg]);
 
-    const renderDiagram = useCallback(async () => {
+    const renderDiagram = useCallback(async (isRetry = false) => {
         try {
             setError(null);
+            if (isRetry) {
+                setSvg('');
+                // Generate a fresh ID to avoid container poisoning from previous failed renders
+                idRef.current = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+            }
+
             const mermaid = (await import('mermaid')).default;
 
             // Detect theme
@@ -366,7 +372,7 @@ export function MermaidRenderer({ code }: { code: string }) {
                 <div className="flex items-center justify-between px-4 py-2 bg-red-500/10 border-b border-red-500/20">
                     <span className="text-xs font-mono text-red-400">MERMAID (render error)</span>
                     <button
-                        onClick={renderDiagram}
+                        onClick={() => renderDiagram(true)}
                         className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
                         title="Retry render"
                     >

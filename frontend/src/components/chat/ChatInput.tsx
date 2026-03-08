@@ -426,7 +426,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
             <div className="relative w-full">
               {/* Left: Plus Button (Attach Menu) */}
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-[51]">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-[61]">
                 <div className="relative">
                   <button
                     ref={desktopBtnRef}
@@ -622,7 +622,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
 
             <div className="relative w-full">
               {/* Left: Plus Button */}
-              <div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-[51]">
+              <div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-[61]">
                 <div className="relative">
                   <button
                     ref={mobileBtnRef}
@@ -631,7 +631,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     className="w-9 h-9 rounded-full flex items-center justify-center transition-all bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]"
                   >
                     {showAttachMenu ? (
-                      <X size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
+                      <X size={18} strokeWidth={2.5} className="text-white scale-110" />
                     ) : (
                       <Plus size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
                     )}
