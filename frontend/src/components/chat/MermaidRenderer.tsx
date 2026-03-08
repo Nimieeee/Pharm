@@ -23,6 +23,9 @@ function cleanMermaidSyntax(raw: string): string {
     // 1) Remove markdown backticks if present (e.g., ```mermaid ... ```)
     let cleanedText = raw.replace(/^```mermaid\n?/im, '').replace(/```$/im, '');
 
+    // 1.5) Fix "Smart Quotes" from AI models
+    cleanedText = cleanedText.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+
     // 2) Initial trim & line split
     // Normalize line endings to handle \r\n from some providers
     let lines = cleanedText.trim().replace(/\r\n/g, '\n').split('\n');
@@ -163,6 +166,7 @@ export function MermaidRenderer({ code }: { code: string }) {
     const [downloaded, setDownloaded] = useState<'svg' | 'png' | null>(null);
     const idRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 9)}`);
     const [tooltip, setTooltip] = useState<{ x: number, y: number, text: string } | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0); // Add key to force re-render effect
 
     // Attach click events for Node Tooltips
     useEffect(() => {
@@ -246,7 +250,7 @@ export function MermaidRenderer({ code }: { code: string }) {
             console.error('Mermaid render error:', err);
             setError(err?.message || 'Failed to render diagram');
         }
-    }, [code]);
+    }, [code, refreshKey]);
 
     useEffect(() => {
         // Debounce rendering to avoid parsing errors while streaming
@@ -255,6 +259,11 @@ export function MermaidRenderer({ code }: { code: string }) {
         }, 1500);
 
         return () => clearTimeout(timeoutId);
+    }, [renderDiagram]);
+
+    const handleManualRefresh = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+        renderDiagram(true);
     }, [renderDiagram]);
 
     const handleDownloadSvg = useCallback(() => {
@@ -372,7 +381,7 @@ export function MermaidRenderer({ code }: { code: string }) {
                 <div className="flex items-center justify-between px-4 py-2 bg-red-500/10 border-b border-red-500/20">
                     <span className="text-xs font-mono text-red-400">MERMAID (render error)</span>
                     <button
-                        onClick={() => renderDiagram(true)}
+                        onClick={handleManualRefresh}
                         className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
                         title="Retry render"
                     >
