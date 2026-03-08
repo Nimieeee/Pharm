@@ -631,10 +631,11 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     ref={mobileBtnRef}
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${showAttachMenu
-                        ? 'bg-orange-600'
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${showAttachMenu
+                        ? 'bg-orange-600 shadow-md'
                         : 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]'
                       }`}
+                    style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
                   >
                     {showAttachMenu ? (
                       <X size={18} strokeWidth={2.5} className="text-white" />
@@ -643,58 +644,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     )}
                   </button>
 
-                  <AnimatePresence>
-                    {showAttachMenu && (
-                      <>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={() => setShowAttachMenu(false)}
-                          className="fixed inset-0 bg-black/50 z-[59]" // Removed blur to avoid visual artifacts on some mobile browsers
-                        />
-                        <motion.div
-                          ref={mobileMenuRef}
-                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                          className="absolute bottom-full left-0 mb-4 w-[280px] p-2 bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[60] rounded-2xl overflow-hidden"
-                        >
-                          <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mb-6 shrink-0" />
 
-                          <div className="flex flex-col gap-2">
-                            <button
-                              type="button"
-                              onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
-                              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
-                            >
-                              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                <FileText size={20} className="text-blue-500" />
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="font-semibold text-[var(--text-primary)] hover:text-blue-500 transition-colors">Upload Paper</span>
-                                <span className="text-xs text-[var(--text-secondary)]">PDF, DOCX format</span>
-                              </div>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
-                              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
-                            >
-                              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                                <BarChart2 size={20} className="text-green-500" />
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="font-semibold text-[var(--text-primary)] hover:text-green-500 transition-colors">Upload Data</span>
-                                <span className="text-xs text-[var(--text-secondary)]">CSV, Excel spreadsheets</span>
-                              </div>
-                            </button>
-                          </div>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
                 </div>
               </div>
 
@@ -764,6 +714,63 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
             </div>
           </div>
         </form>
+
+        {/* Global UI Layer - Un-nested to avoid transformed stacking context clipping/glitches */}
+        <AnimatePresence>
+          {showAttachMenu && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowAttachMenu(false)}
+                className="fixed inset-0 bg-black/60 z-[59] backdrop-blur-[2px]"
+              />
+
+              {/* Menu (Positioned above the input area) */}
+              <motion.div
+                ref={mobileMenuRef}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                className="fixed bottom-[84px] left-4 right-4 sm:left-auto sm:right-auto sm:w-[280px] p-2 bg-[var(--surface)] border border-[var(--border)] shadow-2xl z-[60] rounded-2xl overflow-hidden"
+              >
+                <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mb-6 shrink-0" />
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                      <FileText size={20} className="text-blue-500" />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold text-[var(--text-primary)] hover:text-blue-500 transition-colors">Upload Paper</span>
+                      <span className="text-xs text-[var(--text-secondary)]">PDF, DOCX format</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all active:scale-95"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <BarChart2 size={20} className="text-green-500" />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold text-[var(--text-primary)] hover:text-green-500 transition-colors">Upload Data</span>
+                      <span className="text-xs text-[var(--text-secondary)]">CSV, Excel spreadsheets</span>
+                    </div>
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </>
   );

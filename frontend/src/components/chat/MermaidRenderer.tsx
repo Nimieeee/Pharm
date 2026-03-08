@@ -97,19 +97,20 @@ function cleanMermaidSyntax(raw: string): string {
         }
 
         // --- HEURISTIC 8: Escape characters inside node text (Labels) ---
-        // Match `[` or `(` ... `]` or `)`
-        line = line.replace(/(\[|\()(.*?)(\]|\))/g, (match, open, innerText, close) => {
-            // If it's already quoted, don't double quote
+        line = line.replace(/(\[[^\]]*\]|\([^\)]*\))/g, (match) => {
+            const open = match[0];
+            const close = match[match.length - 1];
+            let innerText = match.slice(1, -1);
+
+            // Safety: if it's already properly quoted, just clean the interior
             if (innerText.trim().startsWith('"') && innerText.trim().endsWith('"')) {
-                // Just sanitize inner quotes
                 const content = innerText.trim().slice(1, -1).replace(/"/g, "'");
                 return `${open}"${content}"${close}`;
             }
 
-            // If it contains unbalanced parentheses and is NOT quoted, wrap in double quotes
-            // This fix handles cases like B[walKR (yycFG)]
-            const sanitizedText = innerText.replace(/"/g, "'");
-            return `${open}"${sanitizedText}"${close}`;
+            // Otherwise, wrap in quotes and escape internal quotes
+            const content = innerText.replace(/"/g, "'");
+            return `${open}"${content}"${close}`;
         });
 
         // --- HEURISTIC 9: Fix CSS styling syntax errors ---
