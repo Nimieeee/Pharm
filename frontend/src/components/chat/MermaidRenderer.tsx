@@ -262,6 +262,7 @@ export function MermaidRenderer({ code }: { code: string }) {
     }, [renderDiagram]);
 
     const handleManualRefresh = useCallback(() => {
+        setError(null);
         setRefreshKey(prev => prev + 1);
         renderDiagram(true);
     }, [renderDiagram]);

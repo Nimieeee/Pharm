@@ -433,8 +433,8 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${showAttachMenu
-                        ? 'bg-[var(--accent)] shadow-lg scale-110'
-                        : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
+                      ? 'bg-[var(--accent)] shadow-lg scale-110'
+                      : 'bg-[var(--surface-highlight)] hover:bg-[var(--border)]'
                       }`}
                   >
                     {showAttachMenu ? (
@@ -632,12 +632,12 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
                     className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${showAttachMenu
-                        ? 'bg-[var(--accent)] shadow-lg scale-110'
+                        ? 'bg-orange-500 shadow-xl z-20'
                         : 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]'
                       }`}
                   >
                     {showAttachMenu ? (
-                      <X size={18} strokeWidth={2.5} className="text-white" />
+                      <X size={18} strokeWidth={2.5} className="text-white z-10" />
                     ) : (
                       <Plus size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
                     )}
