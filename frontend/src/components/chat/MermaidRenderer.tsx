@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Download, Check, RefreshCw, ZoomIn, ZoomOut, Maximize, Image as ImageIcon, FileCode2 } from 'lucide-react';
+import { Download, Check, RefreshCw, ZoomIn, ZoomOut, Maximize, Image as ImageIcon, FileCode2, Loader2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -127,10 +127,13 @@ function cleanMermaidSyntax(raw: string): string {
         // e.g. "A --> B ." or "A --> B ,"
         line = line.replace(/(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)\s*([A-Za-z0-9_-]+)\s*[.,;:]\s*$/g, '$1 $2');
 
-        // --- HEURISTIC 13: Handle weird character encodings ---
-        line = line.replace(/&amp;/g, '&');
-        line = line.replace(/&lt;/g, '<');
-        line = line.replace(/&gt;/g, '>');
+        // --- HEURISTIC 13b: Fix Unicode symbols and arrows ---
+        line = line.replace(/[↓⇓]/g, 'v');
+        line = line.replace(/[↑⇑]/g, '^');
+        line = line.replace(/[→⇒]/g, '>');
+        line = line.replace(/[←⇐]/g, '<');
+        line = line.replace(/—/g, '-');
+        line = line.replace(/β/g, 'beta');
 
         // Split by the newline we might have injected in HEURISTIC 1B
         if (line.includes('\n')) {
@@ -164,6 +167,7 @@ export function MermaidRenderer({ code }: { code: string }) {
     const [svg, setSvg] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [downloaded, setDownloaded] = useState<'svg' | 'png' | null>(null);
+    const [rendering, setRendering] = useState(false);
     const idRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 9)}`);
     const [tooltip, setTooltip] = useState<{ x: number, y: number, text: string } | null>(null);
     const [refreshKey, setRefreshKey] = useState(0); // Add key to force re-render effect
@@ -193,6 +197,7 @@ export function MermaidRenderer({ code }: { code: string }) {
 
     const renderDiagram = useCallback(async (isRetry = false) => {
         try {
+            setRendering(true);
             setError(null);
             if (isRetry) {
                 setSvg('');
@@ -249,6 +254,8 @@ export function MermaidRenderer({ code }: { code: string }) {
         } catch (err: any) {
             console.error('Mermaid render error:', err);
             setError(err?.message || 'Failed to render diagram');
+        } finally {
+            setRendering(false);
         }
     }, [code, refreshKey]);
 
@@ -383,18 +390,28 @@ export function MermaidRenderer({ code }: { code: string }) {
                     <span className="text-xs font-mono text-red-400">MERMAID (render error)</span>
                     <button
                         onClick={handleManualRefresh}
-                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
+                        className={`p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors ${rendering ? 'animate-spin' : ''}`}
                         title="Retry render"
+                        disabled={rendering}
                     >
                         <RefreshCw size={14} />
                     </button>
                 </div>
-                <pre className="p-4 overflow-x-auto">
-                    <code className="text-sm font-mono text-[var(--text-primary)] leading-relaxed">{code}</code>
-                </pre>
-                <div className="px-4 py-2 text-xs text-red-400 border-t border-red-500/20">
-                    {error}
-                </div>
+                {rendering ? (
+                    <div className="flex items-center justify-center p-8 gap-3">
+                        <Loader2 className="animate-spin text-red-400" size={20} />
+                        <span className="text-sm font-medium text-red-400/80">Re-rendering...</span>
+                    </div>
+                ) : (
+                    <>
+                        <pre className="p-4 overflow-x-auto">
+                            <code className="text-sm font-mono text-[var(--text-primary)] leading-relaxed">{code}</code>
+                        </pre>
+                        <div className="px-4 py-2 text-xs text-red-400 border-t border-red-500/20">
+                            {error}
+                        </div>
+                    </>
+                )}
             </div>
         );
     }

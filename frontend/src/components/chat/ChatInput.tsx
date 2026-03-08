@@ -632,12 +632,12 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                     type="button"
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
                     className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${showAttachMenu
-                        ? 'bg-orange-500 shadow-xl z-20'
+                        ? 'bg-orange-600'
                         : 'bg-[var(--surface-highlight)] dark:bg-[#2A2A2A]'
                       }`}
                   >
                     {showAttachMenu ? (
-                      <X size={18} strokeWidth={2.5} className="text-white z-10" />
+                      <X size={18} strokeWidth={2.5} className="text-white" />
                     ) : (
                       <Plus size={18} strokeWidth={2} className="text-[var(--text-secondary)]" />
                     )}
@@ -651,7 +651,7 @@ export default function ChatInput({ onSend, onStop, onFileUpload, onCancelUpload
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           onClick={() => setShowAttachMenu(false)}
-                          className="fixed inset-0 bg-black/50 z-[59] backdrop-blur-sm"
+                          className="fixed inset-0 bg-black/50 z-[59]" // Removed blur to avoid visual artifacts on some mobile browsers
                         />
                         <motion.div
                           ref={mobileMenuRef}
