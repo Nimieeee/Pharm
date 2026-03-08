@@ -442,6 +442,9 @@ export function useChatStreaming(state: any) {
     // editMessage was repurposed to regenerateResponse, since users no longer edit their own messages
     // instead, they regenerate a new branch off an existing user message
     const regenerateResponse = useCallback(async (userMessageId: string, overrideContent?: string) => {
+        // CRITICAL FIX: Resolve optimistic client ID to actual UUID
+        const resolvedUserMessageId = getStableKey(userMessageId);
+
         const userMessage = messages.find((m: Message) => m.id === userMessageId);
         if (!userMessage) return;
 
@@ -472,7 +475,8 @@ export function useChatStreaming(state: any) {
                         language: userMessage.translations ? Object.keys(userMessage.translations)[0] || 'en' : 'en',
                         // CRITICAL: Validate parent_id is a real UUID
                         parent_id: isValidUUID(userMessage.parentId) ? userMessage.parentId : undefined,
-                        user_message_id: userMessage.id,
+                        // Use resolved UUID for user_message_id
+                        user_message_id: resolvedUserMessageId || userMessage.id,
                     }),
                     signal: abortController.signal,
                 });
@@ -585,18 +589,28 @@ export function useChatStreaming(state: any) {
             console.error('Regenerate error:', error);
             setIsLoading(false);
         }
-    }, [conversationId, messages, setBranchData, setActiveBranches]);
+    }, [conversationId, messages, setBranchData, setActiveBranches, getStableKey]);
 
     const editMessage = useCallback(async (messageId: string, newContent: string) => {
         const token = localStorage.getItem('token');
         if (!token || !conversationId) return;
 
         try {
-            // 1. Update backend content
+            // CRITICAL FIX: Resolve optimistic client ID to actual UUID before API call
+            // getStableKey maps client_123 → actual server UUID from mapMessageId
+            const resolvedMessageId = getStableKey(messageId);
+
+            // Validate we have a real UUID before proceeding
+            if (!resolvedMessageId || !isValidUUID(resolvedMessageId)) {
+                toast.error('Message not yet saved to server. Please wait a moment and try again.');
+                return;
+            }
+
+            // 1. Update backend content using resolved UUID
             const formData = new FormData();
             formData.append('content', newContent);
 
-            const patchResponse = await fetch(`${API_BASE_URL}/api/v1/chat/messages/${messageId}`, {
+            const patchResponse = await fetch(`${API_BASE_URL}/api/v1/chat/messages/${resolvedMessageId}`, {
                 method: 'PATCH',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
@@ -609,13 +623,13 @@ export function useChatStreaming(state: any) {
                 prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
             );
 
-            // 3. Trigger regeneration with edited content (fixes race condition)
-            await regenerateResponse(messageId, newContent);
+            // 3. Trigger regeneration with edited content using resolved UUID
+            await regenerateResponse(resolvedMessageId, newContent);
         } catch (error) {
             console.error('Edit error:', error);
             toast.error('Failed to edit message');
         }
-    }, [conversationId, setMessages, regenerateResponse]);
+    }, [conversationId, setMessages, regenerateResponse, getStableKey]);
 
     return { sendMessage, stopGeneration, regenerateResponse, editMessage };
 }
