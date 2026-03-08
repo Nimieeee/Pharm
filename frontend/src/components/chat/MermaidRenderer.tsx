@@ -424,6 +424,13 @@ export function MermaidRenderer({ code }: { code: string }) {
                 <span className="text-xs font-mono text-[var(--text-secondary)] uppercase">diagram</span>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
+                        onClick={handleManualRefresh}
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                        title="Re-render diagram"
+                    >
+                        <RefreshCw size={14} className={rendering ? 'animate-spin' : ''} />
+                    </button>
+                    <button
                         onClick={handleDownloadSvg}
                         className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1.5"
                         title="Download SVG"
