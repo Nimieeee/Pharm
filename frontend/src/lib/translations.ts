@@ -1,5 +1,5 @@
 
-export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'pt' | 'zh';
+export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'pt' | 'zh' | 'it';
 
 export const translations: Record<LanguageCode, Record<string, string>> = {
     en: {
@@ -637,5 +637,100 @@ export const translations: Record<LanguageCode, Record<string, string>> = {
         'save': '保存',
         'cancel': '取消',
         'references': '参考资料',
+    },
+
+    it: {
+        // Sidebar
+        'new_chat': 'Nuova Chat',
+        'search_chats': 'Cerca chat...',
+        'pinned': 'In evidenza',
+        'today': 'Oggi',
+        'yesterday': 'Ieri',
+        'previous_7_days': 'Ultimi 7 Giorni',
+        'previous_30_days': 'Ultimi 30 Giorni',
+        'account': 'Account',
+        'manage_profile': 'Gestisci Profilo',
+        'help_support': 'Aiuto e Supporto',
+        'help_center': 'Centro Aiuto',
+        'documentation': 'Documentazione',
+        'about': 'Informazioni',
+        'admin_panel': 'Pannello Admin',
+        'theme': 'Tema',
+        'settings': 'Impostazioni',
+        'sign_out': 'Disconnetti',
+        'rename': 'Rinomina',
+        'clone': 'Clona',
+        'archive': 'Archivia',
+        'delete': 'Elimina',
+        'unpin': 'Rimuovi',
+        'pin': 'In evidenza',
+        'download': 'Scarica',
+        'done': 'Fatto',
+        'retry': 'Riprova',
+        'no_chats': 'Nessuna conversazione ancora. Inizia una nuova chat!',
+        'could_not_load': 'Impossibile caricare le chat',
+
+        // Profile
+        'profile_settings': 'Impostazioni Profilo',
+        'personal_info': 'Informazioni Personali',
+        'first_name': 'Nome',
+        'last_name': 'Cognome',
+        'email_address': 'Indirizzo Email',
+        'ai_language': 'Lingua AI',
+        'save_changes': 'Salva Modifiche',
+        'success_message': 'Modifiche salvate con successo',
+        'security_privacy': 'Sicurezza e Privacy',
+        'security_desc': 'Gestisci l\'accesso ai dati sperimentali e la sicurezza della sessione.',
+        'data_protocol': 'Scopri di più sul nostro protocollo di protezione dati',
+        'danger_zone': 'Zona Pericolosa',
+        'delete_account': 'Elimina Account',
+        'delete_warning': 'Una volta eliminato l\'account, non si può tornare indietro. Sii certo.',
+
+        // Chat Input
+        'mode_fast': 'Veloce',
+        'mode_detailed': 'Dettagliato',
+        'mode_research': 'Ricerca',
+        'fast_desc': 'Risposte rapide a domande dirette',
+        'detailed_desc': 'Spiegazioni complete con contesto',
+        'research_desc': 'Revisione completa della letteratura biomedica',
+        'file_too_large': 'Il file supera il limite di 20MB.',
+        'upload_error': 'Caricamento fallito',
+        'recording_start': 'Registrazione... Clicca di nuovo per fermare',
+        'mic_error': 'Impossibile accedere al microfono',
+        'transcription_done': 'Trascrizione completata',
+        'upload_file': 'Carica File',
+        'supported_files': 'PDF, DOCX, CSV, Immagini',
+        'ask_placeholder': 'Fai una domanda in modalità {mode}...',
+        'message_placeholder': 'Scrivi un messaggio...',
+        'ai_disclaimer': 'Benchside potrebbe commettere errori. Verifica le informazioni importanti.',
+        'stop_gen': 'Ferma Generazione',
+
+        // Navigation & History
+        'dark_mode': 'Modalità Scura',
+        'light_mode': 'Modalità Chiara',
+        'sign_in': 'Accedi',
+        'no_chats_found': 'Nessuna chat trovata',
+        'history_empty': 'La cronologia chat apparirà qui',
+        'recent_chats': 'Chat Recenti',
+        'clear_history': 'Cancella Cronologia',
+
+        // Deep Research
+        'researching': 'Ricerca in corso...',
+        'research_complete': 'Ricerca Completata',
+        'sources': 'Fonti',
+        'close': 'Chiudi',
+        'open_source': 'Apri Fonte',
+        'no_sources': 'Nessuna fonte citata',
+        'initializing_research': 'Inizializzazione...',
+        'processing_sources': 'Elaborazione dati biomedici...',
+
+        // Chat Message
+        'copy': 'Copia',
+        'edit': 'Modifica',
+        'regenerate': 'Rigenera',
+        'delete_confirm': 'Eliminare questo messaggio?',
+        'save': 'Salva',
+        'cancel': 'Annulla',
+        'references': 'Riferimenti',
     }
 };
