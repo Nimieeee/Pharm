@@ -445,11 +445,11 @@ export function useChatStreaming(state: any) {
         // CRITICAL FIX: Resolve optimistic client ID to actual UUID
         const resolvedUserMessageId = getStableKey(userMessageId);
 
-        console.log('[regenerateResponse] Called with:', { userMessageId, resolvedUserMessageId });
+        toast.info(`regenerateResponse: userMessageId=${userMessageId.substring(0,8)}..., resolved=${resolvedUserMessageId ? resolvedUserMessageId.substring(0,8)+'...' : 'null'}`);
 
         const userMessage = messages.find((m: Message) => m.id === userMessageId);
         if (!userMessage) {
-            console.warn('[regenerateResponse] User message not found:', userMessageId);
+            toast.error('User message not found');
             return;
         }
 
@@ -468,7 +468,7 @@ export function useChatStreaming(state: any) {
             const abortController = new AbortController();
             registerStream(streamConversationId, abortController);
 
-            console.log('[regenerateResponse] Making stream request with user_message_id:', resolvedUserMessageId || userMessage.id);
+            toast.info(`Stream request with user_message_id: ${resolvedUserMessageId || userMessage.id}`);
 
             try {
                 const streamResponse = await fetch(`${API_BASE_URL}/api/v1/ai/chat/stream`, {
@@ -607,16 +607,14 @@ export function useChatStreaming(state: any) {
             // getStableKey maps client_123 → actual server UUID from mapMessageId
             const resolvedMessageId = getStableKey(messageId);
 
-            console.log('[editMessage] Called with:', { messageId, resolvedMessageId, isValid: isValidUUID(resolvedMessageId) });
+            // Use toast for debugging since console.log is stripped in production
+            toast.info(`editMessage: messageId=${messageId.substring(0,8)}..., resolved=${resolvedMessageId ? resolvedMessageId.substring(0,8)+'...' : 'null'}, valid=${isValidUUID(resolvedMessageId)}`);
 
             // Validate we have a real UUID before proceeding
             if (!resolvedMessageId || !isValidUUID(resolvedMessageId)) {
-                console.warn('[editMessage] Invalid UUID, showing toast');
                 toast.error('Message not yet saved to server. Please wait a moment and try again.');
                 return;
             }
-
-            console.log('[editMessage] Making PATCH request to:', `${API_BASE_URL}/api/v1/chat/messages/${resolvedMessageId}`);
 
             // 1. Update backend content using resolved UUID
             const formData = new FormData();
@@ -628,7 +626,7 @@ export function useChatStreaming(state: any) {
                 body: formData,
             });
 
-            console.log('[editMessage] PATCH response status:', patchResponse.status);
+            toast.info(`PATCH response: ${patchResponse.status}`);
 
             if (!patchResponse.ok) throw new Error('Failed to update message content');
 
@@ -637,13 +635,13 @@ export function useChatStreaming(state: any) {
                 prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
             );
 
-            console.log('[editMessage] Calling regenerateResponse with:', resolvedMessageId);
+            toast.info(`Calling regenerateResponse with: ${resolvedMessageId.substring(0,8)}...`);
 
             // 3. Trigger regeneration with edited content using resolved UUID
             await regenerateResponse(resolvedMessageId, newContent);
         } catch (error) {
             console.error('[editMessage] Error:', error);
-            toast.error('Failed to edit message');
+            toast.error(`Edit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }, [conversationId, setMessages, regenerateResponse, getStableKey]);
 

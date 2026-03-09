@@ -31,11 +31,6 @@ function cleanMermaidSyntax(raw: string): string {
     let lines = cleanedText.trim().replace(/\r\n/g, '\n').split('\n');
     const cleanedLines: string[] = [];
 
-    // CRITICAL FIX: Split concatenated nodes BEFORE line-by-line processing
-    // Example: ]B --> or )B --> or }B -->
-    cleanedText = cleanedText.replace(/([]\]\)\}])\s*([A-Za-z0-9_-]+)\s*(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)/g, '$1\n$2 $3');
-    lines = cleanedText.split('\n');
-
     // Process line-by-line for precision
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
@@ -47,28 +42,11 @@ function cleanMermaidSyntax(raw: string): string {
             continue;
         }
 
-        // --- HEURISTIC 0a: Missing arrow before edge label with pipe (CRITICAL)
-        line = line.replace(/([]\]\)\}]+)\s*"([^"]*)"\s*\|([A-Za-z0-9_-])/g, '$1 -->|"$2"|$3');
-
-        // --- HEURISTIC 0b: Missing arrow before quoted edge label (no pipe)
-        line = line.replace(/([]\]\)\}]+)\s*"([^"]+)"\s*([A-Za-z0-9_\[\(])/g, '$1 --> "$2" $3');
-
-        // --- HEURISTIC 0c: Missing arrow before node (no quotes)
-        line = line.replace(/([]\]\)\}]+)\s*([A-Za-z0-9_]+)\s*(\[[\(\{])/g, '$1 --> $2$3');
-
-        // --- HEURISTIC 0d: Missing arrow with unquoted edge label
-        line = line.replace(/([]\]\)\}]+)\s*([A-Za-z][A-Za-z0-9_-]*)\s*\|([A-Za-z0-9_-])/g, '$1 --> $2|$3');
-
         // --- HEURISTIC 1: Fix graph direction declarations ---
         // Sometimes AI outputs "graphTD" instead of "graph TD"
         if (/^(graph|flowchart)([A-Za-z]+)$/i.test(line)) {
             line = line.replace(/^(graph|flowchart)([A-Za-z]+)$/i, '$1 $2');
         }
-
-        // --- HEURISTIC 1A: Fix node IDs with spaces before label ---
-        // AI sometimes outputs: Beta-Lactam Ring["label"] instead of BetaLactamRing["label"]
-        // Pattern: Word Word["label"] → WordWord["label"]
-        line = line.replace(/\b([A-Za-z][A-Za-z0-9_-]*)\s+([A-Za-z][A-Za-z0-9_-]*)\s*(\[[^\]]*\]|\([^\)]*\))/g, '$1$2$3');
 
         // --- HEURISTIC 1B: Fix concatenated node-relation lines ---
         // AI sometimes outputs: A["label"]B --> C
