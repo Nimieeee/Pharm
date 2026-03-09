@@ -1,4 +1,4 @@
-const CACHE_NAME = 'benchside-v2-https';
+const CACHE_NAME = 'benchside-v3-https';  // Updated to v3 to force cache invalidation
 
 // Assets to cache on install
 const STATIC_ASSETS = [
