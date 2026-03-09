@@ -647,10 +647,11 @@ export function useChatStreaming(state: any) {
                 prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
             );
 
-            toast.info(`Calling regenerateResponse with: ${resolvedMessageId.substring(0,8)}...`);
+            toast.info(`Calling regenerateResponse with ORIGINAL messageId: ${messageId.substring(0,8)}...`);
 
-            // 3. Trigger regeneration with edited content using resolved UUID
-            await regenerateResponse(resolvedMessageId, newContent);
+            // 3. Trigger regeneration - pass ORIGINAL messageId so it can find the message
+            // regenerateResponse will resolve the UUID internally for the API call
+            await regenerateResponse(messageId, newContent);
 
             // Mark message as edited to force re-render
             editedMessagesRef.current.add(messageId);
