@@ -70,6 +70,24 @@ export function HeroQupe() {
         setIsHovering(false);
     };
 
+    const dynamicWords = [
+        'Biomedical Research',
+        'Modern Pharmacology',
+        'Genomic Analysis',
+        'Clinical Discovery',
+        'Molecular Science',
+        'Drug Development'
+    ];
+    const [wordIndex, setWordIndex] = useState(0);
+
+    // Word cycling interval
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setWordIndex((prev) => (prev + 1) % dynamicWords.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <section className="relative w-full overflow-hidden bg-background pt-24 pb-32 md:pt-32 md:pb-48 lg:pt-40 lg:pb-56">
             {/* 
@@ -89,10 +107,21 @@ export function HeroQupe() {
                     className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
                     The AI Workspace for <br className="hidden md:block" />
-                    {/* Text Highlight using specific User Color */}
-                    <span className="text-[#C85B20]">
-                        Modern Pharmacology.
-                    </span>
+                    {/* Text Highlight using specific User Color - Sliding Animation */}
+                    <div className="inline-block relative h-[1.1em] overflow-hidden align-bottom">
+                        <AnimatePresence mode="wait">
+                            <motion.span
+                                key={wordIndex}
+                                initial={{ y: '100%', opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: '-100%', opacity: 0 }}
+                                transition={{ duration: 0.5, ease: "easeInOut" }}
+                                className="text-[#C85B20] block whitespace-nowrap"
+                            >
+                                {dynamicWords[wordIndex]}.
+                            </motion.span>
+                        </AnimatePresence>
+                    </div>
                 </motion.h1>
 
                 {/* Subtext */}
@@ -102,7 +131,7 @@ export function HeroQupe() {
                     transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
                     className="text-lg md:text-xl text-muted-foreground/90 max-w-2xl mb-12 leading-relaxed"
                 >
-                    Accelerate pharmacological discovery with AI-powered insights. Analyze drug interactions, clinical data, and research documents in seconds.
+                    Accelerate biomedical discovery with AI-powered insights. Analyze complex datasets, clinical trials, and research literature in seconds.
                 </motion.p>
 
                 {/* Buttons */}
