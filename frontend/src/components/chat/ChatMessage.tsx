@@ -433,6 +433,7 @@ function formatTime(date: Date): string {
 // 3. Translations change
 // 4. Copied/Editing state changes (handled internally)
 // 5. onEdit callback changes (critical for edit functionality)
+// 6. Timestamp changes (indicates message was edited)
 export const MemoizedChatMessage = React.memo(ChatMessage, (prev, next) => {
   // Always update if it's the specific message being streamed
   if (prev.isStreaming !== next.isStreaming) return false;
@@ -445,6 +446,7 @@ export const MemoizedChatMessage = React.memo(ChatMessage, (prev, next) => {
   return (
     prev.message.content === next.message.content &&
     prev.message.id === next.message.id &&
+    prev.message.timestamp === next.message.timestamp &&
     prev.message.translations === next.message.translations &&
     prev.activeBranchId === next.activeBranchId &&
     prev.branches?.length === next.branches?.length
