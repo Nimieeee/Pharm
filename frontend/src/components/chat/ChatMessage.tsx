@@ -432,10 +432,14 @@ function formatTime(date: Date): string {
 // 2. Content length changes significantly (or is streaming status changes)
 // 3. Translations change
 // 4. Copied/Editing state changes (handled internally)
+// 5. onEdit callback changes (critical for edit functionality)
 export const MemoizedChatMessage = React.memo(ChatMessage, (prev, next) => {
   // Always update if it's the specific message being streamed
   if (prev.isStreaming !== next.isStreaming) return false;
   if (next.isStreaming) return false; // Always re-render steaming message (controlled by batching upstream)
+
+  // CRITICAL: Must update if onEdit callback changes
+  if (prev.onEdit !== next.onEdit) return false;
 
   // Compare content and other props
   return (
