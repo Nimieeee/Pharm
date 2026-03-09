@@ -3,7 +3,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
-import { useConversations, clearSWRCache } from '@/hooks/useSWRChat';
+import { useConversations } from '@/hooks/useSWRChat';
+import { clearSWRCache } from '@/hooks/useSWRChat';
 import { useStreamingConversations } from '@/hooks/useStreamingState';
 import { useTranslation } from '@/hooks/use-translation';
 import * as RadixPopover from '@radix-ui/react-popover';
@@ -41,7 +42,7 @@ interface SettingsModalProps {
 function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, token, logout } = useAuth();
   const { t } = useTranslation();
 
   if (!isOpen) return null;
@@ -120,6 +121,44 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <ChevronsRight size={14} className="text-foreground-muted" />
             </button>
           </div>
+
+          {/* Admin Panel (Admin users only) */}
+          {/* @ts-ignore */}
+          {user?.is_admin && (
+            <div className="p-4 rounded-xl bg-surface-highlight space-y-2">
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">{t('admin_panel')}</p>
+              <button
+                onClick={() => { onClose(); router.push('/admin'); }}
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-surface transition-colors text-left text-red-500"
+              >
+                <ShieldAlert size={18} />
+                <span className="text-sm font-medium">Go to Admin Panel</span>
+              </button>
+            </div>
+          )}
+
+          {/* Sign Out */}
+          {token && (
+            <div className="p-4 rounded-xl bg-surface-highlight space-y-2">
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">{t('sign_out')}</p>
+              <button
+                onClick={async () => {
+                  onClose();
+                  try {
+                    await logout();
+                    clearSWRCache();
+                    router.push('/login');
+                  } catch (error) {
+                    console.error('Logout failed', error);
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/10 transition-colors text-left text-red-500"
+              >
+                <LogOut size={18} />
+                <span className="text-sm font-medium">Sign Out</span>
+              </button>
+            </div>
+          )}
 
           {/* App Info */}
           <div className="p-4 rounded-xl bg-surface-highlight">
@@ -700,19 +739,6 @@ function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, curren
 
               {/* Footer Actions */}
               <div className="pt-4 border-t border-border space-y-2">
-
-                {/* @ts-ignore */}
-                {user?.is_admin && (
-                  <button
-                    onClick={() => router.push('/admin')}
-                    className="w-full p-3 rounded-xl text-left hover:bg-surface-hover transition-colors flex items-center gap-3 bg-red-500/10 text-red-500"
-                  >
-                    <ShieldAlert size={20} strokeWidth={1.5} />
-                    <span className="text-sm font-medium">{t('admin_panel')}</span>
-                  </button>
-                )}
-
-
                 {/* Theme Toggle Row */}
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="text-sm text-foreground-muted">{t('theme')}</span>
@@ -726,16 +752,6 @@ function ChatSidebar({ isOpen, onToggle, onSelectConversation, onNewChat, curren
                   <Settings size={20} strokeWidth={1.5} className="text-foreground-muted" />
                   <span className="text-sm text-foreground">{t('settings')}</span>
                 </button>
-
-                {token && (
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full p-3 rounded-xl text-left hover:bg-red-500/10 transition-colors flex items-center gap-3"
-                  >
-                    <LogOut size={20} strokeWidth={1.5} className="text-red-500" />
-                    <span className="text-sm text-red-500">{t('sign_out')}</span>
-                  </button>
-                )}
 
                 {/* Signature */}
                 <div className="pt-4 pb-2 text-center">
