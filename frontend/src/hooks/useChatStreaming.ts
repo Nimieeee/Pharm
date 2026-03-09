@@ -48,6 +48,9 @@ export function useChatStreaming(state: any) {
         getStableKey,
     } = state;
 
+    // Track which messages have been edited to force re-render
+    const editedMessagesRef = useRef<Set<string>>(new Set<string>());
+
     // Track scroll position to prevent jitter
     const lastScrollTimeRef = useRef<number>(0);
 
@@ -648,11 +651,14 @@ export function useChatStreaming(state: any) {
 
             // 3. Trigger regeneration with edited content using resolved UUID
             await regenerateResponse(resolvedMessageId, newContent);
+
+            // Mark message as edited to force re-render
+            editedMessagesRef.current.add(messageId);
         } catch (error) {
             console.error('[editMessage] Error:', error);
             toast.error(`Edit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-    }, [conversationId, setMessages, regenerateResponse, getStableKey]);
+    }, [conversationId, setMessages, regenerateResponse, getStableKey, toast]);
 
     return { sendMessage, stopGeneration, regenerateResponse, editMessage };
 }
