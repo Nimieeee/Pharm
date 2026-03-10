@@ -642,20 +642,14 @@ export function useChatStreaming(state: any) {
 
             if (!patchResponse.ok) throw new Error('Failed to update message content');
 
-            // 2. Update local state - create completely new object to force re-render
-            setMessages((prev: Message[]) => {
-                return prev.map((m) => {
-                    if (m.id === messageId) {
-                        // Create entirely new object with new timestamp to ensure React detects change
-                        return {
-                            ...m,
-                            content: newContent,
-                            timestamp: new Date() // Update timestamp to force re-render
-                        };
-                    }
-                    return m;
-                });
-            });
+            // 2. Update local state - force re-render
+            setMessages((prev: Message[]) =>
+                prev.map((m) =>
+                    m.id === messageId
+                        ? { ...m, content: newContent }
+                        : m
+                )
+            );
 
             toast.info(`Calling regenerateResponse with ORIGINAL messageId: ${messageId.substring(0,8)}...`);
 

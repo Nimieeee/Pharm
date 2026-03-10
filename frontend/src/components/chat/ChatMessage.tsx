@@ -429,24 +429,23 @@ function formatTime(date: Date): string {
 // Optimization: Memoize ChatMessage to prevent re-renders of history
 // Only re-render if:
 // 1. Message ID changes (obviously)
-// 2. Content length changes significantly (or is streaming status changes)
-// 3. Translations change
-// 4. Copied/Editing state changes (handled internally)
-// 5. onEdit callback changes (critical for edit functionality)
-// 6. Timestamp changes (indicates message was edited)
+// 2. Content changes (when edited)
+// 3. Streaming status changes
+// 4. onEdit callback changes (critical for edit functionality)
 export const MemoizedChatMessage = React.memo(ChatMessage, (prev, next) => {
   // Always update if it's the specific message being streamed
   if (prev.isStreaming !== next.isStreaming) return false;
-  if (next.isStreaming) return false; // Always re-render steaming message (controlled by batching upstream)
+  if (next.isStreaming) return false; // Always re-render streaming message
 
   // CRITICAL: Must update if onEdit callback changes
   if (prev.onEdit !== next.onEdit) return false;
 
-  // Compare content and other props
+  // Compare content - if content changed, MUST re-render
+  if (prev.message.content !== next.message.content) return false;
+
+  // For other props, skip re-render if unchanged
   return (
-    prev.message.content === next.message.content &&
     prev.message.id === next.message.id &&
-    prev.message.timestamp === next.message.timestamp &&
     prev.message.translations === next.message.translations &&
     prev.activeBranchId === next.activeBranchId &&
     prev.branches?.length === next.branches?.length
