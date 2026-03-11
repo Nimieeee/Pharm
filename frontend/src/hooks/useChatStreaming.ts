@@ -392,12 +392,12 @@ export function useChatStreaming(state: any) {
                     await processSSEStream(streamResponse, {
                         onMeta: (meta) => {
                             // Debug: Show when meta is received
-                            toast.info(`Meta received: user_msg=${meta.user_message_id ? meta.user_message_id.substring(0,8)+'...' : 'null'}`);
+                            toast.info(`Meta received: user_msg=${meta.user_message_id ? meta.user_message_id.substring(0, 8) + '...' : 'null'}`);
 
                             // FIX: Don't change user message ID - just map it for backend references
                             if (meta.user_message_id) {
                                 mapMessageId?.(userMessageId, meta.user_message_id);
-                                toast.success(`Mapped: ${userMessageId.substring(0,8)}... → ${meta.user_message_id.substring(0,8)}...`);
+                                toast.success(`Mapped: ${userMessageId.substring(0, 8)}... → ${meta.user_message_id.substring(0, 8)}...`);
                             }
                             if (meta.assistant_message_id) {
                                 mapMessageId?.(assistantMessageId, meta.assistant_message_id);
@@ -452,7 +452,7 @@ export function useChatStreaming(state: any) {
         // CRITICAL FIX: Resolve optimistic client ID to actual UUID
         const resolvedUserMessageId = getStableKey(userMessageId);
 
-        toast.info(`regenerateResponse: userMessageId=${userMessageId.substring(0,8)}..., resolved=${resolvedUserMessageId ? resolvedUserMessageId.substring(0,8)+'...' : 'null'}`);
+        toast.info(`regenerateResponse: userMessageId=${userMessageId.substring(0, 8)}..., resolved=${resolvedUserMessageId ? resolvedUserMessageId.substring(0, 8) + '...' : 'null'}`);
 
         const userMessage = messages.find((m: Message) => m.id === userMessageId);
         if (!userMessage) {
@@ -570,7 +570,13 @@ export function useChatStreaming(state: any) {
                         onMeta: (meta) => {
                             // Map the returned IDs if present
                             if (meta.user_message_id) {
-                                currentUserMsgId = meta.user_message_id;
+                                // CRITICAL FIX: Do NOT change currentUserMsgId.
+                                // branchData and activeBranches MUST stay keyed by the original ID (userMessage.id) 
+                                // so the render loop in page.tsx can find them.
+                                mapMessageId?.(userMessage.id, meta.user_message_id);
+                            }
+                            if (meta.assistant_message_id) {
+                                mapMessageId?.(tempResponseId, meta.assistant_message_id);
                             }
                         },
                         onContent: (fullContent, token) => {
@@ -611,16 +617,16 @@ export function useChatStreaming(state: any) {
 
         try {
             // Show what ID we're trying to edit
-            toast.info(`Edit clicked: messageId=${messageId.substring(0,8)}...`);
+            toast.info(`Edit clicked: messageId=${messageId.substring(0, 8)}...`);
 
             // CRITICAL FIX: Resolve optimistic client ID to actual UUID before API call
             // getStableKey maps client_123 → actual server UUID from mapMessageId
             const resolvedMessageId = getStableKey(messageId);
 
-            toast.info(`getStableKey result: ${resolvedMessageId ? resolvedMessageId.substring(0,8)+'...' : 'null'}`);
+            toast.info(`getStableKey result: ${resolvedMessageId ? resolvedMessageId.substring(0, 8) + '...' : 'null'}`);
 
             // Use toast for debugging since console.log is stripped in production
-            toast.info(`editMessage: messageId=${messageId.substring(0,8)}..., resolved=${resolvedMessageId ? resolvedMessageId.substring(0,8)+'...' : 'null'}, valid=${isValidUUID(resolvedMessageId)}`);
+            toast.info(`editMessage: messageId=${messageId.substring(0, 8)}..., resolved=${resolvedMessageId ? resolvedMessageId.substring(0, 8) + '...' : 'null'}, valid=${isValidUUID(resolvedMessageId)}`);
 
             // Validate we have a real UUID before proceeding
             if (!resolvedMessageId || !isValidUUID(resolvedMessageId)) {
@@ -651,7 +657,7 @@ export function useChatStreaming(state: any) {
                 )
             );
 
-            toast.info(`Calling regenerateResponse with ORIGINAL messageId: ${messageId.substring(0,8)}...`);
+            toast.info(`Calling regenerateResponse with ORIGINAL messageId: ${messageId.substring(0, 8)}...`);
 
             // 3. Trigger regeneration - pass ORIGINAL messageId so it can find the message
             // regenerateResponse will resolve the UUID internally for the API call
