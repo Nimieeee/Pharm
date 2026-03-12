@@ -6,6 +6,7 @@ import { Presentation, FileText, Sparkles, Loader2 } from 'lucide-react';
 import SlideOutlineEditor, { SlideOutline } from '../slides/SlideOutlineEditor';
 import SlideProgress from '../slides/SlideProgress';
 import DocOutlineEditor, { DocOutline } from '../docs/DocOutlineEditor';
+import { API_BASE_URL } from '@/config/api';
 
 type CreationType = 'slides' | 'document';
 type GenerationStep = 'outline' | 'generating' | 'complete';
@@ -32,8 +33,8 @@ export default function CreationStudio() {
         : null;
 
       const endpoint = creationType === 'slides'
-        ? '/api/v1/slides/outline'
-        : '/api/v1/docs/outline';
+        ? `${API_BASE_URL}/api/v1/slides/outline`
+        : `${API_BASE_URL}/api/v1/docs/outline`;
 
       const body = creationType === 'slides'
         ? { topic: topic.trim(), num_slides: 12 }
@@ -78,8 +79,8 @@ export default function CreationStudio() {
         : null;
 
       const endpoint = creationType === 'slides'
-        ? '/api/v1/slides/generate'
-        : '/api/v1/docs/generate';
+        ? `${API_BASE_URL}/api/v1/slides/generate`
+        : `${API_BASE_URL}/api/v1/docs/generate`;
 
       const body = creationType === 'slides'
         ? { outline: slideOutline, generate_images: true }
@@ -139,8 +140,8 @@ export default function CreationStudio() {
 
   const handleDownload = () => {
     const endpoint = creationType === 'slides'
-      ? `/api/v1/slides/download/${jobId}`
-      : `/api/v1/docs/download/${jobId}`;
+      ? `${API_BASE_URL}/api/v1/slides/download/${jobId}`
+      : `${API_BASE_URL}/api/v1/docs/download/${jobId}`;
 
     window.open(endpoint, '_blank');
   };

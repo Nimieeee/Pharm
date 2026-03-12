@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/config/api';
 
 interface ADMETResult {
   success: boolean;
@@ -34,7 +35,7 @@ export default function LabDashboard() {
         ? localStorage.getItem('sb-access-token')
         : null;
 
-      const response = await fetch('/api/v1/admet/analyze', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/admet/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ export default function LabDashboard() {
         : null;
 
       const response = await fetch(
-        `/api/v1/admet/export?smiles=${encodeURIComponent(smiles)}`,
+        `${API_BASE_URL}/api/v1/admet/export?smiles=${encodeURIComponent(smiles)}`,
         {
           headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),

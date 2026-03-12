@@ -6,6 +6,7 @@ import { Dna, Upload, Search, FileText, AlertCircle, CheckCircle, Loader2, Pill,
 import { toast } from 'sonner';
 import PharmGxReport, { PharmGxReport as PharmGxReportType } from '../chat/PharmGxReport';
 import GWASResult, { GWASVariant } from '../chat/GWASResult';
+import { API_BASE_URL } from '@/config/api';
 
 export default function GeneticsDashboard() {
   const [activeTab, setActiveTab] = useState<'pharmgx' | 'gwas'>('pharmgx');
@@ -32,7 +33,7 @@ export default function GeneticsDashboard() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch('/api/v1/chat/pharmgx/report', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/pharmgx/report`, {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -72,7 +73,7 @@ export default function GeneticsDashboard() {
         ? localStorage.getItem('sb-access-token')
         : null;
 
-      const response = await fetch(`/api/v1/chat/gwas/lookup/${rsid.trim()}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/gwas/lookup/${rsid.trim()}`, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
