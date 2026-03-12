@@ -106,8 +106,9 @@ export default function ChatMessage({
   };
 
   const handleExport = async (style: 'plain' | 'report' | 'manuscript') => {
-    if (!conversationId) {
-      toast.error('Conversation ID not found');
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!conversationId || !UUID_REGEX.test(conversationId)) {
+      toast.error('Please open a conversation first to export');
       return;
     }
 

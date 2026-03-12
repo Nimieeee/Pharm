@@ -23,6 +23,17 @@ function cleanMermaidSyntax(raw: string): string {
     // 1) Remove markdown backticks if present (e.g., ```mermaid ... ```)
     let cleanedText = raw.replace(/^```mermaid\n?/im, '').replace(/```$/im, '');
 
+    // HEURISTIC 0: Unescape HTML entities FIRST (before all other processing)
+    // AI-generated Mermaid often arrives with HTML-encoded characters from SSE/JSON pipelines
+    cleanedText = cleanedText
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&#x27;/g, "'")
+        .replace(/&#x2F;/g, '/');
+
     // 1.5) Fix "Smart Quotes" from AI models
     cleanedText = cleanedText.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
 
@@ -191,9 +202,14 @@ export function MermaidRenderer({ code }: { code: string }) {
     const [error, setError] = useState<string | null>(null);
     const [downloaded, setDownloaded] = useState<'svg' | 'png' | null>(null);
     const [rendering, setRendering] = useState(false);
+    const [isRepairing, setIsRepairing] = useState(false);
     const idRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 9)}`);
+    const errorRef = useRef<string | null>(null);
     const [tooltip, setTooltip] = useState<{ x: number, y: number, text: string } | null>(null);
     const [refreshKey, setRefreshKey] = useState(0); // Add key to force re-render effect
+
+    // Keep errorRef in sync with state (for async callbacks that would otherwise capture stale state)
+    useEffect(() => { errorRef.current = error; }, [error]);
 
     // Attach click events for Node Tooltips
     useEffect(() => {
@@ -291,11 +307,54 @@ export function MermaidRenderer({ code }: { code: string }) {
         return () => clearTimeout(timeoutId);
     }, [renderDiagram]);
 
-    const handleManualRefresh = useCallback(() => {
+    const handleManualRefresh = useCallback(async () => {
         setError(null);
+        errorRef.current = null;
         setRefreshKey(prev => prev + 1);
-        renderDiagram(true);
-    }, [renderDiagram]);
+        await renderDiagram(true);
+
+        // If still broken after render, call AI repair endpoint
+        // Use errorRef (not error state) to avoid stale closure reading old value
+        setTimeout(async () => {
+            if (errorRef.current) {
+                setIsRepairing(true);
+                try {
+                    const token = typeof window !== 'undefined'
+                        ? localStorage.getItem('sb-access-token')
+                        : null;
+
+                    const resp = await fetch('/api/v1/chat/mermaid/repair', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify({
+                            code: code,
+                            error: errorRef.current
+                        })
+                    });
+
+                    if (resp.ok) {
+                        const { repaired_code } = await resp.json();
+                        if (repaired_code && repaired_code !== code) {
+                            setRefreshKey(prev => prev + 2);
+                            const successEvent = new CustomEvent('mermaid-repair-success', {
+                                detail: { message: 'Diagram repaired!' }
+                            });
+                            window.dispatchEvent(successEvent);
+                        }
+                    } else {
+                        console.error('Mermaid repair failed:', resp.status);
+                    }
+                } catch (e) {
+                    console.error('Couldn\'t repair diagram:', e);
+                } finally {
+                    setIsRepairing(false);
+                }
+            }
+        }, 500);
+    }, [renderDiagram, code]);
 
     const handleDownloadSvg = useCallback(() => {
         if (!svg) return;
@@ -413,17 +472,24 @@ export function MermaidRenderer({ code }: { code: string }) {
                     <span className="text-xs font-mono text-red-400">MERMAID (render error)</span>
                     <button
                         onClick={handleManualRefresh}
-                        className={`p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors ${rendering ? 'animate-spin' : ''}`}
-                        title="Retry render"
-                        disabled={rendering}
+                        className={`p-1.5 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1.5 ${
+                            isRepairing ? 'animate-pulse text-amber-500' : 'text-red-400'
+                        }`}
+                        title={isRepairing ? "Repairing..." : "Repair diagram"}
+                        disabled={isRepairing}
                     >
-                        <RefreshCw size={14} />
+                        {isRepairing ? (
+                            <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                            <RefreshCw size={14} />
+                        )}
+                        <span className="text-xs font-medium">{isRepairing ? 'Repairing...' : 'Repair'}</span>
                     </button>
                 </div>
-                {rendering ? (
+                {isRepairing ? (
                     <div className="flex items-center justify-center p-8 gap-3">
-                        <Loader2 className="animate-spin text-red-400" size={20} />
-                        <span className="text-sm font-medium text-red-400/80">Re-rendering...</span>
+                        <Loader2 className="animate-spin text-amber-500" size={24} />
+                        <span className="text-sm font-medium text-amber-500/80">AI is repairing diagram...</span>
                     </div>
                 ) : (
                     <>

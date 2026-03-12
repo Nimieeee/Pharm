@@ -594,6 +594,92 @@ git diff HEAD~10..HEAD --stat
 | Service state leakage | One request affects another | Use stateless services |
 | React.memo blocking edit | Edit works but UI doesn't update | Check content change FIRST in memo, return false immediately |
 | Mermaid HTML entities | Diagram shows `&quot;` instead of `"` | Decode HTML entities before processing mermaid syntax |
+| FastAPI DI misuse | Calling `get_db()` directly instead of via `Depends()` | **NEVER** call FastAPI dependency functions directly. See Rule 2 below |
+| React stale closure | `setTimeout` reads old state, never triggers | Use `useRef` to track current state inside async callbacks. See Rule 3 below |
+| Double-append assembly | References section appears twice | Build output once, never append-then-strip-then-re-append. See Rule 4 below |
+| Missing ID validation | API call uses `"chat"` as UUID, returns 404 | Validate UUID format before any API call. See Rule 5 below |
+
+### 6. Implementation Error Prevention Rules
+
+These rules are derived from **real production bugs** found in the Benchside codebase. They MUST be followed to prevent recurrence.
+
+#### Rule 1: HTML Entity Decoding
+**ANY component that receives text from an API, SSE stream, or database MUST unescape HTML entities before parsing the text as structured syntax (Mermaid, LaTeX, JSON, etc.).**
+```typescript
+// ✅ CORRECT: Decode before parsing
+const decoded = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+mermaid.render(id, decoded);
+
+// ❌ WRONG: Parse raw API output directly
+mermaid.render(id, raw); // Will choke on &quot;
+```
+
+#### Rule 2: FastAPI Dependency Injection
+**NEVER call `get_db()`, `get_current_user()`, or any `Depends()` function directly. They are generator factories, not callables. Only FastAPI's DI system can invoke them.**
+```python
+# ✅ CORRECT: Use parameters already injected by FastAPI
+@router.get("/my-route")
+async def my_route(
+    db: Client = Depends(get_db),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    # db and chat_service are already resolved
+    result = await chat_service.do_something()
+
+# ❌ WRONG: Calling get_db() directly inside a route handler
+async def my_route(...):
+    ai_service = get_chat_service(db=get_db())  # get_db() returns a GENERATOR, not a Client
+```
+
+#### Rule 3: React Stale Closures in Async Callbacks
+**NEVER reference React state variables inside `setTimeout`, `setInterval`, or `.then()` callbacks. The closure captures the state at creation time, not at execution time. Use `useRef` instead.**
+```typescript
+// ✅ CORRECT: Use ref for async state access
+const errorRef = useRef<string | null>(null);
+useEffect(() => { errorRef.current = error; }, [error]);
+
+setTimeout(() => {
+    if (errorRef.current) { /* This reads the CURRENT error */ }
+}, 500);
+
+// ❌ WRONG: Captured state is stale
+setTimeout(() => {
+    if (error) { /* This reads the OLD error from when setTimeout was created */ }
+}, 500);
+```
+
+#### Rule 4: Idempotent Output Assembly
+**String/report assembly MUST be idempotent. Never use the pattern "append → search-and-strip → re-append". Build the output exactly once.**
+```python
+# ✅ CORRECT: Build once, single append
+report_body = llm_output.strip()
+# Strip any LLM-generated references
+ref_idx = report_body.rfind("## References")
+if ref_idx != -1:
+    report_body = report_body[:ref_idx].rstrip()
+final = f"{report_body}\n\n{programmatic_refs}"
+
+# ❌ WRONG: Append-strip-reappend loop
+parts = [body, refs]          # refs added here
+result = "".join(parts)
+idx = result.rfind("## References")
+result = result[:idx]         # stripped here
+result += refs                # re-added here (double-append risk)
+```
+
+#### Rule 5: UUID Validation Before API Calls
+**Always validate that dynamic URL segments are valid UUIDs before making API calls. Never allow fallback strings like `"chat"`, `"undefined"`, or empty strings to reach the API.**
+```typescript
+// ✅ CORRECT: Validate before calling
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!conversationId || !UUID_REGEX.test(conversationId)) {
+    toast.error('Invalid conversation ID');
+    return;
+}
+
+// ❌ WRONG: Blindly interpolate into URL
+fetch(`/api/v1/conversations/${conversationId}/export`) // conversationId might be "chat" or undefined
+```
 
 ### 5. Core Workflows & Output Standards
 - **Brainstorming First**: Before jumping into any creative work (new features, UI components, major refactors), ALWAYS pause to brainstorm. Ask clarifying questions about user intent, outline the architecture, and propose a design before writing implementation code.

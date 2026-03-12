@@ -514,9 +514,10 @@ LANGUAGE RULE: Answer in {full_lang}.
 CAPABILITIES:
 - You CAN explain complex medical concepts.
 - You CAN analyze uploaded documents.
-- You CAN and SHOULD generate **Mermaid diagrams** for any visualization request:
-  - Mechanism of Action (MOA), signaling pathways, metabolic cycles, drug interactions, flowcharts, timelines.
-  - Use ```mermaid code blocks. Prefer `graph TD` or `flowchart TD` for pathways and MOAs.
+- You CAN generate **Mermaid diagrams** ONLY when the user explicitly asks for one:
+  - Trigger words: "draw", "diagram", "flowchart", "visualize", "map out", "chart", "illustrate"
+  - Do NOT proactively add diagrams to text-based answers
+  - When triggered, use ```mermaid code blocks. Prefer `graph TD` or `flowchart TD` for pathways and MOAs.
   - Make diagrams detailed: include receptors, enzymes, effectors, second messengers, and clinical outcomes as nodes.
   - CRITICAL MERMAID SYNTAX RULES:
     - Use standard spacing for readability.
@@ -1525,3 +1526,58 @@ YOUR GUIDELINES:
             logger.info(f"✅ Mermaid diagrams auto-corrected: {fix_count} fix(es) applied")
 
         return corrected
+
+    async def repair_mermaid_syntax(self, code: str, error: str) -> str:
+        """
+        AI-powered Mermaid syntax repair.
+
+        When regex-based auto-correction fails, this method uses AI to intelligently
+        fix complex Mermaid syntax errors that require semantic understanding.
+
+        Args:
+            code: Broken Mermaid code
+            error: Error message from Mermaid renderer
+
+        Returns:
+            Corrected Mermaid code only (no explanation)
+        """
+        prompt = f"""Fix this Mermaid diagram syntax error.
+
+Error: {error}
+
+Broken code:
+```mermaid
+{code}
+```
+
+Return ONLY the corrected mermaid code. No explanation. Ensure:
+- All node labels are quoted: A["Label with (parens)"]
+- Node IDs are alphanumeric only (no spaces, hyphens, underscores)
+- Arrows use correct syntax: --> or -->|label|
+- No spaces in style definitions: style A fill:#fff
+- Balanced parentheses in all labels"""
+
+        try:
+            mp = get_multi_provider()
+            response = await mp.generate(
+                messages=[{"role": "user", "content": prompt}],
+                mode="fast",
+                max_tokens=2000,
+                temperature=0.0
+            )
+
+            # Extract code from markdown blocks if present
+            repaired = response.strip()
+            if repaired.startswith("```mermaid"):
+                repaired = repaired[8:]
+            if repaired.startswith("```"):
+                repaired = repaired[3:]
+            if repaired.endswith("```"):
+                repaired = repaired[:-3]
+
+            return repaired.strip()
+
+        except Exception as e:
+            logger.error(f"❌ Mermaid AI repair failed: {e}")
+            # Return original code on failure - frontend will show error
+            return code
