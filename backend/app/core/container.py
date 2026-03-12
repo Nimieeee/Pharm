@@ -86,6 +86,9 @@ class ServiceContainer:
             from app.services.email import EmailService
             from app.services.postprocessing.admet_processor import ADMETProcessor
             from app.services.admet_service import ADMETService
+            from app.services.postprocessing.prompt_processor import PromptProcessor, prompt_processor
+            from app.services.router_service import RouterService, router_service
+            from app.services.local_queue import LocalInferenceQueue, local_queue
 
             # Core services (no inter-dependencies) - initialized first
             self._services['chat_service'] = ChatService(db)
@@ -174,6 +177,16 @@ class ServiceContainer:
 
             self._services['admet_service'] = ADMETService(db)
             logger.info("✅ Registered: admet_service")
+
+            # Prompt processing and routing (postprocessing singleton + services)
+            self._services['prompt_processor'] = prompt_processor
+            logger.info("✅ Registered: prompt_processor")
+
+            self._services['router_service'] = RouterService()
+            logger.info("✅ Registered: router_service")
+
+            self._services['local_queue'] = local_queue
+            logger.info("✅ Registered: local_queue")
 
             # Multi-provider LLM (depends on settings, not other services)
             try:
