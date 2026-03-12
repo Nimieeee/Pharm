@@ -593,6 +593,7 @@ git diff HEAD~10..HEAD --stat
 | Frontend/backend mismatch | API returns different type than expected | Share types, test integration |
 | Service state leakage | One request affects another | Use stateless services |
 | React.memo blocking edit | Edit works but UI doesn't update | Check content change FIRST in memo, return false immediately |
+| Mermaid HTML entities | Diagram shows `&quot;` instead of `"` | Decode HTML entities before processing mermaid syntax |
 
 ### 5. Core Workflows & Output Standards
 - **Brainstorming First**: Before jumping into any creative work (new features, UI components, major refactors), ALWAYS pause to brainstorm. Ask clarifying questions about user intent, outline the architecture, and propose a design before writing implementation code.
