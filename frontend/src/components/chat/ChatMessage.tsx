@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useTranslation } from '@/hooks/use-translation';
 import { toast } from 'sonner';
+import CitationPanel from './CitationPanel';
 
 export interface Message {
   id: string;
@@ -440,95 +441,9 @@ export default function ChatMessage({
         </div>
       )}
 
-      {/* Citations */}
-      {message.citations && message.citations.length > 0 && (
-        <div className="mt-4 p-4 bg-[var(--surface-highlight)] rounded-xl border border-border">
-          <p className="text-xs font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-            <FileText size={14} />
-            {t('references')} ({message.citations.length})
-          </p>
-          <div className="space-y-2.5">
-            {message.citations.map((citation) => {
-              // Helper to format authors to APA style (Last, F. M.)
-              const formatAuthors = (authorStr: string) => {
-                if (!authorStr) return '';
-                // Remove "et al." for processing if present in the source string
-                const cleanStr = authorStr.replace(/ et al\.?/i, '');
-                const authors = cleanStr.split(/,\s*|\s+and\s+/).map(a => a.trim()).filter(a => a);
-
-                // If authors are already in "Last, F." format, just join them with & for the last one
-                if (authors.some(a => a.includes('.'))) {
-                  if (authors.length > 1) {
-                    const lastAuthor = authors.pop();
-                    return `${authors.join(', ')}, & ${lastAuthor}`;
-                  }
-                  return authors[0];
-                }
-
-                // Convert "First Last" to "Last, F."
-                const formattedList = authors.map(name => {
-                  const parts = name.split(' ');
-                  if (parts.length < 2) return name;
-                  const last = parts[parts.length - 1];
-                  const initials = parts.slice(0, -1).map(p => p[0] + '.').join(' ');
-                  return `${last}, ${initials}`;
-                });
-
-                if (formattedList.length > 1) {
-                  const lastAuthor = formattedList.pop();
-                  return `${formattedList.join(', ')}, & ${lastAuthor}`;
-                }
-                return formattedList[0] || '';
-              };
-
-              const formattedAuthors = citation.authors ? formatAuthors(citation.authors) : '';
-              const hasYear = citation.year && citation.year.trim();
-
-              // Get domain for web sources if no journal
-              let sourceName = citation.journal || citation.source || 'Web';
-              if ((sourceName === 'Web' || !sourceName) && citation.url) {
-                try {
-                  const urlObj = new URL(citation.url);
-                  sourceName = urlObj.hostname.replace('www.', '');
-                } catch (e) {
-                  sourceName = 'Web';
-                }
-              }
-
-              return (
-                <div key={citation.id} className="text-xs mb-3">
-                  <div className="flex items-start gap-2">
-                    <span className="font-bold text-[var(--accent)] flex-shrink-0 mt-0.5">[{citation.id}]</span>
-                    <div className="flex-1 min-w-0 break-words">
-                      <p className="text-[var(--text-secondary)] leading-relaxed">
-                        {formattedAuthors && <span className="font-medium text-[var(--text-primary)]">{formattedAuthors} </span>}
-                        {hasYear && <span>({citation.year}). </span>}
-                        <a
-                          href={citation.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors font-medium"
-                        >
-                          {citation.title}.
-                        </a>{' '}
-                        <span className="italic">{sourceName}</span>
-                        {citation.volume && <span>, {citation.volume}</span>}
-                        {citation.issue && <span>({citation.issue})</span>}
-                        {citation.pages && <span>, {citation.pages}</span>}
-                        .
-                        {citation.doi && (
-                          <span className="block mt-0.5 text-[var(--accent)] opacity-80 hover:opacity-100">
-                            doi:{citation.doi.replace('doi:', '')}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Citations Panel */}
+      {!isUser && message.citations && message.citations.length > 0 && (
+        <CitationPanel citations={message.citations} />
       )}
     </motion.article>
   );
