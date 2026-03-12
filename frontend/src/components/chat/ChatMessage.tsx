@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Copy, Check, RefreshCw, ExternalLink, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Copy, Check, RefreshCw, ExternalLink, FileText, ChevronLeft, ChevronRight, Download, FileDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useTranslation } from '@/hooks/use-translation';
+import { toast } from 'sonner';
 
 export interface Message {
   id: string;
@@ -55,8 +56,13 @@ export default function ChatMessage({
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { t, language } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
+  const conversationId = typeof window !== 'undefined'
+    ? window.location.pathname.split('/').pop()
+    : null;
 
   const animationProps = {
     initial: { opacity: 0, y: 15 },
@@ -96,6 +102,54 @@ export default function ChatMessage({
 
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = async (style: 'plain' | 'report' | 'manuscript') => {
+    if (!conversationId) {
+      toast.error('Conversation ID not found');
+      return;
+    }
+
+    setIsExporting(true);
+    setShowExportMenu(false);
+
+    try {
+      const token = typeof window !== 'undefined'
+        ? localStorage.getItem('sb-access-token')
+        : null;
+
+      const response = await fetch(
+        `/api/v1/ai/conversations/${conversationId}/export/manuscript?style=${style}`,
+        {
+          method: 'GET',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.status}`);
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `benchside_${style}_${conversationId.slice(0, 8)}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success(`${style === 'manuscript' ? 'Manuscript' : style === 'report' ? 'Report' : 'Document'} downloaded`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleEdit = () => {
@@ -269,6 +323,68 @@ export default function ChatMessage({
               <Copy size={14} strokeWidth={1.5} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
             )}
           </button>
+
+          {/* Export Menu - Only for assistant messages */}
+          {!isUser && (
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] transition-colors group"
+                title="Export conversation"
+              >
+                <Download size={14} strokeWidth={1.5} className={`text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${isExporting ? 'animate-spin' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showExportMenu && (
+                  <>
+                    {/* Backdrop to close menu */}
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowExportMenu(false)}
+                    />
+
+                    {/* Menu dropdown */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 bottom-full mb-2 z-20 min-w-[180px] bg-[var(--surface)]/95 backdrop-blur-md border border-[var(--border)] rounded-xl shadow-lg overflow-hidden"
+                    >
+                      <div className="py-1">
+                        <button
+                          onClick={() => handleExport('plain')}
+                          disabled={isExporting}
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3 disabled:opacity-50"
+                        >
+                          <FileText size={14} className="text-[var(--text-secondary)]" />
+                          <span className="text-[var(--text-primary)]">Export as Chat</span>
+                        </button>
+                        <button
+                          onClick={() => handleExport('report')}
+                          disabled={isExporting}
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3 disabled:opacity-50"
+                        >
+                          <FileDown size={14} className="text-[var(--text-secondary)]" />
+                          <span className="text-[var(--text-primary)]">Export as Report</span>
+                        </button>
+                        <button
+                          onClick={() => handleExport('manuscript')}
+                          disabled={isExporting}
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--surface-highlight)] transition-colors flex items-center gap-3 disabled:opacity-50"
+                        >
+                          <FileDown size={14} className="text-[var(--text-secondary)]" />
+                          <span className="text-[var(--text-primary)]">Export as Manuscript</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
           {onRegenerate && (
             <button
               onClick={onRegenerate}
