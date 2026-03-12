@@ -1,183 +1,287 @@
-# Product Strategy & 5-Year Global Roadmap: Benchside
+# 🔬 Benchside: Global Product Strategy & 5-Year Roadmap v2
 
-Acting as the **Lead Product Manager (PM)** for Benchside, I have evaluated our current architecture, the `deanpeters/Product-Manager-Skills` framework, and the `K-Dense-AI` scientific ecosystem. 
-
-## 🔭 Product Vision
-**"To become the global operating system for accelerated biomedical discovery, bridging the gap between raw data and actionable scientific insight."**
+*Prepared using the [deanpeters/Product-Manager-Skills](https://github.com/deanpeters/Product-Manager-Skills) framework and competitive analysis against [K-Dense-AI](https://github.com/K-Dense-AI) scientific ecosystem.*
 
 ---
 
-## 📊 Phase 0: Current State Assessment (Where We Stand)
-Benchside is currently in the **"High-Potential Tool"** phase. We have successfully transitioned from a monolithic prototype to a **decoupled, service-oriented architecture**.
+## 📊 Part 1: Where Benchside Stands Today (Honest Assessment)
 
-### ✅ Strengths
-- **Advanced Core Logic**: The 4-node Deep Research pipeline is a major differentiator.
-- **Service-Oriented Architecture**: Highly scalable and modular.
-- **CoT Reasoning Store**: Unique "internal thinking" mechanism that mimics elite scientific reasoning.
-- **Multi-Format RAG**: Robust ingestion of diverse scientific data files.
+### What We Have (Competitive Advantages)
+| Capability | Status | Differentiator? |
+|-----------|--------|----------------|
+| 4-Node Deep Research Pipeline | ✅ Production | **Yes** — Planner→Researcher→Reviewer→Writer is rare |
+| Multi-Provider AI Router | ✅ Production | Moderate — commodity pattern but well-implemented |
+| CoT Reasoning Store (400k patterns) | ✅ Production | **Yes** — unique domain-specific reasoning corpus |
+| Multi-Format RAG (PDF, DOCX, PPTX, CSV, SDF) | ✅ Production | Expected baseline |
+| Fullstack Web App (Next.js + FastAPI) | ✅ Production | Expected baseline |
+| Multi-Language Support (EN, IT, partial) | 🔶 Partial | Weak — needs 8+ languages |
+| Independent Branching (A/B responses) | ✅ Production | Moderate — good UX pattern |
 
-### ⚠️ Gaps (Opportunities for Improvement)
-- **Output Versatility**: We are primarily "Chat + Markdown." We lack publication-ready outputs (LaTeX, PDF, Slidedecks).
-- **Tool-to-Data Coupling**: While we can research, we are not yet "acting" on scientific databases (direct chemical searches, trial matching).
-- **Regional Isolation**: Currently optimized for English-centric workflows.
+### What We're Missing (Critical Gaps)
 
----
+#### Gap 1: No Publication Pipeline
+K-Dense's `claude-scientific-writer` generates **IMRaD papers, LaTeX posters, PPTX slides, grant proposals** and **clinical reports** with BibTeX citation management. Benchside produces only markdown chat output. **No researcher will adopt a tool that can't produce a manuscript.**
 
-## 🛠️ Immediate Improvements (Year 1: Vertical Deepening)
-*Goal: Move from "General Research Assistant" to "Specialized Biomedical Associate".*
+#### Gap 2: No Direct Database Access
+K-Dense's `claude-scientific-skills` provides **37+ database skills** accessing **250+ databases** (ChEMBL, UniProt, PubChem, ClinicalTrials.gov, ClinVar, COSMIC, etc). Benchside can *search the web* for papers but **cannot query a chemical database, look up a gene, or check a clinical trial directly.**
 
-1.  **"Scientific Hands" Integration**: Directly integrate `chembl-database` and `clinicaltrials-database` skills to allow real-time bioactivity analysis and patient matching.
-2.  **IMRaD Writing Engine**: Implement the `claude-scientific-writer` patterns to generate publication-quality drafts (Intro, Methods, Results, Discussion).
-3.  **Global Localization (v1)**: Finish the 1,000-prompt expansion and Italian support. Scale to Japanese (`ja`) and German (`de`) to capture major pharma hubs.
-4.  **ScholarEval Integration**: Add automated peer-review scoring to help researchers vet their own drafts before submission.
+#### Gap 3: No Computational Science
+Benchside has no molecular docking, no protein folding, no ADMET prediction, no single-cell analysis. K-Dense offers DiffDock, RDKit, Scanpy, DeepChem, OpenMM, and PyTorch Lightning integrations. **We are a reading tool, not a doing tool.**
 
----
+#### Gap 4: No Team/Collaboration Features
+Every modern research platform needs multi-user support. We have single-user chat only. No shared workspaces, no @mentions, no lab-group knowledge sharing.
 
-## 📅 Immediate Execution: The Next 30 Days (Phase 1)
-*Goal: Bridge the gap between research and publication.*
+#### Gap 5: No Revenue Model
+No pricing tiers, no enterprise features, no usage metering. This is existential for sustainability.
 
-| Week | Action Item | Target Outcome |
-|------|-------------|----------------|
-| **Week 1** | **Core Skill Transplant**: Integrate `chembl-database`, `clinicaltrials-database`, and `rdkit` from `scientific-skills` repo. | Agent can query bioactivity and render SMILES strings. |
-| **Week 2** | **IMRaD Scaffolding**: Implement the two-stage writing process (Outline → Prose) using `scientific-writer` patterns. | 50% reduction in long-form report generation time. |
-| **Week 3** | **Visual Mandate**: Add mandatory **Graphical Abstract** generation using Mermaid + `scientific-schematics` logic. | Every report includes at least 2 technical diagrams. |
-| **Week 4** | **Global Foundation**: Finish 1,000-prompt expansion and Italian (`it`) localization. | Platform ready for first European market entry. |
+### Competitive Position Matrix
 
----
+| Dimension | Benchside | K-Dense Scientific Writer | Elicit | Semantic Scholar |
+|-----------|-----------|--------------------------|--------|-----------------|
+| Deep Research (multi-step) | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐ |
+| Publication Output | ⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐ |
+| Database Access | ⭐ | ⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Collaboration | ⭐ | ⭐ | ⭐⭐ | ⭐⭐⭐ |
+| Domain Coverage | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ |
+| UX/Chat Quality | ⭐⭐⭐⭐ | ⭐⭐ (CLI) | ⭐⭐⭐⭐ | ⭐⭐⭐ |
 
-## 🗺️ 5-Year Detailed Global Roadmap
-
-### Year 1: Deep Specialization & The "Expert Associate"
-*Objective: Solidify Benchside as the indispensable tool for the individual biomedical researcher.*
-
-#### **Q1: The "Scientific Hands" Milestone**
-- **Action 1.1**: Integrate Core Scientific Databases (ChEMBL, UniProt, ClinicalTrials) via specialized skill adapters.
-- **Action 1.2**: Implement "Chemical Vision" (SMILES rendering and RDKit-powered property analysis) in the chat interface.
-- **Action 1.3**: Launch **Italian (`it`) support** and expand Prompt Card Pool to 1,000 high-fidelity biomedical prompts.
-- **KPI**: >20% increase in queries involving specific database lookups.
-
-#### **Q2: The "Publication Engine" Milestone**
-- **Action 2.1**: Integrate `claude-scientific-writer` patterns to support IMRaD (Intro, Methods, Results, Discussion) drafting.
-- **Action 2.2**: Implement **BibTeX/DOI Auto-Formatting**. High-fidelity citation management synced with Zotero/Mendeley.
-- **Action 2.3**: Launch **Poster & Slide Generation**. One-click conversion of research threads into LaTeX posters or PPTX decks.
-- **KPI**: 50% increase in "Download as Manuscript" actions.
-
-#### **Q3: The "Global Hubs" Milestone**
-- **Action 3.1**: Localize for major pharma markets: **Japanese (`ja`)**, **German (`de`)**, and **French (`fr`)**.
-- **Action 3.2**: Implement **Multi-Regional Regulatory Knowledge Base**. Differentiate advice between FDA (US) and EMA (EU) guidelines.
-- **Action 3.3**: Launch **Public Research Profiles**. Allow users to share specific, sanitized research insights as public articles.
-- **KPI**: >30% user growth in non-English speaking research hubs.
-
-#### **Q4: The "Collaborative Workspace" Milestone**
-- **Action 4.1**: Launch **Team Threads**. Multi-user chat environments with threaded scientific debates.
-- **Action 4.2**: Implement **Shared RAG Stores**. Allow lab groups to upload private document corpora (ELNs, internal reports) for team-wide querying.
-- **Action 4.3**: Integrate **Slack/Microsoft Teams** notifications for research updates.
-- **KPI**: Average 3+ users per active organization.
+**Verdict**: Our Deep Research pipeline is best-in-class for multi-step synthesis. But we lose to K-Dense on *everything else*. The good news: K-Dense is CLI/IDE-only. **We have the UX. We need their capabilities.**
 
 ---
 
-### Year 2: The Integrated Ecosystem (Collaborative Intelligence)
-*Objective: Transition from a personal researcher to a laboratory-wide operating system.*
+## 🎯 Part 2: What Must Be Implemented (Priority Stack)
 
-#### **H1: The "Lab Connector" Milestone**
-- **Action 2.1**: **Secure OAuth Integration** with Benchling, Sapio LIMS, and Dotmatics.
-- **Action 2.2**: **Webhook Event Ingestion**. Automated AI-triggering when new results (flow cytometry, HPLC, qPCR) are uploaded to the LIMS.
-- **Action 2.3**: **Automated Methods Generation**. Convert instrument raw logs into formal Methods sections for reports.
-- **KPI**: >40% of research threads involve data pulled directly from external lab connectors.
+Using the **RICE** framework (Reach × Impact × Confidence / Effort):
 
-#### **H2: The "Team Intelligence" Milestone**
-- **Action 2.4**: **Shared Lab Memories**. A communal RAG store where lab teams can "knowledge-share" across projects.
-- **Action 2.5**: **In-Chat Peer Review**. Allow lab members to "mention" colleagues on specific findings for real-time verification and discussion.
-- **Action 2.6**: **Resource Orchestrator**. Direct booking of lab equipment or ordering of reagents via Benchside chat.
-- **KPI**: Internal lab collaboration frequency increases by >30% on the platform.
+### Tier 1: Must-Have (Next 90 Days)
 
----
+| Feature | RICE Score | Rationale |
+|---------|-----------|-----------|
+| **Manuscript Export (DOCX/PDF)** | 95 | Without this, researchers won't adopt. One-click "Download as Paper" |
+| **Citation Manager** | 88 | BibTeX/DOI auto-formatting. Every citation becomes clickable and exportable |
+| **PubMed Direct API** | 85 | We have the API key. Wire it to return structured results (abstract, DOI, authors, journal) in-chat |
+| **Chemical Structure Rendering** | 80 | RDKit SMILES→SVG in the chat interface. Shows molecular structures inline |
+| **Mode Consistency Fix** | 78 | The robustness bug you identified. Standardize history depth + token budgets |
 
-### Year 3: The Regulatory & Compliance Backbone
-*Objective: Automate the paperwork bottlenecks of drug development.*
+### Tier 2: Should-Have (Months 4-8)
 
-#### **H1: The "Filing Engine" Milestone**
-- **Action 3.1**: **IND/NDA Template Library**. Auto-populate regulatory templates from the project's research and methods history.
-- **Action 3.2**: **Regulatory Gap Analytics**. AI-driven audit of current research data against FDA/EMA requirements.
-- **Action 3.3**: **Protocol Optimizer**. AI-suggested clinical trial designs optimized for power and recruitment speed.
-- **KPI**: Reduction in first-draft regulatory document time from months to <3 days.
+| Feature | RICE Score | Rationale |
+|---------|-----------|-----------|
+| **Team Workspaces** | 72 | Multi-user access to shared conversations and RAG stores |
+| **Grant Proposal Templates** | 70 | NIH/NSF/ERC templates. Massive value for academic users |
+| **Slide Deck Generation** | 68 | Convert research thread → PPTX with one click |
+| **8-Language Localization** | 65 | EN, IT, DE, FR, JP, KO, ZH, PT — covers 80% of biomedical publishing |
+| **ClinicalTrials.gov Search** | 62 | Direct trial lookup by condition, drug, NCT number |
 
-#### **H2: The "Sovereign Compliance" Milestone**
-- **Action 3.4**: **Global Compliance Router**. Real-time mapping of research advice to jurisdictional requirements (NMPA, PMDA, EMA, FDA).
-- **Action 3.5**: **Zero-Trust Sovereign Vaults**. Launch hybrid-cloud encryption modules for sensitive pre-clinical IPs.
-- **Action 3.6**: **FDA/EMA Direct-Connector**. Preliminary submission checking against public regulatory APIs.
-- **KPI**: Achievement of HIPAA, SOC2, and GxP compliance certifications.
+### Tier 3: Nice-to-Have (Months 9-12)
 
----
-
-### Year 4: The Dry Lab (Discovery & Simulation)
-*Objective: Moving from "interpreting data" to "generating discovery."*
-
-#### **H1: The "Molecular Simulation" Milestone**
-- **Action 4.1**: **Native HPC Integration**. Allow users to trigger high-performance compute docking (DiffDock) and folding (AlphaFold) jobs in-chat.
-- **Action 4.2**: **Lead Scoring Dashboards**. Interactive UI for ranking compound libraries based on binding affinity and stability predictions.
-- **Action 4.3**: **Pharmacophore Mapping**. Visual 3D protein-ligand interaction analysis within the Benchside interface.
-- **KPI**: Successful computational prediction of active leads for 3+ partner drug programs.
-
-#### **H2: The "Safety & Efficacy Predictor" Milestone**
-- **Action 4.4**: **In-Silico ADMET Screening**. Automated toxicity and metabolism predictions integrated into every compound research thread.
-- **Action 4.5**: **Virtual Dosing Simulations**. Predict PK/PD profiles before the first animal model is touched.
-- **Action 4.6**: **AI-Driven Target Deconvolution**. Propose molecular targets based on observed phenotypic changes in data.
-- **KPI**: >90% accuracy in predicting known negative toxicity outcomes in benchmarking datasets.
+| Feature | RICE Score | Rationale |
+|---------|-----------|-----------|
+| **Peer Review Scoring** | 55 | ScholarEval-style 8-dimension quality assessment |
+| **Graphical Abstract Generator** | 50 | Auto-generate visual summaries for journal submissions |
+| **ADMET Prediction** | 45 | In-silico toxicity screening for drug compounds |
+| **Lab Notebook Integration** | 40 | Benchling/LabArchives OAuth connector |
 
 ---
 
-### Year 5: The Global Scientific Registry
-*Objective: Establish Benchside as the source of truth for all "AI-Verified" science.*
+## 📅 Part 3: The 5-Year Roadmap (Milestone by Milestone)
 
-#### **H1: The "Benchside Journal" Milestone**
-- **Action 5.1**: **Decentralized Review Network**. Launch an immutable ledger for publishing "AI-Verified" findings, reviewed by expert agent ensembles.
-- **Action 5.2**: **Instant Reproducibility Checks**. AI-driven recreation of methods using digital twins and published protocols.
-- **Action 5.3**: **Science-Token Incentive Modality**. Micro-rewards for researchers who contribute high-quality, verified datasets to the global knowledge graph.
-- **KPI**: >1,000 "Benchside Verified" papers published globally.
+### Year 1: "The Research Companion" → Product-Market Fit
 
-#### **H2: The "Universal Knowledge Graph" Milestone**
-- **Action 5.4**: **Full-Autocorpus Mapping**. Connecting every paper, clinical trial, and chemical molecule in existence into a single queryable graph.
-- **Action 5.5**: **Universal Scientific API**. Benchside becomes the backend for all scientific search globally.
-- **Action 5.6**: **Global Science AI Governance**. Implementing the final layer of ethical, safety, and security guardrails for autonomous discovery.
-- **KPI**: Benchside utilized by 80% of Top 100 research institutes worldwide.
+#### Q1 (Months 1-3): Foundation Sprint
+**Theme**: *Make it exportable and citeable*
+
+| Week | Deliverable | Success Metric |
+|------|------------|----------------|
+| 1-2 | **Manuscript Export Engine** — DOCX/PDF export with proper formatting (headers, sections, page numbers) | Users can download any research thread as a formatted paper |
+| 3-4 | **Citation Manager v1** — Auto-detect DOIs in AI output, convert to APA/MLA/Vancouver format with BibTeX export | Every deep research report has properly formatted references |
+| 5-6 | **PubMed Direct Search** — Structured API integration (not just web scraping). Returns title, authors, abstract, journal, DOI as structured cards | Users can search PubMed directly from chat input |
+| 7-8 | **Chemical Vision** — RDKit backend service for SMILES→SVG rendering + basic property calculation (MW, LogP, HBD/HBA) | Molecular structures render inline in chat |
+| 9-10 | **Mode Consistency** — Standardize history depth (20 msgs), fix mode defaulting, align token budgets | Zero "robustness gap" between initial and regenerated responses |
+| 11-12 | **Localization v2** — Complete Italian, launch German and French. 1,000 prompt cards per language | Platform available in 4 languages |
+
+**Q1 KPIs**:
+- ≥500 manuscript downloads/month
+- ≥30% of sessions include citation formatting
+- Zero robustness complaints on edit/regenerate
+
+#### Q2 (Months 4-6): The Writing Lab
+**Theme**: *From chat to publication pipeline*
+
+| Deliverable | Details |
+|------------|---------|
+| **IMRaD Writer** | Two-stage generation (Outline → Prose). User approves outline structure before full generation |
+| **Grant Proposal Templates** | Pre-built templates for NIH R01, NSF CAREER, ERC Starting Grant with section-by-section guidance |
+| **Slide Deck Export** | Convert research → PPTX with auto-generated figure slides, bullet summaries, and speaker notes |
+| **Peer Review Score** | 8-dimension quality assessment (Clarity, Rigor, Novelty, Significance, Ethics, etc.) before submission |
+
+**Q2 KPIs**:
+- ≥200 grant proposals drafted/month
+- Average peer review score ≥7.0/10 on exported manuscripts
+- ≥100 PPTX exports/month
+
+#### Q3 (Months 7-9): The Global Researcher
+**Theme**: *Worldwide reach and team features*
+
+| Deliverable | Details |
+|------------|---------|
+| **5 New Languages** | Japanese, Korean, Mandarin, Portuguese, Spanish |
+| **Team Workspaces v1** | Shared conversations, @mentions, role-based access (PI, PostDoc, Student) |
+| **Regulatory Knowledge Base** | FDA vs EMA vs PMDA advisory context. System prompt adapts based on user's jurisdiction |
+| **ClinicalTrials.gov Direct** | Search by condition, drug, sponsor, NCT number. Returns structured trial cards |
+
+**Q3 KPIs**:
+- ≥30% users from non-English markets
+- ≥50 active team workspaces
+- ≥1,000 clinical trial lookups/month
+
+#### Q4 (Months 10-12): The Revenue Engine
+**Theme**: *Monetization and enterprise readiness*
+
+| Deliverable | Details |
+|------------|---------|
+| **Freemium Model** | Free: 10 research threads/month, Fast mode only. Pro ($29/mo): Unlimited, Detailed + Deep Research. Enterprise: Custom |
+| **Usage Analytics** | Dashboard showing research output metrics, citation counts, team activity |
+| **SOC2 Type I Audit** | Begin compliance journey for enterprise sales |
+| **API Access** | RESTful API for programmatic access to research and export capabilities |
+
+**Year 1 Revenue Target**: $50K MRR by Month 12
 
 ---
 
-## 🌍 Global Expansion Strategy (The "Worldwide" Path)
+### Year 2: "The Lab Operating System" → Scale
 
-### **Phase 1: Deep Vertical Markets (Years 1-2)**
-- **Targets**: USA, Switzerland, Germany, Japan, Singapore.
-- **Strategy**: Focus on "White Glove" integration with elite Research Institutes (MIT, Max Planck) and Pharma Hubs (Basel, Boston).
-- **Localization**: High-fidelity translation (DE, JP, FR) with domain-specific terminology check.
+#### H1: Lab Connectors
+| Deliverable | Details |
+|------------|---------|
+| **Benchling OAuth** | Bi-directional sync: pull experiment data into Benchside, push reports back |
+| **LIMS Webhook Ingestion** | Auto-trigger AI analysis when new instrument results (HPLC, qPCR, flow cytometry) arrive |
+| **Automated Methods Writer** | Convert instrument parameters + raw data into formal Methods sections |
+| **ChEMBL/UniProt Direct** | Full API integration for bioactivity queries and protein information |
 
-### **Phase 2: High-Growth Emerging Markets (Years 3-4)**
-- **Targets**: China, India, Brazil, South Korea.
-- **Strategy**: Localized regulatory adapters for NMPA/CDSCO. Strategic partnerships with regional CROs (Contract Research Organizations).
-- **Localization**: Mandarin, Hindi, Portuguese, Korean.
+#### H2: Intelligence Layer
+| Deliverable | Details |
+|------------|---------|
+| **Shared Lab Memory** | Team-wide RAG store for ELNs, SOPs, internal reports |
+| **Research Graph** | Visual knowledge graph showing connections between a team's research topics |
+| **Project Templates** | Pre-built workflows: "Drug Screening Campaign", "Clinical Trial Design", "Literature Review" |
+| **Slack/Teams Integration** | Push notifications and quick-query from messaging platforms |
 
-### **Phase 3: Universal Access (Year 5)**
-- **Targets**: Global (195 countries).
-- **Strategy**: Freemium tier for developing nations to equalize access to high-fidelity scientific discovery tools.
-- **Vision**: "Scientific discovery at the speed of thought, for everyone, everywhere."
-
----
-
-## 🛡️ Risk & Mitigation Framework
-
-| Risk | Impact | Mitigation Plan |
-|------|--------|-----------------|
-| **Model Hallucination** | Critical | Implementation of **Tri-Factor Verification** (Cross-reference PubMed, ChEMBL, and internal data). |
-| **Data Privacy Breach** | Critical | **Zero-Knowledge Architecture** for all pre-clinical lab data; Sovereign Cloud deployment options. |
-| **Regulatory Resistance** | High | Active engagement with FDA's "AI in Drug Development" workgroups to ensure "AI-Assisted" compliance. |
-| **Hallucination in Dosage** | Life-Safety | **Hard-Coded Checks** against pharmacological limits (RxNav/Orange Book integration). |
+**Year 2 Revenue Target**: $300K MRR
 
 ---
 
-## 🎯 Global Success Metrics (The 5-Year Goal)
-1. **Time-to-Discovery**: Reduce global average drug discovery phase from 5 years to <18 months.
-2. **Global Reach**: Active users in 100+ countries, spanning 15 languages.
-3. **Scientific Impact**: Benchside cited in >20% of all published biomedical papers.
+### Year 3: "The Regulatory Backbone" → Enterprise
+
+#### H1: Compliance Automation
+| Deliverable | Details |
+|------------|---------|
+| **IND/NDA Auto-Population** | Generate regulatory filing drafts from project research history |
+| **Regulatory Gap Analyzer** | AI audit: "Your submission is missing X, Y, Z for FDA approval" |
+| **Protocol Optimizer** | AI-suggested clinical trial designs optimized for statistical power and recruitment |
+| **SOC2 Type II + HIPAA** | Full compliance certifications |
+
+#### H2: Global Compliance
+| Deliverable | Details |
+|------------|---------|
+| **Multi-Jurisdiction Router** | Auto-detect user region, adapt regulatory advice (FDA/EMA/PMDA/NMPA/CDSCO) |
+| **Sovereign Cloud Options** | Data residency guarantees (EU, US, APAC) |
+| **GxP Validation** | Audit trail, electronic signatures, 21 CFR Part 11 compliance |
+
+**Year 3 Revenue Target**: $1.5M MRR
 
 ---
-*Prepared by Antigravity (Lead Product Manager, Benchside)*
+
+### Year 4: "The Dry Lab" → Discovery
+
+#### H1: Computational Discovery
+| Deliverable | Details |
+|------------|---------|
+| **HPC Job Submission** | Trigger molecular docking (DiffDock), protein folding (AlphaFold), MD simulations from chat |
+| **Lead Scoring Dashboard** | Interactive compound ranking by binding affinity, selectivity, ADMET profile |
+| **In-Silico ADMET** | Automated toxicity, solubility, metabolism predictions for every compound query |
+
+#### H2: Predictive Science
+| Deliverable | Details |
+|------------|---------|
+| **Virtual Patient Cohorts** | Simulate clinical trial outcomes before enrollment |
+| **Target Deconvolution** | AI-proposed drug targets from phenotypic screening data |
+| **Biomarker Discovery Pipeline** | Multi-omics integration for predictive biomarker identification |
+
+**Year 4 Revenue Target**: $5M MRR
+
+---
+
+### Year 5: "The Global Registry" → Platform
+
+#### H1: Open Science
+| Deliverable | Details |
+|------------|---------|
+| **Benchside Verified Publishing** | AI-reviewed, reproducibility-checked research publications |
+| **Open Research Profiles** | Public researcher portfolios with verified AI-assisted findings |
+| **Science Credit System** | Incentive layer for high-quality dataset contributions |
+
+#### H2: Universal Science
+| Deliverable | Details |
+|------------|---------|
+| **Universal Knowledge Graph** | Every paper, trial, molecule, gene connected in one queryable graph |
+| **Benchside API Platform** | Third-party developers build on our research infrastructure |
+| **20+ Languages** | Full global coverage |
+
+**Year 5 Revenue Target**: $15M MRR
+
+---
+
+## 🌍 Part 4: Global Expansion Strategy
+
+### Phase 1: Elite Beachheads (Year 1)
+**Markets**: USA (Boston, San Francisco), Switzerland (Basel), UK (Oxford/Cambridge)
+**Strategy**: Free accounts for top 50 research universities. White-glove onboarding with 3 pilot labs per institution.
+**Success Metric**: 500 active researchers, 5 institutional contracts
+
+### Phase 2: Pharma Corridor (Year 2)
+**Markets**: Germany (Munich, Frankfurt), Japan (Tokyo, Osaka), Singapore
+**Strategy**: Enterprise sales to pharma R&D divisions. Partner with CROs (ICON, Covance, WuXi).
+**Success Metric**: 5,000 active researchers, 20 enterprise contracts
+
+### Phase 3: Emerging R&D (Year 3-4)
+**Markets**: China, India, Brazil, South Korea, Israel
+**Strategy**: Localized pricing (PPP-adjusted). Partnerships with national research councils.
+**Success Metric**: 50,000 active researchers, 100 enterprise contracts
+
+### Phase 4: Universal Access (Year 5)
+**Markets**: Global (195 countries)
+**Strategy**: Freemium tier for developing nations. UN/WHO partnerships for public health research.
+**Success Metric**: 500,000 active researchers, Benchside cited in ≥5% of biomedical publications
+
+---
+
+## 🛡️ Part 5: Risk Matrix
+
+| Risk | Severity | Probability | Mitigation |
+|------|----------|------------|------------|
+| **AI Hallucination in Dosage** | 🔴 Critical | Medium | Hard-coded pharmacological limits. RxNav/Orange Book cross-check. Mandatory disclaimer |
+| **Data Breach (Pre-clinical IP)** | 🔴 Critical | Low | Zero-trust architecture, SOC2/HIPAA compliance, sovereign cloud |
+| **Model Provider Dependency** | 🟡 High | High | Multi-provider router (already built). Add self-hosted fallback (Ollama) |
+| **Competitor Copies Deep Research** | 🟡 High | High | Speed advantage + CoT corpus moat. Ship faster than they can copy |
+| **Regulatory Pushback** | 🟡 High | Medium | FDA AI workgroup engagement. "AI-Assisted" positioning, not "AI-Decided" |
+| **Slow Enterprise Adoption** | 🟠 Medium | Medium | Free academic tier builds bottom-up demand. PIs pressure procurement |
+
+---
+
+## 🎯 Part 6: North Star Metrics
+
+| Metric | Year 1 | Year 3 | Year 5 |
+|--------|--------|--------|--------|
+| Active Researchers | 500 | 50,000 | 500,000 |
+| Monthly Research Threads | 5,000 | 500,000 | 10,000,000 |
+| Manuscripts Exported | 2,000 | 200,000 | 5,000,000 |
+| Languages Supported | 9 | 15 | 20+ |
+| Enterprise Contracts | 0 | 100 | 1,000 |
+| MRR | $50K | $1.5M | $15M |
+| Countries Active | 10 | 40 | 195 |
+
+---
+
+*Prepared by Antigravity (Lead Product Manager, Benchside) — March 2026*
+*Methodology: deanpeters/Product-Manager-Skills RICE Framework + K-Dense-AI Competitive Analysis*
