@@ -11,6 +11,7 @@ import { HeroQupe } from '@/components/landing/HeroQupe';
 import { useConversations } from '@/hooks/useSWRChat';
 import { getSuggestionPool } from '@/config/suggestionPrompts';
 import { API_BASE_URL } from '@/config/api';
+import { FlaskConical, Dna, Sparkles } from 'lucide-react';
 
 const faqs = [
 
@@ -204,6 +205,57 @@ export default function HomePage() {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Research Hubs */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <Database size={16} className="text-purple-500" />
+              <h3 className="text-sm font-medium text-foreground-muted uppercase tracking-wider">Research Hubs</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ADMET Lab */}
+              <button
+                onClick={() => router.push('/lab')}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all group"
+              >
+                <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/40 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/60 transition-colors">
+                  <FlaskConical size={24} className="text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground mb-1">ADMET Lab</p>
+                  <p className="text-xs text-foreground-muted">Drug discovery & toxicity prediction</p>
+                </div>
+              </button>
+
+              {/* Genetics Hub */}
+              <button
+                onClick={() => router.push('/genetics')}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-purple-500/50 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all group"
+              >
+                <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/40 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
+                  <Dna size={24} className="text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground mb-1">Genetics Hub</p>
+                  <p className="text-xs text-foreground-muted">Pharmacogenomics & GWAS analysis</p>
+                </div>
+              </button>
+
+              {/* Creation Studio */}
+              <button
+                onClick={() => router.push('/studio')}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-orange-500/50 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all group"
+              >
+                <div className="p-3 rounded-xl bg-orange-100 dark:bg-orange-900/40 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
+                  <Sparkles size={24} className="text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground mb-1">Creation Studio</p>
+                  <p className="text-xs text-foreground-muted">AI-powered slides & documents</p>
+                </div>
+              </button>
             </div>
           </div>
 
