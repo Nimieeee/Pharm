@@ -84,6 +84,8 @@ class ServiceContainer:
             from app.services.pmc_fulltext import PMCFullTextService
             from app.services.serper import SerperService
             from app.services.email import EmailService
+            from app.services.postprocessing.admet_processor import ADMETProcessor
+            from app.services.admet_service import ADMETService
 
             # Core services (no inter-dependencies) - initialized first
             self._services['chat_service'] = ChatService(db)
@@ -165,6 +167,13 @@ class ServiceContainer:
 
             self._services['email_service'] = EmailService()
             logger.info("✅ Registered: email_service")
+
+            # ADMET services (postprocessing singleton + service)
+            self._services['admet_processor'] = ADMETProcessor()
+            logger.info("✅ Registered: admet_processor")
+
+            self._services['admet_service'] = ADMETService(db)
+            logger.info("✅ Registered: admet_service")
 
             # Multi-provider LLM (depends on settings, not other services)
             try:
