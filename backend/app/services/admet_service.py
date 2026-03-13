@@ -125,6 +125,7 @@ class ADMETService:
                         prediction = data["predictions"][0]
                         prediction["_engine"] = "admet-ai (Chemprop v2)"
                         prediction["_source"] = "local"
+                        prediction["smiles"] = smiles
                         return prediction
                         
         except Exception as e:
@@ -168,7 +169,7 @@ class ADMETService:
     
     async def get_svg(self, smiles: str) -> Optional[str]:
         """
-        Generate molecule SVG via /api/molsvg.
+        Generate molecule SVG using local RDKit.
         
         Args:
             smiles: SMILES string
@@ -176,6 +177,31 @@ class ADMETService:
         Returns:
             SVG string or None if failed
         """
+        try:
+            from rdkit import Chem
+            from rdkit.Chem.Draw import rdMolDraw2D
+            
+            mol = Chem.MolFromSmiles(smiles)
+            if not mol:
+                print(f"❌ Invalid SMILES: {smiles}")
+                return None
+            
+            drawer = rdMolDraw2D.MolDraw2DSVG(400, 300)
+            drawer.DrawMolecule(mol)
+            drawer.FinishDrawing()
+            svg = drawer.GetDrawingText()
+            
+            return svg
+            
+        except ImportError:
+            print("⚠️ RDKit not available, falling back to external API")
+            return await self._get_svg_external(smiles)
+        except Exception as e:
+            print(f"❌ RDKit SVG generation failed: {e}")
+            return None
+    
+    async def _get_svg_external(self, smiles: str) -> Optional[str]:
+        """Fallback to external ADMETlab API"""
         try:
             await self._rate_limiter.wait_for_slot()
             
@@ -187,13 +213,12 @@ class ADMETService:
                 
                 if response.status_code == 200:
                     data = response.json()
-                    # The API returns {"status": "success", "code": 200, "data": ["<svg>..."]}
                     if data and isinstance(data, dict) and 'data' in data and data['data']:
                         return data['data'][0]
                     return None
                     
         except Exception as e:
-            print(f"❌ ADMET SVG generation failed: {e}")
+            print(f"❌ External SVG generation failed: {e}")
         
         return None
     
@@ -212,10 +237,13 @@ class ADMETService:
         Returns:
             Dict with ADMET predictions
         """
+        raw_smiles = smiles # Store original
+        
         # 1. Try local ADMET-AI engine first
         if await self._check_local_engine():
             result = await self._predict_local(smiles)
             if result:
+                result["raw_smiles"] = raw_smiles
                 print("✅ Using local ADMET-AI engine")
                 return result
         
@@ -235,6 +263,8 @@ class ADMETService:
                         result = data["data"][0]
                         result["_engine"] = "ADMETlab 3.0"
                         result["_source"] = "api"
+                        result["smiles"] = smiles
+                        result["raw_smiles"] = raw_smiles
                         print("✅ Using ADMETlab 3.0 API")
                         return result
                         
@@ -260,6 +290,7 @@ class ADMETService:
             Dict with basic ADMET-like properties
         """
         result = {
+            "smiles": smiles,
             "_engine": "RDKit (fallback)",
             "_source": "local",
             "error": "External ADMET services unavailable"
@@ -393,10 +424,96 @@ class ADMETService:
             if filters:
                 admet_data['filters'] = filters
         
-        # Format report
-        return self.processor.format_report(admet_data, svg)
+        # Generate AI interpretation (if AI service available)
+        ai_interpretation = None
+        try:
+            ai_interpretation = await self._generate_ai_interpretation(admet_data, molecule_name)
+        except Exception as e:
+            print(f"⚠️ AI interpretation failed: {e}")
+        
+        # Format report with AI interpretation
+        return self.processor.format_report(admet_data, svg, ai_interpretation)
     
-    def export_as_csv(self, results: Dict[str, Any]) -> str:
+    async def _generate_ai_interpretation(self, admet_data: Dict[str, Any], molecule_name: str = None) -> str:
+        """
+        Generate AI-powered interpretation of ADMET results.
+        
+        Args:
+            admet_data: Full ADMET prediction results
+            molecule_name: Optional molecule name
+            
+        Returns:
+            AI-generated interpretation string
+        """
+        ai = self.ai_service
+        if not ai:
+            return None
+        
+        # Extract key properties for the prompt
+        key_props = []
+        
+        # Drug likeness
+        if 'QED' in admet_data:
+            key_props.append(f"QED: {admet_data['QED']:.3f}")
+        if 'Lipinski' in admet_data:
+            lip = admet_data['Lipinski']
+            violations = 4 - int(lip) if isinstance(lip, (int, float)) else 0
+            key_props.append(f"Lipinski violations: {violations}")
+        
+        # Absorption
+        if 'HIA_Hou' in admet_data:
+            key_props.append(f"HIA: {admet_data['HIA_Hou']:.2f}")
+        if 'Caco2_Wang' in admet_data:
+            key_props.append(f"Caco-2: {admet_data['Caco2_Wang']:.2f}")
+        
+        # Toxicity - critical endpoints
+        toxicity_concerns = []
+        for endpoint in ['hERG', 'AMES', 'DILI', 'ClinTox']:
+            if endpoint in admet_data:
+                val = admet_data[endpoint]
+                if isinstance(val, (int, float)) and val > 0.5:
+                    toxicity_concerns.append(f"{endpoint} ({val:.2f})")
+        
+        if toxicity_concerns:
+            key_props.append(f"Toxicity concerns: {', '.join(toxicity_concerns)}")
+        
+        # Build the prompt
+        name_str = f" for {molecule_name}" if molecule_name else ""
+        properties_str = "\n".join(f"- {prop}" for prop in key_props) if key_props else "No properties available"
+        
+        prompt = f"""You are a medicinal chemistry expert. Provide a brief clinical interpretation of the following ADMET analysis for a drug candidate{name_str}.
+
+{properties_str}
+
+Provide a 2-3 sentence summary focusing on:
+1. Drug-likeness and developability
+2. Key safety concerns (if any)
+3. Recommendations for progression
+
+Keep it concise and actionable."""
+        
+        try:
+            # Use the AI service to generate interpretation
+            # We'll use a simple approach without tools
+            response = await ai.generate_response(
+                prompt=prompt,
+                max_tokens=300,
+                temperature=0.3
+            )
+            
+            if response and hasattr(response, 'content'):
+                return response.content.strip()
+            elif isinstance(response, dict):
+                return response.get('content', '').strip() if response.get('content') else ''
+            elif isinstance(response, str):
+                return response.strip()
+            
+        except Exception as e:
+            print(f"⚠️ AI interpretation generation failed: {e}")
+        
+        return None
+    
+    async def export_as_csv(self, results: Dict[str, Any]) -> str:
         """
         Export ADMET results as CSV.
 
@@ -406,6 +523,13 @@ class ADMETService:
         Returns:
             CSV string
         """
+        # Ensure SVG is present for molstr column
+        if "svg_raw" not in results and "smiles" in results:
+            try:
+                results["svg_raw"] = await self.get_svg(results["smiles"])
+            except Exception:
+                pass
+                
         return self.processor.format_csv_export(results)
 
     async def extract_smiles_from_sdf(self, content: bytes) -> List[Dict[str, str]]:

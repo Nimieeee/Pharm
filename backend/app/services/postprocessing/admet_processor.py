@@ -172,22 +172,41 @@ class ADMETProcessor:
         # Value lookup table
         column_to_key = {v: k for k, v in mapping.items()}
         smiles = results.get("smiles", "")
+        raw_smiles = results.get("raw_smiles", smiles)
+        mol_svg = results.get("svg_raw", "") # We'll need to pass this in
         
         row_values = []
         for header in headers:
             if header == "raw_smiles":
-                row_values.append(smiles)
+                row_values.append(raw_smiles)
             elif header == "smiles":
                 row_values.append(smiles)
+            elif header == "molstr":
+                # Clean SVG for CSV inclusion if it looks like XML
+                if mol_svg.startswith("<?xml") or "<svg" in mol_svg:
+                    cleaned_svg = mol_svg.replace('"', "'")
+                    row_values.append(f'"{cleaned_svg}"')
+                else:
+                    row_values.append('""')
             elif header in column_to_key:
                 val = results.get(column_to_key[header], "")
-                if isinstance(val, (int, float)):
-                    row_values.append(f"{val:.4f}")
+                
+                # Special handling for alerts to match ADMETlab style
+                if "alert" in column_to_key[header] or header in ["PAINS", "BMS", "Chelating"]:
+                    if isinstance(val, (int, float)) and val > 0.5:
+                        row_values.append("['Alert']") # Simplified alert list
+                    else:
+                        row_values.append("['-']")
+                elif isinstance(val, (int, float)):
+                    # Format: Integers as ints, floats with precision
+                    if val == int(val):
+                        row_values.append(f"{int(val)}")
+                    else:
+                        row_values.append(f"{val:.4f}")
                 else:
-                    # Clean up strings but keep precision for floats
                     row_values.append(str(val).replace(",", ";"))
             else:
-                row_values.append("")
+                row_values.append('""' if header in ["Alarm_NMR", "BMS", "Chelating"] else '""')
         
         return ",".join(headers) + "\n" + ",".join(row_values)
     
@@ -378,7 +397,7 @@ class ADMETProcessor:
         
         return '\n'.join(summary_parts)
     
-    def format_report(self, admet_data: Dict[str, Any], svg: str = None) -> str:
+    def format_report(self, admet_data: Dict[str, Any], svg: str = None, ai_interpretation: str = None) -> str:
         """
         Generate complete markdown report.
         
@@ -389,6 +408,7 @@ class ADMETProcessor:
         Args:
             admet_data: Full ADMET prediction results
             svg: Optional molecule structure SVG
+            ai_interpretation: Optional AI-generated interpretation
             
         Returns:
             Complete markdown report
@@ -398,7 +418,12 @@ class ADMETProcessor:
         # Title
         parts.append("## ADMET Analysis Report\n")
         
-        # Clinical summary
+        # Key Insights section - includes AI interpretation prominently
+        if ai_interpretation:
+            parts.append("## Key Insights\n")
+            parts.append(f"{ai_interpretation}\n")
+        
+        # Clinical summary (red flags, QED, etc.)
         summary = self.summarize_findings(admet_data)
         parts.append(summary)
         
@@ -406,7 +431,65 @@ class ADMETProcessor:
         parts.append("\n## Detailed Results\n")
         
         # Metadata keys to exclude
-        exclude_keys = {"_engine", "_source", "error"}
+        exclude_keys = {"_engine", "_source", "error", "ai_interpretation", "molecule_name"}
+        
+        # Header label mapping (ADMETlab abbreviations)
+        header_labels = {
+            "molecular_weight": "MW",
+            "logP": "LogP",
+            "hydrogen_bond_donors": "H-Bond Donors",
+            "hydrogen_bond_acceptors": "H-Bond Acceptors",
+            "tpsa": "TPSA",
+            "num_rotatable_bonds": "Rotatable Bonds",
+            "num_rings": "Rings",
+            "num_heavy_atoms": "Heavy Atoms",
+            "stereo_centers": "Stereo Centers",
+            "Lipinski": "Lipinski (Ro5)",
+            "QED": "QED",
+            "PAINS_alert": "PAINS",
+            "BRENK_alert": "BRENK",
+            "NIH_alert": "NIH",
+            "HIA_Hou": "HIA",
+            "Caco2_Wang": "Caco-2",
+            "PAMPA_NCATS": "PAMPA",
+            "Pgp_Broccatelli": "P-gp",
+            "BBB_Martins": "BBB",
+            "PPBR_AZ": "PPB",
+            "VDss_Lombardo": "VDss",
+            "CYP1A2_Veith": "CYP1A2",
+            "CYP2C9_Veith": "CYP2C9",
+            "CYP2C19_Veith": "CYP2C19",
+            "CYP2D6_Veith": "CYP2D6",
+            "CYP3A4_Veith": "CYP3A4",
+            "CYP2C9_Substrate_CarbonMangels": "CYP2C9 Substrate",
+            "CYP2D6_Substrate_CarbonMangels": "CYP2D6 Substrate",
+            "CYP3A4_Substrate_CarbonMangels": "CYP3A4 Substrate",
+            "Clearance_Hepatocyte_AZ": "Hepatic Clearance",
+            "Clearance_Microsome_AZ": "Microsomal Clearance",
+            "Half_Life_Obach": "Half-life",
+            "AMES": "Ames",
+            "Carcinogens_Lagunin": "Carcinogenicity",
+            "ClinTox": "Clinical Tox",
+            "DILI": "DILI",
+            "hERG": "hERG",
+            "NR-AR": "NR-AR",
+            "NR-AR-LBD": "NR-AR-LBD",
+            "NR-AhR": "NR-AhR",
+            "NR-Aromatase": "Aromatase",
+            "NR-ER": "NR-ER",
+            "NR-ER-LBD": "NR-ER-LBD",
+            "NR-PPAR-gamma": "PPAR-γ",
+            "Skin_Reaction": "Skin Sens.",
+            "SR-ARE": "ARE",
+            "SR-ATAD5": "ATAD5",
+            "SR-HSE": "HSE",
+            "SR-MMP": "MMP",
+            "SR-p53": "p53",
+            "Solubility_AqSolDB": "Aq. Solubility",
+            "HydrationFreeEnergy_FreeSolv": "Hydration FE",
+            "Lipophilicity_AstraZeneca": "LogP (AZ)",
+            "Bioavailability_Ma": "Bioavailability",
+        }
         
         # Check if flat format (ADMET-AI local engine)
         is_flat_format = "molecular_weight" in admet_data
@@ -424,13 +507,13 @@ class ADMETProcessor:
                               "CYP3A4_Veith", "CYP2C9_Substrate_CarbonMangels", 
                               "CYP2D6_Substrate_CarbonMangels", "CYP3A4_Substrate_CarbonMangels"],
                 "Excretion": ["Clearance_Hepatocyte_AZ", "Clearance_Microsome_AZ", 
-                            "Half_Life_Obach"],
+                             "Half_Life_Obach"],
                 "Toxicity": ["AMES", "Carcinogens_Lagunin", "ClinTox", "DILI", "hERG",
-                           "NR-AR", "NR-AR-LBD", "NR-AhR", "NR-Aromatase", "NR-ER", 
-                           "NR-ER-LBD", "NR-PPAR-gamma", "Skin_Reaction",
-                           "SR-ARE", "SR-ATAD5", "SR-HSE", "SR-MMP", "SR-p53"],
+                            "NR-AR", "NR-AR-LBD", "NR-AhR", "NR-Aromatase", "NR-ER", 
+                            "NR-ER-LBD", "NR-PPAR-gamma", "Skin_Reaction",
+                            "SR-ARE", "SR-ATAD5", "SR-HSE", "SR-MMP", "SR-p53"],
                 "Solubility": ["Solubility_AqSolDB", "HydrationFreeEnergy_FreeSolv", 
-                             "Lipophilicity_AstraZeneca"]
+                             "Lipophilicity_AstraZeneca", "Bioavailability_Ma"]
             }
             
             for group_name, keys in property_groups.items():
@@ -444,10 +527,15 @@ class ADMETProcessor:
                 if group_data:
                     parts.append(f"\n### {group_name}\n")
                     for endpoint, value in group_data.items():
+                        label = header_labels.get(endpoint, endpoint.replace('_', ' ').title())
+                        interp = self.get_interpretation(endpoint, value)
                         if isinstance(value, float):
-                            parts.append(f"- **{endpoint.replace('_', ' ').title()}**: {value:.4f}")
+                            line = f"- **{label}**: {value:.4f}"
                         else:
-                            parts.append(f"- **{endpoint.replace('_', ' ').title()}**: {value}")
+                            line = f"- **{label}**: {value}"
+                        if interp:
+                            line += f" {interp}"
+                        parts.append(line)
         else:
             # Nested format - ADMETlab API
             for category, data in admet_data.items():
@@ -499,25 +587,59 @@ class ADMETProcessor:
             "HIA_Hou": [(0.9, "High intestinal absorption", "✅"), (0.5, "Moderate absorption", "⚠️"), (0, "Poor absorption", "❌")],
             "Caco2_Wang": [(-4, "High permeability", "✅"), (-6, "Moderate permeability", "⚠️"), (-8, "Poor permeability", "❌")],
             "PAMPA_NCATS": [(0.9, "High PAMPA permeability", "✅"), (0.5, "Moderate permeability", "⚠️"), (0, "Poor permeability", "❌")],
+            "Pgp_Broccatelli": [(0.5, "Not P-gp substrate", "✅"), (0.3, "Ambiguous", "⚠️"), (0, "P-gp substrate", "❌")],
             
             # Distribution (BBB - higher is better for brain penetration)
             "BBB_Martins": [(0.7, "Crosses BBB", "✅"), (0.3, "Limited BBB penetration", "⚠️"), (0, "Does not cross BBB", "❌")],
+            "PPBR_AZ": [(10, "Low plasma protein binding", "✅"), (50, "Moderate binding", "⚠️"), (90, "High binding", "❌")],
+            "VDss_Lombardo": [(2, "Normal Vd", "✅"), (4, "Elevated Vd", "⚠️"), (8, "Very high Vd", "❌")],
+            
+            # Metabolism - CYP inhibition (lower is better)
+            "CYP1A2_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
+            "CYP2C9_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
+            "CYP2C19_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
+            "CYP2D6_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
+            "CYP3A4_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
+            
+            # Metabolism - CYP substrates (higher = likely substrate)
+            "CYP2C9_Substrate_CarbonMangels": [(0.5, "Likely substrate", "⚠️"), (0.3, "Possible substrate", "⚠️"), (0, "Not substrate", "✅")],
+            "CYP2D6_Substrate_CarbonMangels": [(0.5, "Likely substrate", "⚠️"), (0.3, "Possible substrate", "⚠️"), (0, "Not substrate", "✅")],
+            "CYP3A4_Substrate_CarbonMangels": [(0.5, "Likely substrate", "⚠️"), (0.3, "Possible substrate", "⚠️"), (0, "Not substrate", "✅")],
+            
+            # Excretion (higher clearance = faster elimination)
+            "Clearance_Hepatocyte_AZ": [(30, "High clearance", "⚠️"), (15, "Moderate clearance", "✅"), (5, "Low clearance", "⚠️")],
+            "Half_Life_Obach": [(6, "Normal half-life", "✅"), (12, "Long half-life", "⚠️"), (24, "Very long half-life", "⚠️")],
             
             # Toxicity (lower is better)
             "hERG": [(0.3, "Low hERG liability", "✅"), (0.6, "Moderate hERG concern", "⚠️"), (1.0, "High hERG liability - cardiac risk", "❌")],
             "AMES": [(0.3, "Non-mutagenic (Ames negative)", "✅"), (0.6, "Ambiguous", "⚠️"), (1.0, "Mutagenic (Ames positive)", "❌")],
             "DILI": [(0.3, "Low DILI concern", "✅"), (0.6, "Moderate DILI concern", "⚠️"), (1.0, "High DILI concern", "❌")],
             "ClinTox": [(0.3, "Clinically non-toxic", "✅"), (0.6, "Moderate clinical toxicity", "⚠️"), (1.0, "Clinically toxic", "❌")],
+            "Carcinogens_Lagunin": [(0.3, "Non-carcinogenic", "✅"), (0.6, "Ambiguous", "⚠️"), (1.0, "Carcinogenic", "❌")],
             
             # Structural alerts (lower is better)
             "PAINS_alert": [(0, "No PAINS alerts", "✅"), (1, "1 PAINS alert - potential assay interference", "⚠️"), (2, "Multiple PAINS alerts", "❌")],
             "BRENK_alert": [(0, "No BRENK alerts", "✅"), (1, "1 BRENK alert", "⚠️"), (2, "Multiple BRENK alerts", "❌")],
+            "NIH_alert": [(0, "No NIH alerts", "✅"), (1, "1 NIH alert", "⚠️"), (2, "Multiple NIH alerts", "❌")],
             
             # Solubility (higher is better)
             "Solubility_AqSolDB": [(-2, "Good aqueous solubility", "✅"), (-4, "Moderate solubility", "⚠️"), (-6, "Poor solubility", "❌")],
-            
-            # Bioavailability
             "Bioavailability_Ma": [(0.5, "Good oral bioavailability", "✅"), (0.3, "Moderate bioavailability", "⚠️"), (0, "Low oral bioavailability", "❌")],
+            
+            # Nuclear receptor toxicity
+            "NR-AR": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
+            "NR-AR-LBD": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
+            "NR-AhR": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
+            "NR-Aromatase": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibition", "⚠️"), (1.0, "Strong inhibition", "❌")],
+            "NR-ER": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
+            "NR-ER-LBD": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
+            "NR-PPAR-gamma": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
+            
+            # Stress response
+            "SR-ARE": [(0.3, "Low ARE activation", "✅"), (0.6, "Moderate ARE activation", "⚠️"), (1.0, "High ARE activation", "❌")],
+            "SR-ATAD5": [(0.3, "Low genotoxicity", "✅"), (0.6, "Moderate genotoxicity", "⚠️"), (1.0, "High genotoxicity", "❌")],
+            "SR-p53": [(0.3, "Low p53 activation", "✅"), (0.6, "Moderate p53 activation", "⚠️"), (1.0, "High p53 activation", "❌")],
+            "Skin_Reaction": [(0.3, "Low skin sensitization", "✅"), (0.6, "Moderate skin sensitization", "⚠️"), (1.0, "High skin sensitization", "❌")],
         }
         
         # Check if endpoint has thresholds defined

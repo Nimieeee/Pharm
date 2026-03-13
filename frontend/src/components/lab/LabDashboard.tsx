@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loader2, Clipboard, Upload } from 'lucide-react';
+import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loader2, Clipboard, Upload, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/config/api';
 import { getRandomDrugs, DrugSuggestion } from '@/constants/drugPool';
@@ -23,11 +23,11 @@ interface ADMETResult {
 
 interface ParsedReport {
   categories: {
-    'æ´å (Absorption)'?: ADMETProperty[];
-    'åé (Distribution)'?: ADMETProperty[];
-    'ä»£è°¢ (Metabolism)'?: ADMETProperty[];
-    'æåç (Excretion)'?: ADMETProperty[];
-    'æ¯§æ§ (Toxicity)'?: ADMETProperty[];
+    'Absorption'?: ADMETProperty[];
+    'Distribution'?: ADMETProperty[];
+    'Metabolism'?: ADMETProperty[];
+    'Excretion'?: ADMETProperty[];
+    'Toxicity'?: ADMETProperty[];
     [key: string]: ADMETProperty[] | undefined;
   };
   summary: string[];
@@ -55,18 +55,44 @@ export default function LabDashboard() {
 
     const data: ParsedReport = { categories: {}, summary: [] };
     let currentCategory = '';
+    let inKeyInsights = false;
+    let keyInsightsContent: string[] = [];
     
     const lines = result.report.split('\n');
     lines.forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
 
+      // Detect Key Insights section
+      if (trimmed.startsWith('## Key Insights')) {
+        inKeyInsights = true;
+        currentCategory = 'Key Insights';
+        data.categories['Key Insights'] = [];
+        return;
+      }
+      
+      // If in Key Insights section, collect the content
+      if (inKeyInsights) {
+        if (trimmed.startsWith('## ') || trimmed.startsWith('### ')) {
+          // New section started, end Key Insights
+          inKeyInsights = false;
+          data.categories['Key Insights'] = [{
+            name: 'AI Analysis',
+            value: keyInsightsContent.join(' '),
+            status: 'neutral'
+          }];
+          keyInsightsContent = [];
+        } else {
+          keyInsightsContent.push(trimmed);
+        }
+      }
+
       if (trimmed.startsWith('## ') || trimmed.startsWith('### ')) {
         const catName = trimmed.replace(/^#+\s+/, '');
-        if (catName.match(/吸收|分布|代谢|排泄|毒性|Absorption|Distribution|Metabolism|Excretion|Toxicity/)) {
+        if (catName.match(/吸收|分布|代谢|排泄|毒性|Absorption|Distribution|Metabolism|Excretion|Toxicity|Key Properties|Red Flags|Drug-likeness/)) {
           currentCategory = catName;
           data.categories[currentCategory] = [];
-        } else {
+        } else if (!inKeyInsights) {
           data.summary.push(trimmed);
         }
       } else if (trimmed.startsWith('- **') && currentCategory) {
@@ -86,10 +112,19 @@ export default function LabDashboard() {
             status
           });
         }
-      } else if (!currentCategory && trimmed.length > 0) {
+      } else if (!currentCategory && trimmed.length > 0 && !inKeyInsights) {
         data.summary.push(trimmed);
       }
     });
+
+    // Handle remaining Key Insights content
+    if (inKeyInsights && keyInsightsContent.length > 0) {
+      data.categories['Key Insights'] = [{
+        name: 'AI Analysis',
+        value: keyInsightsContent.join(' '),
+        status: 'neutral'
+      }];
+    }
 
     return data;
   }, [result]);
@@ -309,9 +344,28 @@ export default function LabDashboard() {
                   </div>
                 </div>
 
-                {/* Property Grid */}
+                {/* Key Insights - AI Analysis (render first) */}
+                {parsedData?.categories['Key Insights'] && (
+                  <section className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 to-blue-500/10 border border-amber-500/20 backdrop-blur-md">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Sparkles className="w-5 h-5 text-amber-500" />
+                      <h3 className="text-sm font-semibold text-amber-600 uppercase tracking-wider">AI Analysis</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {parsedData.categories['Key Insights'].map((prop, i) => (
+                        <p key={i} className="text-base text-[var(--text-primary)] leading-relaxed">
+                          {prop.value}
+                        </p>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Property Grid - exclude Key Insights */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {parsedData && Object.entries(parsedData.categories).map(([name, props], i) => (
+                  {parsedData && Object.entries(parsedData.categories)
+                    .filter(([name]) => name !== 'Key Insights')
+                    .map(([name, props]) => (
                     <ADMETPropertyCard 
                       key={name}
                       category={name}
@@ -321,10 +375,9 @@ export default function LabDashboard() {
                   ))}
                 </div>
 
-                {/* Insights / Summary */}
+                {/* Summary / Other sections */}
                 {parsedData && parsedData.summary.length > 0 && (
-                  <section className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 backdrop-blur-md">
-                    <h3 className="text-sm font-semibold text-amber-600 uppercase tracking-wider mb-4">Key Insights</h3>
+                  <section className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] backdrop-blur-md">
                     <div className="space-y-3">
                       {parsedData.summary.map((line, i) => (
                         <p key={i} className="text-sm text-[var(--text-secondary)] leading-relaxed">
