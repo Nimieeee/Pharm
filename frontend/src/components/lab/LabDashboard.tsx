@@ -11,6 +11,7 @@ import HubLayout from '../shared/HubLayout';
 import SkeletonLoader from '../shared/SkeletonLoader';
 import ADMETPropertyCard, { ADMETProperty } from './ADMETPropertyCard';
 import MoleculePreview from './MoleculePreview';
+import StreamingLogo from '../chat/StreamingLogo';
 
 interface ADMETResult {
   success: boolean;
@@ -239,9 +240,11 @@ export default function LabDashboard() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                className="h-full flex flex-col items-center justify-center py-20 opacity-80 select-none"
               >
-                <SkeletonLoader count={4} variant="card" />
+                <StreamingLogo className="w-24 h-24 mb-6" />
+                <h3 className="text-xl font-medium text-amber-500 animate-pulse">Analyzing Molecule...</h3>
+                <p className="text-sm max-w-xs text-center mt-2 text-slate-400">Processing structural features across 119 ADMET endpoints</p>
               </motion.div>
             ) : error ? (
               <motion.div 

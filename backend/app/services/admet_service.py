@@ -83,10 +83,10 @@ class ADMETService:
         try:
             await self._rate_limiter.wait_for_slot()
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                response = await client.post(
                     f"{self.API_BASE}/washmol",
-                    params={"smiles": smiles}
+                    json={"smiles": smiles}
                 )
                 
                 if response.status_code == 200:
@@ -111,14 +111,18 @@ class ADMETService:
         try:
             await self._rate_limiter.wait_for_slot()
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                response = await client.post(
                     f"{self.API_BASE}/molsvg",
-                    params={"smiles": smiles}
+                    json={"smiles": smiles}
                 )
                 
                 if response.status_code == 200:
-                    return response.text
+                    data = response.json()
+                    # The API returns {"status": "success", "code": 200, "data": ["<svg>..."]}
+                    if data and isinstance(data, dict) and 'data' in data and data['data']:
+                        return data['data'][0]
+                    return None
                     
         except Exception as e:
             print(f"❌ ADMET SVG generation failed: {e}")
@@ -138,10 +142,10 @@ class ADMETService:
         try:
             await self._rate_limiter.wait_for_slot()
             
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.get(
+            async with httpx.AsyncClient(timeout=60.0, verify=False) as client:
+                response = await client.post(
                     f"{self.API_BASE}/admet",
-                    params={"smiles": smiles}
+                    json={"smiles": smiles}
                 )
                 
                 if response.status_code == 200:
@@ -160,10 +164,10 @@ class ADMETService:
     async def _predict_single(self, smiles: str) -> Dict[str, Any]:
         """Fallback to single endpoint prediction"""
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                response = await client.post(
                     f"{self.API_BASE}/single/admet",
-                    params={"smiles": smiles}
+                    json={"smiles": smiles}
                 )
                 
                 if response.status_code == 200:
@@ -186,10 +190,10 @@ class ADMETService:
         try:
             await self._rate_limiter.wait_for_slot()
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                response = await client.post(
                     f"{self.API_BASE}/filters",
-                    params={"smiles": smiles}
+                    json={"smiles": smiles}
                 )
                 
                 if response.status_code == 200:

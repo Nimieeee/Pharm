@@ -88,7 +88,7 @@ export default function MoleculePreview({ smiles }: MoleculePreviewProps) {
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center min-h-[250px] relative rounded-xl bg-black/20 border border-white/5 overflow-hidden">
+      <div className="flex-1 flex items-center justify-center min-h-[250px] relative rounded-xl bg-slate-50 border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner">
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div 
@@ -116,7 +116,7 @@ export default function MoleculePreview({ smiles }: MoleculePreviewProps) {
               key="svg"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full h-full flex items-center justify-center p-8 invert dark:invert-0 brightness-110"
+              className="w-full h-full flex items-center justify-center p-4 [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-[250px] text-black"
               dangerouslySetInnerHTML={{ __html: svg }}
             />
           ) : (
