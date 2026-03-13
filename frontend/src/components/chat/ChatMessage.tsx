@@ -34,6 +34,7 @@ export interface Message {
 
 import BranchMenu from './BranchMenu';
 import { AssistantResponse } from '@/hooks/useChatState';
+import { useChatContext } from '@/contexts/ChatContext';
 
 interface ChatMessageProps {
   message: Message | { id: string; role: 'assistant'; content: string; timestamp: Date; mode?: string; translations?: Record<string, string>; citations?: any[] };
@@ -61,9 +62,14 @@ export default function ChatMessage({
   const [isExporting, setIsExporting] = useState(false);
   const { t, language } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
-  const conversationId = typeof window !== 'undefined'
-    ? window.location.pathname.split('/').pop()
-    : null;
+  const { conversationId: contextConversationId } = useChatContext();
+  
+  // Use context conversationId with fallback to localStorage or URL
+  const conversationId = contextConversationId || (
+    typeof window !== 'undefined' 
+      ? localStorage.getItem('last_conversation_id') || window.location.pathname.split('/').pop()
+      : null
+  );
 
   const animationProps = {
     initial: { opacity: 0, y: 15 },

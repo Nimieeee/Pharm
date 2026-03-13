@@ -38,7 +38,7 @@ export default function HubLayout({
       {/* Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className={`absolute -top-24 -left-24 w-96 h-96 rounded-full blur-[120px] opacity-20 bg-${accentColor}-500`} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(#1a1a1b_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(${isDark ? '#1a1a1b' : '#94a3b8'}_1px,transparent_1px)] [background-size:20px_20px] opacity-20`} />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

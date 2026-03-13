@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loader2, Clipboard, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/config/api';
+import { getRandomDrugs, DrugSuggestion } from '@/constants/drugPool';
+import { useTheme } from '@/lib/theme-context';
 
 // Shared & New Components
 import HubLayout from '../shared/HubLayout';
@@ -33,18 +35,23 @@ interface ParsedReport {
 }
 
 export default function LabDashboard() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   const [smiles, setSmiles] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ADMETResult | null>(null);
   const [error, setError] = useState('');
+  const [suggestions, setSuggestions] = useState<DrugSuggestion[]>([]);
 
-  // Example molecules for quick testing
-  const exampleMolecules = [
-    { name: 'Aspirin', smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
-    { name: 'Caffeine', smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C' },
-    { name: 'Penicillin V', smiles: 'CC1(C(N2C(S1)C(NC(=O)COC3=CC=CC=C3)C2=O)C(=O)O)C' },
-    { name: 'Diazepam', smiles: 'CN1C(=O)CN=C(C2=C1C=CC=C2)C3=CC=CC=C3Cl' },
-  ];
+  // Load random drug suggestions on mount
+  useEffect(() => {
+    setSuggestions(getRandomDrugs(4));
+  }, []);
+
+  const handleRefreshSuggestions = () => {
+    setSuggestions(getRandomDrugs(4));
+  };
 
   // Parse the markdown report into structured data
   const parsedData = useMemo(() => {
@@ -193,7 +200,7 @@ export default function LabDashboard() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {exampleMolecules.map((mol) => (
+                {suggestions.map((mol) => (
                   <button
                     key={mol.name}
                     type="button"
@@ -203,6 +210,13 @@ export default function LabDashboard() {
                     {mol.name}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={handleRefreshSuggestions}
+                  className="text-[10px] px-2.5 py-1.25 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 hover:text-amber-300 transition-all"
+                >
+                  ↻ More
+                </button>
               </div>
 
               <div className="pt-2 flex items-center gap-2">
@@ -277,8 +291,8 @@ export default function LabDashboard() {
                       <CheckCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-white">ADMET Profile Complete</h2>
-                      <p className="text-sm text-slate-400">Computational predictions based on structural features</p>
+                      <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>ADMET Profile Complete</h2>
+                      <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Computational predictions based on structural features</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

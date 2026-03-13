@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import StatusBadge, { StatusType } from '../shared/StatusBadge';
+import { useTheme } from '@/lib/theme-context';
 
 export interface ADMETProperty {
   name: string;
@@ -18,6 +19,9 @@ interface ADMETPropertyCardProps {
 }
 
 export default function ADMETPropertyCard({ category, properties, icon: Icon }: ADMETPropertyCardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -27,7 +31,7 @@ export default function ADMETPropertyCard({ category, properties, icon: Icon }: 
         <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
           <Icon className="w-5 h-5" />
         </div>
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+        <h3 className={`text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
           {category}
         </h3>
       </div>
@@ -35,11 +39,11 @@ export default function ADMETPropertyCard({ category, properties, icon: Icon }: 
       <div className="space-y-4 flex-1">
         {properties.map((prop, i) => (
           <div key={i} className="flex items-center justify-between gap-4">
-            <span className="text-sm text-slate-400 font-medium">
+            <span className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {prop.name}
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-mono font-medium text-slate-200">
+              <span className={`text-sm font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 {prop.value}{prop.unit}
               </span>
               <StatusBadge status={prop.status} label={prop.status} className="capitalize" />
