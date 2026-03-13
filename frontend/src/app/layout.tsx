@@ -95,7 +95,7 @@ export const viewport: Viewport = {
 };
 
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
-
+import DeepLinkHandler from '@/components/DeepLinkHandler';
 import { Toaster } from 'sonner';
 
 export default function RootLayout({
@@ -107,6 +107,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${sohne.variable} ${fraunces.variable} ${gtSuper.variable}`}>
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)] antialiased">
         <ServiceWorkerRegistration />
+        <DeepLinkHandler />
         <AuthProvider>
           <ThemeProvider>
             <div className="min-h-screen transition-colors duration-300">

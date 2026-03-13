@@ -1,961 +1,567 @@
- Key Sections:
+# Mega Plan v2: Benchside Scientific Platform
 
-1. Phase 1: UI Strategy - Hub-and-Spoke architecture with frontend
-   components and handoff pattern
-2. Phase 2: ADMET Integration - Backend service with ToxMCP patterns,
-   dependencies, API endpoints
-3. Phase 3: Local Inference - BitNet deployment, intelligent routing,
-   concurrency queue
-4. Phase 4: Testing Strategy - TDD-compliant regression tests for all
-   components
-5. Phase 5: Failure Mode Analysis - Risk tables with mitigations
-6. Phase 6: Verification Plan - Pre-commit and deployment checklists
-7. Phase 7: File Changes Summary - Complete list of new and modified
-   files
-
-  CLAUDE.md Compliance:
-
-- ✅ ServiceContainer pattern for all services (lazy loading, singleton)
-- ✅ Postprocessing module for text processing (prompt_processor,
-  admet_processor, export_processor)
-- ✅ TDD with regression tests defined before implementation
-- ✅ Failure Mode Analysis included
-- ✅ Execution order with 5 sprints over ~5 weeks
-
-──────────────────────────────────────────────────────────────────────────
- Ready to code?
-
- Here is Claude's plan:
-╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
- Mega Plan: Benchside Scientific Platform Expansion
-
- Priority: UI Strategy (Frontend Hubs) → ADMET Integration → Local
- Inference
- RAM Strategy: Include ADMET dependencies in base VPS deployment
- Reference: CLAUDE.md (ServiceContainer, Postprocessing, TDD, FMA)
+> **Updated**: 2026-03-12 | **CLAUDE.md Compliance**: Full
+> **Priority**: UI Polish → CORS Hardening → Export Processor → Local Inference → Capacitor Mobile
 
 ---
 
- Context
+## Context
 
- This plan consolidates three implementation proposals into a unified,
- CLAUDE.md-compliant architecture:
+This plan consolidates and updates the original mega_plan based on a thorough codebase audit.
+Many items previously marked as [NEW] are now implemented. This revision reflects accurate status,
+adds premium UI redesign specifications, CORS hardening for Capacitor/mobile, and follows
+CLAUDE.md patterns (ServiceContainer, Postprocessing, TDD, FMA) religiously.
 
-1. UI Strategy - Hub-and-Spoke frontend with specialized dashboards
-2. ADMET Integration - Drug discovery backend service with ToxMCP
-   patterns
-3. Local Inference - BitNet deployment with intelligent model routing
-
- The user has prioritized UI Strategy first, with ADMET dependencies
- included in base deployment.
+### CoT Retrieval Evidence
+```
+python3 /Users/mac/Desktop/phhh/scripts/cot_retriever.py "Hub-and-spoke frontend architecture..."
+# Retrieved patterns on component-based architecture, CORS middleware layering,
+# and capability-based routing. Applied: layered CORS strategy, hub isolation pattern.
+```
 
 ---
 
- Phase 1: UI Strategy (Hub-and-Spoke Architecture)
+## Implementation Status Audit
 
- 1.1 Architecture Overview
+### ✅ DONE — Backend Services
+| File | Lines | Status |
+|:---|:---|:---|
+| `backend/app/services/admet_service.py` | 236 | ✅ Registered in container |
+| `backend/app/services/router_service.py` | 129 | ✅ Registered in container |
+| `backend/app/services/local_queue.py` | 93 | ✅ Registered in container |
+| `backend/app/services/postprocessing/admet_processor.py` | 240 | ✅ Registered in container |
+| `backend/app/services/postprocessing/prompt_processor.py` | 156 | ✅ Registered in container |
+| `backend/app/services/postprocessing/mermaid_processor.py` | — | ✅ Existing |
+| `backend/app/api/v1/endpoints/admet.py` | — | ✅ Existing |
+| `backend/app/core/container.py` | 274 | ✅ All 5 new services registered |
 
- ┌─────────────────────────────────────────────────────────────────┐
- │                        Frontend (Next.js)                        │
- ├─────────────────────────────────────────────────────────────────┤
- │                                                                   │
- │  ┌─────────────┐     ┌──────────────────────────────────────┐  │
- │  │   /chat     │────▶│ Handoff Component                     │  │
- │  │  (Spoke)    │     │  - "Open in Lab" → /lab?smiles=...    │  │
- │  │             │     │  - "View Genetics" → /genetics?rs=... │  │
- │  │             │     │  - "Edit in Studio" → /studio?doc=... │  │
- │  └─────────────┘     └──────────────────────────────────────┘  │
- │                                                                   │
- │  ┌─────────────────────────────────────────────────────────────┐│
- │  │                    SPECIALIZED HUBS                         ││
- │  ├─────────────────────────────────────────────────────────────┤│
- │  │  /lab        │ ADMET Viewer, PubMed Explorer, DDI Mapper   ││
- │  │  /genetics   │ PharmGx Visualizer, GWAS Context Mapper     ││
- │  │  /studio     │ Warp-Mode Outline, Side-by-Side Preview     ││
- │  └─────────────────────────────────────────────────────────────┘│
- └─────────────────────────────────────────────────────────────────┘
-           │                              │
-           ▼                              ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │                      Backend (FastAPI)                           │
- ├─────────────────────────────────────────────────────────────────┤
- │  ServiceContainer (singleton)                                    │
- │  ├── admet_service (NEW)                                         │
- │  ├── router_service (NEW)                                        │
- │  ├── local_queue (NEW)                                           │
- │  ├── pubmed_service (MODIFY - add synthesis)                    │
- │  └── ... existing services                                       │
- │                                                                   │
- │  Postprocessing Module                                            │
- │  ├── mermaid_processor (existing)                                │
- │  ├── prompt_processor (NEW)                                      │
- │  ├── admet_processor (NEW)                                       │
- │  └── export_processor (NEW)                                      │
- └─────────────────────────────────────────────────────────────────┘
+### ✅ DONE — Frontend Routes & Components
+| File | Lines | Status |
+|:---|:---|:---|
+| `frontend/src/app/lab/page.tsx` | 13 | ✅ Imports LabDashboard |
+| `frontend/src/app/genetics/page.tsx` | 13 | ✅ Imports GeneticsDashboard |
+| `frontend/src/app/studio/page.tsx` | 13 | ✅ Imports CreationStudio |
+| `frontend/src/components/lab/LabDashboard.tsx` | 267 | ✅ Functional (ADMET input + results + CSV) |
+| `frontend/src/components/genetics/GeneticsDashboard.tsx` | 298 | ✅ Functional (PharmGx + GWAS tabs) |
+| `frontend/src/components/studio/CreationStudio.tsx` | 289 | ✅ Functional (Slides + Docs + SSE) |
+| `frontend/src/components/chat/HandoffButton.tsx` | 62 | ✅ Functional (lab/genetics/studio) |
 
- 1.2 Frontend Components
+### ✅ DONE — Regression Tests
+| File | Status |
+|:---|:---|
+| `backend/tests/regression/test_admet_service.py` | ✅ Exists |
+| `backend/tests/regression/test_router_services.py` | ✅ Exists |
+| `backend/tests/regression/test_mermaid.py` | ✅ 26 tests |
+| `backend/tests/regression/test_all_services.py` | ✅ Exists |
 
- Files to Create:
+### ❌ REMAINING — What This Plan Covers
+| Item | Priority | Sprint |
+|:---|:---|:---|
+| UI polish for all 3 hubs (premium design) | P0 | Sprint 1 |
+| CORS hardening for Capacitor/mobile | P0 | Sprint 1 |
+| `export_processor.py` (missing postprocessor) | P1 | Sprint 1 |
+| `multi_provider.py` model update (`claude-airforce`) | P1 | Sprint 1 |
+| Frontend tests for hub components | P2 | Sprint 2 |
+| `deploy_bitnet.sh` VPS script | P3 | Sprint 3 |
+| Capacitor config + native plugins | P3 | Sprint 3 |
 
- ┌──────────────────────────────────────────────────────┬────────────┐
- │                         File                         │  Purpose   │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ frontend/src/app/lab/page.tsx                        │ Lab Hub    │
- │                                                      │ route      │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ frontend/src/app/genetics/page.tsx                   │ Genetics   │
- │                                                      │ Hub route  │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ Creation   │
- │ frontend/src/app/studio/page.tsx                     │ Studio     │
- │                                                      │ route      │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ ADMET      │
- │ frontend/src/components/lab/LabDashboard.tsx         │ Viewer,    │
- │                                                      │ DDI Mapper │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ frontend/src/components/genetics/GeneticsDashboard.t │ PharmGx,   │
- │ sx                                                   │ GWAS visua │
- │                                                      │ lizers     │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ Warp-Mode  │
- │ frontend/src/components/studio/CreationStudio.tsx    │ Outline,   │
- │                                                      │ Preview    │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ Reusable   │
- │ frontend/src/components/chat/HandoffButton.tsx       │ handoff    │
- │                                                      │ component  │
- └──────────────────────────────────────────────────────┴────────────┘
+---
 
- Files to Modify:
+## Phase 1: CORS Hardening (P0)
 
- ┌─────────────────────────────────────────────────┬──────────────────┐
- │                      File                       │      Change      │
- ├─────────────────────────────────────────────────┼──────────────────┤
- │                                                 │ Add handoff      │
- │ frontend/src/components/chat/MessageContent.tsx │ buttons to       │
- │                                                 │ scientific       │
- │                                                 │ messages         │
- └─────────────────────────────────────────────────┴──────────────────┘
+### 1.1 Problem
 
- 1.3 Backend Services
+Current CORS config in `main.py` covers Vercel and localhost:3000, but **missing**:
+- `capacitor://localhost` (iOS WebView)
+- `http://localhost` (Android WebView, no port)
+- `ionic://localhost` (Ionic fallback)
 
- NEW: backend/app/services/postprocessing/prompt_processor.py
- class PromptProcessor:
-     """Prompt complexity analysis for intelligent routing."""
+The Capacitor app (`capacitor.config.ts`) is configured with `appId: 'com.benchside.app'` and `webDir: 'out'`. Without these origins, all API calls from the native app will fail with CORS errors.
 
-    COMPLEXITY_SIGNALS = [
-         "review", "synthesize", "comprehensive", "compare and contrast",
-         "systematic", "meta-analysis", "literature", "in-depth"
-     ]
+### 1.2 Changes
 
-    PRIVACY_SIGNALS = [
-         "patient", "genotype", "rs", "CYP", "HLA-", "allele",
-         "my results", "my data", "confidential", "HIPAA"
-     ]
+#### [MODIFY] [main.py](file:///Users/mac/Desktop/phhh/backend/main.py)
 
-    def score_complexity(self, prompt: str, token_count: int) -> float:
-         """Return complexity score 0.0-1.0"""
-         pass
+Add Capacitor-safe origins to the explicit allowed list:
 
-    def detect_privacy(self, prompt: str) -> bool:
-         """Detect if prompt contains sensitive data"""
-         pass
+```python
+# Lines 91-99: Add mobile WebView origins
+allowed_origins.extend([
+    "https://benchside.vercel.app",
+    "https://www.benchside.vercel.app",
+    "https://pharmgpt.vercel.app",
+    "https://pharmgpt-frontend.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://15-237-208-231.sslip.io",
+    # Capacitor/Mobile WebView origins
+    "capacitor://localhost",      # iOS Capacitor
+    "http://localhost",           # Android Capacitor (no port)
+    "ionic://localhost",          # Ionic fallback
+])
+```
 
- prompt_processor = PromptProcessor()  # Singleton
+Update the `allow_origin_regex` to also cover Capacitor:
+```python
+allow_origin_regex=r"https://(benchside|pharmgpt|.*-pharmgpt|.*sslip).*\.vercel\.app|https://15-237-208-231\.sslip\.io|capacitor://localhost|ionic://localhost",
+```
 
- NEW: backend/app/services/postprocessing/admet_processor.py
- class ADMETProcessor:
-     """ADMET report formatting and export."""
+#### [MODIFY] [config.py](file:///Users/mac/Desktop/phhh/backend/app/core/config.py)
 
-    def format_svg_for_report(self, svg: str) -> str:
-         """Clean and optimize SVG for markdown"""
-         pass
+Add Capacitor origins to the default ALLOWED_ORIGINS fallback:
+```python
+# Line 80
+ALLOWED_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:5173,capacitor://localhost,http://localhost,https://benchside.vercel.app"
+```
 
-    def format_csv_export(self, results: dict) -> str:
-         """Convert ADMET results to CSV string"""
-         pass
+And in the fallback list (lines 99-106 and 112-118):
+```python
+"capacitor://localhost",
+"http://localhost",
+```
 
-    def summarize_findings(self, admet_data: dict) -> str:
-         """Generate clinical summary of ADMET results"""
-         pass
+#### [MODIFY] [capacitor.config.ts](file:///Users/mac/Desktop/phhh/frontend/capacitor.config.ts)
 
- admet_processor = ADMETProcessor()  # Singleton
+Add server config for API proxying:
+```typescript
+const config: CapacitorConfig = {
+  appId: 'com.benchside.app',
+  appName: 'Benchside',
+  webDir: 'out',
+  server: {
+    // Allow mixed content for local dev
+    cleartext: true,
+    // Use the production API URL
+    url: undefined, // Uses webDir by default; set for live reload
+  },
+};
+```
 
- NEW: backend/app/services/postprocessing/export_processor.py
- class ExportProcessor:
-     """Generic export format processing."""
+---
+
+## Phase 2: UI Polish — Premium Hub Redesign (P0)
+
+### 2.1 Design Principles
+
+All three hubs currently work but look basic — plain card layouts with minimal visual hierarchy.
+The redesign targets a **premium, dark-mode-first aesthetic** with:
+
+- **Glassmorphism** cards with `backdrop-blur` and subtle borders
+- **Color-coded hub identities**: Lab = Amber, Genetics = Purple, Studio = Teal
+- **Micro-animations** on every interaction (hover lift, focus glow, result slide-in)
+- **Responsive grid layouts** that collapse gracefully on mobile (375px target)
+- **Empty states** with illustrated placeholders instead of blank space
+- **Skeleton loaders** instead of spinner-only loading states
+
+### 2.2 Lab Dashboard Redesign
+
+#### [MODIFY] [LabDashboard.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/lab/LabDashboard.tsx)
+
+**Current**: Single-column layout, basic input → raw markdown dump.
+
+**Redesigned Structure**:
+```
+┌─────────────────────────────────────────────────────────┐
+│  🧪 ADMET Lab                                    [?]   │
+│  Predict drug properties from molecular structure       │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─ Molecule Input ──────────────────────────────────┐  │
+│  │  [SMILES input ___________________________] [▶]   │  │
+│  │  Try: [Aspirin] [Caffeine] [Penicillin] [Diazepam]│  │
+│  │  ── or ──                                         │  │
+│  │  [📋 Paste from clipboard] [📁 Upload .sdf/.mol]  │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌─ Molecule Preview ─────┐  ┌─ Quick Summary ───────┐ │
+│  │                        │  │ Lipinski: ✅ Pass      │ │
+│  │   [SVG Structure]      │  │ PAINS: ✅ Clean       │ │
+│  │                        │  │ Bioavail: 0.85        │ │
+│  │   MW: 180.16 g/mol     │  │ LogP: 1.2            │ │
+│  │   Formula: C₉H₈O₄     │  │ Solubility: High     │ │
+│  └────────────────────────┘  └───────────────────────┘ │
+│                                                         │
+│  ┌─ ADMET Properties (Grid) ────────────────────────┐  │
+│  │ ┌──────────┐ ┌──────────┐ ┌──────────┐          │  │
+│  │ │Absorption│ │Distribut.│ │Metabolism│          │  │
+│  │ │ Caco-2 ✅│ │ BBB: ❌  │ │ CYP3A4 ⚠│          │  │
+│  │ │ HIA: 95% │ │ PPB: 80% │ │ CYP2D6 ✅│          │  │
+│  │ └──────────┘ └──────────┘ └──────────┘          │  │
+│  │ ┌──────────┐ ┌──────────┐                        │  │
+│  │ │Excretion │ │Toxicity  │  [Export CSV] [Share]  │  │
+│  │ │ T½: 4.5h │ │ hERG: ✅ │                        │  │
+│  │ │ CL: Med  │ │ AMES: ✅ │                        │  │
+│  │ └──────────┘ └──────────┘                        │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key changes**:
+1. **Add molecule SVG preview** — render the SVG from `/api/v1/admet/svg` in a side panel
+2. **ADMET property grid** — parse the markdown report into structured cards with color-coded badges (✅ green, ⚠ amber, ❌ red)
+3. **Quick summary sidebar** — extract Lipinski, PAINS, key metrics
+4. **Skeleton loader** — show animated placeholder cards during analysis
+5. **Clipboard paste + .sdf upload** — add alternative input methods
+6. **Responsive** — stack preview/summary vertically on mobile
+
+#### [NEW] [ADMETPropertyCard.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/lab/ADMETPropertyCard.tsx)
+
+Reusable card for individual ADMET categories (Absorption, Distribution, etc.) with:
+- Header with icon and category name
+- List of properties with status badges
+- Hover tooltip with detailed explanation
+- Glassmorphism styling
+
+#### [NEW] [MoleculePreview.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/lab/MoleculePreview.tsx)
+
+SVG molecule renderer component:
+- Fetches SVG from backend `/api/v1/admet/svg`
+- Dark mode inversion filter
+- Zoom on hover
+- Download SVG button
+
+### 2.3 Genetics Dashboard Redesign
+
+#### [MODIFY] [GeneticsDashboard.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/genetics/GeneticsDashboard.tsx)
+
+**Current**: Tab selector + basic input → component render.
+
+**Redesigned Structure**:
+```
+┌─────────────────────────────────────────────────────────┐
+│  🧬 Genetics Hub                                       │
+│  Pharmacogenomics and variant analysis                  │
+├─────────────────────────────────────────────────────────┤
+│  [◉ PharmGx Report]  [○ GWAS Lookup]                   │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─ Upload Zone ─────────────────────────────────────┐  │
+│  │          ┌────────────────────────┐                │  │
+│  │          │  📂 Drop your 23andMe  │                │  │
+│  │          │  or AncestryDNA file   │                │  │
+│  │          │  here, or click to     │                │  │
+│  │          │  browse                │                │  │
+│  │          └────────────────────────┘                │  │
+│  │  Supported: 23andMe (.txt), AncestryDNA (.txt)    │  │
+│  │  🔒 Your data never leaves this session           │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌─ Results ─────────────────────────────────────────┐  │
+│  │  ┌─ Drug Response ──┐  ┌─ Risk Variants ───────┐ │  │
+│  │  │ Warfarin: ⚠ Slow │  │ CYP2C19 *4/*4        │ │  │
+│  │  │ Clopidogrel: ❌  │  │ → Poor metabolizer   │ │  │
+│  │  │ Simvastatin: ✅  │  │ → Avoid clopidogrel  │ │  │
+│  │  └──────────────────┘  └──────────────────────┘  │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key changes**:
+1. **Drag-and-drop upload zone** with dashed border, icon, and privacy notice
+2. **Structured result cards** for drug responses (instead of raw component render)
+3. **Risk badges** with color coding per metabolizer status
+4. **GWAS tab**: add Manhattan-plot-style result visualization with LLM-generated clinical context
+5. **Example variant chips** with gene name + trait tooltip (already exists, polish styling)
+
+#### [NEW] [UploadZone.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/genetics/UploadZone.tsx)
+
+Reusable drag-and-drop file upload:
+- Dashed border with icon
+- File type validation
+- Progress indicator
+- Privacy badge ("🔒 Local processing only")
+
+### 2.4 Creation Studio Redesign
+
+#### [MODIFY] [CreationStudio.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/studio/CreationStudio.tsx)
+
+**Current**: Type selector → topic input → outline editor → progress → download.
+
+**Redesigned Structure**:
+```
+┌─────────────────────────────────────────────────────────┐
+│  ✨ Creation Studio                                     │
+│  AI-powered slides and documents                        │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌──────────────────────┐  ┌──────────────────────┐    │
+│  │   📊 Presentation    │  │   📄 Document         │    │
+│  │                      │  │                       │    │
+│  │  Generate slides     │  │  Create structured    │    │
+│  │  with AI images      │  │  reports & manuscripts │    │
+│  │                      │  │                       │    │
+│  │  [Selected ◉]        │  │  [Select ○]           │    │
+│  └──────────────────────┘  └──────────────────────┘    │
+│                                                         │
+│  Topic: [____________________________________] [Go ▶]  │
+│                                                         │
+│  Recent: [Drug Resistance...] [CRISPR Review...]       │
+│                                                         │
+├──── Outline Editor (when generated) ────────────────────┤
+│  Side-by-side: Outline tree ↔ Live preview             │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key changes**:
+1. **Larger type selector cards** with illustrations (already exists, polish with gradients)
+2. **Recent topics** — store last 5 topics in localStorage
+3. **Side-by-side preview** during outline editing
+4. **Progress bar** with step labels instead of generic spinner
+5. **Download options** — PPTX, PDF, DOCX format selector
+
+### 2.5 Shared UI Components
+
+#### [NEW] [HubLayout.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/shared/HubLayout.tsx)
+
+Shared layout wrapper for all hubs:
+- Consistent header with hub icon, title, description
+- Back-to-chat navigation link
+- Responsive padding and max-width
+- Glassmorphism background
+
+#### [NEW] [SkeletonLoader.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/shared/SkeletonLoader.tsx)
+
+Animated skeleton placeholder for loading states:
+- Card skeleton, text skeleton, grid skeleton variants
+- Consistent pulse animation
+- Dark mode compatible
+
+#### [NEW] [StatusBadge.tsx](file:///Users/mac/Desktop/phhh/frontend/src/components/shared/StatusBadge.tsx)
+
+Color-coded status indicator:
+- `success` (green), `warning` (amber), `danger` (red), `info` (blue)
+- Icon + text
+- Tooltip for details
+
+---
+
+## Phase 3: Missing Backend Components (P1)
+
+### 3.1 Export Processor
+
+#### [NEW] [export_processor.py](file:///Users/mac/Desktop/phhh/backend/app/services/postprocessing/export_processor.py)
+
+```python
+class ExportProcessor:
+    """Generic export format processing — CLAUDE.md Postprocessing Pattern."""
 
     def sanitize_svg(self, svg_content: str) -> str:
-         """Remove potentially harmful SVG elements"""
-         pass
+        """Remove potentially harmful SVG elements (script, onload, etc.)."""
+        pass
 
     def format_csv(self, data: list, columns: list) -> str:
-         """Format data as CSV with proper escaping"""
-         pass
+        """Format data as CSV with proper escaping."""
+        pass
 
- export_processor = ExportProcessor()  # Singleton
+    def format_json_export(self, data: dict) -> str:
+        """Pretty-print JSON for export."""
+        pass
 
- 1.4 Service Container Registration
+export_processor = ExportProcessor()  # Singleton
+```
 
- MODIFY: backend/app/core/container.py
+#### [MODIFY] [container.py](file:///Users/mac/Desktop/phhh/backend/app/core/container.py)
 
-# Add new services to initialize():
+Register: `self._services['export_processor'] = export_processor`
 
- from app.services.admet_service import ADMETService
- from app.services.router_service import RouterService
- from app.services.local_queue import LocalInferenceQueue
- from app.services.postprocessing.prompt_processor import
- prompt_processor
- from app.services.postprocessing.admet_processor import admet_processor
- from app.services.postprocessing.export_processor import
- export_processor
+#### [MODIFY] [__init__.py](file:///Users/mac/Desktop/phhh/backend/app/services/postprocessing/__init__.py)
 
-# Register processors (stateless singletons)
+Export: `from .export_processor import ExportProcessor, export_processor`
 
- self._services['prompt_processor'] = prompt_processor
- self._services['admet_processor'] = admet_processor
- self._services['export_processor'] = export_processor
+### 3.2 Multi-Provider Model Update
 
-# Register services (with lazy loading for dependencies)
+#### [MODIFY] [multi_provider.py](file:///Users/mac/Desktop/phhh/backend/app/services/multi_provider.py)
 
- self._services['admet_service'] = ADMETService(db)
- self._services['router_service'] = RouterService()
- self._services['local_queue'] = LocalInferenceQueue(max_queue_size=5)
+Update Pollinations model from `gemini-fast` to `claude-airforce` for elite modes only:
+```python
+models={
+    "fast": "gemini-fast",           # Keep fast for low-latency
+    "detailed": "claude-airforce",   # Upgrade for reasoning
+    "deep_research": "claude-airforce",
+    "deep_research_elite": "claude-airforce",  # Verified 200k tokens
+    "deep_research_single_pass": "gemini-fast", # Keep fast
+},
+```
 
----
-
- Phase 2: ADMET Integration
-
- 2.1 Service Architecture
-
- NEW: backend/app/services/admet_service.py
- from app.core.container import container
- from app.services.postprocessing import admet_processor
-
- class ADMETService:
-     """ADMET prediction service with ToxMCP robustness patterns."""
-
-    def__init__(self, db: Client = None):
-         self._db = db
-         self._api_base = "https://admetlab3.scbdd.com"
-         self._rate_limiter = RateLimiter(rps=5)  # 5 requests/sec
-
-    @property
-     def processor(self):
-         """Lazy load ADMET processor from container"""
-         if self._processor is None:
-             self._processor = container.get('admet_processor')
-         return self._processor
-
-    async def wash_molecule(self, smiles: str) -> str:
-         """Standardize SMILES via /api/washmol"""
-         pass
-
-    async def get_svg(self, smiles: str) -> str:
-         """Generate molecule SVG via /api/molsvg"""
-         pass
-
-    async def predict_admet(self, smiles: str) -> dict:
-         """Get 119 ADMET endpoints via /api/admet"""
-         pass
-
-    async def calculate_filters(self, smiles: str) -> dict:
-         """PAINS, Lipinski, structural alerts via RDKit/Medchem"""
-         pass
-
-    async def generate_report(self, smiles: str) -> str:
-         """Consolidated markdown report"""
-         admet_data = await self.predict_admet(smiles)
-         svg = await self.get_svg(smiles)
-         return self.processor.format_report(admet_data, svg)
-
-    def export_as_csv(self, results: dict) -> str:
-         """CSV export via processor"""
-         return self.processor.format_csv_export(results)
-
- 2.2 Dependencies
-
- MODIFY: backend/requirements.txt
-
-# Add ADMET dependencies
-
- PyTDC>=0.4.0          # Drug discovery datasets
- medchem>=0.2.0        # Medicinal chemistry
- datamol>=0.12.0        # Molecule manipulation
- deepchem>=2.7.0        # Deep learning for chemistry
-
- RAM Budget Impact:
-
-- PyTDC: ~200MB
-- medchem: ~50MB
-- datamol: ~100MB (depends on RDKit, already installed)
-- deepchem: ~300MB
-- Total: ~650MB additional
-
- With BitNet 8B (~4.4GB) + OS + FastAPI + new deps:
-
-- Total: ~6.0GB
-- Buffer: ~2GB (acceptable)
-
- 2.3 API Endpoints
-
- NEW: backend/app/api/v1/endpoints/admet.py
- from app.core.container import container
- from app.core.database import get_db
-
- def get_admet_service(db: Client = Depends(get_db)):
-     if not container.is_initialized():
-         container.initialize(db)
-     return container.get('admet_service')
-
- @router.post("/admet/analyze")
- async def analyze_molecule(
-     smiles: str,
-     current_user: User = Depends(get_current_user),
-     admet_service: ADMETService = Depends(get_admet_service)
- ):
-     """Full ADMET analysis for a molecule."""
-     return await admet_service.generate_report(smiles)
-
- @router.get("/admet/svg")
- async def get_molecule_svg(
-     smiles: str,
-     admet_service: ADMETService = Depends(get_admet_service)
- ):
-     """Generate SVG for molecule structure."""
-     return {"svg": await admet_service.get_svg(smiles)}
-
- @router.get("/admet/export")
- async def export_admet_csv(
-     smiles: str,
-     admet_service: ADMETService = Depends(get_admet_service)
- ):
-     """Export ADMET results as CSV."""
-     report = await admet_service.generate_report(smiles)
-     return {"csv": admet_service.export_as_csv(report)}
+> **Rationale**: Testing confirmed `claude-airforce` handles 200k tokens reliably and outperforms
+> `gemini-fast` (which hit Vertex AI Resource Exhausted at the same load). Keep `gemini-fast`
+> for fast/single-pass modes where latency matters more than reasoning depth.
 
 ---
 
- Phase 3: Local Inference (BitNet)
+## Phase 4: Testing Strategy (TDD Compliance)
 
- 3.1 Provider Integration
+### 4.1 New Regression Tests Required
 
- MODIFY: backend/app/services/multi_provider.py
- class Provider(Enum):
-     MISTRAL = "mistral"
-     GROQ = "groq"
-     NVIDIA = "nvidia"
-     POLLINATIONS = "pollinations"
-     LOCAL = "local"           # NEW
+#### [NEW] [test_export_processor.py](file:///Users/mac/Desktop/phhh/backend/tests/regression/test_export_processor.py)
 
-# Update MODE_PRIORITIES
+```python
+class TestExportProcessor:
+    def test_svg_sanitization_removes_script_tags(self):
+        """SVG with <script> tags must be sanitized."""
+        pass
 
- MODE_PRIORITIES = {
-     "fast": [Provider.LOCAL, Provider.GROQ, Provider.POLLINATIONS],
-     "detailed": [Provider.POLLINATIONS, Provider.LOCAL,
- Provider.NVIDIA],
-     "deep_research": [Provider.POLLINATIONS, Provider.NVIDIA,
- Provider.GROQ],
-     "deep_research_elite": [Provider.POLLINATIONS],
-     "deep_research_single_pass": [Provider.GROQ],
- }
+    def test_csv_format_escapes_commas(self):
+        """CSV values containing commas must be quoted."""
+        pass
 
-# LOCAL provider config (conditional)
+    def test_csv_format_handles_unicode(self):
+        """CSV must handle UTF-8 characters correctly."""
+        pass
+```
 
- if os.getenv("LOCAL_MODEL_ENABLED", "false") == "true":
-     self.providers[Provider.LOCAL] = ProviderConfig(
-         name=Provider.LOCAL,
-         api_key="not-needed",
-         base_url=os.getenv("LOCAL_MODEL_URL",
- "http://127.0.0.1:8080/v1"),
-         models={
-             "fast": "bitnet-2b",
-             "detailed": "bitnet-8b",
-         },
-         headers={"Content-Type": "application/json"},
-         weight=1.0,
-         rpm_limit=999,
-     )
+#### [NEW] [test_cors_headers.py](file:///Users/mac/Desktop/phhh/backend/tests/regression/test_cors_headers.py)
 
- 3.2 Intelligent Router
+```python
+class TestCORSHeaders:
+    def test_capacitor_origin_allowed(self):
+        """Requests from capacitor://localhost must receive CORS headers."""
+        pass
 
- NEW: backend/app/services/router_service.py
- from app.services.postprocessing.prompt_processor import
- prompt_processor
- from app.core.container import container
+    def test_vercel_origin_allowed(self):
+        """Requests from benchside.vercel.app must receive CORS headers."""
+        pass
 
- class RouterService:
-     """Intelligent prompt routing based on complexity and privacy."""
+    def test_unknown_origin_rejected(self):
+        """Requests from unknown origins must not receive CORS headers."""
+        pass
 
-    def__init__(self):
-         self._queue = None  # Lazy loaded
+    def test_error_responses_include_cors(self):
+        """Even 500 error responses must include CORS headers."""
+        pass
+```
 
-    @property
-     def queue(self):
-         """Lazy load local inference queue"""
-         if self._queue is None:
-             self._queue = container.get('local_queue')
-         return self._queue
+### 4.2 Existing Tests to Verify
 
-    def route(self, prompt: str, token_count: int, mode: str) -> str:
-         """
-         Determine optimal provider based on mode + complexity.
+```bash
+# Run existing regression suite (must pass before changes)
+cd backend && source .venv/bin/activate && pytest tests/regression/ -v
 
-    Returns: Provider name string
-         """
-         complexity = prompt_processor.score_complexity(prompt,
- token_count)
-         is_private = prompt_processor.detect_privacy(prompt)
-         queue_busy = self.queue.is_busy() if self.queue else True
-
-    if mode == "fast":
-             return self._route_fast(complexity, queue_busy)
-         elif mode == "detailed":
-             return self._route_detailed(complexity, is_private,
- queue_busy)
-         elif mode in ("deep_research", "deep_research_elite"):
-             return self._route_elite()
-
-    def _route_fast(self, complexity: float, queue_busy: bool) -> str:
-         if complexity < 0.3 and not queue_busy:
-             return "local"      # BitNet 2B
-         elif complexity < 0.6:
-             return "groq"       # Groq 8B
-         else:
-             return "pollinations"  # Sonnet 4.6
-
-    def _route_detailed(self, complexity: float, is_private: bool,
-                         queue_busy: bool) -> str:
-         if is_private:
-             return "local"      # Privacy: never leaves VPS
-         if complexity < 0.4 and not queue_busy:
-             return "local"      # BitNet 8B
-         return "pollinations"   # Sonnet 4.6
-
-    def _route_elite(self) -> str:
-         return "pollinations"    # Always Sonnet 4.6
-
- 3.3 Concurrency Queue
-
- NEW: backend/app/services/local_queue.py
- import asyncio
- from fastapi import HTTPException
-
- class LocalInferenceQueue:
-     """Serializes requests to local BitNet model."""
-
-    def__init__(self, max_queue_size: int = 5):
-         self._semaphore = asyncio.Semaphore(1)  # 1 concurrent request
-         self._queue_size = 0
-         self._max_queue = max_queue_size
-
-    async def submit(self, request_fn):
-         """Submit request to queue. Raises 503 if queue full."""
-         if self._queue_size >= self._max_queue:
-             raise HTTPException(503, "Local model queue full, try remote
-  mode")
-
-    self._queue_size += 1
-         try:
-             async with self._semaphore:
-                 return await request_fn()
-         finally:
-             self._queue_size -= 1
-
-    def is_busy(self) -> bool:
-         """Check if queue has pending requests."""
-         return self._queue_size > 0
-
-    def queue_position(self) -> int:
-         """Return current queue position."""
-         return self._queue_size
+# Run frontend build (catches type errors from new components)
+cd frontend && npm run build
+```
 
 ---
 
- Phase 4: Testing Strategy (TDD Compliance)
+## Phase 5: Failure Mode Analysis
 
- 4.1 Regression Tests
+### 5.1 CORS Risks
 
- NEW: backend/tests/regression/test_admet_service.py
- import pytest
- from unittest.mock import Mock, patch, AsyncMock
- from app.services.admet_service import ADMETService
- from app.services.postprocessing.admet_processor import ADMETProcessor
+| Risk | Likelihood | Impact | Mitigation |
+|:---|:---|:---|:---|
+| Capacitor origin blocked | High (if not fixed) | Critical | Add `capacitor://localhost` to allowed list |
+| OPTIONS preflight conflict | Low | Medium | Current wildcard `*` handler covers this |
+| CORS on SSE streams | Medium | High | Verify `ai.py` SSE headers include CORS |
+| Mixed content on iOS | Medium | Medium | Use HTTPS API URL in production builds |
 
- class TestADMETService:
-     @pytest.fixture
-     def service(self, mock_db):
-         return ADMETService(mock_db)
+### 5.2 UI Risks
 
-    @pytest.fixture
-     def processor(self):
-         return ADMETProcessor()
+| Risk | Likelihood | Impact | Mitigation |
+|:---|:---|:---|:---|
+| Mobile layout breakage (≤375px) | Medium | High | Test on iPhone SE viewport, add responsive breakpoints |
+| SVG rendering in dark mode | Medium | Low | Add CSS `filter: invert()` for dark mode SVGs |
+| Skeleton flash on fast responses | Low | Low | Add 200ms minimum display time |
+| Handoff data loss on navigation | Medium | High | Use URL params for data, not session state |
 
-    def test_service_initialization(self, service):
-         """Test ADMET service initializes with lazy loading."""
-         assert service._db is not None
-         assert service._processor is None  # Lazy
+### 5.3 Model Risks
 
-    def test_processor_lazy_loads_from_container(self, service):
-         """Test processor is lazy loaded from container."""
-         processor = service.processor
-         assert processor is not None
-         assert service._processor is not None
-
-    @pytest.mark.asyncio
-     async def test_rate_limiting(self, service):
-         """Test 5 rps rate limit is enforced."""
-         # 6 rapid requests should trigger rate limit
-         pass
-
-    @pytest.mark.asyncio
-     async def test_fallback_to_single_endpoint(self, service):
-         """Test fallback from /api/admet to /api/single/admet."""
-         pass
-
-    @pytest.mark.asyncio
-     async def test_wash_molecule(self, service):
-         """Test molecule washing standardizes SMILES."""
-         pass
-
-    def test_csv_export(self, processor):
-         """Test CSV formatting with proper escaping."""
-         data = {"absorption": {"caco2": 0.85}}
-         csv = processor.format_csv_export(data)
-         assert "absorption" in csv.lower()
-
- class TestADMETProcessor:
-     """Test ADMET postprocessing functions."""
-
-    def test_svg_sanitization(self):
-         """Test SVG sanitization removes harmful elements."""
-         pass
-
-    def test_report_formatting(self):
-         """Test markdown report generation."""
-         pass
-
- NEW: backend/tests/regression/test_router_service.py
- import pytest
- from app.services.router_service import RouterService
- from app.services.postprocessing.prompt_processor import PromptProcessor
-
- class TestRouterService:
-     @pytest.fixture
-     def router(self):
-         return RouterService()
-
-    @pytest.fixture
-     def scorer(self):
-         return PromptProcessor()
-
-    def test_fast_mode_simple_routes_to_local(self, router):
-         """Fast mode + simple prompt routes to LOCAL."""
-         result = router.route("What is aspirin?", 10, "fast")
-         assert result == "local"
-
-    def test_fast_mode_complex_routes_to_groq(self, router):
-         """Fast mode + complex prompt routes to GROQ."""
-         result = router.route("Synthesize a comprehensive review...",
- 500, "fast")
-         assert result == "groq"
-
-    def test_detailed_mode_privacy_routes_to_local(self, router):
-         """Detailed mode + privacy signal routes to LOCAL."""
-         result = router.route("My CYP2D6 genotype is *4/*4", 50,
- "detailed")
-         assert result == "local"
-
-    def test_detailed_mode_standard_routes_to_pollinations(self,
- router):
-         """Detailed mode + standard prompt routes to POLLINATIONS."""
-         result = router.route("Explain warfarin resistance", 100,
- "detailed")
-         assert result == "pollinations"
-
-    def test_elite_mode_always_pollinations(self, router):
-         """Elite mode always routes to POLLINATIONS."""
-         result = router.route("Any prompt", 10, "deep_research_elite")
-         assert result == "pollinations"
-
- class TestPromptProcessor:
-     """Test prompt complexity scoring."""
-
-    def test_short_simple_prompt_low_score(self):
-         """Short simple prompt gets low complexity score."""
-         scorer = PromptProcessor()
-         score = scorer.score_complexity("What is aspirin?", 10)
-         assert score < 0.3
-
-    def test_long_complex_prompt_high_score(self):
-         """Long complex prompt gets high complexity score."""
-         scorer = PromptProcessor()
-         prompt = "Conduct a systematic review and meta-analysis
- comparing..."
-         score = scorer.score_complexity(prompt, 2000)
-         assert score > 0.4
-
-    def test_privacy_detection(self):
-         """Privacy signals are detected correctly."""
-         scorer = PromptProcessor()
-         assert scorer.detect_privacy("My CYP2D6 genotype is *4/*4")
-         assert scorer.detect_privacy("Patient with HLA-B*57:01")
-         assert not scorer.detect_privacy("What is pharmacogenomics?")
-
- NEW: backend/tests/regression/test_local_queue.py
- import pytest
- import asyncio
- from app.services.local_queue import LocalInferenceQueue
-
- class TestLocalInferenceQueue:
-     @pytest.fixture
-     def queue(self):
-         return LocalInferenceQueue(max_queue_size=5)
-
-    @pytest.mark.asyncio
-     async def test_single_request_passes(self, queue):
-         """Single request passes through immediately."""
-         async def dummy_request():
-             return "result"
-
-    result = await queue.submit(dummy_request)
-         assert result == "result"
-
-    @pytest.mark.asyncio
-     async def test_queue_full_raises_503(self, queue):
-         """6th concurrent request raises HTTPException."""
-         async def slow_request():
-             await asyncio.sleep(10)
-             return "result"
-
-    # Fill queue
-         tasks = [queue.submit(slow_request) for _ in range(5)]
-
-    # 6th should fail
-         with pytest.raises(Exception) as exc_info:
-             await queue.submit(slow_request)
-         assert exc_info.value.status_code == 503
-
-    def test_is_busy_returns_correct_state(self, queue):
-         """Queue correctly reports busy state."""
-         assert not queue.is_busy()
-         # After submit, should be busy
-         # ...
-
- 4.2 Frontend Tests
-
- NEW: frontend/src/components/lab/__tests__/LabDashboard.test.tsx
- describe('LabDashboard', () => {
-   it('renders ADMET viewer with molecule data', () => {
-     // Test ADMET grid rendering
-   });
-
-   it('handles handoff from Chat with SMILES parameter', () => {
-     // Test URL param passing
-   });
-
-   it('exports ADMET data as CSV', () => {
-     // Test export functionality
-   });
- });
+| Risk | Likelihood | Impact | Mitigation |
+|:---|:---|:---|:---|
+| `claude-airforce` rate limited | Medium | Medium | Fallback chain in `multi_provider.py` handles this |
+| Empty response at 200k+ tokens | Known | Medium | Document as hard limit, warn users in UI |
 
 ---
 
- Phase 5: Failure Mode Analysis
+## Phase 6: Verification Plan
 
- 5.1 UI Strategy Risks
+### 6.1 Automated Tests
 
- ┌────────────────┬────────────┬────────┬────────────────────────────┐
- │      Risk      │ Likelihood │ Impact │         Mitigation         │
- ├────────────────┼────────────┼────────┼────────────────────────────┤
- │ State loss on  │            │        │ Use URL params for small   │
- │ refresh        │ Medium     │ High   │ data, IndexedDB for large  │
- │                │            │        │ datasets                   │
- ├────────────────┼────────────┼────────┼────────────────────────────┤
- │ Cross-route    │            │        │ Scope React Context to     │
- │ state          │ Medium     │ Medium │ conversation ID            │
- │ pollution      │            │        │                            │
- ├────────────────┼────────────┼────────┼────────────────────────────┤
- │ Mobile         │            │        │ Test responsive on 375px   │
- │ collapse       │ Medium     │ High   │ viewport, add              │
- │ failure        │            │        │ mobile-specific tests      │
- ├────────────────┼────────────┼────────┼────────────────────────────┤
- │ Handoff button │            │        │ Validate SMILES/rs numbers │
- │  missing data  │ Low        │ High   │  before showing handoff    │
- │                │            │        │ button                     │
- └────────────────┴────────────┴────────┴────────────────────────────┘
+```bash
+# 1. Run full regression suite
+cd backend && source .venv/bin/activate && pytest tests/regression/ -v
 
- 5.2 ADMET Integration Risks
+# 2. Check for circular imports
+cd backend && python -c "from app.services.postprocessing.export_processor import export_processor; print('OK')"
 
- ┌──────────────┬───────────┬───────┬───────────────────────────────┐
- │     Risk     │ Likelihoo │ Impac │          Mitigation           │
- │              │     d     │   t   │                               │
- ├──────────────┼───────────┼───────┼───────────────────────────────┤
- │ ADMETlab API │ Medium    │ Mediu │ Exponential backoff, fallback │
- │  timeout     │           │ m     │  to single endpoint           │
- ├──────────────┼───────────┼───────┼───────────────────────────────┤
- │ Rate         │           │       │ Implement client-side queue,  │
- │ limiting (5  │ High      │ Low   │ show estimated wait           │
- │ rps)         │           │       │                               │
- ├──────────────┼───────────┼───────┼───────────────────────────────┤
- │ RDKit import │ Low       │ Mediu │ datamol already depends on    │
- │  bloat       │           │ m     │ RDKit, reuse                  │
- ├──────────────┼───────────┼───────┼───────────────────────────────┤
- │ SVG XSS vuln │ Low       │ High  │ Sanitize SVG in export_proces │
- │ erability    │           │       │ sor.sanitize_svg()            │
- ├──────────────┼───────────┼───────┼───────────────────────────────┤
- │ Dependency   │ Medium    │ Mediu │ Monitor VPS RAM, add health   │
- │ RAM impact   │           │ m     │ check                         │
- └──────────────┴───────────┴───────┴───────────────────────────────┘
+# 3. Frontend build (catches type errors)
+cd frontend && npm run build
 
- 5.3 Local Inference Risks
+# 4. CORS test (manual curl)
+curl -v -H "Origin: capacitor://localhost" \
+  -H "Access-Control-Request-Method: POST" \
+  -X OPTIONS \
+  https://15-237-208-231.sslip.io/api/v1/admet/analyze
+# Expected: Access-Control-Allow-Origin: capacitor://localhost
+```
 
- ┌──────────────────┬────────────┬────────┬──────────────────────────┐
- │       Risk       │ Likelihood │ Impact │        Mitigation        │
- ├──────────────────┼────────────┼────────┼──────────────────────────┤
- │                  │            │        │ 4-bit KV cache, RAM      │
- │ Model OOM on VPS │ Low        │ High   │ monitoring,              │
- │                  │            │        │ auto-fallback            │
- ├──────────────────┼────────────┼────────┼──────────────────────────┤
- │ CPU contention   │ Medium     │ Medium │ Semaphore queue,         │
- │ with FastAPI     │            │        │ --threads 2 cap          │
- ├──────────────────┼────────────┼────────┼──────────────────────────┤
- │ RoPE quality     │            │        │ Test on medical          │
- │ degradation at   │ Medium     │ Low    │ benchmark before deploy  │
- │ 8k               │            │        │                          │
- ├──────────────────┼────────────┼────────┼──────────────────────────┤
- │ Lightsail CPU    │ Medium     │ Medium │ Monitor CPU credits,     │
- │ throttling       │            │        │ consider 4 vCPU upgrade  │
- ├──────────────────┼────────────┼────────┼──────────────────────────┤
- │ bitnet.cpp       │            │        │ systemd auto-restart,    │
- │ instability      │ Low        │ Medium │ health check, remote     │
- │                  │            │        │ fallback                 │
- └──────────────────┴────────────┴────────┴──────────────────────────┘
+### 6.2 Manual Verification
+
+1. **CORS**: Open Benchside in iOS simulator via Capacitor → attempt ADMET analysis → verify no CORS errors in Safari Web Inspector
+2. **Lab UI**: Navigate to `/lab` → enter Aspirin SMILES → verify SVG preview renders, ADMET grid shows colored badges, CSV export downloads
+3. **Genetics UI**: Navigate to `/genetics` → drag-drop a 23andMe file → verify upload zone animates, results render in structured cards
+4. **Studio UI**: Navigate to `/studio` → type topic → verify outline generates, progress bar shows steps
+5. **Handoff**: In `/chat`, ask "Analyze aspirin" → verify HandoffButton appears → click "Open in Lab" → verify SMILES is pre-filled
+6. **Mobile**: Resize browser to 375px → verify all 3 hubs are usable without horizontal scroll
 
 ---
 
- Phase 6: Verification Plan
+## Phase 7: File Changes Summary
 
- 6.1 Pre-Commit Checklist
+### Backend — New Files
+| File | Purpose |
+|:---|:---|
+| `backend/app/services/postprocessing/export_processor.py` | Generic export formatting (SVG sanitize, CSV, JSON) |
+| `backend/tests/regression/test_export_processor.py` | Export processor tests |
+| `backend/tests/regression/test_cors_headers.py` | CORS header verification tests |
 
-# Run regression suite (must be <10s)
+### Backend — Modified Files
+| File | Change |
+|:---|:---|
+| `backend/main.py` | Add Capacitor CORS origins |
+| `backend/app/core/config.py` | Add Capacitor to default ALLOWED_ORIGINS |
+| `backend/app/core/container.py` | Register `export_processor` |
+| `backend/app/services/postprocessing/__init__.py` | Export `export_processor` |
+| `backend/app/services/multi_provider.py` | Update Pollinations models (`claude-airforce` for detailed/elite) |
 
- ./run_regression.sh
+### Frontend — New Files
+| File | Purpose |
+|:---|:---|
+| `frontend/src/components/lab/ADMETPropertyCard.tsx` | ADMET category card with badges |
+| `frontend/src/components/lab/MoleculePreview.tsx` | SVG molecule renderer |
+| `frontend/src/components/genetics/UploadZone.tsx` | Drag-and-drop file upload |
+| `frontend/src/components/shared/HubLayout.tsx` | Shared hub layout wrapper |
+| `frontend/src/components/shared/SkeletonLoader.tsx` | Animated loading skeleton |
+| `frontend/src/components/shared/StatusBadge.tsx` | Color-coded status indicator |
 
-# Check for circular imports
-
- python -c "from app.services.admet_service import ADMETService; from
- app.services.router_service import RouterService"
-
-# Run frontend tests
-
- cd frontend && npm run test:regression
-
-# Build frontend (catches type errors)
-
- cd frontend && npm run build
-
-# Git diff review
-
- git diff
-
- 6.2 Deployment Verification
-
-# Deploy backend
-
- rsync -avz -e "ssh -i ~/.ssh/lightsail_key" 
-   --exclude '.venv' --exclude '__pycache__' 
-   backend/ ubuntu@15.237.208.231:/var/www/benchside-backend/backend/
-
-# Restart PM2
-
- ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 restart
- benchside-api"
-
-# Verify BitNet (if enabled)
-
- ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "curl -s
- http://127.0.0.1:8080/v1/models"
-
-# Run regression tests ON VPS
-
- ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 
-   "cd /var/www/benchside-backend/backend && 
-    source .venv/bin/activate &&
-    pytest tests/regression/ -v"
-
-# Smoke test
-
-# - Open /lab with ?smiles=CC(=O)Oc1ccccc1C(=O)O
-
-# - Verify ADMET grid renders
-
-# - Test CSV export
-
-# - Open /chat, send "Analyze aspirin", click "Open in Lab"
+### Frontend — Modified Files
+| File | Change |
+|:---|:---|
+| `frontend/src/components/lab/LabDashboard.tsx` | Premium redesign: SVG preview, ADMET grid, skeleton loaders |
+| `frontend/src/components/genetics/GeneticsDashboard.tsx` | Premium redesign: drag-drop upload, structured result cards |
+| `frontend/src/components/studio/CreationStudio.tsx` | Premium redesign: recent topics, side-by-side preview |
+| `frontend/capacitor.config.ts` | Add server config for API |
 
 ---
 
- Phase 7: File Changes Summary
+## Execution Order
 
- Backend (New Files)
+### Sprint 1: Foundation + CORS (Week 1) — ~3 days
+1. Add Capacitor origins to `main.py` + `config.py` CORS
+2. Create `export_processor.py` + register in container
+3. Update `multi_provider.py` models (`claude-airforce`)
+4. Write CORS + export regression tests
+5. Run `./run_regression.sh` — verify all ≤ 10s
 
- ┌──────────────────────────────────────────────────────┬────────────┐
- │                         File                         │  Purpose   │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ ADMET      │
- │ backend/app/services/admet_service.py                │ prediction │
- │                                                      │  service   │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ Intelligen │
- │ backend/app/services/router_service.py               │ t model    │
- │                                                      │ routing    │
- ├──────────────────────────────────────────────────────┼────────────┤
- │                                                      │ BitNet     │
- │ backend/app/services/local_queue.py                  │ request    │
- │                                                      │ queue      │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/app/services/postprocessing/prompt_processor │ Complexity │
- │ .py                                                  │  scoring   │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/app/services/postprocessing/admet_processor. │ ADMET      │
- │ py                                                   │ formatting │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/app/services/postprocessing/export_processor │ Export     │
- │ .py                                                  │ utilities  │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/app/api/v1/endpoints/admet.py                │ ADMET API  │
- │                                                      │ endpoints  │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/tests/regression/test_admet_service.py       │ ADMET      │
- │                                                      │ tests      │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/tests/regression/test_router_service.py      │ Router     │
- │                                                      │ tests      │
- ├──────────────────────────────────────────────────────┼────────────┤
- │ backend/tests/regression/test_local_queue.py         │ Queue      │
- │                                                      │ tests      │
- └──────────────────────────────────────────────────────┴────────────┘
+### Sprint 2: UI Polish (Week 1-2) — ~5 days
+1. Create shared components (`HubLayout`, `SkeletonLoader`, `StatusBadge`)
+2. Redesign `LabDashboard.tsx` with SVG preview + ADMET grid
+3. Redesign `GeneticsDashboard.tsx` with drag-drop + structured cards
+4. Redesign `CreationStudio.tsx` with recent topics + progress bar
+5. Run `cd frontend && npm run build` — verify no type errors
 
- Backend (Modified Files)
-
- ┌───────────────────────────────────────┬───────────────────────────┐
- │                 File                  │          Change           │
- ├───────────────────────────────────────┼───────────────────────────┤
- │ backend/app/core/container.py         │ Register new services and │
- │                                       │  processors               │
- ├───────────────────────────────────────┼───────────────────────────┤
- │ backend/app/services/multi_provider.p │ Add Provider.LOCAL,       │
- │ y                                     │ update MODE_PRIORITIES    │
- ├───────────────────────────────────────┼───────────────────────────┤
- │ backend/app/core/config.py            │ Add LOCAL_MODEL_ENABLED,  │
- │                                       │ LOCAL_MODEL_URL           │
- ├───────────────────────────────────────┼───────────────────────────┤
- │ backend/requirements.txt              │ Add PyTDC, medchem,       │
- │                                       │ datamol, deepchem         │
- ├───────────────────────────────────────┼───────────────────────────┤
- │ backend/app/services/pubmed_service.p │ Add summarize_results()   │
- │ y                                     │ method                    │
- ├───────────────────────────────────────┼───────────────────────────┤
- │ backend/app/services/ddi_service.py   │ Add generate_clinical_adv │
- │                                       │ ice() method              │
- └───────────────────────────────────────┴───────────────────────────┘
-
- Frontend (New Files)
-
- ┌───────────────────────────────────────────────────────┬───────────┐
- │                         File                          │  Purpose  │
- ├───────────────────────────────────────────────────────┼───────────┤
- │ frontend/src/app/lab/page.tsx                         │ Lab Hub   │
- │                                                       │ route     │
- ├───────────────────────────────────────────────────────┼───────────┤
- │ frontend/src/app/genetics/page.tsx                    │ Genetics  │
- │                                                       │ Hub route │
- ├───────────────────────────────────────────────────────┼───────────┤
- │                                                       │ Creation  │
- │ frontend/src/app/studio/page.tsx                      │ Studio    │
- │                                                       │ route     │
- ├───────────────────────────────────────────────────────┼───────────┤
- │                                                       │ ADMET     │
- │ frontend/src/components/lab/LabDashboard.tsx          │ Viewer,   │
- │                                                       │ DDI       │
- │                                                       │ Mapper    │
- ├───────────────────────────────────────────────────────┼───────────┤
- │ frontend/src/components/genetics/GeneticsDashboard.ts │ PharmGx,  │
- │ x                                                     │ GWAS visu │
- │                                                       │ alizers   │
- ├───────────────────────────────────────────────────────┼───────────┤
- │                                                       │ Outline   │
- │ frontend/src/components/studio/CreationStudio.tsx     │ editor,   │
- │                                                       │ preview   │
- ├───────────────────────────────────────────────────────┼───────────┤
- │                                                       │ Reusable  │
- │ frontend/src/components/chat/HandoffButton.tsx        │ handoff   │
- │                                                       │ component │
- ├───────────────────────────────────────────────────────┼───────────┤
- │ frontend/src/components/lab/__tests__/LabDashboard.te │ Lab tests │
- │ st.tsx                                                │           │
- └───────────────────────────────────────────────────────┴───────────┘
-
- Frontend (Modified Files)
-
- ┌─────────────────────────────────────────────────┬──────────────────┐
- │                      File                       │      Change      │
- ├─────────────────────────────────────────────────┼──────────────────┤
- │ frontend/src/components/chat/MessageContent.tsx │ Add handoff      │
- │                                                 │ buttons          │
- ├─────────────────────────────────────────────────┼──────────────────┤
- │ frontend/src/components/chat/ChatInput.tsx      │ Add queue        │
- │                                                 │ position toast   │
- └─────────────────────────────────────────────────┴──────────────────┘
-
- Infrastructure (New Files)
-
- ┌──────────────────────────┬─────────────────────────────────────────┐
- │           File           │                 Purpose                 │
- ├──────────────────────────┼─────────────────────────────────────────┤
- │ scripts/deploy_bitnet.sh │ VPS setup script                        │
- ├──────────────────────────┼─────────────────────────────────────────┤
- │ backend/.env.example     │ Add LOCAL_MODEL_ENABLED,                │
- │                          │ LOCAL_MODEL_URL                         │
- └──────────────────────────┴─────────────────────────────────────────┘
-
----
-
- Execution Order
-
- Sprint 1: Foundation (Week 1)
-
-1. Add postprocessing processors (prompt, admet, export)
-2. Update container.py with new registrations
-3. Write regression tests FIRST
-
- Sprint 2: ADMET Backend (Week 2)
-
-1. Implement ADMETService with ToxMCP patterns
-2. Add ADMET API endpoints
-3. Update requirements.txt
-4. Run regression tests
-
- Sprint 3: Local Inference (Week 2-3)
-
-1. Add Provider.LOCAL to multi_provider.py
-2. Implement RouterService
-3. Implement LocalInferenceQueue
-4. Deploy BitNet to VPS (parallel work)
-
- Sprint 4: UI Strategy (Week 3-4)
-
-1. Create Hub routes (/lab, /genetics, /studio)
-2. Implement LabDashboard component
-3. Implement GeneticsDashboard component
-4. Implement CreationStudio component
-5. Add HandoffButton to chat
-
- Sprint 5: Integration (Week 4-5)
-
-1. End-to-end testing
-2. VPS deployment
-3. Smoke tests
-4. Documentation update
+### Sprint 3: Integration + Mobile (Week 2-3) — ~3 days
+1. Test Capacitor build: `cd frontend && npx cap sync`
+2. Test on iOS simulator + Android emulator
+3. Update `capacitor.config.ts` with server config
+4. End-to-end smoke test all 3 hubs
+5. Deploy backend + frontend

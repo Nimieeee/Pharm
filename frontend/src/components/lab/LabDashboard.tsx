@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loader2, Clipboard, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/config/api';
+
+// Shared & New Components
+import HubLayout from '../shared/HubLayout';
+import SkeletonLoader from '../shared/SkeletonLoader';
+import ADMETPropertyCard, { ADMETProperty } from './ADMETPropertyCard';
+import MoleculePreview from './MoleculePreview';
 
 interface ADMETResult {
   success: boolean;
@@ -13,14 +19,79 @@ interface ADMETResult {
   include_svg: boolean;
 }
 
+interface ParsedReport {
+  categories: {
+    '吸收 (Absorption)'?: ADMETProperty[];
+    '分布 (Distribution)'?: ADMETProperty[];
+    '代谢 (Metabolism)'?: ADMETProperty[];
+    '排泄 (Excretion)'?: ADMETProperty[];
+    '毒性 (Toxicity)'?: ADMETProperty[];
+    [key: string]: ADMETProperty[] | undefined;
+  };
+  summary: string[];
+}
+
 export default function LabDashboard() {
   const [smiles, setSmiles] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ADMETResult | null>(null);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Example molecules for quick testing
+  const exampleMolecules = [
+    { name: 'Aspirin', smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
+    { name: 'Caffeine', smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C' },
+    { name: 'Penicillin V', smiles: 'CC1(C(N2C(S1)C(NC(=O)COC3=CC=CC=C3)C2=O)C(=O)O)C' },
+    { name: 'Diazepam', smiles: 'CN1C(=O)CN=C(C2=C1C=CC=C2)C3=CC=CC=C3Cl' },
+  ];
+
+  // Parse the markdown report into structured data
+  const parsedData = useMemo(() => {
+    if (!result?.report) return null;
+
+    const data: ParsedReport = { categories: {}, summary: [] };
+    let currentCategory = '';
+    
+    const lines = result.report.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      if (trimmed.startsWith('## ') || trimmed.startsWith('### ')) {
+        const catName = trimmed.replace(/^#+\s+/, '');
+        if (catName.match(/吸收|分布|代谢|排泄|毒性|Absorption|Distribution|Metabolism|Excretion|Toxicity/)) {
+          currentCategory = catName;
+          data.categories[currentCategory] = [];
+        } else {
+          data.summary.push(trimmed);
+        }
+      } else if (trimmed.startsWith('- **') && currentCategory) {
+        const match = trimmed.match(/- \*\*(.+?)\*\*: (.+)/);
+        if (match) {
+          const name = match[1];
+          const valueStr = match[2];
+          
+          let status: any = 'neutral';
+          if (valueStr.includes('✅') || valueStr.toLowerCase().includes('good') || valueStr.toLowerCase().includes('high')) status = 'success';
+          if (valueStr.includes('⚠️') || valueStr.toLowerCase().includes('moderate') || valueStr.toLowerCase().includes('warning')) status = 'warning';
+          if (valueStr.includes('❌') || valueStr.toLowerCase().includes('poor') || valueStr.toLowerCase().includes('low') || valueStr.toLowerCase().includes('toxic')) status = 'danger';
+
+          data.categories[currentCategory]?.push({
+            name,
+            value: valueStr.replace(/[✅⚠️❌]/g, '').trim(),
+            status
+          });
+        }
+      } else if (!currentCategory && trimmed.length > 0) {
+        data.summary.push(trimmed);
+      }
+    });
+
+    return data;
+  }, [result]);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     
     if (!smiles.trim()) {
       toast.error('Please enter a SMILES string');
@@ -31,9 +102,7 @@ export default function LabDashboard() {
     setError('');
 
     try {
-      const token = typeof window !== 'undefined'
-        ? localStorage.getItem('sb-access-token')
-        : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
 
       const response = await fetch(`${API_BASE_URL}/api/v1/admet/analyze`, {
         method: 'POST',
@@ -65,28 +134,18 @@ export default function LabDashboard() {
 
   const handleExportCSV = async () => {
     try {
-      const token = typeof window !== 'undefined'
-        ? localStorage.getItem('sb-access-token')
-        : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const response = await fetch(`${API_BASE_URL}/api/v1/admet/export?smiles=${encodeURIComponent(smiles)}`, {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      });
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/admet/export?smiles=${encodeURIComponent(smiles)}`,
-        {
-          headers: {
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
+      if (!response.ok) throw new Error('Export failed');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `admet_${smiles.slice(0, 20)}.csv`;
+      a.download = `admet_${smiles.slice(0, 15)}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -98,169 +157,186 @@ export default function LabDashboard() {
     }
   };
 
-  const exampleMolecules = [
-    { name: 'Aspirin', smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
-    { name: 'Caffeine', smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C' },
-    { name: 'Penicillin', smiles: 'CC1(C(N2C(S1)C(C2=O)=O)C(=O)O)S' },
-    { name: 'Diazepam', smiles: 'CN1C(=O)CN=C(C2=C1C=CC=C2)C3=CC=CC=C3Cl' },
-  ];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <FlaskConical className="w-8 h-8 text-amber-600" />
-          <h1 className="text-2xl font-bold">ADMET Lab</h1>
+    <HubLayout 
+      title="Molecular Lab" 
+      subtitle="Predict drug absorption, distribution, metabolism, excretion, and toxicity"
+      icon={FlaskConical}
+      accentColor="amber"
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Input and Molecule Preview */}
+        <div className="lg:col-span-4 space-y-6">
+          <section className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Upload className="w-3.5 h-3.5" />
+              Molecule Input
+            </h3>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={smiles}
+                  onChange={(e) => setSmiles(e.target.value)}
+                  placeholder="Enter SMILES structure..."
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all pr-12"
+                />
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="absolute right-2 top-2 p-2 rounded-lg bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50 transition-colors"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {exampleMolecules.map((mol) => (
+                  <button
+                    key={mol.name}
+                    type="button"
+                    onClick={() => { setSmiles(mol.smiles); }}
+                    className="text-[10px] px-2.5 py-1.25 rounded-full bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                  >
+                    {mol.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2 flex items-center gap-2">
+                <button 
+                  type="button"
+                  onClick={async () => {
+                    const text = await navigator.clipboard.readText();
+                    if (text) { setSmiles(text); toast.info('SMILES pasted from clipboard'); }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <Clipboard className="w-3.5 h-3.5" />
+                  Paste
+                </button>
+                <button 
+                  type="button"
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <MoleculePreview smiles={smiles} />
         </div>
-        <p className="text-muted-foreground">
-          Predict absorption, distribution, metabolism, excretion, and toxicity properties
-        </p>
-      </motion.div>
 
-      {/* Input Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-8 p-6 bg-card border border-border rounded-xl"
-      >
-        <form onSubmit={handleSubmit}>
-          <label className="block text-sm font-medium mb-2">
-            SMILES String
-          </label>
-          <div className="flex gap-3 mb-4">
-            <input
-              type="text"
-              value={smiles}
-              onChange={(e) => setSmiles(e.target.value)}
-              placeholder="Enter SMILES (e.g., CC(=O)Oc1ccccc1C(=O)O)"
-              className="flex-1 px-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            />
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg flex items-center gap-2 transition-colors"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4" />
-                  Analyze
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Example Molecules */}
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs text-muted-foreground self-center">Try:</span>
-            {exampleMolecules.map((mol) => (
-              <button
-                key={mol.name}
-                type="button"
-                onClick={() => setSmiles(mol.smiles)}
-                className="text-xs px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors"
+        {/* Right Column: Results */}
+        <div className="lg:col-span-8 space-y-8">
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div 
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
               >
-                {mol.name}
-              </button>
-            ))}
-          </div>
-        </form>
-      </motion.div>
-
-      {/* Error State */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-8 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20"
-        >
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-red-800 dark:text-red-300">Analysis Error</p>
-              <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Results */}
-      {result && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Action Bar */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm font-medium">Analysis Complete</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleExportCSV}
-                className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 text-sm transition-colors"
+                <SkeletonLoader count={4} variant="card" />
+              </motion.div>
+            ) : error ? (
+              <motion.div 
+                key="error"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-md text-center"
               >
-                <Download className="w-4 h-4" />
-                Export CSV
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(result.report);
-                  toast.success('Report copied to clipboard');
-                }}
-                className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 text-sm transition-colors"
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold text-red-400 mb-2">Analysis Failed</h3>
+                <p className="text-sm text-red-500/70 max-w-md mx-auto">{error}</p>
+                <button 
+                  onClick={() => handleSubmit()}
+                  className="mt-6 px-6 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all text-sm font-medium"
+                >
+                  Retry Analysis
+                </button>
+              </motion.div>
+            ) : result ? (
+              <motion.div 
+                key="results"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
               >
-                <Share2 className="w-4 h-4" />
-                Share
-              </button>
-            </div>
-          </div>
-
-          {/* Report Content */}
-          <div className="p-6 bg-card border border-border rounded-xl">
-            <div className="prose dark:prose-invert max-w-none">
-              {result.report.split('\n').map((line, i) => {
-                if (line.startsWith('## ')) {
-                  return <h2 key={i} className="text-xl font-bold mt-6 mb-3">{line.slice(3)}</h2>;
-                }
-                if (line.startsWith('### ')) {
-                  return <h3 key={i} className="text-lg font-semibold mt-4 mb-2">{line.slice(4)}</h3>;
-                }
-                if (line.startsWith('- **')) {
-                  const match = line.match(/- \*\*(.+?)\*\*: (.+)/);
-                  if (match) {
-                    return (
-                      <li key={i} className="ml-4">
-                        <strong>{match[1]}</strong>: {match[2]}
-                      </li>
-                    );
-                  }
-                }
-                if (line.startsWith('⚠️')) {
-                  return (
-                    <div key={i} className="my-2 p-2 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200">
-                      {line}
+                {/* Result Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-green-500/20 text-green-500">
+                      <CheckCircle className="w-5 h-5" />
                     </div>
-                  );
-                }
-                return <p key={i} className="my-2">{line}</p>;
-              })}
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">ADMET Profile Complete</h2>
+                      <p className="text-sm text-slate-400">Computational predictions based on structural features</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={handleExportCSV}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all"
+                    >
+                      <Download className="w-4 h-4" />
+                      CSV
+                    </button>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(result.report); toast.success('Report copied'); }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Share
+                    </button>
+                  </div>
+                </div>
+
+                {/* Property Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {parsedData && Object.entries(parsedData.categories).map(([name, props], i) => (
+                    <ADMETPropertyCard 
+                      key={name}
+                      category={name}
+                      properties={props || []}
+                      icon={FlaskConical}
+                    />
+                  ))}
+                </div>
+
+                {/* Insights / Summary */}
+                {parsedData && parsedData.summary.length > 0 && (
+                  <section className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 backdrop-blur-md">
+                    <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider mb-4">Key Insights</h3>
+                    <div className="space-y-3">
+                      {parsedData.summary.map((line, i) => (
+                        <p key={i} className="text-sm text-slate-300 leading-relaxed">
+                          {line.replace(/^#+\s+/, '')}
+                        </p>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="h-full flex flex-col items-center justify-center py-20 opacity-30 select-none"
+              >
+                <FlaskConical className="w-24 h-24 mb-6" />
+                <h3 className="text-xl font-medium">Ready for Analysis</h3>
+                <p className="text-sm max-w-xs text-center mt-2">Enter a SMILES string on the left to begin predicting pharmacological properties</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </HubLayout>
   );
 }

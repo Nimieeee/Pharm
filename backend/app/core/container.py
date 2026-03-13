@@ -84,6 +84,7 @@ class ServiceContainer:
             from app.services.pmc_fulltext import PMCFullTextService
             from app.services.serper import SerperService
             from app.services.email import EmailService
+            from app.services.postprocessing.export_processor import ExportProcessor, export_processor
             from app.services.postprocessing.admet_processor import ADMETProcessor
             from app.services.admet_service import ADMETService
             from app.services.postprocessing.prompt_processor import PromptProcessor, prompt_processor
@@ -184,6 +185,9 @@ class ServiceContainer:
 
             self._services['router_service'] = RouterService()
             logger.info("✅ Registered: router_service")
+
+            self._services['export_processor'] = export_processor
+            logger.info("✅ Registered: export_processor")
 
             self._services['local_queue'] = local_queue
             logger.info("✅ Registered: local_queue")

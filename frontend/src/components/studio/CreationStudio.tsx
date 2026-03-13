@@ -1,44 +1,62 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Presentation, FileText, Sparkles, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Presentation, FileText, Sparkles, Loader2, CheckCircle, AlertCircle, ArrowRight, History, Download, Clock } from 'lucide-react';
+import { toast } from 'sonner';
+
+// Shared Components
+import HubLayout from '../shared/HubLayout';
+import SkeletonLoader from '../shared/SkeletonLoader';
+
 import SlideOutlineEditor, { SlideOutline } from '../slides/SlideOutlineEditor';
 import SlideProgress from '../slides/SlideProgress';
 import DocOutlineEditor, { DocOutline } from '../docs/DocOutlineEditor';
 import { API_BASE_URL } from '@/config/api';
 
 type CreationType = 'slides' | 'document';
-type GenerationStep = 'outline' | 'generating' | 'complete';
+type GenerationStep = 'input' | 'generating_outline' | 'edit_outline' | 'generating_final' | 'complete';
+
+const RECENT_TOPICS_KEY = 'benchside_recent_topics';
 
 export default function CreationStudio() {
   const [creationType, setCreationType] = useState<CreationType>('slides');
-  const [step, setStep] = useState<GenerationStep>('outline');
+  const [step, setStep] = useState<GenerationStep>('input');
   const [topic, setTopic] = useState('');
+  const [recentTopics, setRecentTopics] = useState<string[]>([]);
+  
   const [slideOutline, setSlideOutline] = useState<SlideOutline | null>(null);
   const [docOutline, setDocOutline] = useState<DocOutline | null>(null);
   const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });
   const [jobId, setJobId] = useState('');
   const [error, setError] = useState('');
 
-  const handleGenerateOutline = async () => {
-    if (!topic.trim()) return;
+  // Load recent topics
+  useEffect(() => {
+    const saved = localStorage.getItem(RECENT_TOPICS_KEY);
+    if (saved) setRecentTopics(JSON.parse(saved));
+  }, []);
 
-    setStep('generating');
+  const saveRecentTopic = (newTopic: string) => {
+    const updated = [newTopic, ...recentTopics.filter(t => t !== newTopic)].slice(0, 5);
+    setRecentTopics(updated);
+    localStorage.setItem(RECENT_TOPICS_KEY, JSON.stringify(updated));
+  };
+
+  const handleGenerateOutline = async () => {
+    if (!topic.trim()) {
+      toast.error('Please enter a topic');
+      return;
+    }
+
+    setStep('generating_outline');
     setError('');
+    saveRecentTopic(topic.trim());
 
     try {
-      const token = typeof window !== 'undefined'
-        ? localStorage.getItem('sb-access-token')
-        : null;
-
-      const endpoint = creationType === 'slides'
-        ? `${API_BASE_URL}/api/v1/slides/outline`
-        : `${API_BASE_URL}/api/v1/docs/outline`;
-
-      const body = creationType === 'slides'
-        ? { topic: topic.trim(), num_slides: 12 }
-        : { topic: topic.trim(), doc_type: 'report' };
+      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const endpoint = creationType === 'slides' ? `${API_BASE_URL}/api/v1/slides/outline` : `${API_BASE_URL}/api/v1/docs/outline`;
+      const body = creationType === 'slides' ? { topic: topic.trim(), num_slides: 12 } : { topic: topic.trim(), doc_type: 'report' };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -55,35 +73,25 @@ export default function CreationStudio() {
       }
 
       const data = await response.json();
-
-      if (creationType === 'slides') {
-        setSlideOutline(data);
-      } else {
-        setDocOutline(data);
-      }
-
-      setStep('outline');
+      if (creationType === 'slides') setSlideOutline(data); else setDocOutline(data);
+      setStep('edit_outline');
+      toast.success('Outline generated successfully');
     } catch (err: any) {
       setError(err.message);
-      setStep('outline');
+      setStep('input');
+      toast.error(err.message);
     }
   };
 
   const handleGenerateFinal = async () => {
-    setStep('generating');
+    setStep('generating_final');
     setError('');
 
     try {
-      const token = typeof window !== 'undefined'
-        ? localStorage.getItem('sb-access-token')
-        : null;
-
-      const endpoint = creationType === 'slides'
-        ? `${API_BASE_URL}/api/v1/slides/generate`
-        : `${API_BASE_URL}/api/v1/docs/generate`;
-
-      const body = creationType === 'slides'
-        ? { outline: slideOutline, generate_images: true }
+      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const endpoint = creationType === 'slides' ? `${API_BASE_URL}/api/v1/slides/generate` : `${API_BASE_URL}/api/v1/docs/generate`;
+      const body = creationType === 'slides' 
+        ? { outline: slideOutline, generate_images: true } 
         : { outline: docOutline, doc_type: docOutline?.doc_type || 'report' };
 
       const response = await fetch(endpoint, {
@@ -95,194 +103,317 @@ export default function CreationStudio() {
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) {
-        throw new Error('Generation failed');
-      }
+      if (!response.ok) throw new Error('Generation failed');
 
-      // Handle SSE
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const data = await response.json();
+      setJobId(data.job_id);
+      
+      // Start polling/SSE
+      const eventSource = new EventSource(`${API_BASE_URL}/api/v1/slides/status/${data.job_id}`);
+      eventSource.onmessage = (event) => {
+        const update = JSON.parse(event.data);
+        setProgress({
+          current: update.current_slide || 0,
+          total: update.total_slides || 0,
+          message: update.message || ''
+        });
 
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.slice(6));
-
-              if (data.event === 'progress') {
-                const progressData = JSON.parse(data.data);
-                setProgress({
-                  current: progressData.current,
-                  total: progressData.total,
-                  message: progressData.message,
-                });
-              } else if (data.event === 'complete') {
-                setJobId(data.data.job_id);
-                setStep('complete');
-              } else if (data.event === 'error') {
-                throw new Error(data.data.error);
-              }
-            }
-          }
+        if (update.status === 'complete') {
+          setStep('complete');
+          eventSource.close();
+          toast.success('Generation complete!');
         }
-      }
+      };
+
+      eventSource.onerror = () => {
+        setError('Connection lost while generating');
+        setStep('edit_outline');
+        eventSource.close();
+      };
     } catch (err: any) {
       setError(err.message);
-      setStep('outline');
+      setStep('edit_outline');
+      toast.error('Generation failed');
     }
   };
 
-  const handleDownload = () => {
-    const endpoint = creationType === 'slides'
-      ? `${API_BASE_URL}/api/v1/slides/download/${jobId}`
-      : `${API_BASE_URL}/api/v1/docs/download/${jobId}`;
+  const handleDownload = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const endpoint = creationType === 'slides' 
+        ? `${API_BASE_URL}/api/v1/slides/download/${jobId}`
+        : `${API_BASE_URL}/api/v1/docs/download/${jobId}`;
 
-    window.open(endpoint, '_blank');
+      const response = await fetch(endpoint, {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      });
+
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = creationType === 'slides' ? 'presentation.pptx' : 'report.docx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error('Failed to download file');
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <Sparkles className="w-8 h-8 text-amber-600" />
-          <h1 className="text-2xl font-bold">Creation Studio</h1>
-        </div>
-        <p className="text-muted-foreground">
-          AI-powered slide and document generation
-        </p>
-      </motion.div>
+    <HubLayout 
+      title="Creation Studio" 
+      subtitle="Generate visually stunning scientific presentations and documents"
+      icon={Sparkles}
+      accentColor="teal"
+    >
+      <div className="max-w-5xl mx-auto">
+        <AnimatePresence mode="wait">
+          {step === 'input' && (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-12"
+            >
+              {/* Type Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button
+                  onClick={() => setCreationType('slides')}
+                  className={`
+                    relative p-8 rounded-3xl border transition-all text-left group
+                    ${creationType === 'slides' 
+                      ? 'bg-teal-500/10 border-teal-500/50 shadow-2xl shadow-teal-500/10 scale-[1.02]' 
+                      : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'}
+                  `}
+                >
+                  <div className={`
+                    w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border transition-all
+                    ${creationType === 'slides' ? 'bg-teal-500 text-black border-teal-400' : 'bg-white/5 text-slate-400 border-white/5'}
+                  `}>
+                    <Presentation className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Scientific Presentation</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    Create multi-slide PowerPoint decks with AI-generated imagery and speaker notes.
+                  </p>
+                  {creationType === 'slides' && (
+                    <motion.div layoutId="active-indicator" className="absolute top-4 right-4">
+                      <div className="w-2 h-2 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)]" />
+                    </motion.div>
+                  )}
+                </button>
 
-      {/* Type Selector */}
-      {step === 'outline' && !slideOutline && !docOutline && (
+                <button
+                  onClick={() => setCreationType('document')}
+                  className={`
+                    relative p-8 rounded-3xl border transition-all text-left group
+                    ${creationType === 'document' 
+                      ? 'bg-teal-500/10 border-teal-500/50 shadow-2xl shadow-teal-500/10 scale-[1.02]' 
+                      : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'}
+                  `}
+                >
+                  <div className={`
+                    w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border transition-all
+                    ${creationType === 'document' ? 'bg-teal-500 text-black border-teal-400' : 'bg-white/5 text-slate-400 border-white/5'}
+                  `}>
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Technical Document</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    Generate structured reports, manuscripts, and whitepapers in Word format.
+                  </p>
+                  {creationType === 'document' && (
+                    <motion.div layoutId="active-indicator" className="absolute top-4 right-4">
+                      <div className="w-2 h-2 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)]" />
+                    </motion.div>
+                  )}
+                </button>
+              </div>
+
+              {/* Topic Input */}
+              <div className="space-y-6">
+                <div className="relative group">
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="Describe your topic (e.g., The role of CRISPR in immunotherapy)..."
+                    className="w-full px-8 py-6 rounded-3xl bg-black/40 border border-white/10 text-white text-xl placeholder:text-slate-600 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all pr-20"
+                  />
+                  <button
+                    onClick={handleGenerateOutline}
+                    disabled={!topic.trim()}
+                    className="absolute right-4 top-4 bottom-4 px-6 rounded-2xl bg-teal-500 text-black hover:bg-teal-400 disabled:opacity-30 transition-all flex items-center gap-2 group"
+                  >
+                    <span className="font-bold">Draft Outline</span>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+
+                {/* Recent Topics */}
+                {recentTopics.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold flex items-center gap-2 mr-2">
+                       <Clock className="w-3 h-3" />
+                       Recent Topics
+                    </span>
+                    {recentTopics.map((t, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setTopic(t)}
+                        className="text-xs px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'generating_outline' && (
+            <motion.div
+              key="generating_outline"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-20 flex flex-col items-center text-center space-y-6"
+            >
+              <div className="relative">
+                <div className="w-24 h-24 rounded-3xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-10 h-10 text-teal-400" />
+                </div>
+                <div className="absolute inset-0 blur-2xl bg-teal-500/20 animate-pulse -z-10" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">Architecting Content</h3>
+                <p className="text-slate-400">Structuring the narrative and identifying key scientific milestones...</p>
+              </div>
+              <SkeletonLoader variant="list" count={4} className="w-full max-w-md" />
+            </motion.div>
+          )}
+
+          {step === 'edit_outline' && (
+            <motion.div
+              key="edit_outline"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-8 pb-20"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-2xl font-bold text-white">Review Outline</h3>
+                  <p className="text-sm text-slate-400">Fine-tune the structure before final assembly</p>
+                </div>
+                <button 
+                  onClick={() => setStep('input')}
+                  className="text-sm text-slate-500 hover:text-white transition-colors"
+                >
+                  Start Over
+                </button>
+              </div>
+
+              {creationType === 'slides' && slideOutline && (
+                <SlideOutlineEditor 
+                  outline={slideOutline}
+                  onOutlineChange={setSlideOutline}
+                  onCancel={() => setStep('input')}
+                  onGenerate={handleGenerateFinal}
+                />
+              )}
+
+              {creationType === 'document' && docOutline && (
+                <DocOutlineEditor 
+                  outline={docOutline}
+                  onOutlineChange={setDocOutline}
+                  onCancel={() => setStep('input')}
+                  onGenerate={handleGenerateFinal}
+                />
+              )}
+            </motion.div>
+          )}
+
+          {(step === 'generating_final' || step === 'complete') && (
+            <motion.div
+              key="progress"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-3xl mx-auto rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl overflow-hidden"
+            >
+              {creationType === 'slides' ? (
+                <SlideProgress 
+                  currentStep={step === 'complete' ? 'complete' : 'content'}
+                  currentSlide={progress.current}
+                  totalSlides={progress.total}
+                  totalImages={progress.total} // Assumption: 1 image per slide for now
+                  message={progress.message}
+                  onDownload={handleDownload}
+                />
+              ) : (
+                <div className="p-12 text-center space-y-8">
+                  {step === 'complete' ? (
+                    <>
+                      <div className="w-20 h-20 rounded-full bg-teal-500 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-teal-500/20">
+                        <CheckCircle className="w-10 h-10 text-black" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-white">Document Assembled</h3>
+                      <p className="text-slate-400">Your research report has been formatted and is ready for review.</p>
+                      <button 
+                        onClick={handleDownload}
+                        className="px-10 py-4 rounded-2xl bg-teal-500 text-black font-bold hover:bg-teal-400 transition-all flex items-center justify-center gap-3 mx-auto"
+                      >
+                        <Download className="w-5 h-5" />
+                        Download Word File
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
+                        <div>
+                          <h3 className="text-xl font-bold text-white">Generating Pages</h3>
+                          <p className="text-sm text-slate-400 mt-2">{progress.message || 'Synthesizing professional prose...'}</p>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden max-w-md mx-auto">
+                        <motion.div 
+                          className="h-full bg-teal-500" 
+                          animate={{ width: `${(progress.current / (progress.total || 1)) * 100}%` }}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Error State */}
+      {error && step !== 'generating_outline' && step !== 'generating_final' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-6 bg-card border border-border rounded-xl"
+          className="mt-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-md flex items-center justify-between"
         >
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={() => setCreationType('slides')}
-              className={`flex-1 p-6 rounded-xl border-2 transition-colors ${
-                creationType === 'slides'
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
-                  : 'border-border hover:border-amber-300'
-              }`}
-            >
-              <Presentation className={`w-8 h-8 mx-auto mb-3 ${
-                creationType === 'slides' ? 'text-amber-600' : 'text-muted-foreground'
-              }`} />
-              <h3 className="font-semibold mb-2">Presentation</h3>
-              <p className="text-sm text-muted-foreground">
-                Generate professional slides with AI images
-              </p>
-            </button>
-            <button
-              onClick={() => setCreationType('document')}
-              className={`flex-1 p-6 rounded-xl border-2 transition-colors ${
-                creationType === 'document'
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
-                  : 'border-border hover:border-amber-300'
-              }`}
-            >
-              <FileText className={`w-8 h-8 mx-auto mb-3 ${
-                creationType === 'document' ? 'text-amber-600' : 'text-muted-foreground'
-              }`} />
-              <h3 className="font-semibold mb-2">Document</h3>
-              <p className="text-sm text-muted-foreground">
-                Create structured reports and manuscripts
-              </p>
-            </button>
+          <div className="flex items-center gap-4">
+            <AlertCircle className="w-6 h-6 text-red-500" />
+            <p className="text-sm text-red-400">{error}</p>
           </div>
-
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder={`Enter topic for ${creationType === 'slides' ? 'presentation' : 'document'}...`}
-              className="flex-1 px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              onKeyPress={(e) => e.key === 'Enter' && handleGenerateOutline()}
-            />
-            <button
-              onClick={handleGenerateOutline}
-              disabled={!topic.trim()}
-              className="px-8 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg font-medium transition-colors"
-            >
-              Generate Outline
-            </button>
-          </div>
+          <button 
+            onClick={() => { setError(''); setStep('input'); }}
+            className="text-xs font-bold text-red-500 hover:text-red-400 uppercase tracking-widest"
+          >
+            Reset
+          </button>
         </motion.div>
       )}
-
-      {/* Error State */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-8 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20"
-        >
-          <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-        </motion.div>
-      )}
-
-      {/* Outline Editor */}
-      {step === 'outline' && slideOutline && creationType === 'slides' && (
-        <SlideOutlineEditor
-          outline={slideOutline}
-          onOutlineChange={setSlideOutline}
-          onGenerate={handleGenerateFinal}
-          onCancel={() => {
-            setSlideOutline(null);
-            setTopic('');
-          }}
-        />
-      )}
-
-      {step === 'outline' && docOutline && creationType === 'document' && (
-        <DocOutlineEditor
-          outline={docOutline}
-          onOutlineChange={setDocOutline}
-          onGenerate={handleGenerateFinal}
-          onCancel={() => {
-            setDocOutline(null);
-            setTopic('');
-          }}
-        />
-      )}
-
-      {/* Progress */}
-      {step === 'generating' && (
-        <SlideProgress
-          currentStep="content"
-          currentSlide={progress.current}
-          totalSlides={progress.total}
-          totalImages={0}
-          message={progress.message}
-        />
-      )}
-
-      {/* Complete */}
-      {step === 'complete' && (
-        <SlideProgress
-          currentStep="complete"
-          currentSlide={0}
-          totalSlides={0}
-          totalImages={0}
-          message=""
-          onDownload={handleDownload}
-        />
-      )}
-    </div>
+    </HubLayout>
   );
 }
