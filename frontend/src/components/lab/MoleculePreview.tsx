@@ -15,18 +15,37 @@ export default function MoleculePreview({ smiles }: MoleculePreviewProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!smiles) return;
+    if (!smiles || typeof smiles !== 'string') {
+      setSvg(null);
+      setError(null);
+      return;
+    }
 
     const fetchSvg = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/admet/svg?smiles=${encodeURIComponent(smiles)}`);
-        if (!response.ok) throw new Error('Failed to load molecule structure');
+        // Ensure SMILES is properly trimmed and encoded
+        const trimmedSmiles = smiles.trim();
+        if (!trimmedSmiles) {
+          setError('Empty SMILES string');
+          setIsLoading(false);
+          return;
+        }
+
+        const encodedSmiles = encodeURIComponent(trimmedSmiles);
+        const response = await fetch(`${API_BASE_URL}/api/v1/admet/svg?smiles=${encodedSmiles}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to load molecule structure: ${response.status} - ${errorText}`);
+        }
+
         const data = await response.text();
         setSvg(data);
       } catch (err: any) {
         setError(err.message);
+        console.error('Molecule preview error:', err);
       } finally {
         setIsLoading(false);
       }
