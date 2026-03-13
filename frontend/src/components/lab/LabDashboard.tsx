@@ -6,7 +6,6 @@ import { FlaskConical, Download, Share2, Search, AlertCircle, CheckCircle, Loade
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/config/api';
 import { getRandomDrugs, DrugSuggestion } from '@/constants/drugPool';
-import { useTheme } from '@/lib/theme-context';
 
 // Shared & New Components
 import HubLayout from '../shared/HubLayout';
@@ -24,20 +23,17 @@ interface ADMETResult {
 
 interface ParsedReport {
   categories: {
-    '吸收 (Absorption)'?: ADMETProperty[];
-    '分布 (Distribution)'?: ADMETProperty[];
-    '代谢 (Metabolism)'?: ADMETProperty[];
-    '排泄 (Excretion)'?: ADMETProperty[];
-    '毒性 (Toxicity)'?: ADMETProperty[];
+    'æ´å (Absorption)'?: ADMETProperty[];
+    'åé (Distribution)'?: ADMETProperty[];
+    'ä»£è°¢ (Metabolism)'?: ADMETProperty[];
+    'æåç (Excretion)'?: ADMETProperty[];
+    'æ¯§æ§ (Toxicity)'?: ADMETProperty[];
     [key: string]: ADMETProperty[] | undefined;
   };
   summary: string[];
 }
 
 export default function LabDashboard() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  
   const [smiles, setSmiles] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ADMETResult | null>(null);
@@ -175,8 +171,8 @@ export default function LabDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Input and Molecule Preview */}
         <div className="lg:col-span-4 space-y-6">
-          <section className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <section className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] backdrop-blur-md">
+            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
               <Upload className="w-3.5 h-3.5" />
               Molecule Input
             </h3>
@@ -188,12 +184,12 @@ export default function LabDashboard() {
                   value={smiles}
                   onChange={(e) => setSmiles(e.target.value)}
                   placeholder="Enter SMILES structure..."
-                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all pr-12"
                 />
                 <button 
                   type="submit"
                   disabled={isLoading}
-                  className="absolute right-2 top-2 p-2 rounded-lg bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50 transition-colors"
+                  className="absolute right-2 top-2 p-2 rounded-lg bg-amber-500 text-white hover:bg-amber-400 disabled:opacity-50 transition-colors"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </button>
@@ -205,7 +201,7 @@ export default function LabDashboard() {
                     key={mol.name}
                     type="button"
                     onClick={() => { setSmiles(mol.smiles); }}
-                    className="text-[10px] px-2.5 py-1.25 rounded-full bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                    className="text-[10px] px-2.5 py-1.25 rounded-full bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-all"
                   >
                     {mol.name}
                   </button>
@@ -213,7 +209,7 @@ export default function LabDashboard() {
                 <button
                   type="button"
                   onClick={handleRefreshSuggestions}
-                  className="text-[10px] px-2.5 py-1.25 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 hover:text-amber-300 transition-all"
+                  className="text-[10px] px-2.5 py-1.25 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700 transition-all"
                 >
                   ↻ More
                 </button>
@@ -226,14 +222,14 @@ export default function LabDashboard() {
                     const text = await navigator.clipboard.readText();
                     if (text) { setSmiles(text); toast.info('SMILES pasted from clipboard'); }
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-all"
                 >
                   <Clipboard className="w-3.5 h-3.5" />
                   Paste
                 </button>
                 <button 
                   type="button"
-                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-all"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   Upload
@@ -258,21 +254,21 @@ export default function LabDashboard() {
               >
                 <StreamingLogo className="w-24 h-24 mb-6" />
                 <h3 className="text-xl font-medium text-amber-500 animate-pulse">Analyzing Molecule...</h3>
-                <p className="text-sm max-w-xs text-center mt-2 text-slate-400">Processing structural features across 119 ADMET endpoints</p>
+                <p className="text-sm max-w-xs text-center mt-2 text-[var(--text-secondary)]">Processing structural features across 119 ADMET endpoints</p>
               </motion.div>
             ) : error ? (
-              <motion.div 
+              <motion.div
                 key="error"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-md text-center"
               >
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold text-red-400 mb-2">Analysis Failed</h3>
-                <p className="text-sm text-red-500/70 max-w-md mx-auto">{error}</p>
-                <button 
+                <h3 className="text-lg font-semibold text-red-600 mb-2">Analysis Failed</h3>
+                <p className="text-sm text-red-600/70 max-w-md mx-auto">{error}</p>
+                <button
                   onClick={() => handleSubmit()}
-                  className="mt-6 px-6 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all text-sm font-medium"
+                  className="mt-6 px-6 py-2 rounded-xl bg-red-500/20 text-red-600 hover:bg-red-500/30 transition-all text-sm font-medium"
                 >
                   Retry Analysis
                 </button>
@@ -291,21 +287,21 @@ export default function LabDashboard() {
                       <CheckCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>ADMET Profile Complete</h2>
-                      <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Computational predictions based on structural features</p>
+                      <h2 className="text-xl font-bold text-[var(--text-primary)]">ADMET Profile Complete</h2>
+                      <p className="text-sm text-[var(--text-secondary)]">Computational predictions based on structural features</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button 
+                    <button
                       onClick={handleExportCSV}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-sm font-medium transition-all"
                     >
                       <Download className="w-4 h-4" />
                       CSV
                     </button>
-                    <button 
+                    <button
                       onClick={() => { navigator.clipboard.writeText(result.report); toast.success('Report copied'); }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-sm font-medium transition-all"
                     >
                       <Share2 className="w-4 h-4" />
                       Share
@@ -328,10 +324,10 @@ export default function LabDashboard() {
                 {/* Insights / Summary */}
                 {parsedData && parsedData.summary.length > 0 && (
                   <section className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 backdrop-blur-md">
-                    <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider mb-4">Key Insights</h3>
+                    <h3 className="text-sm font-semibold text-amber-600 uppercase tracking-wider mb-4">Key Insights</h3>
                     <div className="space-y-3">
                       {parsedData.summary.map((line, i) => (
-                        <p key={i} className="text-sm text-slate-300 leading-relaxed">
+                        <p key={i} className="text-sm text-[var(--text-secondary)] leading-relaxed">
                           {line.replace(/^#+\s+/, '')}
                         </p>
                       ))}
@@ -340,15 +336,15 @@ export default function LabDashboard() {
                 )}
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="h-full flex flex-col items-center justify-center py-20 opacity-30 select-none"
               >
                 <FlaskConical className="w-24 h-24 mb-6" />
-                <h3 className="text-xl font-medium">Ready for Analysis</h3>
-                <p className="text-sm max-w-xs text-center mt-2">Enter a SMILES string on the left to begin predicting pharmacological properties</p>
+                <h3 className="text-xl font-medium text-[var(--text-primary)]">Ready for Analysis</h3>
+                <p className="text-sm max-w-xs text-center mt-2 text-[var(--text-secondary)]">Enter a SMILES string on the left to begin predicting pharmacological properties</p>
               </motion.div>
             )}
           </AnimatePresence>

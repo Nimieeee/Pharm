@@ -68,19 +68,19 @@ export default function MoleculePreview({ smiles }: MoleculePreviewProps) {
   };
 
   return (
-    <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md h-full flex flex-col">
+    <div className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] backdrop-blur-md h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <ImageIcon className="w-4 h-4 text-[var(--text-secondary)]" />
+          <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
             Molecular Structure
           </h3>
         </div>
-        
+
         {svg && (
-          <button 
+          <button
             onClick={handleDownload}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-highlight)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             title="Download SVG"
           >
             <Download className="w-4 h-4" />
@@ -88,10 +88,10 @@ export default function MoleculePreview({ smiles }: MoleculePreviewProps) {
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center min-h-[250px] relative rounded-xl bg-slate-50 border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner">
+      <div className="flex-1 flex items-center justify-center min-h-[250px] relative rounded-xl bg-[var(--background)] border border-[var(--border)] overflow-hidden shadow-inner">
         <AnimatePresence mode="wait">
           {isLoading ? (
-            <motion.div 
+            <motion.div
               key="loading"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -99,38 +99,38 @@ export default function MoleculePreview({ smiles }: MoleculePreviewProps) {
               className="flex flex-col items-center gap-3"
             >
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              <span className="text-xs text-slate-500">Rendering structure...</span>
+              <span className="text-xs text-[var(--text-secondary)]">Rendering structure...</span>
             </motion.div>
           ) : error ? (
-            <motion.div 
+            <motion.div
               key="error"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="px-4 text-center"
             >
               <p className="text-xs text-red-500 mb-1">Failed to render structure</p>
-              <p className="text-[10px] text-slate-600 font-mono">{smiles}</p>
+              <p className="text-[10px] text-[var(--text-muted)] font-mono">{smiles}</p>
             </motion.div>
           ) : svg ? (
-            <motion.div 
+            <motion.div
               key="svg"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full h-full flex items-center justify-center p-4 [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-[250px] text-black"
+              className="w-full h-full flex items-center justify-center p-4 [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-[250px]"
               dangerouslySetInnerHTML={{ __html: svg }}
             />
           ) : (
             <div className="flex flex-col items-center gap-2 opacity-20">
               <ImageIcon className="w-12 h-12" />
-              <span className="text-xs">No molecule active</span>
+              <span className="text-xs text-[var(--text-secondary)]">No molecule active</span>
             </div>
           )}
         </AnimatePresence>
       </div>
 
-      <div className="mt-4 p-3 rounded-lg bg-black/20 border border-white/5">
-        <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">SMILES string</p>
-        <p className="text-xs font-mono text-blue-400 truncate">{smiles || 'N/A'}</p>
+      <div className="mt-4 p-3 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)]">
+        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">SMILES string</p>
+        <p className="text-xs font-mono text-blue-500 truncate">{smiles || 'N/A'}</p>
       </div>
     </div>
   );
