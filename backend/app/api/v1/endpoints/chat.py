@@ -675,6 +675,8 @@ async def repair_mermaid(
 async def search_pubmed(
     query: str = Query(..., description="Search query"),
     max_results: int = Query(20, ge=1, le=50, description="Maximum results"),
+    year_from: Optional[int] = Query(None, ge=1900, le=2030, description="Filter results from year"),
+    year_to: Optional[int] = Query(None, ge=1900, le=2030, description="Filter results to year"),
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -682,17 +684,23 @@ async def search_pubmed(
 
     - **query**: Search term (supports MeSH, Boolean operators)
     - **max_results**: Number of results (1-50, default: 20)
+    - **year_from**: Filter results from this year (optional)
+    - **year_to**: Filter results to this year (optional)
     - Returns: List of article metadata with titles, authors, journal, year, DOI
     """
     try:
         from app.services.pubmed_service import pubmed_service
 
-        results = await pubmed_service.search(query, max_results)
+        results = await pubmed_service.search(query, max_results, year_from, year_to)
 
         return {
             "query": query,
             "count": len(results),
-            "results": results
+            "results": results,
+            "filters": {
+                "year_from": year_from,
+                "year_to": year_to
+            }
         }
 
     except Exception as e:

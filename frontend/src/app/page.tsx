@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Moon, Sun, LogIn, LogOut, Database, ChevronDown, User, MessageSquare, ArrowRight, Clock, Plus, Zap, Search, Beaker } from 'lucide-react';
+import { Moon, Sun, LogIn, LogOut, Database, ChevronDown, User, MessageSquare, ArrowRight, Clock, Plus, Zap, Beaker } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { HeroQupe } from '@/components/landing/HeroQupe';
 import { useConversations } from '@/hooks/useSWRChat';
 import { getSuggestionPool } from '@/config/suggestionPrompts';
 import { API_BASE_URL } from '@/config/api';
-import { FlaskConical, Dna, Sparkles } from 'lucide-react';
+import { FlaskConical, Dna, Sparkles, Search, AlertTriangle } from 'lucide-react';
 
 const faqs = [
 
@@ -214,7 +214,7 @@ export default function HomePage() {
               <Database size={16} className="text-purple-500" />
               <h3 className="text-sm font-medium text-foreground-muted uppercase tracking-wider">Research Hubs</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {/* ADMET Lab */}
               <button
                 onClick={() => router.push('/lab')}
@@ -225,7 +225,35 @@ export default function HomePage() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-foreground mb-1">ADMET Lab</p>
-                  <p className="text-xs text-foreground-muted">Drug discovery & toxicity prediction</p>
+                  <p className="text-xs text-foreground-muted">Drug discovery & toxicity</p>
+                </div>
+              </button>
+
+              {/* Literature Search */}
+              <button
+                onClick={() => router.push('/literature')}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-950/20 transition-all group"
+              >
+                <div className="p-3 rounded-xl bg-teal-100 dark:bg-teal-900/40 group-hover:bg-teal-200 dark:group-hover:bg-teal-900/60 transition-colors">
+                  <Search size={24} className="text-teal-600 dark:text-teal-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground mb-1">Literature</p>
+                  <p className="text-xs text-foreground-muted">PubMed search</p>
+                </div>
+              </button>
+
+              {/* Drug Interactions */}
+              <button
+                onClick={() => router.push('/ddi')}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-red-500/50 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all group"
+              >
+                <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/40 group-hover:bg-red-200 dark:group-hover:bg-red-900/60 transition-colors">
+                  <AlertTriangle size={24} className="text-red-600 dark:text-red-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground mb-1">Interactions</p>
+                  <p className="text-xs text-foreground-muted">Drug-drug checker</p>
                 </div>
               </button>
 
@@ -239,7 +267,7 @@ export default function HomePage() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-foreground mb-1">Genetics Hub</p>
-                  <p className="text-xs text-foreground-muted">Pharmacogenomics & GWAS analysis</p>
+                  <p className="text-xs text-foreground-muted">Pharmacogenomics</p>
                 </div>
               </button>
 
@@ -253,7 +281,7 @@ export default function HomePage() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-foreground mb-1">Creation Studio</p>
-                  <p className="text-xs text-foreground-muted">AI-powered slides & documents</p>
+                  <p className="text-xs text-foreground-muted">Slides & documents</p>
                 </div>
               </button>
             </div>

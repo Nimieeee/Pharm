@@ -33,6 +33,7 @@ This file serves as Claude's permanent memory of the Benchside codebase architec
   - **Enhanced RAG**: Multi-format document ingestion (PDF, DOCX, PPTX, CSV, SDF).
   - **Mermaid Processor**: Centralized diagram validation/fixing (26 regression tests, <10ms).
   - **Research Tools**: Specialized integration with PubMed (API Key), Semantic Scholar, and Web Search (Tavily/Serper).
+  - **ADMET Service**: Local ADMET-AI (Chemprop v2) integration with fallback to RDKit
 - **Decoupling Status**: ✅ COMPLETE - All services use ServiceContainer with lazy loading
 - **API Endpoints**: ✅ All endpoints use `container.get()` for service access
 - **Regression Tests**: ✅ 65+ tests, <2s run time
@@ -57,7 +58,12 @@ This file serves as Claude's permanent memory of the Benchside codebase architec
 - **Deployment Method**: rsync with PM2 process manager
 - **Current VPS**: `ubuntu@15.237.208.231`
 - **Deployment Path**: `/var/www/benchside-backend/backend/`
-- **PM2 Service**: `benchside-api` (Port 7860)
+
+#### PM2 Services
+| Service | Port | Path | Description |
+|---------|------|------|-------------|
+| `pharmgpt-api` | 7860 | `/var/www/benchside-backend/backend/` | Main FastAPI backend |
+| `admet-engine` | 7861 | `/home/ubuntu/admet_research/` | ADMET-AI (Chemprop v2) predictions |
 
 #### Deployment Workflow
 1. **Sync files using rsync**
@@ -67,27 +73,47 @@ This file serves as Claude's permanent memory of the Benchside codebase architec
 
 2. **Restart the backend service via PM2**
    ```bash
-   ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 restart benchside-api"
+   ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 restart pharmgpt-api"
    ```
 
 3. **Verify the service is online**
    ```bash
-   ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 logs benchside-api --lines 20 --nostream"
+   ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 logs pharmgpt-api --lines 20 --nostream"
    ```
 
 4. **Deploy the frontend changes to GitHub (triggers Vercel)**
-   *Note: Always verify the frontend build locally before pushing.*
+    *Note: Always verify the frontend build locally before pushing.*
    ```bash
    cd frontend && npm run build && cd .. && git add . && git commit -m "chore(rebrand): update to benchside" && git push origin master
    ```
+
+#### ADMET Engine Deployment
+The ADMET Engine runs as a separate microservice:
+- **Location**: `/home/ubuntu/admet_research/admet_engine.py`
+- **Venv**: `/home/ubuntu/admet_research/venv_admet/`
+- **Port**: 7861
+
+To restart/update:
+   ```bash
+   # Sync new engine code
+   rsync -avz -e "ssh -i ~/.ssh/lightsail_key" backend/admet_engine.py ubuntu@15.237.208.231:/home/ubuntu/admet_research/
+   
+   # Restart the engine
+   ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "pm2 restart admet-engine"
+   
+   # Verify
+   ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "curl -s http://localhost:7861/health"
+   ```
 - **Ports**:
   - Backend API: 7860 (Internal) / 8000
+  - ADMET Engine: 7861 (Local microservice)
 - **Environment Variables**:
   - `POLLINATIONS_API_KEY`: Elite mode token generation
   - `PUBMED_API_KEY`: Increased throughput for academic research
   - `SEMANTIC_SCHOLAR_API_KEY`: High-fidelity citation retrieval
   - `MISTRAL_API_KEY`, `GROQ_API_KEY`, `NVIDIA_API_KEY`
   - `TAVILY_API_KEY`, `SERP_API_KEY`, `SERPER_API_KEY`
+  - `ADMET_ENGINE_URL`: Local ADMET engine URL (default: http://localhost:7861)
 
 ### Database
 - **Type**: PostgreSQL via Supabase
@@ -152,7 +178,7 @@ pytest
 
 **Regression Test Suite** (Fast - <10s target):
 ```bash
-# Run full regression suite
+# Run full regression suite locally
 ./run_regression.sh
 
 # Or directly
@@ -162,6 +188,15 @@ pytest tests/regression/ -v
 
 # Specific regression tests
 pytest tests/regression/test_mermaid.py -v  # 26 tests, <1s
+```
+
+**Run Tests on VPS** (Recommended - faster execution):
+```bash
+# SSH into VPS and run tests there
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/ -v"
+
+# Or with better output formatting
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/ -v --tb=short"
 ```
 
 **Specific Test Files**:
@@ -181,6 +216,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
    - **CoT Reasoning Store**: Local ChromaDB index of 400k reasoning patterns for expert-level logic.
    - **UI Decoupling**: Non-blocking research allowing parallel chat interaction.
    - **Full Decoupling**: All services use ServiceContainer with lazy loading.
+   - **Local ADMET Engine**: ADMET-AI (Chemprop v2) with 104 endpoints + DrugBank percentiles
 4. **Recent Fixes (Phase 30)**:
    - **History Context**: Fixed thread loss by ensuring all message IDs are passed as `parent_id` (removed ID hyphen check).
    - **Mermaid Rendering**: Added heuristic to handle unquoted parentheses in node labels.
@@ -221,9 +257,10 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
 - FastAPI, PostgreSQL (Supabase)
 - Multi-provider AI Strategy (Primary: NVIDIA/Groq/Pollinations)
 - **Service Container Pattern**: 24 services registered, decoupled instantiation
-- **Postprocessing Module**: Centralized Mermaid, Markdown, Safety processing
+- **Postprocessing Module**: Centralized Mermaid, Markdown, Safety, ADMET processing
 - Molecular Pathway Mapping & Clinical Trial Binding logic
 - Mistral-Embed for vectorization
+- **ADMET Service**: Local ADMET-AI (Chemprop v2) with 104 endpoints + DrugBank percentiles
 - **Regression Testing**: 65+ tests, <2s run time
 - **Lazy Loading**: All services with dependencies use @property lazy loading
 
@@ -231,6 +268,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
 - **Search Latency**: PubMed timeout optimized to 15s to prevent research stalls.
 - **Output Capacity**: Internal max_tokens expanded to 25k for detailed reports.
 - **Provider Redundancy**: Automatic failover to Groq/Kimi if Pollinations/Gemini fails.
+- **ADMET Fallback**: Local engine → ADMETlab API → RDKit (always returns results)
 - **Regression Test Speed**: <2s total (target: <10s) ✅
 - **Mermaid Processing**: <10ms per diagram ✅
 - **Service Initialization**: Lazy loading ensures services only loaded when needed ✅

@@ -35,6 +35,8 @@ class PubMedService:
         self, 
         query: str, 
         max_results: int = 20,
+        year_from: Optional[int] = None,
+        year_to: Optional[int] = None,
         use_history: bool = False
     ) -> List[Dict[str, Any]]:
         """
@@ -43,15 +45,28 @@ class PubMedService:
         Args:
             query: Search query (supports MeSH terms, Boolean operators)
             max_results: Maximum number of results to return (default: 20)
+            year_from: Filter results from this year (inclusive)
+            year_to: Filter results to this year (inclusive)
             use_history: Use NCBI search history for large result sets
             
         Returns:
             List of article metadata dictionaries
         """
         # Check cache first
-        cache_key = f"{query}:{max_results}"
+        cache_key = f"{query}:{max_results}:{year_from}:{year_to}"
         if cache_key in self._search_cache:
             return self._search_cache[cache_key]
+        
+        # Build date filter if provided
+        date_filter = ""
+        if year_from and year_to:
+            date_filter = f" AND ({year_from}[PDAT] : {year_to}[PDAT])"
+        elif year_from:
+            date_filter = f" AND ({year_from}[PDAT] : 3000[PDAT])"
+        elif year_to:
+            date_filter = f" AND (1800[PDAT] : {year_to}[PDAT])"
+        
+        full_query = f"{query}{date_filter}" if date_filter else query
         
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -60,7 +75,7 @@ class PubMedService:
                     f"{self.BASE}/esearch.fcgi",
                     params={
                         "db": "pubmed",
-                        "term": query,
+                        "term": full_query,
                         "retmax": max_results,
                         "retmode": "json",
                         "sort": "relevance"
