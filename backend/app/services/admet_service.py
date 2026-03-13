@@ -493,21 +493,32 @@ Provide a 2-3 sentence summary focusing on:
 Keep it concise and actionable."""
         
         try:
-            # Use the AI service to generate interpretation
-            # We'll use a simple approach without tools
-            response = await ai.generate_response(
-                prompt=prompt,
+            # Use Mistral API directly for simple text generation
+            import os
+            from mistralai import Mistral
+            
+            api_key = os.environ.get("MISTRAL_API_KEY")
+            if not api_key:
+                print("⚠️ No MISTRAL_API_KEY available")
+                return None
+                
+            client = Mistral(api_key=api_key)
+            
+            chat_response = client.chat.complete(
+                model="mistral-small-latest",
+                messages=[
+                    {"role": "system", "content": "You are a medicinal chemistry expert providing brief, actionable clinical interpretations of ADMET analysis results."},
+                    {"role": "user", "content": prompt}
+                ],
                 max_tokens=300,
                 temperature=0.3
             )
             
-            if response and hasattr(response, 'content'):
-                return response.content.strip()
-            elif isinstance(response, dict):
-                return response.get('content', '').strip() if response.get('content') else ''
-            elif isinstance(response, str):
-                return response.strip()
+            if chat_response and chat_response.choices and chat_response.choices[0].message.content:
+                return chat_response.choices[0].message.content.strip()
             
+        except ImportError:
+            print("⚠️ Mistral SDK not available for AI interpretation")
         except Exception as e:
             print(f"⚠️ AI interpretation generation failed: {e}")
         
