@@ -3,6 +3,13 @@
 import { useState, useCallback } from 'react';
 import { API_BASE_URL } from '@/config/api';
 
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('sb-access-token');
+  }
+  return null;
+};
+
 export interface DDIInteraction {
   drug_a: string;
   drug_b: string;
@@ -43,10 +50,12 @@ export function useDDI() {
     setError(null);
 
     try {
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/ddi/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -82,10 +91,12 @@ export function useDDI() {
     setError(null);
 
     try {
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/ddi/polypharmacy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         credentials: 'include',
         body: JSON.stringify({ drugs }),

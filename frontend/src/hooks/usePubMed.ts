@@ -3,6 +3,13 @@
 import { useState, useCallback } from 'react';
 import { API_BASE_URL } from '@/config/api';
 
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('sb-access-token');
+  }
+  return null;
+};
+
 export interface PubMedArticle {
   pmid: string;
   title: string;
@@ -63,9 +70,11 @@ export function usePubMed() {
         params.append('year_to', String(options.yearTo));
       }
 
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/pubmed/search?${params}`, {
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         credentials: 'include',
       });
@@ -90,9 +99,11 @@ export function usePubMed() {
     setError(null);
 
     try {
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/pubmed/article/${pmid}`, {
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         credentials: 'include',
       });
