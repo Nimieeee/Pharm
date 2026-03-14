@@ -18,6 +18,7 @@ from supabase import Client
 from app.core.container import container
 from app.services.postprocessing import admet_processor
 from app.services.sas_service import sas_calculator
+from app.services.gasa_service import gasa_predictor
 
 
 class RateLimiter:

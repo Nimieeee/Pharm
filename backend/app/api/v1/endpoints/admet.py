@@ -109,18 +109,38 @@ async def analyze_molecule(
         # 3. Calculate SAS score
         sas_result = sas_calculator.calculate(request.smiles)
 
-        # 4. Get AI interpretation
+        # 4. Calculate GASA score
+        gasa_result = gasa_predictor.predict_single(request.smiles)
+
+        # 5. Get AI interpretation
         ai_interpretation = None
         try:
             ai_interpretation = await admet_service._generate_ai_interpretation(admet_data)
         except Exception:
             pass
 
-        # 5. Build structured categories from raw data
+        # 6. Build structured categories from raw data
         categories = admet_service.processor.build_structured_categories(admet_data)
 
-        # 6. Also generate markdown for legacy support/copying
+        # 7. Also generate markdown for legacy support/copying
         report_md = admet_service.processor.format_report(admet_data, svg, ai_interpretation)
+
+        # Build combined synthetic accessibility result
+        synthetic_accessibility = sas_result
+        if gasa_result:
+            synthetic_accessibility['gasa_prediction'] = gasa_result['prediction']
+            synthetic_accessibility['gasa_easy_probability'] = gasa_result['easy_probability']
+            synthetic_accessibility['gasa_hard_probability'] = gasa_result['hard_probability']
+            synthetic_accessibility['gasa_interpretation'] = gasa_result['interpretation']
+
+            # Consensus scoring
+            sas_easy = sas_result['sas_score'] <= 5.0 if sas_result else False
+            gasa_easy = gasa_result['prediction'] == 0
+            synthetic_accessibility['consensus'] = (
+                "Both methods agree: Easy to synthesize" if (sas_easy and gasa_easy) else
+                "Both methods agree: Difficult to synthesize" if (not sas_easy and not gasa_easy) else
+                "Mixed results: Check both scores"
+            )
 
         return {
             "success": True,
@@ -131,7 +151,7 @@ async def analyze_molecule(
             "ai_interpretation": ai_interpretation,
             "report_markdown": report_md,
             "report": report_md, # alias for backward compatibility
-            "synthetic_accessibility": sas_result
+            "synthetic_accessibility": synthetic_accessibility
         }
 
     except Exception as e:
