@@ -162,6 +162,12 @@ export default function LabDashboard() {
   const [suggestions, setSuggestions] = useState<DrugSuggestion[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // Pagination state for batch results
+  const [batchPage, setBatchPage] = useState(1);
+  const [batchPageSize] = useState(50);
+  const [batchTotalPages, setBatchTotalPages] = useState(1);
+  const [batchTotalSubmitted, setBatchTotalSubmitted] = useState(0);
+
   // Load random drug suggestions on mount
   useEffect(() => {
     setSuggestions(getRandomDrugs(4));
@@ -230,11 +236,13 @@ export default function LabDashboard() {
     }
   };
 
-  const analyzeBatch = async () => {
+  const analyzeBatch = async (page: number = 1) => {
     setIsLoading(true);
     setError('');
-    setResult(null);
-    setBatchResults([]);
+    if (page === 1) {
+      setResult(null);
+      setBatchResults([]);
+    }
 
     const smilesList = batchSmiles.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
     if (smilesList.length === 0) {
@@ -245,13 +253,17 @@ export default function LabDashboard() {
 
     try {
       const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('smiles_list', JSON.stringify(smilesList));
+      formData.append('page', page.toString());
+      formData.append('page_size', batchPageSize.toString());
+
       const response = await fetch(`${API_BASE_URL}/api/v1/admet/batch`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ smiles_list: smilesList }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -259,9 +271,12 @@ export default function LabDashboard() {
         throw new Error(data.detail || 'Batch analysis failed');
       }
 
-      const data: BatchADMETResponse = await response.json();
+      const data = await response.json();
       setBatchResults(data.results);
-      toast.success(`Batch analysis complete: ${data.results.length} compounds processed`);
+      setBatchPage(data.page);
+      setBatchTotalPages(data.total_pages);
+      setBatchTotalSubmitted(data.total_submitted);
+      toast.success(`Showing page ${data.page} of ${data.total_pages} (${data.count} compounds)`);
     } catch (err: any) {
       setError(err.message);
       toast.error(`Batch analysis failed: ${err.message}`);
@@ -270,17 +285,21 @@ export default function LabDashboard() {
     }
   };
 
-  const analyzeSDF = async () => {
+  const analyzeSDF = async (page: number = 1) => {
     if (!selectedFile) return;
     setIsLoading(true);
     setError('');
-    setResult(null);
-    setBatchResults([]);
+    if (page === 1) {
+      setResult(null);
+      setBatchResults([]);
+    }
 
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('page', page.toString());
+      formData.append('page_size', batchPageSize.toString());
 
       const response = await fetch(`${API_BASE_URL}/api/v1/admet/batch`, {
         method: 'POST',
@@ -295,9 +314,12 @@ export default function LabDashboard() {
         throw new Error(data.detail || 'SDF analysis failed');
       }
 
-      const data: BatchADMETResponse = await response.json();
+      const data = await response.json();
       setBatchResults(data.results);
-      toast.success(`SDF analysis complete: ${data.results.length} compounds processed`);
+      setBatchPage(data.page);
+      setBatchTotalPages(data.total_pages);
+      setBatchTotalSubmitted(data.total_submitted);
+      toast.success(`Showing page ${data.page} of ${data.total_pages} (${data.count} compounds)`);
     } catch (err: any) {
       setError(err.message);
       toast.error(`SDF analysis failed: ${err.message}`);
@@ -638,10 +660,10 @@ export default function LabDashboard() {
 
                 {/* AI Interpretation */}
                 {result.ai_interpretation && (
-                  <section className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 to-blue-500/10 border border-amber-500/20 backdrop-blur-md">
+                  <section className="p-6 rounded-2xl bg-[var(--surface-highlight)] border border-[var(--border)]">
                     <div className="flex items-center gap-2 mb-4">
-                      <Sparkles className="w-5 h-5 text-amber-500" />
-                      <h3 className="text-sm font-semibold text-amber-600 uppercase tracking-wider">Medicinal Chemistry Insights</h3>
+                      <Sparkles className="w-5 h-5 text-[var(--text-secondary)]" />
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">Medicinal Chemistry Insights</h3>
                     </div>
                     <p className="text-base text-[var(--text-primary)] leading-relaxed">
                       {result.ai_interpretation}
@@ -670,21 +692,53 @@ export default function LabDashboard() {
                 <ADMETParameterLegend />
               </motion.div>
             ) : batchResults.length > 0 ? (
-              <motion.div 
+              <motion.div
                 key="batch-results"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-[var(--text-primary)]">Batch Results ({batchResults.length})</h2>
-                  <button
-                    onClick={handleExportBatchCSV}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 text-white hover:bg-amber-400 text-sm font-medium transition-all shadow-md"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download CSV
-                  </button>
+                {/* Batch Results Header with Pagination */}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                      Batch Results ({batchResults.length} of {batchTotalSubmitted})
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">
+                      Page {batchPage} of {batchTotalPages}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const newPage = batchPage - 1;
+                        if (inputType === 'batch') analyzeBatch(newPage);
+                        else analyzeSDF(newPage);
+                      }}
+                      disabled={batchPage <= 1}
+                      className="px-3 py-2 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)] text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--surface-hover)]"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newPage = batchPage + 1;
+                        if (inputType === 'batch') analyzeBatch(newPage);
+                        else analyzeSDF(newPage);
+                      }}
+                      disabled={batchPage >= batchTotalPages}
+                      className="px-3 py-2 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)] text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--surface-hover)]"
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={handleExportBatchCSV}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 text-white hover:bg-amber-400 text-sm font-medium transition-all shadow-md"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download CSV
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -727,10 +781,15 @@ export default function LabDashboard() {
                               ))}
                             </div>
                             {res.ai_interpretation && (
-                              <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                                <h4 className="text-xs font-bold text-amber-600 uppercase mb-2">AI Insights</h4>
+                              <div className="p-4 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)]">
+                                <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">AI Insights</h4>
                                 <p className="text-sm text-[var(--text-primary)]">{res.ai_interpretation}</p>
                               </div>
+                            )}
+
+                            {/* Synthetic Accessibility for Batch */}
+                            {res.synthetic_accessibility && (
+                              <SASDisplay sas={res.synthetic_accessibility} />
                             )}
                           </div>
                         ) : (

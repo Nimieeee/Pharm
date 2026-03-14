@@ -343,6 +343,15 @@ class ADMETService:
         except Exception as e:
             print(f"⚠️ AI interpretation failed: {e}")
 
+        # Calculate synthetic accessibility
+        synthetic_accessibility = None
+        try:
+            sas_data = sas_calculator.calculate(smiles)
+            if sas_data:
+                synthetic_accessibility = sas_data
+        except Exception as e:
+            print(f"⚠️ SAS calculation failed: {e}")
+
         # Format report with AI interpretation and synthetic accessibility
         return self.processor.format_report(admet_data, svg, ai_interpretation, synthetic_accessibility)
     
@@ -519,7 +528,7 @@ CRITICAL RULES:
                 </table>
                 """
 
-            # Simple HTML template for PDF
+            # Simple HTML template for PDF with specific column widths
             html = f"""
             <html>
             <head>
@@ -528,10 +537,14 @@ CRITICAL RULES:
                     h1 {{ color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
                     h2 {{ color: #1e40af; margin-top: 20px; }}
                     .section {{ margin-bottom: 20px; }}
-                    .interpretation {{ background: #f8fafc; padding: 15px; border-left: 5px solid #64748b; font-style: italic; }}
-                    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
-                    th, td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 10pt; }}
+                    .interpretation {{ background: #f8fafc; padding: 15px; border-left: 5px solid #64748b; font-style: italic; margin-bottom: 20px; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }}
+                    th, td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 9pt; word-wrap: break-word; }}
                     th {{ background-color: #f1f5f9; font-weight: bold; }}
+                    .col-param {{ width: 20%; }}
+                    .col-value {{ width: 15%; }}
+                    .col-status {{ width: 15%; }}
+                    .col-interp {{ width: 50%; }}
                     .status-success {{ color: #16a34a; font-weight: bold; }}
                     .status-warning {{ color: #ca8a04; font-weight: bold; }}
                     .status-danger {{ color: #dc2626; font-weight: bold; }}
@@ -541,7 +554,7 @@ CRITICAL RULES:
                 <h1>ADMET Analysis Report</h1>
                 <div class="section">
                     <p><strong>Molecule:</strong> {mol_name}</p>
-                    <p><strong>SMILES:</strong> <span style="font-family: monospace; font-size: 8pt;">{smiles}</span></p>
+                    <p><strong>SMILES:</strong> <span style="font-family: monospace; font-size: 7pt;">{smiles}</span></p>
                 </div>
 
                 <h2>Medicinal Chemistry Insights</h2>
@@ -557,18 +570,6 @@ CRITICAL RULES:
             </body>
             </html>
             """
-            
-            pdf_out = io.BytesIO()
-            pisa_status = pisa.CreatePDF(html, dest=pdf_out)
-            
-            if pisa_status.err:
-                raise Exception("PDF generation error")
-                
-            return pdf_out.getvalue()
-            
-        except Exception as e:
-            print(f"❌ PDF generation failed: {e}")
-            raise
             
             pdf_out = io.BytesIO()
             pisa_status = pisa.CreatePDF(html, dest=pdf_out)

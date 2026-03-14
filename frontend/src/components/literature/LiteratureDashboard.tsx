@@ -55,7 +55,8 @@ export default function LiteratureDashboard() {
   };
 
   const copyCitation = (article: LiteratureArticle) => {
-    const authors = article.authors.slice(0, 3).join(', ') + (article.authors.length > 3 ? ' et al.' : '');
+    const authorsArr = Array.isArray(article.authors) ? article.authors : [];
+    const authors = authorsArr.slice(0, 3).join(', ') + (authorsArr.length > 3 ? ' et al.' : '');
     const citation = `${authors} (${article.year}). ${article.title}. ${article.journal}. ${article.volume || ''}${article.issue ? `(${article.issue})` : ''}:${article.pages || ''}. DOI: ${article.doi || 'N/A'}`;
     navigator.clipboard.writeText(citation);
   };
@@ -183,8 +184,14 @@ export default function LiteratureDashboard() {
                   </a>
                   
                   <p className="text-sm text-[var(--text-muted)] mt-1">
-                    {article.authors.slice(0, 3).join(', ')}
-                    {article.authors.length > 3 && ' et al.'}
+                    {Array.isArray(article.authors) ? (
+                      <>
+                        {article.authors.slice(0, 3).join(', ')}
+                        {article.authors.length > 3 && ' et al.'}
+                      </>
+                    ) : (
+                      'Unknown Author'
+                    )}
                   </p>
                   
                   <p className="text-sm text-[var(--text-secondary)] mt-1">

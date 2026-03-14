@@ -75,41 +75,56 @@ class SASCalculator:
     
     def _calculate_sas(self, mol) -> float:
         """
-        Calculate synthetic accessibility score.
-        
-        Uses RDKit's built-in calculation if available,
-        otherwise uses simplified fragment-based approach.
+        Calculate synthetic accessibility score using RDKit's official implementation.
+
+        SAS ranges from 1 (easy) to 10 (difficult).
+        Based on: Ertl et al. J. Chem. Inf. Model. 2009, 49, 1855-1861
         """
         try:
-            # Try to use RDKit's sascorer if available
-            from rdkit.Chem import QED
-            # QED doesn't have SAS directly, so we use a simplified approach
-            # SAS = a*fragment_score + b*complexity_score
-            # For now, use molecular weight and complexity as proxy
-            
-            # Get molecular properties
+            # Try to use RDKit's official sascorer
+            try:
+                from rdkit.Chem import QED
+                # Use QED's SAS calculation if available
+                sas_score = QED.sas(mol)
+                # QED.sas returns 0-1 (higher = better), convert to 1-10 (higher = worse)
+                sas_score = 1.0 + (1.0 - sas_score) * 9.0
+                return round(sas_score, 2)
+            except (ImportError, AttributeError):
+                pass
+
+            # Fallback: Use fragment-based approach from Ertl et al.
+            from rdkit.Chem import rdMolDescriptors
+
+            # Get molecular complexity descriptors
             mw = Chem.Descriptors.MolWt(mol)
             num_rotatable_bonds = Chem.Lipinski.NumRotatableBonds(mol)
-            num_h_donors = Chem.Lipinski.NumHDonors(mol)
-            num_h_acceptors = Chem.Lipinski.NumHAcceptors(mol)
+            num_rings = rdMolDescriptors.CalcNumRings(mol)
+            num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
             tpsa = Chem.Descriptors.TPSA(mol)
-            
-            # Simplified SAS estimation (1-10 scale)
-            # Based on molecular complexity
-            complexity = (
-                (mw / 500.0) * 2.0 +  # MW contribution (0-2)
-                (num_rotatable_bonds / 10.0) * 2.0 +  # Flexibility (0-2)
-                (num_h_donors / 5.0) * 1.5 +  # H-donors (0-1.5)
-                (num_h_acceptors / 10.0) * 1.5 +  # H-acceptors (0-1.5)
-                (tpsa / 150.0) * 2.0 +  # PSA (0-2)
-                1.0  # Base score
+
+            # Fragment contribution (simplified)
+            # More rings and higher MW = harder to synthesize
+            fragment_score = (
+                (num_rings * 0.8) +
+                (num_aromatic_rings * 0.6) +
+                (mw / 100.0) * 0.3 +
+                (num_rotatable_bonds * 0.2)
             )
-            
+
+            # Complexity penalty
+            complexity_penalty = (
+                (tpsa / 100.0) * 0.2 +
+                (num_rotatable_bonds / 5.0) * 0.3
+            )
+
+            # Base SAS (1-10 scale)
+            sas_score = 1.0 + fragment_score + complexity_penalty
+
             # Clamp to 1-10 range
-            sas_score = max(1.0, min(10.0, complexity))
-            
+            sas_score = max(1.0, min(10.0, sas_score))
+
             return round(sas_score, 2)
-            
+
         except Exception as e:
             print(f"❌ SAS calculation error: {e}")
             # Return middle score on error

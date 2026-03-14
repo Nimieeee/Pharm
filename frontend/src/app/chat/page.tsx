@@ -144,10 +144,10 @@ function ChatContent() {
 
   // Combined effect for new messages AND streaming content
   useEffect(() => {
-    if (isUserAtBottom && messages.length > 0) {
+    if (isUserAtBottom && (messages.length > 0 || branchData.size > 0)) {
       scrollToBottom('auto');
     }
-  }, [messages, isUserAtBottom, scrollToBottom]);
+  }, [messages, branchData, isUserAtBottom, scrollToBottom]);
 
   // Reset mode when conversation changes
   useEffect(() => {

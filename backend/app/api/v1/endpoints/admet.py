@@ -38,46 +38,87 @@ def get_admet_service(db: Client = Depends(get_db)):
 async def analyze_batch(
     file: UploadFile = File(None),
     smiles_list: Optional[str] = Form(None),
+    page: int = Form(1),
+    page_size: int = Form(50),
     current_user: User = Depends(get_current_user),
     admet_service = Depends(get_admet_service)
 ):
     """
-    Batch ADMET analysis.
+    Batch ADMET analysis with pagination.
     Accepts: SDF file upload OR JSON string of SMILES array.
+
+    - **page**: Page number (1-indexed, default: 1)
+    - **page_size**: Results per page (default: 50, max: 100)
     """
     try:
         import json
         molecules = []
-        
+
         if file:
             content = await file.read()
-            # extract_smiles_from_sdf returns list of SMILES or dicts
             molecules = await admet_service.extract_smiles_from_sdf(content)
         elif smiles_list:
             raw = json.loads(smiles_list)
-            # Accept both ["SMILES1", "SMILES2"] and [{"smiles": "...", "name": "..."}]
             molecules = [
                 {"smiles": s, "name": f"Molecule {i+1}"} if isinstance(s, str) else s
                 for i, s in enumerate(raw)
             ]
-            
+
         if not molecules:
             raise HTTPException(400, "No SMILES provided for analysis")
 
-        # Cap at 100 for now (up from 20), warn user in response
+        # Pagination
         total = len(molecules)
-        capped = molecules[:100]
-        
+        page_size = min(page_size, 100)  # Max 100 per page
+        total_pages = (total + page_size - 1) // page_size
+        page = max(1, min(page, total_pages))
+
+        start_idx = (page - 1) * page_size
+        end_idx = min(start_idx + page_size, total)
+        capped = molecules[start_idx:end_idx]
+
         results = await admet_service.analyze_batch_structured(capped)
-        
+
+        # Add SAS and GASA scores to each result
+        for result in results:
+            smiles = result.get('smiles', '')
+            if smiles:
+                # Calculate SAS
+                sas_result = sas_calculator.calculate(smiles)
+                if sas_result:
+                    result['synthetic_accessibility'] = sas_result
+
+                # Calculate GASA (if available)
+                gasa_result = gasa_predictor.predict_single(smiles)
+                if gasa_result and result.get('synthetic_accessibility'):
+                    result['synthetic_accessibility'].update({
+                        'gasa_prediction': gasa_result['prediction'],
+                        'gasa_easy_probability': gasa_result['easy_probability'],
+                        'gasa_hard_probability': gasa_result['hard_probability'],
+                        'gasa_interpretation': gasa_result['interpretation']
+                    })
+
+                    # Add consensus
+                    sas_easy = result['synthetic_accessibility']['sas_score'] <= 5.0
+                    gasa_easy = gasa_result['prediction'] == 0
+                    result['synthetic_accessibility']['consensus'] = (
+                        "Both methods agree: Easy to synthesize" if (sas_easy and gasa_easy) else
+                        "Both methods agree: Difficult to synthesize" if (not sas_easy and not gasa_easy) else
+                        "Mixed results: Check both scores"
+                    )
+
         return {
             "success": True,
             "count": len(results),
             "total_submitted": total,
-            "capped_at": 100 if total > 100 else None,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
             "results": results
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=500,

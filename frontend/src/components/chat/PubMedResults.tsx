@@ -121,13 +121,17 @@ export default function PubMedResults({ results, query, onCite }: PubMedResultsP
             </div>
 
             {/* Authors */}
-            {article.authors && article.authors.length > 0 && (
+            {Array.isArray(article.authors) && article.authors.length > 0 ? (
               <p className="text-xs text-amber-800 dark:text-amber-300 mb-1.5 pl-6">
                 {article.authors.length > 3
                   ? `${article.authors.slice(0, 3).join(', ')} et al.`
                   : article.authors.join(', ')}
               </p>
-            )}
+            ) : typeof article.authors === 'string' ? (
+              <p className="text-xs text-amber-800 dark:text-amber-300 mb-1.5 pl-6">
+                {article.authors}
+              </p>
+            ) : null}
 
             {/* Journal Info */}
             <div className="pl-6 flex flex-wrap items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
