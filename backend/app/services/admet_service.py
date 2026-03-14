@@ -717,9 +717,7 @@ CRITICAL RULES:
         Features:
         - Proper column widths (Interpretation: 45%)
         - Word wrapping for long text
-        - Benchside watermark (using @frame)
-        - No blue header line
-        - SAS/GASA scores included
+        - GASA scores included
         """
         try:
             from xhtml2pdf import pisa
@@ -964,10 +962,10 @@ CRITICAL RULES:
             insight_text = results.get("ai_interpretation", "No interpretation available.")
             p = doc.add_paragraph(insight_text.strip())
             
-            # Synthetic Accessibility
-            sas_to_use = synthetic_accessibility if synthetic_accessibility else results.get("synthetic_accessibility")
-            if sas_to_use:
-                self._generate_sas_docx(doc, sas_to_use)
+            # Synthetic Accessibility (GASA only)
+            gasa_to_use = synthetic_accessibility if synthetic_accessibility else results.get("synthetic_accessibility")
+            if gasa_to_use:
+                self._generate_gasa_docx(doc, gasa_to_use)
             
             # detailed results
             categories = self.processor.build_structured_categories(results)
@@ -1089,7 +1087,7 @@ CRITICAL RULES:
         """
         Batch analysis returning structured JSON per molecule.
 
-        Includes SAS and GASA scores for each molecule.
+        Includes GASA (Synthetic Accessibility) scores for each molecule.
         """
         results = []
 

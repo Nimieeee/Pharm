@@ -91,10 +91,12 @@ async def analyze_batch(
                 
                 if gasa_result:
                     result['synthetic_accessibility'] = {
-                        'gasa_prediction': gasa_result['prediction'],
-                        'gasa_easy_probability': gasa_result['easy_probability'],
-                        'gasa_hard_probability': gasa_result['hard_probability'],
-                        'gasa_interpretation': gasa_result['interpretation']
+                        'gasa': {
+                            'prediction': gasa_result['prediction'],
+                            'easy_probability': gasa_result['easy_probability'],
+                            'hard_probability': gasa_result['hard_probability'],
+                            'interpretation': gasa_result['interpretation']
+                        }
                     }
 
         return {
@@ -154,14 +156,16 @@ async def analyze_molecule(
         except Exception:
             pass
 
-        # 5. Build combined synthetic accessibility result
+        # 5. Build combined synthetic accessibility result (nested structure)
         synthetic_accessibility = None
         if gasa_result:
             synthetic_accessibility = {
-                'gasa_prediction': gasa_result['prediction'],
-                'gasa_easy_probability': gasa_result['easy_probability'],
-                'gasa_hard_probability': gasa_result['hard_probability'],
-                'gasa_interpretation': gasa_result['interpretation']
+                'gasa': {
+                    'prediction': gasa_result['prediction'],
+                    'easy_probability': gasa_result['easy_probability'],
+                    'hard_probability': gasa_result['hard_probability'],
+                    'interpretation': gasa_result['interpretation']
+                }
             }
 
         # 7. Build structured categories from raw data
