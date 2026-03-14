@@ -587,31 +587,41 @@ CRITICAL RULES:
 
         html = '<div class="sas-section"><h3>Synthetic Accessibility</h3>'
 
-        # RDKit SAS
-        sas_score = sas_data.get('sas_score', 0)
-        sas_category = sas_data.get('category', 'N/A').upper()
-        sas_interp = sas_data.get('interpretation', '')
+        # RDKit SAS (Expected under 'sas' key)
+        sas = sas_data.get('sas') if isinstance(sas_data.get('sas'), dict) else sas_data
+        sas_score = sas.get('sas_score', 0)
+        sas_category = sas.get('category', 'N/A').upper()
+        sas_interp = sas.get('interpretation', '')
 
         html += f'<p><strong>RDKit SAS Score:</strong> {sas_score:.1f} ({sas_category})</p>'
         if sas_interp:
             html += f'<p style="font-size: 9pt; margin: 5pt 0;">{sas_interp}</p>'
 
-        # GASA
-        if 'gasa_prediction' in sas_data:
-            gasa_pred = sas_data['gasa_prediction']
-            gasa_easy = sas_data.get('gasa_easy_probability', 0) * 100
-            gasa_hard = sas_data.get('gasa_hard_probability', 0) * 100
-            gasa_interp = sas_data.get('gasa_interpretation', '')
+        # GASA (Deep Learning) - check if available
+        gasa = sas_data.get('gasa')
+        # Simple GASA (RDKit fallback)
+        simple_gasa = sas_data.get('simple_gasa')
+        
+        # Prefer full GASA if successful, otherwise simple_gasa
+        gasa_to_show = gasa if gasa else simple_gasa
+        
+        if gasa_to_show:
+            gasa_pred = gasa_to_show.get('prediction', 0)
+            gasa_easy = gasa_to_show.get('easy_probability', 0) * 100
+            gasa_hard = gasa_to_show.get('hard_probability', 0) * 100
+            gasa_interp = gasa_to_show.get('interpretation', '')
 
             pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
-            html += f'<p style="margin-top: 10pt;"><strong>GASA Prediction (ML):</strong> {pred_label}</p>'
+            method_label = "ML" if gasa else "RDKit"
+            html += f'<p style="margin-top: 10pt;"><strong>GASA Prediction ({method_label}):</strong> {pred_label}</p>'
             html += f'<p style="font-size: 9pt; margin: 3pt 0;">Easy: {gasa_easy:.1f}% | Hard: {gasa_hard:.1f}%</p>'
             if gasa_interp:
                 html += f'<p style="font-size: 9pt; margin: 3pt 0;">{gasa_interp}</p>'
 
-        # Consensus
-        if 'consensus' in sas_data:
-            html += f'<p style="margin-top: 10pt; font-weight: bold;">{sas_data["consensus"]}</p>'
+        # Consensus (if present)
+        consensus = sas_data.get('consensus')
+        if consensus:
+            html += f'<p style="margin-top: 10pt; font-weight: bold;">{consensus}</p>'
 
         html += '</div>'
         return html
@@ -623,34 +633,46 @@ CRITICAL RULES:
         
         doc.add_heading('Synthetic Accessibility', level=1)
         
-        sas_score = synthetic_accessibility.get('sas_score', 0)
-        sas_interp = synthetic_accessibility.get('sas_interpretation', '')
+        # RDKit SAS (Expected under 'sas' key)
+        sas = synthetic_accessibility.get('sas') if isinstance(synthetic_accessibility.get('sas'), dict) else synthetic_accessibility
+        sas_score = sas.get('sas_score', 0)
+        sas_interp = sas.get('interpretation', '')
         
         p = doc.add_paragraph()
-        run = p.add_run(f'SAS Score: {sas_score:.2f}')
+        run = p.add_run(f'RDKit SAS Score: {sas_score:.2f}')
         run.bold = True
         p.add_run(f' (1 = Easy, 10 = Hard)')
         
         if sas_interp:
             p = doc.add_paragraph(sas_interp)
             
-        if 'gasa' in synthetic_accessibility:
-            gasa = synthetic_accessibility['gasa']
-            gasa_pred = gasa.get('prediction', 0)
-            gasa_easy = gasa.get('easy_probability', 0) * 100
-            gasa_hard = gasa.get('hard_probability', 0) * 100
+        # GASA (Deep Learning) - check if available
+        gasa = synthetic_accessibility.get('gasa')
+        # Simple GASA (RDKit fallback)
+        simple_gasa = synthetic_accessibility.get('simple_gasa')
+        
+        # Prefer full GASA if successful, otherwise simple_gasa
+        gasa_to_show = gasa if gasa else simple_gasa
+        
+        if gasa_to_show:
+            gasa_pred = gasa_to_show.get('prediction', 0)
+            gasa_easy = gasa_to_show.get('easy_probability', 0) * 100
+            gasa_hard = gasa_to_show.get('hard_probability', 0) * 100
             
             pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
+            method_label = "ML" if gasa else "RDKit"
             p = doc.add_paragraph()
-            p.add_run('GASA Prediction (ML): ').bold = True
+            p.add_run(f'GASA Prediction ({method_label}): ').bold = True
             p.add_run(pred_label)
             
             p = doc.add_paragraph(f'Easy: {gasa_easy:.1f}% | Hard: {gasa_hard:.1f}%')
             p.style.font.size = Pt(9)
             
         if 'consensus' in synthetic_accessibility:
-            p = doc.add_paragraph(synthetic_accessibility['consensus'])
-            p.italic = True
+            consensus = synthetic_accessibility['consensus']
+            if consensus:
+                p = doc.add_paragraph(consensus)
+                p.italic = True
 
     async def generate_pdf(self, results: Dict[str, Any], synthetic_accessibility: Dict[str, Any] = None) -> bytes:
         """

@@ -307,8 +307,8 @@ async def export_admet_pdf(
         
         admet_data["synthetic_accessibility"] = {
             "sas": sas_calculator.calculate(smiles),
-            "gasa": gasa_predictor.predict(smiles),
-            "simple_gasa": simple_gasa_predictor.predict(smiles)
+            "gasa": gasa_predictor.predict_single(smiles),
+            "simple_gasa": simple_gasa_predictor.predict_single(smiles)
         }
         admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
         
@@ -354,8 +354,8 @@ async def export_admet_docx(
         
         admet_data["synthetic_accessibility"] = {
             "sas": sas_calculator.calculate(smiles),
-            "gasa": gasa_predictor.predict(smiles),
-            "simple_gasa": simple_gasa_predictor.predict(smiles)
+            "gasa": gasa_predictor.predict_single(smiles),
+            "simple_gasa": simple_gasa_predictor.predict_single(smiles)
         }
         admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
         
