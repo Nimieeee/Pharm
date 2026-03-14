@@ -954,16 +954,23 @@ NOW ANALYZE THE USER'S QUESTION AND CREATE THE RESEARCH PLAN.
     async def _node_researcher(self, state: ResearchState) -> ResearchState:
         """
         Execute searches for each sub-topic using PubMed AND Web tools in parallel.
+
+        PERFORMANCE MONITORING: Logs timing for each search operation
         """
         state.status = "researching"
         state.progress_log.append(f"[{datetime.now().isoformat()}] Starting multi-source literature search...")
-        
+
+        logger.info("⏱️ [PERF MONITOR] Researcher Phase Started")
+        phase_start = datetime.now()
+
         for step in state.steps:
             if step.status == "completed":
                 continue
-                
+
             step.status = "in_progress"
+            step_start = datetime.now()
             state.progress_log.append(f"[{datetime.now().isoformat()}] Researching: {step.topic}")
+            logger.info(f"⏱️ [PERF] Step '{step.topic[:50]}...' started")
             
             # Generate optimized search queries
             query_prompt = f"""Convert this research topic into effective search queries:
@@ -987,19 +994,26 @@ Return as JSON: {{"queries": ["query1", "query2", "query3"]}}"""
             
             # Execute searches
             step_findings_count = 0
-            
+            query_times = []
+
             for query in queries:
+                query_start = datetime.now()
+
                 # Parallel Search: Semantic Scholar, PubMed, Web (Tavily), DuckDuckGo, Serper
-                # OPTIMIZED: Reduced result counts for faster response (Phase 1)
+                # Keeping 50 PubMed + 50 Web results per sub-topic for comprehensive coverage
                 tasks = [
                     self.tools.search_semantic_scholar(query, max_results=20),
-                    self.tools.search_pubmed(query, max_results=20),  # Reduced from 50 to 20
+                    self.tools.search_pubmed(query, max_results=50),  # Keep 50 for comprehensive coverage
                     self.tools.search_web(query, max_results=5),
                     self.tools.search_duckduckgo(query, max_results=5),
                     self.tools.search_serper(query, max_results=5)
                 ]
-                
+
                 results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                query_time = (datetime.now() - query_start).total_seconds()
+                query_times.append(query_time)
+                logger.info(f"⏱️ [PERF] Query '{query[:40]}...' took {query_time:.2f}s")
                 
                 results_s2 = results[0] if not isinstance(results[0], Exception) else []
                 results_pubmed = results[1] if not isinstance(results[1], Exception) else []
@@ -1132,10 +1146,24 @@ Return as JSON: {{"queries": ["query1", "query2", "query3"]}}"""
                         step_findings_count += 1
             
             step.status = "completed"
+            step_time = (datetime.now() - step_start).total_seconds()
+            avg_query_time = sum(query_times) / len(query_times) if query_times else 0
+
             state.progress_log.append(f"[{datetime.now().isoformat()}] Found {step_findings_count} sources for: {step.topic}")
 
-            # OPTIMIZED: Reduced rate limiting delay from 0.5s to 0.1s
-            await asyncio.sleep(0.1)
+            # PERFORMANCE MONITORING: Log step timing
+            logger.info(f"⏱️ [PERF] Step completed in {step_time:.2f}s (avg query: {avg_query_time:.2f}s, found {step_findings_count} sources)")
+
+        # PERFORMANCE MONITORING: Log phase summary
+        phase_time = (datetime.now() - phase_start).total_seconds()
+        total_queries = sum(len(q) for q in [step.keywords + [step.topic] for step in state.steps])
+        logger.info(f"⏱️ [PERF MONITOR] Researcher Phase Summary:")
+        logger.info(f"  - Total time: {phase_time:.2f}s")
+        logger.info(f"  - Steps processed: {len(state.steps)}")
+        logger.info(f"  - Total queries: {len(query_times)}")
+        logger.info(f"  - Total findings: {len(state.findings)}")
+        logger.info(f"  - Avg time per query: {(phase_time / len(query_times)):.2f}s" if query_times else "  - No queries executed")
+        logger.info(f"  - Findings per second: {(len(state.findings) / phase_time):.2f}" if phase_time > 0 else "  - N/A")
         
         state.iteration_count += 1
         
