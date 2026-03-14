@@ -16,57 +16,36 @@ import MoleculePreview from './MoleculePreview';
 import StreamingLogo from '../chat/StreamingLogo';
 import { ADMETParameterLegend } from './ADMETParameterLegend';
 
-interface SASResult {
-  sas_score: number;
-  interpretation: string;
-  category: string;
-  gasa_prediction?: number;
-  gasa_easy_probability?: number;
-  gasa_hard_probability?: number;
-  gasa_interpretation?: string;
-  consensus?: string;
+interface GASAResult {
+  prediction?: number;
+  easy_probability?: number;
+  hard_probability?: number;
+  interpretation?: string;
 }
 
-const getSASColor = (score: number) => {
-  if (score <= 3) return 'bg-green-500';
-  if (score <= 5) return 'bg-yellow-500';
-  if (score <= 7) return 'bg-orange-500';
-  return 'bg-red-500';
-};
+interface SyntheticAccessibility {
+  gasa?: GASAResult;
+  simple_gasa?: GASAResult;
+}
 
-const SASDisplay: React.FC<{ sas: SASResult }> = ({ sas }) => (
+const GASADisplay: React.FC<{ gasa: GASAResult; method: string }> = ({ gasa, method }) => (
   <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
     <div className="flex items-center gap-2 mb-4">
       <FlaskConical className="w-4 h-4 text-[var(--text-secondary)]" />
-      <h4 className="text-sm font-semibold text-[var(--text-primary)]">Synthetic Accessibility</h4>
+      <h4 className="text-sm font-semibold text-[var(--text-primary)]">Synthetic Accessibility ({method})</h4>
     </div>
 
-    {/* RDKit SAS Score */}
-    <div className="mb-4">
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-[var(--text-secondary)]">RDKit SAS Score</span>
-        <span className="font-bold text-[var(--text-primary)]">{sas.sas_score.toFixed(1)}</span>
-      </div>
-      <div className="w-full bg-[var(--surface-highlight)] rounded-full h-3">
-        <div
-          className={`h-3 rounded-full transition-all ${getSASColor(sas.sas_score)}`}
-          style={{ width: `${(sas.sas_score / 10) * 100}%` }}
-        />
-      </div>
-      <p className="text-xs text-[var(--text-secondary)] mt-1">{sas.interpretation}</p>
-    </div>
-
-    {/* GASA Score (if available) */}
-    {sas.gasa_prediction !== undefined && (
+    {/* GASA Prediction */}
+    {gasa.prediction !== undefined && (
       <div className="mb-4 p-3 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)]">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-[var(--text-primary)]">GASA Prediction</span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-            sas.gasa_prediction === 0
+            gasa.prediction === 0
               ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
               : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
           }`}>
-            {sas.gasa_interpretation || (sas.gasa_prediction === 0 ? 'EASY' : 'HARD')}
+            {gasa.interpretation || (gasa.prediction === 0 ? 'EASY' : 'HARD')}
           </span>
         </div>
         <div className="flex gap-4 text-xs">
@@ -74,49 +53,32 @@ const SASDisplay: React.FC<{ sas: SASResult }> = ({ sas }) => (
             <div className="flex justify-between mb-1">
               <span className="text-[var(--text-secondary)]">Easy</span>
               <span className="font-medium text-[var(--text-primary)]">
-                {((sas.gasa_easy_probability || 0) * 100).toFixed(1)}%
+                {((gasa.easy_probability || 0) * 100).toFixed(1)}%
               </span>
             </div>
             <div className="w-full bg-[var(--surface-highlight)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-green-500" style={{ width: `${(sas.gasa_easy_probability || 0) * 100}%` }} />
+              <div className="h-2 rounded-full bg-green-500" style={{ width: `${(gasa.easy_probability || 0) * 100}%` }} />
             </div>
           </div>
           <div className="flex-1">
             <div className="flex justify-between mb-1">
               <span className="text-[var(--text-secondary)]">Hard</span>
               <span className="font-medium text-[var(--text-primary)]">
-                {((sas.gasa_hard_probability || 0) * 100).toFixed(1)}%
+                {((gasa.hard_probability || 0) * 100).toFixed(1)}%
               </span>
             </div>
             <div className="w-full bg-[var(--surface-highlight)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-red-500" style={{ width: `${(sas.gasa_hard_probability || 0) * 100}%` }} />
+              <div className="h-2 rounded-full bg-red-500" style={{ width: `${(gasa.hard_probability || 0) * 100}%` }} />
             </div>
           </div>
         </div>
       </div>
     )}
 
-    {/* Consensus (if both available) */}
-    {sas.consensus && (
-      <div className="p-3 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)] mb-3">
-        <p className="text-xs font-medium text-[var(--text-primary)] text-center">
-          {sas.consensus}
-        </p>
-      </div>
+    {/* Interpretation */}
+    {gasa.interpretation && (
+      <p className="text-xs text-[var(--text-secondary)] mt-2">{gasa.interpretation}</p>
     )}
-
-    {/* Category Badge */}
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-[var(--text-secondary)]">Category:</span>
-      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-        sas.category === 'easy' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' :
-        sas.category === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200' :
-        sas.category === 'difficult' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200' :
-        'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
-      }`}>
-        {sas.category.replace('_', ' ').toUpperCase()}
-      </span>
-    </div>
   </div>
 );
 
@@ -142,7 +104,7 @@ interface ADMETResult {
   report_markdown: string;
   molecule_name?: string;
   error?: string;
-  synthetic_accessibility?: SASResult;
+  synthetic_accessibility?: SyntheticAccessibility;
 }
 
 interface BatchADMETResponse {
@@ -649,9 +611,12 @@ export default function LabDashboard() {
                   </section>
                 )}
 
-                {/* Synthetic Accessibility */}
-                {result.synthetic_accessibility && (
-                  <SASDisplay sas={result.synthetic_accessibility} />
+                {/* Synthetic Accessibility (GASA) */}
+                {result.synthetic_accessibility?.gasa && (
+                  <GASADisplay gasa={result.synthetic_accessibility.gasa} method="ML" />
+                )}
+                {result.synthetic_accessibility?.simple_gasa && !result.synthetic_accessibility?.gasa && (
+                  <GASADisplay gasa={result.synthetic_accessibility.simple_gasa} method="RDKit" />
                 )}
 
                 {/* Property Grid */}
@@ -765,9 +730,12 @@ export default function LabDashboard() {
                               </div>
                             )}
 
-                            {/* Synthetic Accessibility for Batch */}
-                            {res.synthetic_accessibility && (
-                              <SASDisplay sas={res.synthetic_accessibility} />
+                            {/* Synthetic Accessibility (GASA) for Batch */}
+                            {res.synthetic_accessibility?.gasa && (
+                              <GASADisplay gasa={res.synthetic_accessibility.gasa} method="ML" />
+                            )}
+                            {res.synthetic_accessibility?.simple_gasa && !res.synthetic_accessibility?.gasa && (
+                              <GASADisplay gasa={res.synthetic_accessibility.simple_gasa} method="RDKit" />
                             )}
                           </div>
                         ) : (
