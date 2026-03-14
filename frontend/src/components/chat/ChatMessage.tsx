@@ -123,7 +123,7 @@ export default function ChatMessage({
 
     try {
       const token = typeof window !== 'undefined'
-        ? localStorage.getItem('token')
+        ? localStorage.getItem('sb-access-token')
         : null;
 
       const response = await fetch(
