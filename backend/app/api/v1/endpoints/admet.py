@@ -10,6 +10,10 @@ from app.core.security import get_current_user
 from app.models.user import User
 from supabase import Client
 
+# Import calculators for synthetic accessibility
+from app.services.sas_service import sas_calculator
+from app.services.gasa_service import gasa_predictor
+
 router = APIRouter()
 
 
