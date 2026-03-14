@@ -361,6 +361,10 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   displayContent = displayContent.replace(/\\\[([\s\S]*?)\\\]/g, '$$$1$$');
   // Replace \( ... \) with $ ... $
   displayContent = displayContent.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
+  
+  // 3.1 Sanitize Unicode characters that KaTeX doesn't support
+  // Replace non-breaking spaces (Unicode 160) with regular spaces
+  displayContent = displayContent.replace(/\u00A0/g, ' ');
 
   // 3. Deep Research specific handling
   const isDeepResearch = mode === 'deep_research';
