@@ -148,8 +148,8 @@ export const ParticleNetwork = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full -z-1 pointer-events-none opacity-60"
-      style={{ filter: 'blur(0.5px)' }}
+      className="fixed inset-0 w-full h-full -z-1 pointer-events-none"
+      style={{ opacity: 0.6 }}
     />
   );
 };

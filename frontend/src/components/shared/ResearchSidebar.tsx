@@ -24,8 +24,45 @@ const NAVIGATION = [
   }
 ];
 
+const SidebarLink = ({ 
+  item, 
+  pathname, 
+  isCollapsed 
+}: { 
+  item: typeof NAVIGATION[0]['items'][0], 
+  pathname: string, 
+  isCollapsed: boolean 
+}) => {
+  const isActive = pathname === item.path;
+  
+  return (
+    <Link 
+      href={item.path}
+      title={isCollapsed ? item.name : undefined}
+      className={`group flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 ${
+        isActive 
+          ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20 shadow-sm' 
+          : 'text-foreground-muted hover:text-foreground hover:bg-surface-highlight'
+      }`}
+    >
+      <div className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+        isActive ? 'bg-orange-500/20 text-orange-500' : 'bg-surface-highlight group-hover:bg-surface-hover'
+      }`}>
+        <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+      </div>
+      {!isCollapsed && <span className={isActive ? 'font-medium' : ''}>{item.name}</span>}
+      {isActive && !isCollapsed && (
+        <motion.div 
+          layoutId="active-pill"
+          className="ml-auto w-1 h-4 bg-orange-500 rounded-full"
+        />
+      )}
+    </Link>
+  );
+};
+
 export const ResearchSidebar = ({
-  isCollapsed,
+  isCollapsed = false,
   onToggle
 }: {
   isCollapsed?: boolean;
@@ -33,35 +70,6 @@ export const ResearchSidebar = ({
 }) => {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-
-  const SidebarLink = ({ item }: { item: typeof NAVIGATION[0]['items'][0] }) => {
-    const isActive = pathname === item.path;
-    
-    return (
-      <Link 
-        href={item.path}
-        title={isCollapsed ? item.name : undefined}
-        className={`group flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 ${
-          isActive 
-            ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20 shadow-sm' 
-            : 'text-foreground-muted hover:text-foreground hover:bg-surface-highlight'
-        }`}
-      >
-        <div className={`p-1.5 rounded-lg transition-colors shrink-0 ${
-          isActive ? 'bg-orange-500/20 text-orange-500' : 'bg-surface-highlight group-hover:bg-surface-hover'
-        }`}>
-          <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-        </div>
-        {!isCollapsed && <span className={isActive ? 'font-medium' : ''}>{item.name}</span>}
-        {isActive && !isCollapsed && (
-          <motion.div 
-            layoutId="active-pill"
-            className="ml-auto w-1 h-4 bg-orange-500 rounded-full"
-          />
-        )}
-      </Link>
-    );
-  };
 
   return (
     <aside className={`h-full flex flex-col bg-surface border-r border-border p-4 gap-8 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
@@ -98,7 +106,14 @@ export const ResearchSidebar = ({
               </p>
             )}
             <div className="flex flex-col gap-1">
-              {section.items.map(item => <SidebarLink key={item.id} item={item} />)}
+              {section.items.map(item => (
+                <SidebarLink 
+                  key={item.id} 
+                  item={item} 
+                  pathname={pathname} 
+                  isCollapsed={isCollapsed} 
+                />
+              ))}
             </div>
           </div>
         ))}

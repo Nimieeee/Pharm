@@ -802,6 +802,40 @@ export default function LabDashboard() {
                     </details>
                   ))}
                 </div>
+
+                {/* Pagination Controls */}
+                {batchTotalPages > 1 && (
+                  <div className="flex items-center justify-between p-4 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-2xl">
+                    <div className="text-sm text-[var(--text-secondary)] font-medium">
+                      Showing Page <span className="text-[var(--text-primary)] font-bold">{batchPage}</span> of <span className="text-[var(--text-primary)] font-bold">{batchTotalPages}</span>
+                      <span className="ml-2 opacity-50">({batchTotalSubmitted} total compounds)</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => inputType === 'batch' ? analyzeBatch(batchPage - 1) : analyzeSDF(batchPage - 1)}
+                        disabled={batchPage === 1 || isLoading}
+                        className="px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        Previous
+                      </button>
+                      
+                      <button
+                        onClick={() => inputType === 'batch' ? analyzeBatch(batchPage + 1) : analyzeSDF(batchPage + 1)}
+                        disabled={batchPage === batchTotalPages || isLoading}
+                        className="px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold flex items-center gap-2"
+                      >
+                        Next
+                        <svg className="w-4 h-4 -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div

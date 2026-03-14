@@ -9,7 +9,7 @@ import { Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun } from 'lucide-
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import confetti from 'canvas-confetti';
+import { ParticleNetwork } from '@/components/landing/ParticleNetwork';
 
 import { API_BASE_URL } from '@/config/api';
 
