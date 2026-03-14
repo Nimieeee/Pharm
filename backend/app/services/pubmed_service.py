@@ -170,7 +170,9 @@ class PubMedService:
             return self._cache[cache_key]
         
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, headers={
+                "User-Agent": "Benchside/1.0 (Pharmacology AI Research Platform)"
+            }) as client:
                 # Fetch full record with abstract
                 response = await client.get(
                     f"{self.BASE}/efetch.fcgi",

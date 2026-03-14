@@ -6,7 +6,10 @@ from typing import Optional, List, Dict, Any
 import asyncio, json, io, uuid
 
 from app.core.security import get_current_user
+from app.core.database import get_db
 from app.models.user import User
+from app.core.container import get_container
+from supabase import Client
 
 router = APIRouter()
 
@@ -30,20 +33,25 @@ doc_jobs: dict = {}  # job_id -> {"status": ..., "docx_bytes": ..., "queue": asy
 @router.post("/outline")
 async def generate_doc_outline(
     request: DocOutlineRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Client = Depends(get_db)
 ):
     """Step 1: Generate editable document outline"""
     try:
         from app.services.doc_service import get_doc_service
         
-        doc_service = get_doc_service()
+        # Get multi_provider from container
+        container = get_container(db)
+        ai_service = container.get('ai_service')
+        multi_provider = ai_service.multi_provider
+        
+        doc_service = get_doc_service(multi_provider)
         
         # Pull conversation context if provided
         context = None
         if request.conversation_id:
             from app.services.enhanced_rag import EnhancedRAGService
-            from app.core.database import get_db
-            rag = EnhancedRAGService(get_db())
+            rag = EnhancedRAGService(db)
             context = await rag.get_conversation_context(request.conversation_id)
         
         outline = await doc_service.generate_outline(
@@ -82,9 +90,20 @@ async def generate_document(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-async def run_doc_generation(job_id: str, request: DocGenerateRequest):
+async def run_doc_generation(job_id: str, request: DocGenerateRequest, db: Client = None):
     from app.services.doc_service import get_doc_service
-    doc_service = get_doc_service()
+    
+    # Get multi_provider from container if db provided
+    multi_provider = None
+    if db:
+        try:
+            container = get_container(db)
+            ai_service = container.get('ai_service')
+            multi_provider = ai_service.multi_provider
+        except Exception:
+            pass
+    
+    doc_service = get_doc_service(multi_provider)
     
     async def on_progress(data):
         doc_jobs[job_id].update({

@@ -164,7 +164,7 @@ def clean_markdown_for_docx(text: str) -> str:
     return text
 
 
-@router.get("/conversations/{conversation_id}/export/docx")
+@router.get("/{conversation_id}/docx")
 async def export_conversation_docx(
     conversation_id: UUID,
     current_user: User = Depends(get_export_user),
@@ -223,7 +223,7 @@ async def export_conversation_docx(
     )
 
 
-@router.get("/conversations/{conversation_id}/export/pdf")
+@router.get("/{conversation_id}/pdf")
 async def export_conversation_pdf(
     conversation_id: UUID,
     current_user: User = Depends(get_export_user),
@@ -304,7 +304,7 @@ async def export_conversation_pdf(
     )
 
 
-@router.get("/conversations/{conversation_id}/export/manuscript")
+@router.get("/{conversation_id}/manuscript")
 async def export_manuscript_docx(
     conversation_id: UUID,
     style: str = Query("report", regex="^(report|manuscript|plain)$"),

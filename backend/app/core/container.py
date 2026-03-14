@@ -43,8 +43,10 @@ class ServiceContainer:
 
     def __init__(self):
         """Initialize container - services loaded on initialize()"""
-        self._services: Dict[str, Any] = {}
-        self._db: Optional[Client] = None
+        if not hasattr(self, '_services'):
+            self._services: Dict[str, Any] = {}
+        if not hasattr(self, '_db'):
+            self._db: Optional[Client] = None
 
     def initialize(self, db: Client) -> 'ServiceContainer':
         """
