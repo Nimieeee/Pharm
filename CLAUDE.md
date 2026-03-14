@@ -786,6 +786,147 @@ const display = score?.toFixed(1) ?? 'N/A';
 - [ ] Test both old and new data structures
 - [ ] Deploy backend and frontend together
 
+#### Rule 9: AI Content Sanitization
+**ALL AI-generated content MUST be sanitized before display to remove emojis, Unicode control characters, and malformed markdown that break rendering or look unprofessional.**
+```typescript
+// ❌ WRONG: Displaying raw AI output with emojis
+const content = "1️⃣ In vivo Metabolite Profiling: Limited data..."; // Shows numbered emoji
+// ❌ WRONG: Malformed table markdown
+| Pathway | Enzyme = Plasma esterases | // Uses = instead of |
+
+// ✅ CORRECT: Sanitize content before rendering
+const sanitized = content
+  .replace(/([✀-➿]|[‑-⛿])/g, '') // Remove emojis
+  .replace(/\|([^|]+)=([^|]+)\|/g, '|$1|$2|'); // Fix table delimiters
+```
+
+#### Rule 10: Theme-Aware Component Styling
+**ALL UI components MUST include explicit dark mode classes. NEVER assume CSS variables handle both modes automatically.**
+```tsx
+// ❌ WRONG: Only light mode colors
+<th className="text-[var(--text-primary)] bg-[var(--surface-highlight)]">
+
+// ✅ CORRECT: Explicit dark mode support
+<th className="text-[var(--text-primary)] bg-[var(--surface-highlight)] 
+               dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700">
+```
+
+#### Rule 11: Diffusion Model Limitations
+**NEVER use image diffusion models (FLUX, DALL-E, Midjourney) for text-heavy content, diagrams, or flowcharts. These models cannot spell or generate logical text.**
+```python
+# ❌ WRONG: Asking FLUX to generate a diagram
+prompt = "Flowchart showing drug discovery process with labeled steps"
+# Result: Gibberish text like "Uinical thal", "All goeral"
+
+# ✅ CORRECT: Use appropriate tools for each content type
+if is_diagram_prompt(prompt):
+    return None  # Skip image generation
+    # Use Mermaid.js for actual diagrams
+else:
+    generate_image(prompt)  # Only for abstract visuals
+```
+
+#### Rule 12: Streaming Progress Synchronization
+**When using SSE streaming, ALWAYS handle network interruptions gracefully. The frontend MUST recover when connections drop mid-stream.**
+```typescript
+// ❌ WRONG: No reconnection logic
+const eventSource = new EventSource('/api/stream');
+eventSource.onmessage = (e) => updateProgress(JSON.parse(e.data));
+// If network changes, progress bar freezes at last value
+
+// ✅ CORRECT: Handle disconnections and reconnect
+const eventSource = new EventSource('/api/stream');
+eventSource.onerror = (e) => {
+  if (eventSource.readyState === EventSource.CLOSED) {
+    // Attempt reconnect or show cached results
+    fetchCachedResults();
+  }
+};
+```
+
+#### Rule 13: Pagination for Large Lists
+**NEVER render large lists (>50 items) without pagination. Large citation lists, references, or data tables will freeze the UI.**
+```tsx
+// ❌ WRONG: Rendering all 978 sources at once
+{sources.map(source => <SourceCard key={source.id} {...source} />)}
+// UI freezes, browser becomes unresponsive
+
+// ✅ CORRECT: Implement pagination
+const SOURCES_PER_PAGE = 50;
+const paginatedSources = sources.slice(
+  (currentPage - 1) * SOURCES_PER_PAGE,
+  currentPage * SOURCES_PER_PAGE
+);
+// Render with page controls
+```
+
+#### Rule 14: API Response Structure Consistency
+**When modifying data structures, update ALL endpoints that return that data type, not just the primary one. Batch, single, and export endpoints must stay synchronized.**
+```python
+# ❌ WRONG: Only updating single endpoint
+@app.get("/analyze")
+def analyze_single():
+    return {"gasa": {"prediction": 0.5}}  # New structure
+
+@app.get("/batch")  
+def analyze_batch():
+    return {"gasa_prediction": 0.5}  # Old structure - INCONSISTENT!
+
+# ✅ CORRECT: Update all endpoints
+@app.get("/analyze")
+def analyze_single():
+    return {"gasa": {"prediction": 0.5}}
+
+@app.get("/batch")
+def analyze_batch():
+    return {"gasa": {"prediction": 0.5}}  # Same structure
+```
+
+#### Rule 15: Content Quality Prompt Engineering
+**When improving AI-generated content quality, modify the SYSTEM PROMPTS, not just post-processing. The AI must understand requirements before generation.**
+```python
+# ❌ WRONG: Trying to fix content after generation
+def post_process(content):
+    return content.replace("bullet", "comprehensive paragraph")  # Too late!
+
+# ✅ CORRECT: Update system prompt with clear requirements
+system_prompt = """
+Write 3-4 comprehensive bullet points per slide following:
+1. CONCEPT: Define the technology with **bold key terms**
+2. MECHANISM: Explain how it works technically  
+3. IMPACT: Explain why it matters with quantitative outcomes
+4. EVIDENCE: Include specific data and citations
+"""
+```
+
+#### Rule 16: Third-Party API Rate Limit Handling
+**ALWAYS implement fallback chains for external APIs. Rate limits, timeouts, and failures are normal operational conditions, not edge cases.**
+```python
+# ❌ WRONG: Single API dependency
+results = await search_semantic_scholar(query)  # Fails if rate limited
+
+# ✅ CORRECT: Multi-tier fallback
+results = await search_semantic_scholar(query)
+if not results:
+    results = await search_pubmed(query)
+if not results:
+    results = await search_duckduckgo(query)
+if not results:
+    logger.error("All search sources exhausted")
+    results = []  # Graceful degradation
+```
+
+#### Rule 17: TypeScript Regex Compatibility
+**When using Unicode regex patterns in TypeScript, ensure they are compatible with the target ECMAScript version. Use feature detection or simpler patterns.**
+```typescript
+// ❌ WRONG: ES6+ Unicode property escapes in older target
+const emojiRegex = /\p{Emoji}/gu;  // Fails in ES5 targets
+
+// ✅ CORRECT: Compatible Unicode ranges
+const emojiRegex = /([✀-➿]|[‑-⛿]|�[�-�])/g;
+// Or use a library like 'emoji-regex' that handles compatibility
+```
+
 ## ADMET Architecture
 
 ### Overview
