@@ -83,8 +83,14 @@ export default function DeepResearchUI({
   const [activeSourceId, setActiveSourceId] = useState<number | null>(null);
   // Detect mobile for sidebar default state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const sourcesPerPage = 50; // Limit to 50 sources per page to prevent UI breaking
   const sidebarRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const { t } = useTranslation();
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(sources.length / sourcesPerPage);
+  const paginatedSources = sources.slice((currentPage - 1) * sourcesPerPage, currentPage * sourcesPerPage);
 
   const handleCitationClick = (id: number) => {
     setActiveSourceId(id);
@@ -304,7 +310,14 @@ export default function DeepResearchUI({
               </div>
             )}
 
-            {sources.map((source) => (
+            {/* Pagination Info */}
+            {sources.length > 0 && (
+              <div className="text-[10px] text-slate-400 text-center py-2 border-b border-slate-100 dark:border-slate-800">
+                Showing {((currentPage - 1) * sourcesPerPage) + 1}-{Math.min(currentPage * sourcesPerPage, sources.length)} of {sources.length} sources
+              </div>
+            )}
+
+            {paginatedSources.map((source) => (
               <motion.div
                 key={source.id}
                 ref={(el) => { sidebarRefs.current[source.id] = el; }}

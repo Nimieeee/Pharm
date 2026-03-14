@@ -365,6 +365,16 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   // 3.1 Sanitize Unicode characters that KaTeX doesn't support
   // Replace non-breaking spaces (Unicode 160) with regular spaces
   displayContent = displayContent.replace(/\u00A0/g, ' ');
+  
+  // 3.2 Fix malformed table markdown (convert = to | in table rows)
+  // This handles AI-generated tables that use = instead of |
+  displayContent = displayContent.replace(/^(\|[^|]+)=([^|]+)=([^|]+)\|/gm, '$1|$2|$3|');
+  
+  // 3.3 Remove all emojis from the content (including numbered emojis like 1️⃣, 2️⃣, etc.)
+  // This removes emoji characters to keep reports professional
+  displayContent = displayContent.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]|[\u{238C}-\u{2454}]|[\u{20D0}-\u{20EF}]|[\u{2764}]|[\u{FE0F}]|[\u{23}\u{2A}\u{30}-\u{39}\u{FE0F}]/gu, '');
+  // Also remove specific numbered emoji patterns
+  displayContent = displayContent.replace(/[0-9]\u{FE0F}\u{20E3}/g, '');
 
   // 3. Deep Research specific handling
   const isDeepResearch = mode === 'deep_research';
