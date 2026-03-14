@@ -9,6 +9,7 @@ import { User, Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun, Check, X
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
+import { ParticleNetwork } from '@/components/landing/ParticleNetwork';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -40,37 +41,6 @@ export default function RegisterPage() {
 
   const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
 
-  // Confetti celebration on registration page load (first time only)
-  useEffect(() => {
-    const hasShownConfetti = sessionStorage.getItem('register_confetti');
-    if (!hasShownConfetti) {
-      const end = Date.now() + 3000;
-      const colors = ['#6366f1', '#a855f7', '#ec4899', '#f97316'];
-
-      (function frame() {
-        confetti({
-          particleCount: 2,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: colors
-        });
-        confetti({
-          particleCount: 2,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: colors
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      }());
-
-      sessionStorage.setItem('register_confetti', 'true');
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +72,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-atmospheric px-4 py-12 relative">
+      <ParticleNetwork />
       {/* Desktop: Advanced Theme Toggle */}
       <ThemeToggle className="hidden md:flex fixed top-8 right-8 z-50" />
       {/* Mobile: Simple Theme Toggle */}

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
 import { Check, ArrowRight, Loader2, AlertCircle, Moon, Sun } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { ParticleNetwork } from '@/components/landing/ParticleNetwork';
 
 import { API_BASE_URL } from '@/config/api';
 
@@ -173,6 +174,7 @@ function VerifyContent() {
 export default function VerifyPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-atmospheric px-4 relative">
+            <ParticleNetwork />
             <ThemeToggle className="fixed top-4 right-4 md:top-8 md:right-8 z-50" />
             <Suspense fallback={<Loader2 className="animate-spin" />}>
                 <VerifyContent />
