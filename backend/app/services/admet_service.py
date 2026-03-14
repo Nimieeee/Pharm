@@ -668,50 +668,74 @@ CRITICAL RULES:
                 </table>
                 """
 
-            # HTML template with proper watermark using @frame
+            # HTML template with proper xhtml2pdf frames
+            # FIX: Removed custom @frame that was breaking document flow
+            # Using static footer frame with footer_content div instead
             html = f"""
             <html>
             <head>
                 <style>
                     @page {{
                         size: A4;
-                        margin: 1in;
-                        @frame content_frame {{
-                            left: 50pt; top: 50pt;
-                            width: 500pt; height: 700pt;
-                        }}
-                        @frame watermark_frame {{
-                            -pdf-frame-content: watermark;
-                            left: 400pt; bottom: 50pt;
-                            width: 150pt; height: 50pt;
-                        }}
-                        @frame footer_frame {{
-                            -pdf-frame-content: footer;
-                            left: 50pt; bottom: 30pt;
-                            width: 500pt;
+                        margin: 1.5cm;
+                        margin-bottom: 2.5cm; /* Extra space for footer */
+                        @frame footer {{
+                            -pdf-frame-content: footer_content;
+                            bottom: 1cm;
+                            margin-left: 1.5cm;
+                            margin-right: 1.5cm;
+                            height: 1cm;
                         }}
                     }}
-                    body {{ font-family: Helvetica, Arial, sans-serif; color: #333; font-size: 10pt; }}
-                    h1 {{ color: #333; font-size: 18pt; margin-bottom: 10pt; }}
-                    h2 {{ color: #1e40af; margin-top: 20px; font-size: 14pt; }}
+                    body {{ font-family: Helvetica; color: #333; }}
+                    h1 {{ color: #333; font-size: 18pt; margin-bottom: 20px; }}
+                    h2 {{ color: #1e40af; page-break-after: avoid; padding-top: 15px; }}
+
                     .section {{ margin-bottom: 20px; }}
-                    .interpretation {{ background: #f8fafc; padding: 15px; border-left: 5px solid #64748b; font-style: italic; margin-bottom: 20px; line-height: 1.5; }}
-                    .sas-section {{ background: #f0f9ff; padding: 15px; border: 1px solid #0ea5e9; margin: 20px 0; }}
-                    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }}
-                    th, td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 9pt; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; }}
-                    th {{ background-color: #f1f5f9; font-weight: bold; }}
-                    .param {{ width: 20%; }}
-                    .value {{ width: 20%; }}
-                    .status {{ width: 15%; }}
-                    .interpretation {{ width: 45%; }}
+                    .interpretation {{
+                        background: #f8fafc;
+                        padding: 15px;
+                        border-left: 5px solid #64748b;
+                        margin-bottom: 20px;
+                    }}
+                    .sas-section {{
+                        background: #f0f9ff;
+                        padding: 15px;
+                        border: 1px solid #0ea5e9;
+                        margin-bottom: 20px;
+                    }}
+
+                    /* Table Fixes - Prevents overlapping and splitting */
+                    table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+                    tr {{ page-break-inside: avoid; }} /* Prevents row splitting */
+                    th, td {{
+                        border: 1px solid #e2e8f0;
+                        padding: 8px;
+                        vertical-align: top;
+                        word-wrap: break-word;
+                    }}
+                    th {{ background-color: #f8fafc; text-align: left; }}
+
                     .status-success {{ color: #16a34a; font-weight: bold; }}
                     .status-warning {{ color: #ca8a04; font-weight: bold; }}
                     .status-danger {{ color: #dc2626; font-weight: bold; }}
-                    #watermark {{ text-align: right; font-size: 14pt; color: #2563eb; opacity: 0.2; font-weight: bold; }}
-                    #footer {{ text-align: center; font-size: 8pt; color: #94a3b8; }}
                 </style>
             </head>
             <body>
+                <!-- Footer with Benchside watermark (light blue to simulate opacity) -->
+                <div id="footer_content">
+                    <table style="width: 100%; border: none; margin: 0; padding: 0;">
+                        <tr>
+                            <td style="border: none; color: #888; font-size: 9pt; vertical-align: bottom;">
+                                Generated by Benchside Scientific © 2026
+                            </td>
+                            <td style="border: none; text-align: right; color: #a0b8f0; font-size: 14pt; vertical-align: bottom;">
+                                Benchside
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
                 <h1>ADMET Analysis Report</h1>
                 <div class="section">
                     <p><strong>Molecule:</strong> {mol_name}</p>
@@ -723,12 +747,10 @@ CRITICAL RULES:
                     {ai_interpretation}
                 </div>
 
-                {self._generate_sas_html(synthetic_accessibility)}
+                {sas_html}
 
                 {tables_html}
 
-                <div id="watermark">Benchside</div>
-                <div id="footer">Generated by Benchside Scientific &bull; Precision Pharmacological Intelligence &copy; 2026</div>
             </body>
             </html>
             """
