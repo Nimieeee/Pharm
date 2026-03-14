@@ -127,7 +127,7 @@ export default function ChatMessage({
         : null;
 
       const response = await fetch(
-        `/api/v1/ai/conversations/${conversationId}/export/manuscript?style=${style}`,
+        `/api/v1/export/${conversationId}/manuscript?style=${style}`,
         {
           method: 'GET',
           headers: {
