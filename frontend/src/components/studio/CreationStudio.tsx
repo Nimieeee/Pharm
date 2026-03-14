@@ -26,6 +26,7 @@ export default function CreationStudio() {
   const [step, setStep] = useState<GenerationStep>('input');
   const [topic, setTopic] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('ocean_gradient');
+  const [numSlides, setNumSlides] = useState(12);
   const [recentTopics, setRecentTopics] = useState<string[]>([]);
   
   const [slideOutline, setSlideOutline] = useState<SlideOutline | null>(null);
@@ -60,7 +61,7 @@ export default function CreationStudio() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const endpoint = creationType === 'slides' ? `${API_BASE_URL}/api/v1/slides/outline` : `${API_BASE_URL}/api/v1/docs/outline`;
       const body = creationType === 'slides' 
-        ? { topic: topic.trim(), num_slides: 12, theme: selectedTheme } 
+        ? { topic: topic.trim(), num_slides: numSlides, theme: selectedTheme } 
         : { topic: topic.trim(), doc_type: 'report' };
 
       const response = await fetch(endpoint, {
@@ -255,14 +256,36 @@ export default function CreationStudio() {
 
               {/* Theme Selection - Only show for slides */}
               {creationType === 'slides' && (
-                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6">
-                  <label className="text-sm font-medium text-[var(--text-secondary)] mb-3 block">
-                    Select Visual Theme
-                  </label>
-                  <ThemeSelector 
-                    selectedTheme={selectedTheme}
-                    onThemeChange={setSelectedTheme}
-                  />
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 space-y-6">
+                  <div>
+                    <label className="text-sm font-medium text-[var(--text-secondary)] mb-3 block">
+                      Select Visual Theme
+                    </label>
+                    <ThemeSelector 
+                      selectedTheme={selectedTheme}
+                      onThemeChange={setSelectedTheme}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-[var(--text-secondary)] mb-3 block flex items-center justify-between">
+                      <span>Number of Slides</span>
+                      <span className="text-teal-500 font-bold">{numSlides}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="5"
+                      max="30"
+                      step="1"
+                      value={numSlides}
+                      onChange={(e) => setNumSlides(parseInt(e.target.value))}
+                      className="w-full h-2 bg-[var(--surface-highlight)] rounded-lg appearance-none cursor-pointer accent-teal-500"
+                    />
+                    <div className="flex justify-between text-xs text-[var(--text-muted)] mt-2">
+                      <span>5</span>
+                      <span>30</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
