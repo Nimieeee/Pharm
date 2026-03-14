@@ -268,12 +268,12 @@ export default function DeepResearchUI({
             fixed md:relative inset-y-0 right-0 md:inset-auto
             ${sidebarCollapsed ? 'pointer-events-none' : 'pointer-events-auto'} 
             md:pointer-events-auto
-            flex
             w-[85%] sm:w-80 md:w-72 lg:w-80
             z-20 md:z-auto
             border-l border-slate-100 dark:border-slate-800 
             bg-surface 
-            flex-col shadow-2xl md:shadow-none
+            shadow-2xl md:shadow-none
+            h-fit max-h-[80vh] overflow-hidden flex flex-col
           `}
         >
           {/* Sidebar Header */}
