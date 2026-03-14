@@ -62,6 +62,8 @@ async def generate_slide_outline(
         return outline
         
     except Exception as e:
+        import logging
+        logging.getLogger("app.slides").error(f"Outline generation error: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate outline: {str(e)}"

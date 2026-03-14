@@ -35,32 +35,32 @@ const getSASColor = (score: number) => {
 };
 
 const SASDisplay: React.FC<{ sas: SASResult }> = ({ sas }) => (
-  <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 border border-purple-200 dark:border-purple-800">
+  <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
     <div className="flex items-center gap-2 mb-4">
-      <FlaskConical className="w-4 h-4 text-purple-600" />
-      <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-200">Synthetic Accessibility</h4>
+      <FlaskConical className="w-4 h-4 text-[var(--text-secondary)]" />
+      <h4 className="text-sm font-semibold text-[var(--text-primary)]">Synthetic Accessibility</h4>
     </div>
 
     {/* RDKit SAS Score */}
     <div className="mb-4">
       <div className="flex justify-between text-sm mb-1">
-        <span className="text-purple-700 dark:text-purple-300">RDKit SAS Score</span>
-        <span className="font-bold text-purple-900 dark:text-purple-100">{sas.sas_score.toFixed(1)}</span>
+        <span className="text-[var(--text-secondary)]">RDKit SAS Score</span>
+        <span className="font-bold text-[var(--text-primary)]">{sas.sas_score.toFixed(1)}</span>
       </div>
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+      <div className="w-full bg-[var(--surface-highlight)] rounded-full h-3">
         <div
           className={`h-3 rounded-full transition-all ${getSASColor(sas.sas_score)}`}
           style={{ width: `${(sas.sas_score / 10) * 100}%` }}
         />
       </div>
-      <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{sas.interpretation}</p>
+      <p className="text-xs text-[var(--text-secondary)] mt-1">{sas.interpretation}</p>
     </div>
 
     {/* GASA Score (if available) */}
     {sas.gasa_prediction !== undefined && (
-      <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+      <div className="mb-4 p-3 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)]">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">GASA Prediction</span>
+          <span className="text-sm font-medium text-[var(--text-primary)]">GASA Prediction</span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
             sas.gasa_prediction === 0
               ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
@@ -72,23 +72,23 @@ const SASDisplay: React.FC<{ sas: SASResult }> = ({ sas }) => (
         <div className="flex gap-4 text-xs">
           <div className="flex-1">
             <div className="flex justify-between mb-1">
-              <span className="text-green-700 dark:text-green-300">Easy</span>
-              <span className="font-medium text-green-900 dark:text-green-100">
+              <span className="text-[var(--text-secondary)]">Easy</span>
+              <span className="font-medium text-[var(--text-primary)]">
                 {((sas.gasa_easy_probability || 0) * 100).toFixed(1)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-[var(--surface-highlight)] rounded-full h-2">
               <div className="h-2 rounded-full bg-green-500" style={{ width: `${(sas.gasa_easy_probability || 0) * 100}%` }} />
             </div>
           </div>
           <div className="flex-1">
             <div className="flex justify-between mb-1">
-              <span className="text-red-700 dark:text-red-300">Hard</span>
-              <span className="font-medium text-red-900 dark:text-red-100">
+              <span className="text-[var(--text-secondary)]">Hard</span>
+              <span className="font-medium text-[var(--text-primary)]">
                 {((sas.gasa_hard_probability || 0) * 100).toFixed(1)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-[var(--surface-highlight)] rounded-full h-2">
               <div className="h-2 rounded-full bg-red-500" style={{ width: `${(sas.gasa_hard_probability || 0) * 100}%` }} />
             </div>
           </div>
@@ -98,16 +98,16 @@ const SASDisplay: React.FC<{ sas: SASResult }> = ({ sas }) => (
 
     {/* Consensus (if both available) */}
     {sas.consensus && (
-      <div className="p-3 rounded-lg bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/40 dark:to-blue-900/40 border border-purple-300 dark:border-purple-700">
-        <p className="text-xs font-medium text-purple-800 dark:text-purple-200 text-center">
+      <div className="p-3 rounded-lg bg-[var(--surface-highlight)] border border-[var(--border)] mb-3">
+        <p className="text-xs font-medium text-[var(--text-primary)] text-center">
           {sas.consensus}
         </p>
       </div>
     )}
 
     {/* Category Badge */}
-    <div className="flex items-center gap-2 mt-3">
-      <span className="text-xs text-purple-700 dark:text-purple-300">Category:</span>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-[var(--text-secondary)]">Category:</span>
       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
         sas.category === 'easy' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' :
         sas.category === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200' :

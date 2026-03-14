@@ -349,98 +349,108 @@ class ADMETService:
     async def _generate_ai_interpretation(self, admet_data: Dict[str, Any], molecule_name: str = None) -> str:
         """
         Generate AI-powered interpretation of ADMET results.
-        
+
         Args:
             admet_data: Full ADMET prediction results
             molecule_name: Optional molecule name
-            
+
         Returns:
             AI-generated interpretation string
         """
         ai = self.ai_service
         if not ai:
             return None
-        
+
         # Extract key properties for the prompt
         key_props = []
-        
+
         # Drug likeness
         if 'QED' in admet_data:
-            key_props.append(f"QED: {admet_data['QED']:.3f}")
+            qed = admet_data['QED']
+            qed_rating = "excellent" if qed > 0.8 else "good" if qed > 0.6 else "moderate" if qed > 0.4 else "poor"
+            key_props.append(f"QED: {qed:.3f} ({qed_rating})")
         if 'Lipinski' in admet_data:
             lip = admet_data['Lipinski']
             violations = 4 - int(lip) if isinstance(lip, (int, float)) else 0
-            key_props.append(f"Lipinski violations: {violations}")
-        
+            key_props.append(f"Lipinski: {violations} violations" if violations > 0 else "Lipinski: compliant")
+
         # Absorption
         if 'HIA_Hou' in admet_data:
-            key_props.append(f"HIA: {admet_data['HIA_Hou']:.2f}")
+            hia = admet_data['HIA_Hou']
+            key_props.append(f"Human absorption: {'high' if hia > 0.8 else 'moderate' if hia > 0.5 else 'low'} ({hia:.2f})")
         if 'Caco2_Wang' in admet_data:
-            key_props.append(f"Caco-2: {admet_data['Caco2_Wang']:.2f}")
-        
+            caco2 = admet_data['Caco2_Wang']
+            key_props.append(f"Caco-2 permeability: {caco2:.2f}")
+
         # Toxicity - critical endpoints
         toxicity_concerns = []
-        for endpoint in ['hERG', 'AMES', 'DILI', 'ClinTox']:
-            if endpoint in admet_data:
-                val = admet_data[endpoint]
-                if isinstance(val, (int, float)) and val > 0.5:
-                    toxicity_concerns.append(f"{endpoint} ({val:.2f})")
-        
+        if 'hERG' in admet_data:
+            herg = admet_data['hERG']
+            if herg > 0.7:
+                toxicity_concerns.append(f"high hERG risk ({herg:.2f})")
+            elif herg > 0.4:
+                toxicity_concerns.append(f"moderate hERG risk ({herg:.2f})")
+        if 'DILI' in admet_data:
+            dili = admet_data['DILI']
+            if dili > 0.7:
+                toxicity_concerns.append(f"high liver toxicity ({dili:.2f})")
+            elif dili > 0.4:
+                toxicity_concerns.append(f"moderate liver toxicity ({dili:.2f})")
+        if 'AMES' in admet_data and admet_data['AMES'] > 0.5:
+            toxicity_concerns.append(f"mutagenic ({admet_data['AMES']:.2f})")
+        if 'Carcinogens_Lagunin' in admet_data and admet_data['Carcinogens_Lagunin'] > 0.5:
+            toxicity_concerns.append(f"carcinogenic ({admet_data['Carcinogens_Lagunin']:.2f})")
+
         if toxicity_concerns:
-            key_props.append(f"Toxicity concerns: {', '.join(toxicity_concerns)}")
-        
+            key_props.append(f"Toxicity: {', '.join(toxicity_concerns)}")
+
         # Build the prompt
         name_str = f" for {molecule_name}" if molecule_name else ""
         properties_str = "\n".join(f"- {prop}" for prop in key_props) if key_props else "No properties available"
-        
-        prompt = f"""You are a medicinal chemistry expert. Provide a professional, peer-review style clinical interpretation of the following ADMET analysis for a drug candidate{name_str}.
+
+        prompt = f"""You are a medicinal chemistry expert. Provide a concise, actionable interpretation of ADMET analysis{name_str}.
 
 {properties_str}
 
-Provide a concise 2-3 sentence expert summary covering:
-1. Physicochemical profile and developability (Lipinski/QED).
-2. Toxicological liabilities if any (specifically hERG, DILI, or mutagenicity).
-3. Strategic assessment for downstream progression.
+Provide a 2-3 sentence summary covering:
+1. Drug-likeness (QED/Lipinski)
+2. Key toxicity concerns (if any)
+3. Specific recommendation
 
-CRITICAL INSTRUCTIONS:
-- Use formal, scientific terminology (e.g., 'pharmacokinetic profile', 'elevated toxicological liability').
-- DO NOT use any markdown formatting like bolding (**) or italics (*).
-- Output only the text of the interpretation.
-- Keep it concise and actionable for a research team."""
-        
+CRITICAL RULES:
+- Be direct and specific - no generic phrases like "warrants further investigation"
+- Name specific structural strategies (e.g., "reduce lipophilicity", "add solubilizing group")
+- NO markdown formatting
+- Output ONLY the interpretation text
+- Maximum 3 sentences"""
+
         try:
-            # Use Mistral API directly for simple text generation
             from mistralai import Mistral
             from app.core.config import settings
-            
+
             api_key = settings.MISTRAL_API_KEY
             if not api_key:
-                print("⚠️ No MISTRAL_API_KEY available")
                 return None
-                
+
             client = Mistral(api_key=api_key)
-            
+
             chat_response = client.chat.complete(
                 model="mistral-small-latest",
                 messages=[
-                    {"role": "system", "content": "You are a medicinal chemistry expert providing formal, actionable clinical interpretations of ADMET results. You communicate in a professional, peer-review style without using markdown formatting."},
+                    {"role": "system", "content": "You are a medicinal chemistry expert. Provide direct, actionable ADMET interpretations. Be specific about structural strategies. No generic phrases. No markdown."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=300,
-                temperature=0.3
+                max_tokens=200,
+                temperature=0.2
             )
-            
+
             if chat_response and chat_response.choices and chat_response.choices[0].message.content:
-                text = chat_response.choices[0].message.content.strip()
-                # Final cleanup to remove any stray asterisks
-                text = text.replace('*', '')
+                text = chat_response.choices[0].message.content.strip().replace('*', '')
                 return text
-            
-        except ImportError:
-            print("⚠️ Mistral SDK not available for AI interpretation")
+
         except Exception as e:
-            print(f"⚠️ AI interpretation generation failed: {e}")
-        
+            print(f"⚠️ AI interpretation failed: {e}")
+
         return None
     
     async def export_as_csv(self, results: Dict[str, Any]) -> str:

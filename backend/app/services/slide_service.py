@@ -97,14 +97,36 @@ Rules:
             temperature=0.3
         )
         
-        # Extract JSON from response (handle markdown code blocks)
+        # Extract JSON from response (handle markdown code blocks and loose text)
         json_str = response.strip()
-        if json_str.startswith("```"):
-            json_str = json_str.split("```")[1]
-            if json_str.startswith("json"):
-                json_str = json_str[4:]
-        
-        outline = json.loads(json_str)
+        try:
+            # Look for JSON block if it's wrapped in markdown
+            if "```" in json_str:
+                # Try to find content between ```json and ``` or just ``` and ```
+                import re
+                blocks = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", json_str, re.DOTALL)
+                if blocks:
+                    json_str = blocks[0]
+                else:
+                    # Fallback: just strip the markers
+                    json_str = json_str.split("```")[1]
+                    if json_str.startswith("json"):
+                        json_str = json_str[4:]
+            
+            # Final attempt: find the first { and last } to isolate the JSON object
+            if not (json_str.strip().startswith("{") and json_str.strip().endswith("}")):
+                import re
+                match = re.search(r"(\{.*\})", json_str, re.DOTALL)
+                if match:
+                    json_str = match.group(1)
+            
+            outline = json.loads(json_str)
+        except (json.JSONDecodeError, IndexError, Exception) as e:
+            import logging
+            logger = logging.getLogger("app.slide_service")
+            logger.error(f"Failed to parse slide outline JSON. Error: {str(e)}")
+            logger.error(f"Raw AI Response: {response}")
+            raise Exception(f"AI response was not valid JSON. {str(e)}")
         
         # Apply design intelligence adjustments
         outline = self.design.analyze_and_adjust(outline)
@@ -224,10 +246,26 @@ Rules:
                 temperature=0.4
             )
             
-            refined = json.loads(response.strip().replace("```json", "").replace("```", ""))
+            # Extract JSON cleanly
+            json_str = response.strip()
+            if "```" in json_str:
+                import re
+                blocks = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", json_str, re.DOTALL)
+                if blocks:
+                    json_str = blocks[0]
+            
+            if not (json_str.strip().startswith("{") and json_str.strip().endswith("}")):
+                import re
+                match = re.search(r"(\{.*\})", json_str, re.DOTALL)
+                if match:
+                    json_str = match.group(1)
+
+            refined = json.loads(json_str)
             slide["bullets"] = refined.get("bullets", slide.get("bullets", []))
             slide["speaker_notes"] = refined.get("speaker_notes", slide.get("speaker_notes", ""))
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, Exception):
+            import logging
+            logging.getLogger("app.slide_service").warning(f"Refinement JSON parse failed, using original. Response: {response[:100]}...")
             pass  # Keep original content if parsing fails
         
         return slide
