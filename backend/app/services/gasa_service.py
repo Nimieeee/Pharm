@@ -40,18 +40,28 @@ class GASAPredictor:
         """Lazy initialization of GASA model"""
         if self._initialized:
             return
-        
+
         try:
-            # Import GASA model
-            from gasa_model.model import gasa_classifier
-            from gasa_model.gasa_utils import generate_graph
-            
+            # Import GASA model - use absolute path
+            import sys
+            import os
+
+            # Ensure gasa_model is in path
+            model_dir = os.path.join(os.path.dirname(__file__), 'gasa_model')
+            if model_dir not in sys.path:
+                sys.path.insert(0, model_dir)
+
+            # Now import
+            from model import gasa_classifier
+            from gasa_utils import generate_graph
+
             # Load model configuration
             model_path = os.path.join(GASA_MODEL_PATH, 'gasa.pth')
             if not os.path.exists(model_path):
                 self._init_error = f"GASA model file not found: {model_path}"
+                print(f"❌ {self._init_error}")
                 return
-            
+
             # Initialize model
             self._model = gasa_classifier(
                 dropout=0.2,
@@ -60,19 +70,21 @@ class GASAPredictor:
                 hidden_dim2=128,
                 hidden_dim3=128
             )
-            
+
             # Load weights
             checkpoint = torch.load(model_path, map_location=self._device)
             self._model.load_state_dict(checkpoint['model_state_dict'])
             self._model.to(self._device)
             self._model.eval()
-            
+
             self._initialized = True
             print(f"✅ GASA model loaded on {self._device}")
-            
+
         except Exception as e:
             self._init_error = f"GASA initialization failed: {e}"
             print(f"❌ {self._init_error}")
+            import traceback
+            traceback.print_exc()
     
     def predict(self, smiles_list: List[str]) -> Optional[Dict[str, Any]]:
         """

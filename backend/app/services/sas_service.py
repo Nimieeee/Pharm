@@ -89,18 +89,19 @@ class SASCalculator:
                 # QED.sas returns 0-1 (higher = better), convert to 1-10 (higher = worse)
                 sas_score = 1.0 + (1.0 - sas_score) * 9.0
                 return round(sas_score, 2)
-            except (ImportError, AttributeError):
+            except (ImportError, AttributeError) as e:
+                print(f"⚠️ QED.sas not available: {e}")
                 pass
 
             # Fallback: Use fragment-based approach from Ertl et al.
-            from rdkit.Chem import rdMolDescriptors
+            from rdkit.Chem import Descriptors, Lipinski, rdMolDescriptors
 
             # Get molecular complexity descriptors
-            mw = Chem.Descriptors.MolWt(mol)
-            num_rotatable_bonds = Chem.Lipinski.NumRotatableBonds(mol)
+            mw = Descriptors.MolWt(mol)
+            num_rotatable_bonds = Lipinski.NumRotatableBonds(mol)
             num_rings = rdMolDescriptors.CalcNumRings(mol)
             num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-            tpsa = Chem.Descriptors.TPSA(mol)
+            tpsa = Descriptors.TPSA(mol)
 
             # Fragment contribution (simplified)
             # More rings and higher MW = harder to synthesize
