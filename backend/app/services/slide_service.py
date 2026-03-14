@@ -100,6 +100,7 @@ Return ONLY valid JSON with this exact schema:
         }}
       ],
       "speaker_notes": "Full conversational paragraph explaining the why and how. This is where the deep, comprehensive content lives so the presenter sounds like an expert. Should be 3-4 sentences minimum.",
+      "bullets": ["Point 1", "Point 2"],
       "image_prompt": "description of professional scientific illustration",
       "chart_data": null,
       "data": null

@@ -616,6 +616,42 @@ CRITICAL RULES:
         html += '</div>'
         return html
 
+    def _generate_sas_docx(self, doc, synthetic_accessibility: Dict[str, Any]):
+        """Add SAS/GASA section to DOCX"""
+        from docx.shared import Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        
+        doc.add_heading('Synthetic Accessibility', level=1)
+        
+        sas_score = synthetic_accessibility.get('sas_score', 0)
+        sas_interp = synthetic_accessibility.get('sas_interpretation', '')
+        
+        p = doc.add_paragraph()
+        run = p.add_run(f'SAS Score: {sas_score:.2f}')
+        run.bold = True
+        p.add_run(f' (1 = Easy, 10 = Hard)')
+        
+        if sas_interp:
+            p = doc.add_paragraph(sas_interp)
+            
+        if 'gasa' in synthetic_accessibility:
+            gasa = synthetic_accessibility['gasa']
+            gasa_pred = gasa.get('prediction', 0)
+            gasa_easy = gasa.get('easy_probability', 0) * 100
+            gasa_hard = gasa.get('hard_probability', 0) * 100
+            
+            pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
+            p = doc.add_paragraph()
+            p.add_run('GASA Prediction (ML): ').bold = True
+            p.add_run(pred_label)
+            
+            p = doc.add_paragraph(f'Easy: {gasa_easy:.1f}% | Hard: {gasa_hard:.1f}%')
+            p.style.font.size = Pt(9)
+            
+        if 'consensus' in synthetic_accessibility:
+            p = doc.add_paragraph(synthetic_accessibility['consensus'])
+            p.italic = True
+
     async def generate_pdf(self, results: Dict[str, Any], synthetic_accessibility: Dict[str, Any] = None) -> bytes:
         """
         Generate PDF report using xhtml2pdf.
@@ -657,12 +693,18 @@ CRITICAL RULES:
                 tables_html += f"""
                 <h2>{cat['name']}</h2>
                 <table>
+                    <colgroup>
+                        <col style="width: 20%;">
+                        <col style="width: 20%;">
+                        <col style="width: 15%;">
+                        <col style="width: 45%;">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th style="width: 20%;">Parameter</th>
-                            <th style="width: 20%;">Value</th>
-                            <th style="width: 15%;">Status</th>
-                            <th style="width: 45%;">Interpretation</th>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                            <th>Status</th>
+                            <th>Interpretation</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -709,7 +751,12 @@ CRITICAL RULES:
                     }}
 
                     /* Table Fixes - Prevents overlapping and splitting */
-                    table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+                    table {{ 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        margin-bottom: 20px; 
+                        table-layout: fixed; 
+                    }}
                     tr {{ page-break-inside: avoid; }} /* Prevents row splitting */
                     th, td {{
                         border: 1px solid #e2e8f0;
@@ -801,6 +848,10 @@ CRITICAL RULES:
             doc.add_heading('Medicinal Chemistry Insights', level=1)
             insight_text = results.get("ai_interpretation", "No interpretation available.")
             p = doc.add_paragraph(insight_text.strip())
+            
+            # Synthetic Accessibility
+            if results.get("synthetic_accessibility"):
+                self._generate_sas_docx(doc, results["synthetic_accessibility"])
             
             # detailed results
             categories = self.processor.build_structured_categories(results)

@@ -300,9 +300,16 @@ async def export_admet_pdf(
         # Get full ADMET data
         admet_data = await admet_service.predict_admet(smiles)
         
-        # Calculate SAS score and AI interpretation as they are needed for the report
+        # Calculate SAS/GASA scores and AI interpretation
         from app.services.sas_service import sas_calculator
-        admet_data["synthetic_accessibility"] = sas_calculator.calculate(smiles)
+        from app.services.gasa_service import gasa_predictor
+        from app.services.simple_gasa_service import simple_gasa_predictor
+        
+        admet_data["synthetic_accessibility"] = {
+            "sas": sas_calculator.calculate(smiles),
+            "gasa": gasa_predictor.predict(smiles),
+            "simple_gasa": simple_gasa_predictor.predict(smiles)
+        }
         admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
         
         # Generate PDF
@@ -340,9 +347,16 @@ async def export_admet_docx(
         # Get full ADMET data
         admet_data = await admet_service.predict_admet(smiles)
         
-        # Calculate SAS score and AI interpretation
+        # Calculate SAS/GASA scores and AI interpretation
         from app.services.sas_service import sas_calculator
-        admet_data["synthetic_accessibility"] = sas_calculator.calculate(smiles)
+        from app.services.gasa_service import gasa_predictor
+        from app.services.simple_gasa_service import simple_gasa_predictor
+        
+        admet_data["synthetic_accessibility"] = {
+            "sas": sas_calculator.calculate(smiles),
+            "gasa": gasa_predictor.predict(smiles),
+            "simple_gasa": simple_gasa_predictor.predict(smiles)
+        }
         admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
         
         # Generate DOCX

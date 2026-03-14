@@ -249,6 +249,11 @@ class DesignEngine:
         for slide in slides:
             # Density check: split slides with >6 bullets
             bullets = slide.get("bullets", [])
+            if not bullets:
+                # Initialize bullets if missing to prevent frontend crashes
+                bullets = []
+                slide["bullets"] = bullets
+            
             if len(bullets) > 6:
                 # Split into two slides
                 mid = len(bullets) // 2
