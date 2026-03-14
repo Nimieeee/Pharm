@@ -1279,10 +1279,11 @@ A deeply analyzed subset is far more valuable than a shallow mention of every so
 
 ## GOLD STANDARD BENCHMARKS:
 To match high-impact journals (e.g., Nature, Lancet, Cell), you MUST:
-1. **Demand Quantitative Density**: Never say \"more effective\" or \"showed promise.\" Say \"increased ORR by 32%% (p < 0.05)\" or \"demonstrated IC50 of 0.12 μM in A549 models.\"
+1. **Demand Quantitative Density**: Never say "more effective" or "showed promise." Say "increased ORR by 32%% (p < 0.05)" or "demonstrated IC50 of 0.12 μM in A549 models."
 2. **Structural Landscape Tables**: MANDATORY. Create at least two Markdown tables:
    - *Mechanistic Summary Table*: Mapping molecules to pathways/cascades.
    - *Comparative Efficacy Table*: Benchmarking drugs/derivatives vs standard therapies or across different cancer lines.
+   - **After each table, add a caption**: On a new line immediately following the table, write: "Table adapted from [First Author] et al., [Year]" citing the primary source(s) used for that table.
 3. **Trial Identity Binding**: Explicitly map clinical findings to NCT IDs (National Clinical Trial IDs) when present in data. Link them to clinicaltrials.gov if possible.
 4. **Molecular Granularity**: Avoid generic definitions. Instead of \"induces cell death\", describe \"Artemisinin-induced ferritinophagy via NCOA4 degradation triggering lipid peroxidation.\"
 5. **Evidence Gap Analysis**: A good report admits what it doesn't know. Dedicate space in \"Future Directions\" to specific evidence voids found in the search context.

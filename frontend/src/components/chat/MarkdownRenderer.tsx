@@ -84,8 +84,8 @@ function EnhancedCodeBlock({ children, className, isAnimating }: { children: Rea
   );
 }
 
-// Enhanced Table with export options
-function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; isAnimating?: boolean }) {
+// Enhanced Table with export options and caption
+function EnhancedTable({ children, isAnimating, caption }: { children: React.ReactNode; isAnimating?: boolean; caption?: string }) {
   const [copied, setCopied] = useState(false);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -156,6 +156,13 @@ function EnhancedTable({ children, isAnimating }: { children: React.ReactNode; i
           {children}
         </table>
       </div>
+      
+      {/* Table Caption / Source Attribution */}
+      {caption && (
+        <div className="mt-2 px-3 py-2 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)] italic">
+          {caption}
+        </div>
+      )}
     </div>
   );
 }
