@@ -92,10 +92,15 @@ Return ONLY valid JSON with this exact schema:
       "slide_number": 1,
       "layout": "title",
       "title": "Slide Title",
-      "subtitle": "Optional subtitle",
-      "bullets": ["Point 1", "Point 2"],
-      "speaker_notes": "What to say...",
-      "image_prompt": "description of image to generate, or null for no image",
+      "subtitle_takeaway": "One strong sentence summarizing this slide's main point",
+      "supporting_data": [
+        {{
+          "bullet": "Specific stat or fact with numbers",
+          "context": "Brief explanation of why this matters"
+        }}
+      ],
+      "speaker_notes": "Full conversational paragraph explaining the why and how. This is where the deep, comprehensive content lives so the presenter sounds like an expert. Should be 3-4 sentences minimum.",
+      "image_prompt": "description of professional scientific illustration",
       "chart_data": null,
       "data": null
     }}
@@ -110,19 +115,41 @@ Vibe options: "corporate", "photorealistic", "minimalist", "isometric", "sketch"
 
 MANDATORY RULES:
 1. First slide MUST be layout "title" - only presentation title and subtitle
-2. Last slide MUST be layout "title" - simple "Thank You" with contact placeholder, NO bullet points
-3. Never have 3 consecutive slides with the same layout
-4. MAXIMUM 3 bullets per slide - NEVER more
-5. Each bullet MAXIMUM 12 words
-6. Use SPECIFIC named entities - NO generic phrases like "many companies" or "various tools":
+2. Last slide MUST be layout "title" - simple "Thank You" with contact placeholder ONLY, NO bullets, NO content
+3. Second-to-last slide MUST be "conclusion" layout with exactly 3 high-level thematic takeaways summarizing entire presentation
+4. Never have 3 consecutive slides with the same layout
+5. Each slide MUST have:
+   - subtitle_takeaway: ONE strong sentence (max 20 words) summarizing the slide's main point
+   - supporting_data: 2-3 specific data points with NUMBERS (e.g., "85% accuracy", "$1.2B market")
+   - speaker_notes: 3-4 sentence conversational paragraph explaining context and implications
+6. Use SPECIFIC named entities - NO generic phrases:
    - Include at least 1 specific company name per slide (e.g., "Pfizer", "DeepMind", "Novartis")
    - Include at least 1 specific technology/AI model name (e.g., "AlphaFold", "GPT-4", "BERT")
    - Include real metrics with numbers (e.g., "85% accuracy", "3-month reduction")
 7. Each slide must advance the narrative - no repetition of concepts
-8. Closing slides (last 2 slides) should be minimal: title + brief subtitle only
-9. set image_prompt to null if text-heavy or no visual benefit
-10. image_prompt should describe professional scientific/medical illustration
-11. For data slides: include "chart_data": {{"type": "bar", "labels": ["A", "B"], "values": [10, 20]}}
+8. Set image_prompt to null if text-heavy or no visual benefit
+9. Image prompt should describe professional scientific/medical illustration
+10. For data slides: include "chart_data": {{"type": "bar", "labels": ["A", "B"], "values": [10, 20]}}
+
+EXAMPLE GOOD SLIDE:
+{{
+  "slide_number": 3,
+  "layout": "two_column",
+  "title": "AI in Clinical Trials",
+  "subtitle_takeaway": "Machine learning is drastically reducing trial costs and accelerating patient screening times.",
+  "supporting_data": [
+    {{"bullet": "BERT predicts dropouts with 95% accuracy", "context": "Early identification prevents costly late-stage failures"}},
+    {{"bullet": "NLP screening cuts recruitment by 40%", "context": "Automated eligibility matching speeds enrollment"}}
+  ],
+  "speaker_notes": "Traditional clinical trials face two major bottlenecks: patient recruitment and dropout prediction. AI models like BERT can now predict which patients are likely to drop out with 95% accuracy by analyzing their electronic health records and social determinants of health. Meanwhile, NLP-powered screening tools are reducing recruitment timelines by 40% by automatically matching patients to trial eligibility criteria. This translates to millions in cost savings and faster time to market for life-saving therapies."
+}}
+
+EXAMPLE BAD SLIDE (DO NOT CREATE):
+{{
+  "slide_number": 3,
+  "title": "AI in Clinical Trials",
+  "bullets": ["AI helps trials", "Reduces costs", "Faster screening"]
+}}
 """
         
         response = await self.ai.generate(
@@ -295,17 +322,25 @@ MANDATORY RULES:
     
     async def _refine_slide_content(self, slide: dict, deck_title: str, prev_slide_summary: str = None) -> dict:
         """
-        Use detailed AI to expand bullet points into polished content.
+        Use detailed AI to expand slide content with comprehensive speaker notes.
 
         Phase 1 Improvements:
         - Contextual Memory: Pass previous slide summary to prevent repetition
-        - Rule of Three: Max 3 bullets, 12 words each
-        - Named Entities: Require specific company/technology names
+        - Subtitle Takeaway: One strong sentence as main point
+        - Supporting Data: 2-3 specific data points with context
+        - Speaker Notes: 3-4 sentence conversational paragraph
         """
         if slide["layout"] == "title":
             return slide  # Title slides don't need expansion
 
-        bullets_json = json.dumps(slide.get("bullets", []))
+        # Extract existing content
+        subtitle_takeaway = slide.get("subtitle_takeaway", "")
+        supporting_data = slide.get("supporting_data", [])
+
+        # Convert supporting_data to bullets for backward compatibility
+        bullets = [item.get("bullet", "") for item in supporting_data] if supporting_data else slide.get("bullets", [])
+
+        bullets_json = json.dumps(bullets)
 
         # Phase 1: Contextual memory - prevent repetition
         context_note = ""
@@ -315,29 +350,34 @@ MANDATORY RULES:
         prompt = f"""Refine this slide content for the presentation "{deck_title}".
 
 Slide title: {slide['title']}
-Bullets: {bullets_json}
+Subtitle takeaway: {subtitle_takeaway}
+Supporting data: {bullets_json}
 {context_note}
 
 CRITICAL RULES:
-1. MAXIMUM 3 bullet points - remove any extras
-2. Each bullet MAXIMUM 12 words - truncate if longer
-3. Include at least ONE specific named entity:
-   - Company name (e.g., "Pfizer", "DeepMind", "Novartis")
-   - Technology/model name (e.g., "AlphaFold", "GPT-4", "BERT")
-   - Real metric with number (e.g., "85% accuracy", "3-month reduction")
-4. NO generic phrases like "many companies", "various tools", "AI accelerates"
-5. Make language active and concrete
-6. Add a 2-sentence speaker note
-7. Return as JSON: {{"bullets": [...], "speaker_notes": "..."}}
+1. Keep subtitle_takeaway as ONE strong sentence (max 20 words)
+2. Keep 2-3 supporting data points MAXIMUM
+3. Each data point MUST include specific NUMBERS (e.g., "85%", "$1.2B", "3-month")
+4. Include at least ONE named entity per slide:
+   - Company name (Pfizer, DeepMind, Novartis)
+   - Technology/model name (AlphaFold, GPT-4, BERT)
+   - Real metric with number
+5. NO generic phrases like "many companies", "various tools", "AI accelerates"
+6. Speaker notes must be 3-4 sentence conversational paragraph
+7. Speaker notes should explain WHY and HOW, not just WHAT
+8. Return as JSON: {{"subtitle_takeaway": "...", "supporting_data": [...], "speaker_notes": "..."}}
 
-Example good bullet: "DeepMind's AlphaFold predicted 200M protein structures with 85% accuracy"
-Example bad bullet: "AI accelerates drug discovery through various tools" (generic, no named entities)"""
+Example GOOD speaker notes:
+"Traditional clinical trials face two major bottlenecks: patient recruitment and dropout prediction. AI models like BERT can now predict which patients are likely to drop out with 95% accuracy by analyzing their electronic health records. Meanwhile, NLP-powered screening tools are reducing recruitment timelines by 40%. This translates to millions in cost savings and faster time to market."
+
+Example BAD speaker notes (DO NOT CREATE):
+"AI helps with trials. It reduces costs. Many companies use it." (too short, generic, no depth)"""
 
         try:
             response = await self.ai.generate(
                 mode="detailed",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
+                max_tokens=600,
                 temperature=0.4
             )
 
@@ -357,25 +397,21 @@ Example bad bullet: "AI accelerates drug discovery through various tools" (gener
 
             refined = json.loads(json_str)
 
-            # Enforce Rule of Three
-            bullets = refined.get("bullets", slide.get("bullets", []))
-            if len(bullets) > 3:
-                bullets = bullets[:3]
-
-            # Enforce 12-word limit per bullet
-            bullets = [
-                ' '.join(b.split()[:12]) + ('...' if len(b.split()) > 12 else '')
-                for b in bullets
-            ]
-
-            slide["bullets"] = bullets
+            # Update slide with refined content
+            slide["subtitle_takeaway"] = refined.get("subtitle_takeaway", subtitle_takeaway)
+            slide["supporting_data"] = refined.get("supporting_data", supporting_data)
             slide["speaker_notes"] = refined.get("speaker_notes", slide.get("speaker_notes", ""))
+
+            # Backward compatibility: convert supporting_data to bullets
+            if slide["supporting_data"]:
+                slide["bullets"] = [item.get("bullet", "") for item in slide["supporting_data"]]
 
             # Phase 1: Store slide summary for next slide's context
             self._slide_context.append({
                 "title": slide['title'],
+                "subtitle_takeaway": slide["subtitle_takeaway"],
                 "bullets": bullets,
-                "summary": f"Slide '{slide['title']}': {'; '.join(bullets)}"
+                "summary": f"Slide '{slide['title']}': {slide['subtitle_takeaway']}"
             })
 
         except (json.JSONDecodeError, Exception):
