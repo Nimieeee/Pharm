@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Image, FileText, Save } from 'lucide-react';
+import ThemeSelector from './ThemeSelector';
 
 export interface Slide {
   slide_number: number;
@@ -140,10 +141,20 @@ export default function SlideOutlineEditor({
             <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 font-medium">
               {localOutline.slides.length} slides
             </span>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 font-medium">
-              Theme: {localOutline.theme}
-            </span>
           </div>
+        </div>
+
+        {/* Theme Selector */}
+        <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800">
+          <label className="text-xs text-amber-700 dark:text-amber-300 mb-2 block">Visual Theme</label>
+          <ThemeSelector
+            selectedTheme={localOutline.theme}
+            onThemeChange={(newTheme) => {
+              const newOutline = { ...localOutline, theme: newTheme };
+              setLocalOutline(newOutline);
+              onOutlineChange(newOutline);
+            }}
+          />
         </div>
         
         {/* Action Buttons */}

@@ -25,11 +25,11 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Ibuprofen', smiles: 'CC(C)CC1=CC=C(C=C1)C(=O)O', year: 1969, class: 'NSAID' },
   { name: 'Naproxen', smiles: 'CC(C1=CC2=C(C=C1)C=C(C2)OC)CC(=O)O', year: 1976, class: 'NSAID' },
   { name: 'Acetaminophen', smiles: 'CC(=O)Nc1ccc(O)cc1', year: 1951, class: 'Analgesic' },
-  { name: 'Diclofenac', smiles: 'OC(=O)C1=CC=CC=C1Clc2ccccc2N', year: 1974, class: 'NSAID' },
+  { name: 'Diclofenac', smiles: 'O=C(O)Cc1ccccc1Nc2c(Cl)cccc2Cl', year: 1974, class: 'NSAID' },
   { name: 'Celecoxib', smiles: 'CC1=CC=C(C=C1)C2=CC(=NN2C3=CC=C(C=C3)S(=O)(=O)N)C(F)(F)F', year: 1998, class: 'COX-2 Inhibitor' },
-  { name: 'Morphine', smiles: 'CN1CCc2c3c4c(c(c(c3c(c2C1)C)OC4)CC1=O)O', year: 1827, class: 'Opioid' },
-  { name: 'Oxycodone', smiles: 'CN1CC23C4C1CC5=C2C(=C(C3C5C4OC3=O)OC)O', year: 1916, class: 'Opioid' },
-  { name: 'Tramadol', smiles: 'CN(C)CC1=CC2=C(C=C1)OC3=C(C2)C=CC(=C3)C', year: 1977, class: 'Opioid' },
+  { name: 'Morphine', smiles: 'CN1CC[C@]23c4c5ccc(O)c4O[C@H]2[C@@H](O)C=C[C@H]3[C@H]1C5', year: 1827, class: 'Opioid' },
+  { name: 'Oxycodone', smiles: 'CN1CC[C@]23c4c5ccc(OC)c4O[C@H]2C(=O)CC[C@H]3(O)[C@H]1C5', year: 1916, class: 'Opioid' },
+  { name: 'Tramadol', smiles: 'CN(C)C[C@@H]1CCCC[C@@]1(O)c1cccc(OC)c1', year: 1977, class: 'Opioid' },
   
   // FDA Approved - Cardiovascular
   { name: 'Atorvastatin', smiles: 'CC(C)N(CC(O)C(=O)NCc1ccccc1)C(=O)C1=CC=CC=C1', year: 1996, class: 'Statin' },
@@ -37,20 +37,20 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Rosuvastatin', smiles: 'CC(C)(C)S(=O)(=O)NC1=NC=Nc2ccccc12', year: 2002, class: 'Statin' },
   { name: 'Lisinopril', smiles: 'NCCCC(C)C(=O)NCC(C)CO', year: 1987, class: 'ACE Inhibitor' },
   { name: 'Enalapril', smiles: 'CCOC(=O)NCH(C)C(=O)NCC(C)CO', year: 1984, class: 'ACE Inhibitor' },
-  { name: 'Losartan', smiles: 'Clc1ccccc1C(=O)NCCc1nc2ccccc2n1', year: 1995, class: 'ARB' },
-  { name: 'Amlodipine', smiles: 'Clc1ccccc1C2C(=O)NC=C(C2C)OCCOC', year: 1989, class: 'Calcium Channel Blocker' },
+  { name: 'Losartan', smiles: 'CCCC1=NC(Cl)=C(CO)N1Cc2ccc(cc2)-c3ccccc3-c4[nH]nnn4', year: 1995, class: 'ARB' },
+  { name: 'Amlodipine', smiles: 'CCOC(=O)C1=C(COCCN)NC(C)=C(C1c2ccccc2Cl)C(=O)OC', year: 1989, class: 'Calcium Channel Blocker' },
   { name: 'Metoprolol', smiles: 'CC(C)NCC(O)COc1ccc(OCCOC)cc1', year: 1975, class: 'Beta Blocker' },
   { name: 'Carvedilol', smiles: 'OC(=O)C1=CC=CC=C1OCC(N)COc1ccccc1', year: 1995, class: 'Beta Blocker' },
   { name: 'Warfarin', smiles: 'CC(=O)CC(c1ccccc1)c1c(O)ccc2ccccc12', year: 1954, class: 'Anticoagulant' },
   { name: 'Apixaban', smiles: 'NCC(N1C(=O)CC1C(=O)N)c1nnc2nccnc2c1', year: 2012, class: 'Anticoagulant' },
   { name: 'Rivaroxaban', smiles: 'Clc1ccc2NCC(O)Cc2c1', year: 2008, class: 'Anticoagulant' },
-  { name: 'Clopidogrel', smiles: 'CC(C)OC(=O)C1CC(c1ccccc1Cl)S(=O)(=O)C', year: 1997, class: 'Antiplatelet' },
+  { name: 'Clopidogrel', smiles: 'COC(=O)[C@H](c1ccccc1Cl)n2ccc3c(c2)CCS3', year: 1997, class: 'Antiplatelet' },
   { name: 'Amiodarone', smiles: 'CCOc1ccc(cc1)C(=O)Nc1c(I)cccc1I', year: 1985, class: 'Antiarrhythmic' },
   { name: 'Digoxin', smiles: 'CC1OCC2C3CCC4=CC(=O)OC5C4C3C(O2)C5C1', year: 1954, class: 'Cardiac Glycoside' },
   
   // FDA Approved - Diabetes
   { name: 'Metformin', smiles: 'CN(C)CC(=O)N(C)C', year: 1994, class: 'Biguanide' },
-  { name: 'Glipizide', smiles: 'CN(C)CCS(=O)(=O)NC(=O)Nc1ccc(c1)C(=O)NCCn1ccnc1', year: 1984, class: 'Sulfonylurea' },
+  { name: 'Glipizide', smiles: 'Cc1cc(nc1C(=O)NCCc2ccc(cc2)S(=O)(=O)NC(=O)NC3CCCCC3)C', year: 1984, class: 'Sulfonylurea' },
   { name: 'Glyburide', smiles: 'Clc1ccc(cc1)C(=O)NCC(=O)NCCc1ccccc1', year: 1984, class: 'Sulfonylurea' },
   { name: 'Sitagliptin', smiles: 'F[Si](F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(=O)NCCn1ccnc1', year: 2006, class: 'DPP-4 Inhibitor' },
   { name: 'Empagliflozin', smiles: 'CC1=CC=C(C=C1)S(=O)(=O)C1=CC(=NN1C)C1=CC=CC=C1C(=O)O', year: 2014, class: 'SGLT2 Inhibitor' },
@@ -61,7 +61,7 @@ export const drugPool: DrugSuggestion[] = [
   
   // FDA Approved - Oncology
   { name: 'Imatinib', smiles: 'Cc1ccc(Nc2ncc(C3=CC=NC=C3C(=O)N)cn2)cc1', year: 2001, class: 'Tyrosine Kinase Inhibitor' },
-  { name: 'Gefitinib', smiles: 'CCOc1cc2c(Nc3ccc(F)c(Cl)c3)ncc2cc1OCCO', year: 2003, class: 'Tyrosine Kinase Inhibitor' },
+  { name: 'Gefitinib', smiles: 'COc1cc2c(cc1OCCCN3CCOCC3)Nc4cc(Cl)c(F)cc4n2', year: 2003, class: 'Tyrosine Kinase Inhibitor' },
   { name: 'Erlotinib', smiles: 'C#Cc1cccc(Nc2ncc3ccccc3n2)c1', year: 2004, class: 'Tyrosine Kinase Inhibitor' },
   { name: 'Sorafenib', smiles: 'C=C(C1=CC=CC=C1)C(=O)NC(=O)Nc1ccc(O)cc1', year: 2005, class: 'Tyrosine Kinase Inhibitor' },
   { name: 'Sunitinib', smiles: 'CC1=CN=C2C=C(NC2=C1)C1=CC=NC=C1', year: 2006, class: 'Tyrosine Kinase Inhibitor' },
@@ -70,10 +70,10 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Tamoxifen', smiles: 'CC/C(=C(/c1ccccc1)c1ccc(OCCN(C)C)cc1)C', year: 1971, class: 'SERM' },
   { name: 'Letrozole', smiles: 'N#CC1=CC2=C(C=C1)C(=NN2c1ccc(O)cc1)C#N', year: 1997, class: 'Aromatase Inhibitor' },
   { name: 'Anastrozole', smiles: 'CC(C)(C#N)N=C(N)Cc1ccc(O)cc1', year: 1995, class: 'Aromatase Inhibitor' },
-  { name: 'Methotrexate', smiles: 'CNc1ccc2c(c1)C(=O)NCC(=O)NCC(=O)O', year: 1953, class: 'Antimetabolite' },
-  { name: 'Cyclophosphamide', smiles: 'ClCC(N)(CP(=O)(NCC)NCC)C(=O)N', year: 1959, class: 'Alkylating Agent' },
-  { name: 'Doxorubicin', smiles: 'COCC1OC2C(O)C(OC2)C1C(=O)C1=CC=CC=C1C1=C2C(=O)C3C(O)C(C)=C(C3)C2C(=O)C1=O', year: 1969, class: 'Anthracycline' },
-  { name: 'Paclitaxel', smiles: 'CC1=C2C(C(=O)C1)OC1CC2CCC2(C)C2CC(O)C=CC2OC2C(C)=C1C(=O)O', year: 1992, class: 'Taxane' },
+  { name: 'Methotrexate', smiles: 'CN(Cc1cnc2nc(N)nc(N)c2n1)c3ccc(cc3)C(=O)N[C@@H](CCC(=O)O)C(=O)O', year: 1953, class: 'Antimetabolite' },
+  { name: 'Cyclophosphamide', smiles: 'ClCC[N+](CCCl)P1(=O)NCCCO1', year: 1959, class: 'Alkylating Agent' },
+  { name: 'Doxorubicin', smiles: 'CO[C@H]1C[C@@H](O[C@H]2C[C@@](O)(C(=O)CO)c3c(O)c4c(c(O)c3[C@H]2O)C(=O)c2cccc(OC)c2C4=O)O[C@@H](C)[C@@H]1N', year: 1969, class: 'Anthracycline' },
+  { name: 'Paclitaxel', smiles: 'CC(=O)O[C@H]1C(=O)[C@@]2(C)[C@H]([C@H](OC(=O)c3ccccc3)[C@]3(O)[C@H](OC(=O)[C@H](O)[C@@H](NC(=O)c4ccccc4)c4ccccc4)C[C@@H]2[C@@]1(C)C)OC(=O)C', year: 1992, class: 'Taxane' },
   
   // FDA Approved - CNS/Psychiatric
   { name: 'Sertraline', smiles: 'Clc1ccc2c(c1)C(c1ccc(Cl)cc1)CNC2', year: 1991, class: 'SSRI' },
@@ -82,7 +82,7 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Paroxetine', smiles: 'Fc1ccc([C@@H]2CCNC[C@H]2COc2ccc3c(c2)OCO3)cc1', year: 1992, class: 'SSRI' },
   { name: 'Venlafaxine', smiles: 'CCN(CC)CC(c1ccccc1)O', year: 1993, class: 'SNRI' },
   { name: 'Duloxetine', smiles: 'CN(C)CCS(=O)c1ccc2ccccc2c1', year: 2004, class: 'SNRI' },
-  { name: 'Amitriptyline', smiles: 'CN(C)CCC=C1c2ccccc2CCc1ccccc1', year: 1961, class: 'TCA' },
+  { name: 'Amitriptyline', smiles: 'CN(C)CCC=C1c2ccccc2CCc3ccccc13', year: 1961, class: 'TCA' },
   { name: 'Haloperidol', smiles: 'O=C(CCCN1CCC(C(O)(c2ccc(Cl)cc2)c2ccc(Cl)cc2)CC1)c1ccc(F)cc1', year: 1958, class: 'Antipsychotic' },
   { name: 'Risperidone', smiles: 'Clc1ccc(N2CCN(CC2)C(=O)Oc2ccccc2)cc1', year: 1993, class: 'Antipsychotic' },
   { name: 'Quetiapine', smiles: 'O=C1N(CCOc2ccccc2)CCN1CC1=CC=NC=C1', year: 1997, class: 'Antipsychotic' },
@@ -91,11 +91,11 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Diazepam', smiles: 'CN1C(=O)CN=C(C2=CC=CC=C2)C3=CC=CC=C31', year: 1963, class: 'Benzodiazepine' },
   { name: 'Lorazepam', smiles: 'OC1N=C(c2ccccc2)c2cc(Cl)ccc2N(CC(=O)O)C1c1ccccc1', year: 1977, class: 'Benzodiazepine' },
   { name: 'Alprazolam', smiles: 'Cc1nnc2n1-c1ccc(Cl)cc1C(c1ccccc1)=NC2', year: 1981, class: 'Benzodiazepine' },
-  { name: 'Zolpidem', smiles: 'CC(C)N(CC)C(=O)c1cnc2ccc(N)nc12', year: 1983, class: 'Sedative' },
+  { name: 'Zolpidem', smiles: 'Cc1ccc(cc1)c2c(n3cc(C)cc3n2)CC(=O)N(C)C', year: 1983, class: 'Sedative' },
   { name: 'Modafinil', smiles: 'CS(=O)C(C)(C)N1C(=O)NC1=O', year: 1998, class: 'Wake-promoting' },
   { name: 'Phenytoin', smiles: 'O=C1NC(=O)NC1c1ccccc1', year: 1938, class: 'Anticonvulsant' },
   { name: 'Levetiracetam', smiles: 'CCC(C)(C(=O)N)N1CCCC1=O', year: 1999, class: 'Anticonvulsant' },
-  { name: 'Lamotrigine', smiles: 'N=c1nnc(N2CCCCC2)nc1Cl', year: 1994, class: 'Anticonvulsant' },
+  { name: 'Lamotrigine', smiles: 'Nc1nnc(nc1Cl)c2c(Cl)cccc2Cl', year: 1994, class: 'Anticonvulsant' },
   
   // FDA Approved - Anti-infectives
   { name: 'Amoxicillin', smiles: 'CC1(C)S[C@@H]2[C@H](NC(=O)[C@H](N)c3ccc(O)cc3)C(=O)N2[C@H]1C(=O)O', year: 1972, class: 'Antibiotic' },
@@ -110,8 +110,8 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Paxlovid', smiles: 'CC(C)(C)C1=CC=CC=C1C(=O)NCC(N)=N', year: 2021, class: 'Antiviral' },
   { name: 'Ritonavir', smiles: 'CC(C)C1=NC=NC2=C1N=CC(=N2)C(=O)NC(C)(C)C', year: 1996, class: 'Antiviral' },
   { name: 'Dolutegravir', smiles: 'N#CC1=CC2=C(C=C1)C(=NN1CCOC1=O)C2c1ccccc1', year: 2013, class: 'Integrase Inhibitor' },
-  { name: 'Tenofovir', smiles: 'CC(C)NCC(C)N1C=NC2=C1C(=O)NCC(=O)O', year: 2001, class: 'Antiviral' },
-  { name: 'Fluconazole', smiles: 'OC(Cn1cnc(N1c1ccc(F)cc1Cl)c1ccc(F)cc1)(C(F)(F)F)C(F)(F)F', year: 1981, class: 'Antifungal' },
+  { name: 'Tenofovir', smiles: 'C[C@H](Cn1cnc2c(N)ncnc21)OP(=O)(O)O', year: 2001, class: 'Antiviral' },
+  { name: 'Fluconazole', smiles: 'OC(Cn1cncn1)(Cn2cncn2)c3ccc(F)cc3F', year: 1981, class: 'Antfining' },
   { name: 'Itraconazole', smiles: 'Clc1ccc2c(c1)C(Cn1nc3ccccc3n1)N2C(=O)C1=CC=CC=C1', year: 1992, class: 'Antifungal' },
   
   // FDA Approved - Respiratory
@@ -121,12 +121,12 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Tiotropium', smiles: 'C1CC2CCC1N2C(=O)OCC(O)(C)OC', year: 2004, class: 'Anticholinergic' },
   
   // FDA Approved - GI
-  { name: 'Omeprazole', smiles: 'COc1ccc2nc(S(=O)(=O)N(C)C)nc2c1', year: 1989, class: 'PPI' },
-  { name: 'Pantoprazole', smiles: 'COc1ccc2nc(S(=O)(=O)N3CCN(C)CC3)nc2c1', year: 2001, class: 'PPI' },
-  { name: 'Esomeprazole', smiles: 'COc1ccc2nc(S(=O)(=O)N(C)C)nc2c1C', year: 2001, class: 'PPI' },
+  { name: 'Omeprazole', smiles: 'COc1ccc2[nH]c(nc2c1)S(=O)Cc3ncc(C)c(OC)c3C', year: 1989, class: 'PPI' },
+  { name: 'Pantoprazole', smiles: 'COc1ccc2[nH]c(nc2c1)S(=O)Cc3c(OC(F)F)cc(nc3OC)OC', year: 2001, class: 'PPI' },
+  { name: 'Esomeprazole', smiles: 'COc1ccc2[nH]c(nc2c1)[S@@](=O)Cc3ncc(C)c(OC)c3C', year: 2001, class: 'PPI' },
   { name: 'Ranitidine', smiles: 'CC(C)NCC(=O)NCCNS(=O)(=O)C', year: 1983, class: 'H2 Blocker' },
   { name: 'Famotidine', smiles: 'NCC(=O)NCCS(=O)(=O)N', year: 1983, class: 'H2 Blocker' },
-  { name: 'Ondansetron', smiles: 'Clc1ccc2c(c1)C(=O)NCC2N1CCOC', year: 1991, class: 'Antiemetic' },
+  { name: 'Ondansetron', smiles: 'Cn1cc(c2c1CCC(C2=O)n3ccnc3C)C', year: 1991, class: 'Antiemetic' },
   { name: 'Metoclopramide', smiles: 'CC(CO)NCC(N)CC1=CC=CC=C1Cl', year: 1975, class: 'Antiemetic' },
   { name: 'Loperamide', smiles: 'ClC1=CC=CC=C1C(C)(C)CCN1CCC(CC1)C(=O)N', year: 1976, class: 'Antidiarrheal' },
   
@@ -162,7 +162,7 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Pregabalin', smiles: 'C[C@H](CC(=O)O)CN', year: 2005, class: 'Anticonvulsant' },
   
   // Investigational Drugs (no FDA approval year)
-  { name: 'Baricitinib', smiles: 'CCS(=O)(=O)N1CC(CC1#N)n1cc(cn1)-c1ncnc2[nH]ccc12', year: 2022, class: 'JAK Inhibitor' },
+  { name: 'Baricitinib', smiles: 'CCS(=O)(=O)N1CC(CC1#N)n1cc(cn1)-c2ncnc3[nH]ccc23', year: 2022, class: 'JAK Inhibitor' },
   { name: 'Tofacitinib', smiles: 'C[C@@H]1CCN(C[C@H]1N(C)c2ncnc3[nH]ccc23)C(=O)CC#N', year: 2012, class: 'JAK Inhibitor' },
   { name: 'Upadacitinib', smiles: 'CC[C@@H]1CN(C1#N)c1cc(c2[nH]cnc2n1)C(=O)N', year: 2019, class: 'JAK Inhibitor' },
   { name: 'Filgotinib', smiles: 'CS(=O)(=O)N1CCN(CC1)c1ccc(nc1)C(=O)N[C@@H]2COCC2', year: 2020, class: 'JAK Inhibitor' },

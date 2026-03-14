@@ -17,7 +17,6 @@ from supabase import Client
 
 from app.core.container import container
 from app.services.postprocessing import admet_processor
-from app.services.sas_service import sas_calculator
 from app.services.gasa_service import gasa_predictor
 
 
@@ -176,19 +175,49 @@ class ADMETService:
         return await self._get_svg_rdkit(smiles)
     
     async def _get_svg_rdkit(self, smiles: str) -> Optional[str]:
-        """Generate molecule SVG using local RDKit"""
+        """Generate molecule SVG using local RDKit with robust fallback for complex structures."""
         try:
             from rdkit import Chem
             from rdkit.Chem.Draw import rdMolDraw2D
             
+            # First attempt: Standard parsing with kekulization
             mol = Chem.MolFromSmiles(smiles)
+            
+            # Second attempt: If standard parsing fails, try with sanitize=False
+            if not mol:
+                mol = Chem.MolFromSmiles(smiles, sanitize=False)
+                if mol:
+                    # Manual sanitization steps to handle problematic structures
+                    try:
+                        # Update property cache first (needed for many operations)
+                        mol.UpdatePropertyCache(strict=False)
+                        # Try to sanitize without kekulization
+                        Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+                    except Exception as sanitize_err:
+                        print(f"⚠️ Partial sanitization for {smiles[:30]}...: {sanitize_err}")
+                        # Continue with unsanitized molecule - drawing may still work
+            
             if not mol:
                 return None
             
+            # Generate SVG
             drawer = rdMolDraw2D.MolDraw2DSVG(400, 300)
-            drawer.DrawMolecule(mol)
-            drawer.FinishDrawing()
-            return drawer.GetDrawingText()
+            
+            # Try standard drawing first
+            try:
+                drawer.DrawMolecule(mol)
+                drawer.FinishDrawing()
+                return drawer.GetDrawingText()
+            except Exception as draw_err:
+                # Final fallback: Draw without kekulization
+                print(f"⚠️ Standard draw failed, trying without kekulization: {draw_err}")
+                try:
+                    drawer.DrawMolecule(mol, kekulize=False)
+                    drawer.FinishDrawing()
+                    return drawer.GetDrawingText()
+                except Exception as final_err:
+                    print(f"❌ All SVG generation attempts failed: {final_err}")
+                    return None
             
         except ImportError:
             return None
@@ -343,17 +372,8 @@ class ADMETService:
         except Exception as e:
             print(f"⚠️ AI interpretation failed: {e}")
 
-        # Calculate synthetic accessibility
-        synthetic_accessibility = None
-        try:
-            sas_data = sas_calculator.calculate(smiles)
-            if sas_data:
-                synthetic_accessibility = sas_data
-        except Exception as e:
-            print(f"⚠️ SAS calculation failed: {e}")
-
-        # Format report with AI interpretation and synthetic accessibility
-        return self.processor.format_report(admet_data, svg, ai_interpretation, synthetic_accessibility)
+        # Format report (GASA is handled in predictions if enabled)
+        return self.processor.format_report(admet_data, svg, ai_interpretation)
     
     async def _generate_ai_interpretation(self, admet_data: Dict[str, Any], molecule_name: str = None) -> str:
         """
@@ -371,6 +391,19 @@ class ADMETService:
         ai = self.ai_service
         if not ai:
             return None
+
+        smiles = admet_data.get('smiles')
+        is_simple = False
+        
+        # Simple molecule check (Water, Oxygen, etc.)
+        if smiles:
+            try:
+                from rdkit import Chem
+                mol = Chem.MolFromSmiles(smiles)
+                if mol and mol.GetNumHeavyAtoms() < 5:
+                    is_simple = True
+            except:
+                pass
 
         # Extract comprehensive molecular properties
         key_props = []
@@ -468,7 +501,7 @@ class ADMETService:
             herg = admet_data['hERG']
             if herg > 0.7:
                 toxicity_concerns.append(f"high hERG liability ({herg:.2f})")
-                recommendations.append("reduce hERG risk by removing basic amines or reducing lipophilicity")
+                recommendations.append("reduce hERG risk by removing basic amines (e.g., secondary/tertiary amines) to prevent ion channel blocking")
             elif herg > 0.4:
                 toxicity_concerns.append(f"moderate hERG concern ({herg:.2f})")
 
@@ -476,16 +509,25 @@ class ADMETService:
             dili = admet_data['DILI']
             if dili > 0.7:
                 toxicity_concerns.append(f"high DILI risk ({dili:.2f})")
-                recommendations.append("mitigate liver toxicity by removing metabolically labile groups (e.g., anilines, thiophenes)")
+                recommendations.append("mitigate liver toxicity by removing metabolically labile groups (e.g., anilines, thiophenes) or reducing lipophilicity")
             elif dili > 0.4:
                 toxicity_concerns.append(f"moderate DILI concern ({dili:.2f})")
 
         if 'AMES' in admet_data and admet_data['AMES'] > 0.5:
             toxicity_concerns.append(f"mutagenic ({admet_data['AMES']:.2f})")
-            recommendations.append("address mutagenicity by removing or replacing structural alerts")
+            recommendations.append("address AMES mutagenicity by removing structural alerts like nitro groups, aromatic amines, or alkyl halides")
 
-        if 'Carcinogens_Lagunin' in admet_data and admet_data['Carcinogens_Lagunin'] > 0.5:
-            toxicity_concerns.append(f"carcinogenic ({admet_data['Carcinogens_Lagunin']:.2f})")
+        # Tox21 Pathways (Specialized mechanistic toxicity)
+        tox21_alerts = []
+        tox21_keys = [k for k in admet_data.keys() if k.startswith('Tox21_')]
+        for k in tox21_keys:
+            if admet_data[k] > 0.8:
+                pathway = k.replace('Tox21_', '').replace('_Hill', '').replace('_p53', 'p53 Activation').replace('_ARE', 'Oxidative Stress')
+                tox21_alerts.append(pathway)
+        
+        if tox21_alerts:
+            toxicity_concerns.append(f"Tox21 pathway alerts: {', '.join(tox21_alerts)}")
+            recommendations.append("investigate specific Tox21 mechanistic liabilities")
 
         # CYP inhibition
         cyp_inhibitors = []
@@ -500,34 +542,49 @@ class ADMETService:
 
         # Build the comprehensive prompt
         name_str = f" for {molecule_name}" if molecule_name else ""
+        smiles_str = f"SMILES: {smiles}\n" if smiles else ""
         properties_str = "\n".join(f"- {prop}" for prop in key_props) if key_props else "No key properties"
         features_str = ", ".join(structural_features) if structural_features else "No notable features"
+        tox_str = "\n".join(f"- {tox}" for tox in toxicity_concerns) if toxicity_concerns else "- No major toxicity alerts"
 
         # Generate specific recommendations (top 3)
         unique_recs = list(dict.fromkeys(recommendations))[:3]
         recs_str = "; ".join(unique_recs) if unique_recs else "Continue optimization"
 
-        prompt = f"""You are a senior medicinal chemist. Provide an expert, molecule-specific ADMET interpretation{name_str}.
-
-MOLECULAR PROFILE:
+        if is_simple:
+            prompt = f"""You are a senior medicinal chemist. Provide a brief expert assessment of this small molecule/solvent{name_str}.
+            
+{smiles_str}MOLECULAR PROFILE:
 {properties_str}
+
+Provide a 2-3 sentence realistic assessment. Acknowledge if this is a standard solvent, reagent, or simple inorganic/organic molecule rather than a drug candidate. Do not invent complex drug-like liabilities if they do not exist. Output ONLY the text."""
+        else:
+            prompt = f"""You are a senior medicinal chemist. Provide a detailed, mechanistic ADMET interpretation{name_str}.
+
+{smiles_str}
+MOLECULAR PROPERTIES:
+{properties_str}
+
+TOXICITY & MECHANISTIC ALERTS:
+{tox_str}
 
 STRUCTURAL FEATURES: {features_str}
 
 RECOMMENDED ACTIONS: {recs_str}
 
-Provide a 2-3 sentence expert assessment that:
-1. Summarizes the overall developability profile
-2. Identifies the MOST CRITICAL liability (toxicity, ADME, or physicochemical)
-3. Provides ONE specific, actionable structural modification
+Provide a detailed 6-8 sentence expert assessment that:
+1. Summarizes the overall developability profile and medicinal chemistry potential
+2. Identifies the MOST CRITICAL liability and explains WHY it is a concern mechanistically (e.g., explain ion channel blocking for hERG or metabolically reactive intermediates for DILI)
+3. Provides specific, actionable structural modifications based strictly on the provided SMILES string
+4. Discusses any notable structural features that contribute to the observed ADMET profile
 
 CRITICAL RULES:
-- NEVER use generic phrases like "warrants further investigation" or "may benefit from"
-- ALWAYS name specific structural features (e.g., "the aniline moiety", "the tertiary amine", "the biphenyl system")
-- ALWAYS provide concrete chemical strategies (e.g., "replace the thiophene with a pyrazole", "add a hydroxyl at the para position")
-- Focus on the single most important issue, not a laundry list
-- Use professional but direct language
-- NO markdown formatting
+- NEVER use generic phrases like "warrants further investigation" or "potentially beneficial"
+- Name specific structural features ONLY if they are identifiable in the provided SMILES
+- Provide concrete chemical strategies (e.g., "replace the thiophene with a pyrazole to avoid oxidative metabolites", "introduce a sulfonic acid to limit BBB crossing")
+- Focus on providing high-density, professional insights
+- Use professional but direct language (Senior MedChem tone)
+- NO markdown formatting (no bold, no bullets, no headers in your output)
 - Output ONLY the interpretation text"""
 
         try:
@@ -543,10 +600,10 @@ CRITICAL RULES:
             chat_response = client.chat.complete(
                 model="mistral-small-latest",
                 messages=[
-                    {"role": "system", "content": "You are a senior medicinal chemist providing expert, molecule-specific ADMET assessments. You always name specific structural features and provide concrete chemical strategies. No generic phrases."},
+                    {"role": "system", "content": "You are a senior medicinal chemist providing expert, mechanistic ADMET assessments. You provide 6-8 sentence detailed interpretations and provide concrete chemical strategies based strictly on the provided SMILES."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=200,
+                max_tokens=600,
                 temperature=0.2
             )
 
@@ -580,30 +637,28 @@ CRITICAL RULES:
                 
         return self.processor.format_csv_export(results)
 
-    def _generate_sas_html(self, sas_data: Dict[str, Any]) -> str:
-        """Generate HTML for SAS/GASA section in PDF."""
-        if not sas_data:
+    def _generate_gasa_html(self, synthetic_accessibility: Dict[str, Any]) -> str:
+        """Generate HTML for GASA (Synthetic Accessibility) section in PDF."""
+        if not synthetic_accessibility:
             return ""
 
         html = '<div class="sas-section"><h3>Synthetic Accessibility</h3>'
 
-        # RDKit SAS (Expected under 'sas' key)
-        sas = sas_data.get('sas') if isinstance(sas_data.get('sas'), dict) else sas_data
-        sas_score = sas.get('sas_score', 0)
-        sas_category = sas.get('category', 'N/A').upper()
-        sas_interp = sas.get('interpretation', '')
-
-        html += f'<p><strong>RDKit SAS Score:</strong> {sas_score:.1f} ({sas_category})</p>'
-        if sas_interp:
-            html += f'<p style="font-size: 9pt; margin: 5pt 0;">{sas_interp}</p>'
-
         # GASA (Deep Learning) - check if available
-        gasa = sas_data.get('gasa')
+        gasa = synthetic_accessibility.get('gasa')
         # Simple GASA (RDKit fallback)
-        simple_gasa = sas_data.get('simple_gasa')
+        simple_gasa = synthetic_accessibility.get('simple_gasa')
         
         # Prefer full GASA if successful, otherwise simple_gasa
-        gasa_to_show = gasa if gasa else simple_gasa
+        gasa_to_show = None
+        method_label = "N/A"
+        
+        if isinstance(gasa, dict) and gasa.get('interpretation'):
+            gasa_to_show = gasa
+            method_label = "ML"
+        elif isinstance(simple_gasa, dict) and simple_gasa.get('interpretation'):
+            gasa_to_show = simple_gasa
+            method_label = "RDKit"
         
         if gasa_to_show:
             gasa_pred = gasa_to_show.get('prediction', 0)
@@ -612,47 +667,35 @@ CRITICAL RULES:
             gasa_interp = gasa_to_show.get('interpretation', '')
 
             pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
-            method_label = "ML" if gasa else "RDKit"
-            html += f'<p style="margin-top: 10pt;"><strong>GASA Prediction ({method_label}):</strong> {pred_label}</p>'
+            html += f'<p><strong>GASA Prediction ({method_label}):</strong> {pred_label}</p>'
             html += f'<p style="font-size: 9pt; margin: 3pt 0;">Easy: {gasa_easy:.1f}% | Hard: {gasa_hard:.1f}%</p>'
             if gasa_interp:
                 html += f'<p style="font-size: 9pt; margin: 3pt 0;">{gasa_interp}</p>'
 
-        # Consensus (if present)
-        consensus = sas_data.get('consensus')
-        if consensus:
-            html += f'<p style="margin-top: 10pt; font-weight: bold;">{consensus}</p>'
-
         html += '</div>'
         return html
 
-    def _generate_sas_docx(self, doc, synthetic_accessibility: Dict[str, Any]):
-        """Add SAS/GASA section to DOCX"""
-        from docx.shared import Pt, RGBColor
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
+    def _generate_gasa_docx(self, doc, synthetic_accessibility: Dict[str, Any]):
+        """Add GASA (Synthetic Accessibility) section to DOCX"""
+        from docx.shared import Pt
         
         doc.add_heading('Synthetic Accessibility', level=1)
         
-        # RDKit SAS (Expected under 'sas' key)
-        sas = synthetic_accessibility.get('sas') if isinstance(synthetic_accessibility.get('sas'), dict) else synthetic_accessibility
-        sas_score = sas.get('sas_score', 0)
-        sas_interp = sas.get('interpretation', '')
-        
-        p = doc.add_paragraph()
-        run = p.add_run(f'RDKit SAS Score: {sas_score:.2f}')
-        run.bold = True
-        p.add_run(f' (1 = Easy, 10 = Hard)')
-        
-        if sas_interp:
-            p = doc.add_paragraph(sas_interp)
-            
         # GASA (Deep Learning) - check if available
         gasa = synthetic_accessibility.get('gasa')
         # Simple GASA (RDKit fallback)
         simple_gasa = synthetic_accessibility.get('simple_gasa')
         
         # Prefer full GASA if successful, otherwise simple_gasa
-        gasa_to_show = gasa if gasa else simple_gasa
+        gasa_to_show = None
+        method_label = "N/A"
+        
+        if isinstance(gasa, dict) and gasa.get('interpretation'):
+            gasa_to_show = gasa
+            method_label = "ML"
+        elif isinstance(simple_gasa, dict) and simple_gasa.get('interpretation'):
+            gasa_to_show = simple_gasa
+            method_label = "RDKit"
         
         if gasa_to_show:
             gasa_pred = gasa_to_show.get('prediction', 0)
@@ -660,19 +703,12 @@ CRITICAL RULES:
             gasa_hard = gasa_to_show.get('hard_probability', 0) * 100
             
             pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
-            method_label = "ML" if gasa else "RDKit"
             p = doc.add_paragraph()
             p.add_run(f'GASA Prediction ({method_label}): ').bold = True
             p.add_run(pred_label)
             
             p = doc.add_paragraph(f'Easy: {gasa_easy:.1f}% | Hard: {gasa_hard:.1f}%')
             p.style.font.size = Pt(9)
-            
-        if 'consensus' in synthetic_accessibility:
-            consensus = synthetic_accessibility['consensus']
-            if consensus:
-                p = doc.add_paragraph(consensus)
-                p.italic = True
 
     async def generate_pdf(self, results: Dict[str, Any], synthetic_accessibility: Dict[str, Any] = None) -> bytes:
         """
@@ -688,6 +724,27 @@ CRITICAL RULES:
         try:
             from xhtml2pdf import pisa
             import io
+            import os
+            import base64
+
+            # Get logo for the report
+            logo_base64 = ""
+            try:
+                # Try relative paths for both local and VPS environments
+                paths_to_try = [
+                    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "frontend", "public", "Benchside.png")),
+                    "/var/www/benchside-backend/frontend/public/Benchside.png",
+                    "/Users/mac/Desktop/phhh/frontend/public/Benchside.png"
+                ]
+                for p in paths_to_try:
+                    if os.path.exists(p):
+                        with open(p, "rb") as f:
+                            logo_base64 = base64.b64encode(f.read()).decode()
+                        break
+            except Exception as e:
+                print(f"⚠️ Could not load logo for PDF: {e}")
+
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width: 140px; height: auto;" />' if logo_base64 else '<span style="color: #1e40af; font-size: 24pt; font-weight: bold;">Benchside</span>'
 
             # Generate structured categories for the report
             categories = self.processor.build_structured_categories(results)
@@ -695,8 +752,8 @@ CRITICAL RULES:
             smiles = results.get("smiles", "Unknown")
             mol_name = results.get("molecule_name", "Drug Candidate")
 
-            # Generate SAS/GASA HTML section
-            sas_html = self._generate_sas_html(synthetic_accessibility) if synthetic_accessibility else ""
+                # Generate GASA HTML section (Synthetic Accessibility)
+            gasa_html = self._generate_gasa_html(synthetic_accessibility) if synthetic_accessibility else ""
 
             # Pre-generate tables HTML to avoid nested f-string issues
             tables_html = ""
@@ -708,7 +765,6 @@ CRITICAL RULES:
                         <td class="param">{prop['name']}</td>
                         <td class="value">{prop['value']}{prop.get('unit', '')}</td>
                         <td class="status-{prop['status']}">{prop['status'].upper()}</td>
-                        <td class="interpretation">{prop['interpretation']}</td>
                     </tr>
                     """
 
@@ -716,17 +772,15 @@ CRITICAL RULES:
                 <h2>{cat['name']}</h2>
                 <table>
                     <colgroup>
-                        <col style="width: 20%;">
-                        <col style="width: 20%;">
-                        <col style="width: 15%;">
-                        <col style="width: 45%;">
+                        <col style="width: 40%;">
+                        <col style="width: 30%;">
+                        <col style="width: 30%;">
                     </colgroup>
                     <thead>
                         <tr>
                             <th>Parameter</th>
                             <th>Value</th>
                             <th>Status</th>
-                            <th>Interpretation</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -736,8 +790,6 @@ CRITICAL RULES:
                 """
 
             # HTML template with proper xhtml2pdf frames
-            # FIX: Removed custom @frame that was breaking document flow
-            # Using static footer frame with footer_content div instead
             html = f"""
             <html>
             <head>
@@ -751,23 +803,29 @@ CRITICAL RULES:
                             bottom: 1cm;
                             margin-left: 1.5cm;
                             margin-right: 1.5cm;
-                            height: 1cm;
+                            height: 1.2cm;
                         }}
                     }}
-                    body {{ font-family: Helvetica; color: #333; }}
-                    h1 {{ color: #333; font-size: 18pt; margin-bottom: 20px; }}
-                    h2 {{ color: #1e40af; page-break-after: avoid; padding-top: 15px; }}
+                    body {{ font-family: Helvetica; color: #333; line-height: 1.4; }}
+                    h1 {{ color: #333; font-size: 18pt; margin-top: 0; }}
+                    h2 {{ color: #1e40af; page-break-after: avoid; padding-top: 15px; font-size: 12pt; border-bottom: 1px solid #e2e8f0; }}
 
-                    .section {{ margin-bottom: 20px; }}
+                    .header-table {{ width: 100%; border: none; margin-bottom: 20px; }}
+                    .logo-cell {{ border: none; text-align: left; vertical-align: middle; }}
+                    .title-cell {{ border: none; text-align: right; vertical-align: middle; }}
+
+                    .section {{ margin-bottom: 15px; }}
                     .insight-box {{
                         background: #f8fafc;
-                        padding: 15px;
-                        border-left: 5px solid #64748b;
+                        padding: 12px;
+                        border-left: 5px solid #1e40af;
                         margin-bottom: 20px;
+                        font-size: 10pt;
+                        line-height: 1.6;
                     }}
                     .sas-section {{
                         background: #f0f9ff;
-                        padding: 15px;
+                        padding: 12px;
                         border: 1px solid #0ea5e9;
                         margin-bottom: 20px;
                     }}
@@ -776,42 +834,50 @@ CRITICAL RULES:
                     table {{ 
                         width: 100%; 
                         border-collapse: collapse; 
-                        margin-bottom: 20px; 
+                        margin-bottom: 15px; 
                         table-layout: fixed; 
                     }}
                     tr {{ page-break-inside: avoid; }} /* Prevents row splitting */
                     th, td {{
                         border: 1px solid #e2e8f0;
-                        padding: 8px;
+                        padding: 6px 8px;
                         vertical-align: top;
                         word-wrap: break-word;
+                        font-size: 9pt;
                     }}
-                    th {{ background-color: #f8fafc; text-align: left; }}
+                    th {{ background-color: #f8fafc; text-align: left; color: #64748b; text-transform: uppercase; font-size: 8pt; }}
 
                     .status-success {{ color: #16a34a; font-weight: bold; }}
                     .status-warning {{ color: #ca8a04; font-weight: bold; }}
                     .status-danger {{ color: #dc2626; font-weight: bold; }}
+                    .param {{ font-weight: bold; color: #1e293b; }}
+                    
+                    .mol-info {{ color: #64748b; font-size: 9pt; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }}
                 </style>
             </head>
             <body>
-                <!-- Footer with Benchside watermark (light blue to simulate opacity) -->
                 <div id="footer_content">
                     <table style="width: 100%; border: none; margin: 0; padding: 0;">
                         <tr>
-                            <td style="border: none; color: #888; font-size: 9pt; vertical-align: bottom;">
-                                Generated by Benchside Scientific © 2026
+                            <td style="border: none; color: #94a3b8; font-size: 8pt; vertical-align: bottom;">
+                                © 2026 Benchside Scientific • Precision Biomedical Intelligence
                             </td>
-                            <td style="border: none; text-align: right; color: #a0b8f0; font-size: 14pt; vertical-align: bottom;">
-                                Benchside
+                            <td style="border: none; text-align: right; color: #cbd5e1; font-size: 10pt; vertical-align: bottom;">
+                                CONFIDENTIAL
                             </td>
                         </tr>
                     </table>
                 </div>
 
-                <h1>ADMET Analysis Report</h1>
-                <div class="section">
-                    <p><strong>Molecule:</strong> {mol_name}</p>
-                    <p><strong>SMILES:</strong> <span style="font-family: monospace; font-size: 7pt;">{smiles}</span></p>
+                <table class="header-table">
+                    <tr>
+                        <td class="logo-cell">{logo_html}</td>
+                        <td class="title-cell"><h1>ADMET Analysis Report</h1></td>
+                    </tr>
+                </table>
+
+                <div class="mol-info">
+                    <strong>Molecule:</strong> {mol_name} | <strong>SMILES:</strong> <span style="font-family: monospace; font-size: 7pt;">{smiles}</span>
                 </div>
 
                 <h2>Medicinal Chemistry Insights</h2>
@@ -819,7 +885,7 @@ CRITICAL RULES:
                     {ai_interpretation}
                 </div>
 
-                {sas_html}
+                {self._generate_gasa_html(synthetic_accessibility) if synthetic_accessibility else ""}
 
                 {tables_html}
 
@@ -839,7 +905,7 @@ CRITICAL RULES:
             print(f"❌ PDF generation failed: {e}")
             raise
 
-    async def generate_docx(self, results: Dict[str, Any]) -> bytes:
+    async def generate_docx(self, results: Dict[str, Any], synthetic_accessibility: Dict[str, Any] = None) -> bytes:
         """
         Generate DOCX report using python-docx.
         """
@@ -848,12 +914,39 @@ CRITICAL RULES:
             from docx.shared import Inches, Pt, RGBColor
             from docx.enum.text import WD_ALIGN_PARAGRAPH
             import io
+            import os
             
             doc = Document()
             
-            # Title
+            # --- Header Branding ---
+            header = doc.sections[0].header
+            header_para = header.paragraphs[0]
+            
+            logo_path = None
+            paths_to_try = [
+                os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "frontend", "public", "Benchside.png")),
+                "/var/www/benchside-backend/frontend/public/Benchside.png",
+                "/Users/mac/Desktop/phhh/frontend/public/Benchside.png"
+            ]
+            for p in paths_to_try:
+                if os.path.exists(p):
+                    logo_path = p
+                    break
+            
+            if logo_path:
+                run = header_para.add_run()
+                run.add_picture(logo_path, width=Inches(1.5))
+            else:
+                run = header_para.add_run("BENCHSIDE SCIENTIFIC")
+                run.font.color.rgb = RGBColor(30, 64, 175) # Blue
+                run.font.bold = True
+                run.font.size = Pt(16)
+            
+            header_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            
+            # --- Document Body ---
             title = doc.add_heading('ADMET Analysis Report', 0)
-            title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            title.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             
             mol_name = results.get("molecule_name", "Drug Candidate")
             smiles = results.get("smiles", "Unknown")
@@ -872,21 +965,21 @@ CRITICAL RULES:
             p = doc.add_paragraph(insight_text.strip())
             
             # Synthetic Accessibility
-            if results.get("synthetic_accessibility"):
-                self._generate_sas_docx(doc, results["synthetic_accessibility"])
+            sas_to_use = synthetic_accessibility if synthetic_accessibility else results.get("synthetic_accessibility")
+            if sas_to_use:
+                self._generate_sas_docx(doc, sas_to_use)
             
             # detailed results
             categories = self.processor.build_structured_categories(results)
             
             for cat in categories:
                 doc.add_heading(cat['name'], level=2)
-                table = doc.add_table(rows=1, cols=4)
+                table = doc.add_table(rows=1, cols=3)
                 table.style = 'Table Grid'
                 hdr_cells = table.rows[0].cells
                 hdr_cells[0].text = 'Parameter'
                 hdr_cells[1].text = 'Value'
                 hdr_cells[2].text = 'Status'
-                hdr_cells[3].text = 'Interpretation'
                 
                 for prop in cat['properties']:
                     row_cells = table.add_row().cells
@@ -896,12 +989,9 @@ CRITICAL RULES:
                     # Color status
                     status_cell = row_cells[2]
                     status_cell.text = prop['status'].upper()
-                    # We could add color here if needed, but keeping it simple for now
-                    
-                    row_cells[3].text = str(prop['interpretation'])
             
             doc.add_paragraph('\n')
-            footer = doc.add_paragraph('Generated by Benchside Scientific • Precision Pharmacological Intelligence © 2026')
+            footer = doc.add_paragraph('Generated by Benchside Scientific • Precision Biomedical Intelligence © 2026')
             footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
             
             docx_out = io.BytesIO()
@@ -1014,31 +1104,30 @@ CRITICAL RULES:
                 # 2. Build structured categories from raw data
                 categories = self.processor.build_structured_categories(admet_data)
 
-                # 3. Calculate SAS score
+                # 3. Calculate GASA score (Synthetic Accessibility)
                 synthetic_accessibility = None
                 try:
-                    from app.services.sas_service import sas_calculator
                     from app.services.simple_gasa_service import simple_gasa_predictor
+                    from app.services.gasa_service import gasa_predictor
 
-                    sas_result = sas_calculator.calculate(smiles)
-                    if sas_result:
-                        synthetic_accessibility = sas_result
-
-                        # Calculate GASA (simple predictor, more reliable)
+                    # Calculate GASA (try main predictor first, then fallback)
+                    gasa_result = gasa_predictor.predict_single(smiles)
+                    if not gasa_result:
+                        # Fallback to simple GASA (more reliable on VPS without torch-data/DGL)
                         gasa_result = simple_gasa_predictor.predict_single(smiles)
-                        if gasa_result:
-                            synthetic_accessibility.update({
-                                'gasa_prediction': gasa_result['prediction'],
-                                'gasa_easy_probability': gasa_result['easy_probability'],
-                                'gasa_hard_probability': gasa_result['hard_probability'],
-                                'gasa_interpretation': gasa_result['interpretation'],
-                                'consensus': "Both methods agree" if (
-                                    (sas_result['sas_score'] <= 5.0 and gasa_result['prediction'] == 0) or
-                                    (sas_result['sas_score'] > 5.0 and gasa_result['prediction'] == 1)
-                                ) else "Mixed results"
-                            })
+                        method_label = "RDKit"
+                    else:
+                        method_label = "ML"
+
+                    if gasa_result:
+                        synthetic_accessibility = {
+                            'gasa_prediction': gasa_result['prediction'],
+                            'gasa_easy_probability': gasa_result['easy_probability'],
+                            'gasa_hard_probability': gasa_result['hard_probability'],
+                            'gasa_interpretation': gasa_result['interpretation']
+                        }
                 except Exception as e:
-                    print(f"⚠️ SAS/GASA calculation failed for batch molecule {i+1}: {e}")
+                    print(f"⚠️ GASA calculation failed for batch molecule {i+1}: {e}")
 
                 results.append({
                     "index": i + 1,

@@ -17,6 +17,7 @@ class SlideOutlineRequest(BaseModel):
     num_slides: int = 12
     context: Optional[str] = None
     conversation_id: Optional[str] = None  # To pull RAG context
+    theme: str = "ocean_gradient"
 
 class SlideOutline(BaseModel):
     title: str
@@ -56,7 +57,8 @@ async def generate_slide_outline(
         outline = await slide_service.generate_outline(
             topic=request.topic,
             context=context or request.context,
-            num_slides=request.num_slides
+            num_slides=request.num_slides,
+            theme=request.theme
         )
         
         return outline

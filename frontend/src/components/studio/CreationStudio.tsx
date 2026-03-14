@@ -13,6 +13,7 @@ import { LoadingAnimation } from '../shared/LoadingAnimation';
 import SlideOutlineEditor, { SlideOutline } from '../slides/SlideOutlineEditor';
 import SlideProgress from '../slides/SlideProgress';
 import DocOutlineEditor, { DocOutline } from '../docs/DocOutlineEditor';
+import ThemeSelector from '../slides/ThemeSelector';
 import { API_BASE_URL } from '@/config/api';
 
 type CreationType = 'slides' | 'document';
@@ -24,6 +25,7 @@ export default function CreationStudio() {
   const [creationType, setCreationType] = useState<CreationType>('slides');
   const [step, setStep] = useState<GenerationStep>('input');
   const [topic, setTopic] = useState('');
+  const [selectedTheme, setSelectedTheme] = useState('ocean_gradient');
   const [recentTopics, setRecentTopics] = useState<string[]>([]);
   
   const [slideOutline, setSlideOutline] = useState<SlideOutline | null>(null);
@@ -57,7 +59,9 @@ export default function CreationStudio() {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const endpoint = creationType === 'slides' ? `${API_BASE_URL}/api/v1/slides/outline` : `${API_BASE_URL}/api/v1/docs/outline`;
-      const body = creationType === 'slides' ? { topic: topic.trim(), num_slides: 12 } : { topic: topic.trim(), doc_type: 'report' };
+      const body = creationType === 'slides' 
+        ? { topic: topic.trim(), num_slides: 12, theme: selectedTheme } 
+        : { topic: topic.trim(), doc_type: 'report' };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -249,20 +253,33 @@ export default function CreationStudio() {
                 </button>
               </div>
 
+              {/* Theme Selection - Only show for slides */}
+              {creationType === 'slides' && (
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6">
+                  <label className="text-sm font-medium text-[var(--text-secondary)] mb-3 block">
+                    Select Visual Theme
+                  </label>
+                  <ThemeSelector 
+                    selectedTheme={selectedTheme}
+                    onThemeChange={setSelectedTheme}
+                  />
+                </div>
+              )}
+
               {/* Topic Input */}
               <div className="space-y-6">
-                <div className="relative group">
+                <div className="flex flex-col md:flex-row gap-3">
                   <input
                     type="text"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Describe your topic (e.g., The role of CRISPR in immunotherapy)..."
-                    className="w-full px-8 py-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all pr-20 shadow-xl"
+                    className="flex-1 px-8 py-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all shadow-xl"
                   />
                   <button
                     onClick={handleGenerateOutline}
                     disabled={!topic.trim()}
-                    className="absolute right-4 top-4 bottom-4 px-6 rounded-2xl bg-teal-500 text-black hover:bg-teal-400 disabled:opacity-30 transition-all flex items-center gap-2 group"
+                    className="px-6 py-4 md:py-0 rounded-2xl bg-teal-500 text-black hover:bg-teal-400 disabled:opacity-30 transition-all flex items-center justify-center gap-2 group"
                   >
                     <span className="font-bold">Draft Outline</span>
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

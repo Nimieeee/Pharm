@@ -45,15 +45,44 @@ class GASAPredictor:
             # Import GASA model - use absolute path
             import sys
             import os
+            import types
 
-            # Ensure gasa_model is in path
-            model_dir = os.path.join(os.path.dirname(__file__), 'gasa_model')
-            if model_dir not in sys.path:
-                sys.path.insert(0, model_dir)
+            # --- DGL Dependency Patch ---
+            # DGL 2.1.0+ has a hard dependency on torchdata submodules that are often missing.
+            # We use a universal mock to satisfy any import from torchdata.
+            class UniversalMock:
+                def __init__(self, *args, **kwargs): pass
+                def __getattr__(self, name): return UniversalMock()
+                def __call__(self, *args, **kwargs): return UniversalMock()
+                @classmethod
+                def __subclasscheck__(cls, subclass): return True
+                @classmethod
+                def __instancecheck__(cls, instance): return True
+                # Fix for: TypeError: __mro_entries__ must return a tuple
+                def __mro_entries__(self, bases):
+                    return (object,)
 
-            # Now import
-            from model import gasa_classifier
-            from gasa_utils import generate_graph
+            class MockModule(types.ModuleType):
+                def __getattr__(self, name): return UniversalMock()
+                def __setattr__(self, name, value): pass
+
+            for mname in ['torchdata', 'torchdata.datapipes', 'torchdata.datapipes.iter', 
+                         'torchdata.dataloader2', 'torchdata.dataloader2.graph',
+                         'dgl.graphbolt', 'dgl.graphbolt.base', 'dgl.graphbolt.dataloader',
+                         'dgl.graphbolt.item_sampler', 'dgl.graphbolt.feature_fetcher',
+                         'dgl.graphbolt.minibatch_transformer']:
+                if mname not in sys.modules:
+                    sys.modules[mname] = MockModule(mname)
+            # --- End Patch ---
+
+            # Ensure gasa_model's parent is in path so it can be imported as a package
+            parent_dir = os.path.dirname(__file__)
+            if parent_dir not in sys.path:
+                sys.path.insert(0, parent_dir)
+
+            # Now import using package prefix
+            from gasa_model.model import gasa_classifier
+            from gasa_model.gasa_utils import generate_graph
 
             # Load model configuration
             model_path = os.path.join(GASA_MODEL_PATH, 'gasa.pth')
@@ -63,12 +92,13 @@ class GASAPredictor:
                 return
 
             # Initialize model
+            # Based on checkpoint analysis: heads=6, dims=128, 64, 32
             self._model = gasa_classifier(
-                dropout=0.2,
-                num_heads=8,
+                dropout=0.1,
+                num_heads=6,
                 hidden_dim1=128,
-                hidden_dim2=128,
-                hidden_dim3=128
+                hidden_dim3=32,
+                hidden_dim2=64
             )
 
             # Load weights
@@ -104,9 +134,8 @@ class GASAPredictor:
         
         try:
             from gasa_model.gasa_utils import generate_graph
-            from gasa_model.model import predict_collate
+            from gasa_model.data import predict_collate, pred_data
             from torch.utils.data import DataLoader
-            from gasa_model.data import pred_data
             
             # Generate graphs
             graph = generate_graph(smiles_list)

@@ -134,7 +134,7 @@ export default function HubLayout({
             {/* Footer */}
             <footer className="mt-24 pt-10 border-t border-border/50 text-center">
               <p className="text-xs text-foreground-muted uppercase tracking-widest font-medium opacity-50">
-                &copy; 2026 Benchside Scientific &bull; Precision Pharmacological Intelligence
+                © 2026 Benchside Scientific • Precision Biomedical Intelligence
               </p>
             </footer>
           </div>

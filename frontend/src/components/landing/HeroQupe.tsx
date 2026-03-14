@@ -104,11 +104,11 @@ export function HeroQupe() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
+                    className="text-4xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
                     The AI Workspace for <br className="hidden md:block" />
                     {/* Text Highlight using specific User Color - Sliding Animation */}
-                    <div className="inline-block relative h-[1.1em] overflow-hidden align-bottom">
+                    <div className="inline-block relative h-[1.1em] overflow-hidden align-bottom max-w-full">
                         <AnimatePresence mode="wait">
                             <motion.span
                                 key={wordIndex}

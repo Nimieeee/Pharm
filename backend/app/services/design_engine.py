@@ -202,15 +202,23 @@ class DesignEngine:
         - bullets_only: Full-width bullet points
         - data_callout: Large metric/number display
         - image_full: Full-width image with caption
+        - diagram: Technical diagram with Mermaid.js rendering
+        - chart: Data visualization slide
         """
         bullets = slide.get("bullets", [])
         has_image = bool(slide.get("image_prompt"))
         has_data = slide.get("data") is not None
+        has_chart = slide.get("chart_data") is not None
+        has_mermaid = slide.get("mermaid_code") is not None
         word_count = sum(len(b.split()) for b in bullets)
         
         # Hard rules
         if slide.get("slide_number") == 1:
             return "title"
+        if has_mermaid:
+            return "diagram"
+        if has_chart:
+            return "chart"
         if has_data:
             candidate = "data_callout"
         elif bullets == [] and has_image:
@@ -226,9 +234,9 @@ class DesignEngine:
         
         # Anti-repetition: no 3 in a row
         if candidate == prev_layout == prev_prev_layout:
-            alternatives = ["two_column", "data_callout", "bullets_only"]
+            alternatives = ["two_column", "data_callout", "bullets_only", "chart"]
             alternatives = [a for a in alternatives if a != candidate]
-            candidate = alternatives[0]
+            candidate = alternatives[0] if alternatives else "bullets_only"
         
         return candidate
     
@@ -316,6 +324,10 @@ class DesignEngine:
                 self._build_data_callout_slide(prs, slide_data, theme)
             elif layout == "image_full":
                 self._build_image_full_slide(prs, slide_data, theme, image_bytes)
+            elif layout == "diagram":
+                self._build_diagram_slide(prs, slide_data, theme)
+            elif layout == "chart":
+                self._build_chart_slide(prs, slide_data, theme)
             else:
                 self._build_bullets_slide(prs, slide_data, theme)
             
@@ -574,6 +586,135 @@ class DesignEngine:
             p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
             p.font.name = theme["body_font"]
             p.space_after = Pt(8)
+    
+    def _build_diagram_slide(self, prs, data, theme):
+        """Technical diagram slide with Mermaid.js code display"""
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        
+        # Light background
+        bg = slide.background
+        bg.fill.solid()
+        bg.fill.fore_color.rgb = RGBColor.from_string(theme["bg_light"])
+        
+        # Title
+        title_box = slide.shapes.add_textbox(
+            Inches(0.8), Inches(0.5), Inches(11.7), Inches(1)
+        )
+        tf = title_box.text_frame
+        p = tf.paragraphs[0]
+        p.text = data["title"]
+        p.font.size = Pt(28)
+        p.font.bold = True
+        p.font.color.rgb = RGBColor.from_string(theme["primary"])
+        p.font.name = theme["header_font"]
+        
+        # Mermaid diagram code display
+        mermaid_code = data.get("mermaid_code", "")
+        if mermaid_code:
+            # Display diagram as code block
+            diagram_box = slide.shapes.add_textbox(
+                Inches(0.8), Inches(1.8), Inches(11.7), Inches(4.5)
+            )
+            tf = diagram_box.text_frame
+            tf.word_wrap = True
+            
+            # Add code header
+            p = tf.paragraphs[0]
+            p.text = "[Technical Diagram - Mermaid.js]"
+            p.font.size = Pt(12)
+            p.font.italic = True
+            p.font.color.rgb = RGBColor.from_string(theme["muted"])
+            
+            # Add the diagram code
+            p = tf.add_paragraph()
+            p.text = mermaid_code[:500] + "..." if len(mermaid_code) > 500 else mermaid_code
+            p.font.size = Pt(10)
+            p.font.name = "Courier New"
+            p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
+            p.space_before = Pt(12)
+        
+        # Bullets/context below diagram
+        if data.get("bullets"):
+            bullet_box = slide.shapes.add_textbox(
+                Inches(0.8), Inches(6.5), Inches(11.7), Inches(1)
+            )
+            tf = bullet_box.text_frame
+            tf.word_wrap = True
+            for j, bullet in enumerate(data.get("bullets", [])[:2]):  # Max 2 bullets
+                p = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
+                p.text = f"• {bullet}"
+                p.font.size = Pt(14)
+                p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
+                p.font.name = theme["body_font"]
+    
+    def _build_chart_slide(self, prs, data, theme):
+        """Chart/data visualization slide"""
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        
+        # Light background
+        bg = slide.background
+        bg.fill.solid()
+        bg.fill.fore_color.rgb = RGBColor.from_string(theme["bg_light"])
+        
+        # Title
+        title_box = slide.shapes.add_textbox(
+            Inches(0.8), Inches(0.5), Inches(11.7), Inches(1)
+        )
+        tf = title_box.text_frame
+        p = tf.paragraphs[0]
+        p.text = data["title"]
+        p.font.size = Pt(28)
+        p.font.bold = True
+        p.font.color.rgb = RGBColor.from_string(theme["primary"])
+        p.font.name = theme["header_font"]
+        
+        # Chart data display
+        chart_data = data.get("chart_data", {})
+        if chart_data and chart_data.get("type"):
+            # Display chart metadata
+            chart_box = slide.shapes.add_textbox(
+                Inches(0.8), Inches(1.8), Inches(11.7), Inches(4)
+            )
+            tf = chart_box.text_frame
+            tf.word_wrap = True
+            
+            p = tf.paragraphs[0]
+            p.text = f"Chart Type: {chart_data.get('type', 'Unknown').upper()}"
+            p.font.size = Pt(14)
+            p.font.bold = True
+            p.font.color.rgb = RGBColor.from_string(theme["primary"])
+            
+            # Display labels and values
+            labels = chart_data.get("labels", [])
+            values = chart_data.get("values", [])
+            
+            if labels and values:
+                p = tf.add_paragraph()
+                p.text = "\nData Points:"
+                p.font.size = Pt(12)
+                p.font.bold = True
+                p.space_before = Pt(12)
+                
+                for label, value in zip(labels[:8], values[:8]):  # Max 8 data points
+                    p = tf.add_paragraph()
+                    p.text = f"  • {label}: {value}"
+                    p.font.size = Pt(11)
+                    p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
+        
+        # Context bullets below chart
+        if data.get("bullets"):
+            bullet_box = slide.shapes.add_textbox(
+                Inches(0.8), Inches(6), Inches(11.7), Inches(1.5)
+            )
+            tf = bullet_box.text_frame
+            tf.word_wrap = True
+            for j, bullet in enumerate(data.get("bullets", [])[:3]):
+                p = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
+                p.text = f"• {bullet}"
+                p.font.size = Pt(14)
+                p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
+                p.font.name = theme["body_font"]
+                p.space_after = Pt(6)
     
     def _add_slide_numbers(self, prs, theme):
         """Add slide numbers to content slides"""

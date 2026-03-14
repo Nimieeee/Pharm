@@ -129,7 +129,7 @@ export default function DDIDashboard() {
 
           {/* Drug Inputs */}
           {mode === 'single' ? (
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={drugA}
@@ -147,7 +147,7 @@ export default function DDIDashboard() {
               <button
                 onClick={handleSingleCheck}
                 disabled={loading || !drugA.trim() || !drugB.trim()}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Pill className="w-5 h-5" />}
                 Check

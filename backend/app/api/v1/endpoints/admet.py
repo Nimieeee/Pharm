@@ -11,7 +11,6 @@ from app.models.user import User
 from supabase import Client
 
 # Import calculators for synthetic accessibility
-from app.services.sas_service import sas_calculator
 from app.services.gasa_service import gasa_predictor
 from app.services.simple_gasa_service import simple_gasa_predictor
 
@@ -80,33 +79,23 @@ async def analyze_batch(
 
         results = await admet_service.analyze_batch_structured(capped)
 
-        # Add SAS and GASA scores to each result
+        # Add GASA scores to each result
         for result in results:
             smiles = result.get('smiles', '')
             if smiles:
-                # Calculate SAS
-                sas_result = sas_calculator.calculate(smiles)
-                if sas_result:
-                    result['synthetic_accessibility'] = sas_result
-
-                # Calculate GASA (if available)
+                # Calculate GASA (use simple predictor as fallback)
                 gasa_result = gasa_predictor.predict_single(smiles)
-                if gasa_result and result.get('synthetic_accessibility'):
-                    result['synthetic_accessibility'].update({
+                if not gasa_result:
+                    # Fallback to simple GASA
+                    gasa_result = simple_gasa_predictor.predict_single(smiles)
+                
+                if gasa_result:
+                    result['synthetic_accessibility'] = {
                         'gasa_prediction': gasa_result['prediction'],
                         'gasa_easy_probability': gasa_result['easy_probability'],
                         'gasa_hard_probability': gasa_result['hard_probability'],
                         'gasa_interpretation': gasa_result['interpretation']
-                    })
-
-                    # Add consensus
-                    sas_easy = result['synthetic_accessibility']['sas_score'] <= 5.0
-                    gasa_easy = gasa_result['prediction'] == 0
-                    result['synthetic_accessibility']['consensus'] = (
-                        "Both methods agree: Easy to synthesize" if (sas_easy and gasa_easy) else
-                        "Both methods agree: Difficult to synthesize" if (not sas_easy and not gasa_easy) else
-                        "Mixed results: Check both scores"
-                    )
+                    }
 
         return {
             "success": True,
@@ -152,38 +141,28 @@ async def analyze_molecule(
             except Exception:
                 pass
 
-        # 3. Calculate SAS score
-        sas_result = sas_calculator.calculate(request.smiles)
-
-        # 4. Calculate GASA score (use simple predictor as fallback)
+        # 3. Calculate GASA score (Synthetic Accessibility)
         gasa_result = gasa_predictor.predict_single(request.smiles)
         if not gasa_result:
             # Fallback to simple GASA if DGL-based fails
             gasa_result = simple_gasa_predictor.predict_single(request.smiles)
 
-        # 5. Get AI interpretation
+        # 4. Get AI interpretation
         ai_interpretation = None
         try:
             ai_interpretation = await admet_service._generate_ai_interpretation(admet_data)
         except Exception:
             pass
 
-        # 6. Build combined synthetic accessibility result
-        synthetic_accessibility = sas_result
+        # 5. Build combined synthetic accessibility result
+        synthetic_accessibility = None
         if gasa_result:
-            synthetic_accessibility['gasa_prediction'] = gasa_result['prediction']
-            synthetic_accessibility['gasa_easy_probability'] = gasa_result['easy_probability']
-            synthetic_accessibility['gasa_hard_probability'] = gasa_result['hard_probability']
-            synthetic_accessibility['gasa_interpretation'] = gasa_result['interpretation']
-
-            # Consensus scoring
-            sas_easy = sas_result['sas_score'] <= 5.0 if sas_result else False
-            gasa_easy = gasa_result['prediction'] == 0
-            synthetic_accessibility['consensus'] = (
-                "Both methods agree: Easy to synthesize" if (sas_easy and gasa_easy) else
-                "Both methods agree: Difficult to synthesize" if (not sas_easy and not gasa_easy) else
-                "Mixed results: Check both scores"
-            )
+            synthetic_accessibility = {
+                'gasa_prediction': gasa_result['prediction'],
+                'gasa_easy_probability': gasa_result['easy_probability'],
+                'gasa_hard_probability': gasa_result['hard_probability'],
+                'gasa_interpretation': gasa_result['interpretation']
+            }
 
         # 7. Build structured categories from raw data
         categories = admet_service.processor.build_structured_categories(admet_data)
@@ -218,18 +197,13 @@ async def get_molecule_svg(
     """
     Generate SVG for molecule structure.
 
-    - **smiles**: SMILES string (auto-detects URL encoding)
+    - **smiles**: SMILES string (URL-decoded by FastAPI automatically)
     - Returns: SVG string
     """
     try:
-        # Auto-detect and decode URL-encoded SMILES
-        # Check if smiles contains % (URL-encoded)
-        if '%' in smiles:
-            decoded_smiles = urllib.parse.unquote(smiles)
-        else:
-            decoded_smiles = smiles
-
-        svg = await admet_service.get_svg(decoded_smiles)
+        # FastAPI automatically URL-decodes query parameters
+        # No need for manual urllib.parse.unquote
+        svg = await admet_service.get_svg(smiles)
 
         if not svg:
             # Return placeholder SVG for invalid SMILES
@@ -300,20 +274,18 @@ async def export_admet_pdf(
         # Get full ADMET data
         admet_data = await admet_service.predict_admet(smiles)
         
-        # Calculate SAS/GASA scores and AI interpretation
-        from app.services.sas_service import sas_calculator
+        # Calculate GASA scores and AI interpretation
         from app.services.gasa_service import gasa_predictor
         from app.services.simple_gasa_service import simple_gasa_predictor
         
         admet_data["synthetic_accessibility"] = {
-            "sas": sas_calculator.calculate(smiles),
             "gasa": gasa_predictor.predict_single(smiles),
             "simple_gasa": simple_gasa_predictor.predict_single(smiles)
         }
         admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
         
         # Generate PDF
-        pdf_content = await admet_service.generate_pdf(admet_data)
+        pdf_content = await admet_service.generate_pdf(admet_data, admet_data["synthetic_accessibility"])
         
         # Return as download
         file_stream = io.BytesIO(pdf_content)
@@ -347,20 +319,18 @@ async def export_admet_docx(
         # Get full ADMET data
         admet_data = await admet_service.predict_admet(smiles)
         
-        # Calculate SAS/GASA scores and AI interpretation
-        from app.services.sas_service import sas_calculator
+        # Calculate GASA scores and AI interpretation
         from app.services.gasa_service import gasa_predictor
         from app.services.simple_gasa_service import simple_gasa_predictor
         
         admet_data["synthetic_accessibility"] = {
-            "sas": sas_calculator.calculate(smiles),
             "gasa": gasa_predictor.predict_single(smiles),
             "simple_gasa": simple_gasa_predictor.predict_single(smiles)
         }
         admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
         
         # Generate DOCX
-        docx_content = await admet_service.generate_docx(admet_data)
+        docx_content = await admet_service.generate_docx(admet_data, admet_data["synthetic_accessibility"])
         
         # Return as download
         file_stream = io.BytesIO(docx_content)
