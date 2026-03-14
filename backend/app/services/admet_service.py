@@ -695,7 +695,7 @@ CRITICAL RULES:
                     h2 {{ color: #1e40af; page-break-after: avoid; padding-top: 15px; }}
 
                     .section {{ margin-bottom: 20px; }}
-                    .interpretation {{
+                    .insight-box {{
                         background: #f8fafc;
                         padding: 15px;
                         border-left: 5px solid #64748b;
@@ -746,7 +746,7 @@ CRITICAL RULES:
                 </div>
 
                 <h2>Medicinal Chemistry Insights</h2>
-                <div class="interpretation">
+                <div class="insight-box">
                     {ai_interpretation}
                 </div>
 
