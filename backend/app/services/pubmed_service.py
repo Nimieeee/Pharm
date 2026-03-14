@@ -263,6 +263,7 @@ class PubMedService:
         pmid = data.get("pubmedurl", "").split("/")[-1] if "pubmedurl" in data else ""
         
         return {
+            "id": pmid,
             "pmid": pmid,
             "title": data.get("title", ""),
             "authors": authors,

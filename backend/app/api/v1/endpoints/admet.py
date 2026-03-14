@@ -13,6 +13,7 @@ from supabase import Client
 # Import calculators for synthetic accessibility
 from app.services.sas_service import sas_calculator
 from app.services.gasa_service import gasa_predictor
+from app.services.simple_gasa_service import simple_gasa_predictor
 
 router = APIRouter()
 
@@ -154,8 +155,11 @@ async def analyze_molecule(
         # 3. Calculate SAS score
         sas_result = sas_calculator.calculate(request.smiles)
 
-        # 4. Calculate GASA score
+        # 4. Calculate GASA score (use simple predictor as fallback)
         gasa_result = gasa_predictor.predict_single(request.smiles)
+        if not gasa_result:
+            # Fallback to simple GASA if DGL-based fails
+            gasa_result = simple_gasa_predictor.predict_single(request.smiles)
 
         # 5. Get AI interpretation
         ai_interpretation = None
