@@ -359,6 +359,8 @@ class ADMETService:
         """
         Generate AI-powered interpretation of ADMET results.
 
+        Provides molecule-specific, actionable medicinal chemistry insights.
+
         Args:
             admet_data: Full ADMET prediction results
             molecule_name: Optional molecule name
@@ -370,68 +372,163 @@ class ADMETService:
         if not ai:
             return None
 
-        # Extract key properties for the prompt
+        # Extract comprehensive molecular properties
         key_props = []
+        structural_features = []
+        recommendations = []
+
+        # Molecular properties
+        mw = admet_data.get('molecular_weight', 0)
+        logp = admet_data.get('logP', 0)
+        tpsa = admet_data.get('tpsa', 0)
+        h_donors = admet_data.get('hydrogen_bond_donors', 0)
+        h_acceptors = admet_data.get('hydrogen_bond_acceptors', 0)
+        rot_bonds = admet_data.get('num_rotatable_bonds', 0)
+        aromatic_rings = admet_data.get('num_aromatic_rings', 0)
 
         # Drug likeness
         if 'QED' in admet_data:
             qed = admet_data['QED']
             qed_rating = "excellent" if qed > 0.8 else "good" if qed > 0.6 else "moderate" if qed > 0.4 else "poor"
-            key_props.append(f"QED: {qed:.3f} ({qed_rating})")
+            key_props.append(f"QED {qed:.2f} ({qed_rating})")
+
         if 'Lipinski' in admet_data:
             lip = admet_data['Lipinski']
             violations = 4 - int(lip) if isinstance(lip, (int, float)) else 0
-            key_props.append(f"Lipinski: {violations} violations" if violations > 0 else "Lipinski: compliant")
+            if violations > 0:
+                key_props.append(f"{violations} Lipinski violations")
+                recommendations.append("address Lipinski violations")
+            else:
+                key_props.append("Lipinski compliant")
+
+        # Size and lipophilicity assessment
+        if mw > 500:
+            structural_features.append(f"high MW ({mw:.0f})")
+            recommendations.append("reduce molecular weight by removing non-essential substituents")
+        if logp > 5:
+            structural_features.append(f"high lipophilicity (LogP {logp:.1f})")
+            recommendations.append("reduce lipophilicity by adding polar groups or replacing aromatic rings with heterocycles")
+        elif logp < 0:
+            structural_features.append(f"low lipophilicity (LogP {logp:.1f})")
+            recommendations.append("increase lipophilicity by adding hydrophobic groups")
+
+        # Polar surface area
+        if tpsa > 140:
+            structural_features.append(f"high TPSA ({tpsa:.0f} Å²)")
+            recommendations.append("reduce polar surface area by removing or masking polar groups")
+        elif tpsa < 25:
+            structural_features.append(f"low TPSA ({tpsa:.0f} Å²)")
+            recommendations.append("increase solubility by adding polar groups")
+
+        # Hydrogen bonding
+        if h_donors > 5:
+            structural_features.append(f"many H-bond donors ({h_donors})")
+            recommendations.append("reduce H-bond donors to improve permeability")
+        if h_acceptors > 10:
+            structural_features.append(f"many H-bond acceptors ({h_acceptors})")
+
+        # Flexibility
+        if rot_bonds > 10:
+            structural_features.append(f"high flexibility ({rot_bonds} rotatable bonds)")
+            recommendations.append("reduce conformational flexibility by introducing ring constraints")
+
+        # Aromaticity
+        if aromatic_rings > 3:
+            structural_features.append(f"polyaromatic ({aromatic_rings} rings)")
+            recommendations.append("reduce aromatic ring count to improve solubility and reduce toxicity risk")
 
         # Absorption
         if 'HIA_Hou' in admet_data:
             hia = admet_data['HIA_Hou']
-            key_props.append(f"Human absorption: {'high' if hia > 0.8 else 'moderate' if hia > 0.5 else 'low'} ({hia:.2f})")
+            if hia < 0.3:
+                key_props.append(f"poor absorption ({hia:.2f})")
+                recommendations.append("improve intestinal absorption by reducing TPSA or adding solubilizing groups")
+            elif hia > 0.8:
+                key_props.append(f"excellent absorption ({hia:.2f})")
+
         if 'Caco2_Wang' in admet_data:
             caco2 = admet_data['Caco2_Wang']
-            key_props.append(f"Caco-2 permeability: {caco2:.2f}")
+            if caco2 < -5:
+                key_props.append(f"low permeability ({caco2:.2f})")
+                recommendations.append("enhance Caco-2 permeability by reducing molecular weight or H-bond count")
+            elif caco2 > -4:
+                key_props.append(f"good permeability ({caco2:.2f})")
 
-        # Toxicity - critical endpoints
+        # BBB penetration
+        if 'BBB_Martins' in admet_data:
+            bbb = admet_data['BBB_Martins']
+            if bbb > 0.5:
+                key_props.append("crosses BBB")
+            elif bbb < 0.1:
+                key_props.append("poor BBB penetration")
+
+        # Toxicity - critical endpoints with specific recommendations
         toxicity_concerns = []
         if 'hERG' in admet_data:
             herg = admet_data['hERG']
             if herg > 0.7:
-                toxicity_concerns.append(f"high hERG risk ({herg:.2f})")
+                toxicity_concerns.append(f"high hERG liability ({herg:.2f})")
+                recommendations.append("reduce hERG risk by removing basic amines or reducing lipophilicity")
             elif herg > 0.4:
-                toxicity_concerns.append(f"moderate hERG risk ({herg:.2f})")
+                toxicity_concerns.append(f"moderate hERG concern ({herg:.2f})")
+
         if 'DILI' in admet_data:
             dili = admet_data['DILI']
             if dili > 0.7:
-                toxicity_concerns.append(f"high liver toxicity ({dili:.2f})")
+                toxicity_concerns.append(f"high DILI risk ({dili:.2f})")
+                recommendations.append("mitigate liver toxicity by removing metabolically labile groups (e.g., anilines, thiophenes)")
             elif dili > 0.4:
-                toxicity_concerns.append(f"moderate liver toxicity ({dili:.2f})")
+                toxicity_concerns.append(f"moderate DILI concern ({dili:.2f})")
+
         if 'AMES' in admet_data and admet_data['AMES'] > 0.5:
             toxicity_concerns.append(f"mutagenic ({admet_data['AMES']:.2f})")
+            recommendations.append("address mutagenicity by removing or replacing structural alerts")
+
         if 'Carcinogens_Lagunin' in admet_data and admet_data['Carcinogens_Lagunin'] > 0.5:
             toxicity_concerns.append(f"carcinogenic ({admet_data['Carcinogens_Lagunin']:.2f})")
 
-        if toxicity_concerns:
-            key_props.append(f"Toxicity: {', '.join(toxicity_concerns)}")
+        # CYP inhibition
+        cyp_inhibitors = []
+        for cyp in ['CYP1A2_Veith', 'CYP2C9_Veith', 'CYP2C19_Veith', 'CYP2D6_Veith', 'CYP3A4_Veith']:
+            if cyp in admet_data and admet_data[cyp] > 0.7:
+                cyp_name = cyp.replace('_Veith', '').replace('CYP', 'CYP')
+                cyp_inhibitors.append(cyp_name)
 
-        # Build the prompt
+        if cyp_inhibitors:
+            key_props.append(f"CYP inhibitor ({', '.join(cyp_inhibitors)})")
+            recommendations.append("evaluate drug-drug interaction potential via CYP inhibition")
+
+        # Build the comprehensive prompt
         name_str = f" for {molecule_name}" if molecule_name else ""
-        properties_str = "\n".join(f"- {prop}" for prop in key_props) if key_props else "No properties available"
+        properties_str = "\n".join(f"- {prop}" for prop in key_props) if key_props else "No key properties"
+        features_str = ", ".join(structural_features) if structural_features else "No notable features"
 
-        prompt = f"""You are a medicinal chemistry expert. Provide a concise, actionable interpretation of ADMET analysis{name_str}.
+        # Generate specific recommendations (top 3)
+        unique_recs = list(dict.fromkeys(recommendations))[:3]
+        recs_str = "; ".join(unique_recs) if unique_recs else "Continue optimization"
 
+        prompt = f"""You are a senior medicinal chemist. Provide an expert, molecule-specific ADMET interpretation{name_str}.
+
+MOLECULAR PROFILE:
 {properties_str}
 
-Provide a 2-3 sentence summary covering:
-1. Drug-likeness (QED/Lipinski)
-2. Key toxicity concerns (if any)
-3. Specific recommendation
+STRUCTURAL FEATURES: {features_str}
+
+RECOMMENDED ACTIONS: {recs_str}
+
+Provide a 2-3 sentence expert assessment that:
+1. Summarizes the overall developability profile
+2. Identifies the MOST CRITICAL liability (toxicity, ADME, or physicochemical)
+3. Provides ONE specific, actionable structural modification
 
 CRITICAL RULES:
-- Be direct and specific - no generic phrases like "warrants further investigation"
-- Name specific structural strategies (e.g., "reduce lipophilicity", "add solubilizing group")
+- NEVER use generic phrases like "warrants further investigation" or "may benefit from"
+- ALWAYS name specific structural features (e.g., "the aniline moiety", "the tertiary amine", "the biphenyl system")
+- ALWAYS provide concrete chemical strategies (e.g., "replace the thiophene with a pyrazole", "add a hydroxyl at the para position")
+- Focus on the single most important issue, not a laundry list
+- Use professional but direct language
 - NO markdown formatting
-- Output ONLY the interpretation text
-- Maximum 3 sentences"""
+- Output ONLY the interpretation text"""
 
         try:
             from mistralai import Mistral
@@ -446,7 +543,7 @@ CRITICAL RULES:
             chat_response = client.chat.complete(
                 model="mistral-small-latest",
                 messages=[
-                    {"role": "system", "content": "You are a medicinal chemistry expert. Provide direct, actionable ADMET interpretations. Be specific about structural strategies. No generic phrases. No markdown."},
+                    {"role": "system", "content": "You are a senior medicinal chemist providing expert, molecule-specific ADMET assessments. You always name specific structural features and provide concrete chemical strategies. No generic phrases."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=200,
@@ -486,17 +583,22 @@ CRITICAL RULES:
     async def generate_pdf(self, results: Dict[str, Any]) -> bytes:
         """
         Generate PDF report using xhtml2pdf.
+
+        Features:
+        - Proper column widths (Interpretation: 45%)
+        - Word wrapping for long text
+        - Benchside logo watermark
         """
         try:
             from xhtml2pdf import pisa
             import io
-            
+
             # Generate structured categories for the report
             categories = self.processor.build_structured_categories(results)
             ai_interpretation = results.get("ai_interpretation", "No interpretation available.")
             smiles = results.get("smiles", "Unknown")
             mol_name = results.get("molecule_name", "Drug Candidate")
-            
+
             # Pre-generate tables HTML to avoid nested f-string issues
             tables_html = ""
             for cat in categories:
@@ -504,22 +606,22 @@ CRITICAL RULES:
                 for prop in cat['properties']:
                     rows_html += f"""
                     <tr>
-                        <td>{prop['name']}</td>
-                        <td>{prop['value']}{prop.get('unit', '')}</td>
+                        <td class="param">{prop['name']}</td>
+                        <td class="value">{prop['value']}{prop.get('unit', '')}</td>
                         <td class="status-{prop['status']}">{prop['status'].upper()}</td>
-                        <td>{prop['interpretation']}</td>
+                        <td class="interpretation">{prop['interpretation']}</td>
                     </tr>
                     """
-                
+
                 tables_html += f"""
                 <h2>{cat['name']}</h2>
                 <table>
                     <thead>
                         <tr>
-                            <th>Parameter</th>
-                            <th>Value</th>
-                            <th>Status</th>
-                            <th>Interpretation</th>
+                            <th style="width: 20%;">Parameter</th>
+                            <th style="width: 20%;">Value</th>
+                            <th style="width: 15%;">Status</th>
+                            <th style="width: 45%;">Interpretation</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -528,26 +630,37 @@ CRITICAL RULES:
                 </table>
                 """
 
-            # Simple HTML template for PDF with specific column widths
+            # HTML template with Benchside watermark
             html = f"""
             <html>
             <head>
                 <style>
-                    body {{ font-family: Helvetica, Arial, sans-serif; color: #333; }}
-                    h1 {{ color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
-                    h2 {{ color: #1e40af; margin-top: 20px; }}
+                    @page {{
+                        size: A4;
+                        margin: 1in;
+                        @frame footer {{
+                            -pdf-frame-content: footer;
+                            left: 50pt; bottom: 30pt;
+                            width: 500pt;
+                        }}
+                    }}
+                    body {{ font-family: Helvetica, Arial, sans-serif; color: #333; font-size: 10pt; }}
+                    h1 {{ color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; font-size: 18pt; }}
+                    h2 {{ color: #1e40af; margin-top: 20px; font-size: 14pt; }}
                     .section {{ margin-bottom: 20px; }}
-                    .interpretation {{ background: #f8fafc; padding: 15px; border-left: 5px solid #64748b; font-style: italic; margin-bottom: 20px; }}
+                    .interpretation {{ background: #f8fafc; padding: 15px; border-left: 5px solid #64748b; font-style: italic; margin-bottom: 20px; line-height: 1.5; }}
                     table {{ width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }}
-                    th, td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 9pt; word-wrap: break-word; }}
+                    th, td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 9pt; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; }}
                     th {{ background-color: #f1f5f9; font-weight: bold; }}
-                    .col-param {{ width: 20%; }}
-                    .col-value {{ width: 15%; }}
-                    .col-status {{ width: 15%; }}
-                    .col-interp {{ width: 50%; }}
+                    .param {{ width: 20%; }}
+                    .value {{ width: 20%; }}
+                    .status {{ width: 15%; }}
+                    .interpretation {{ width: 45%; }}
                     .status-success {{ color: #16a34a; font-weight: bold; }}
                     .status-warning {{ color: #ca8a04; font-weight: bold; }}
                     .status-danger {{ color: #dc2626; font-weight: bold; }}
+                    .watermark {{ position: fixed; bottom: 20pt; right: 40pt; opacity: 0.3; font-size: 8pt; color: #2563eb; }}
+                    #footer {{ text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10pt; }}
                 </style>
             </head>
             <body>
@@ -563,22 +676,24 @@ CRITICAL RULES:
                 </div>
 
                 {tables_html}
-                
-                <p style="margin-top: 50px; font-size: 8pt; color: #94a3b8; text-align: center;">
+
+                <div class="watermark">Benchside</div>
+
+                <div id="footer">
                     Generated by Benchside Scientific &bull; Precision Pharmacological Intelligence &copy; 2026
-                </p>
+                </div>
             </body>
             </html>
             """
-            
+
             pdf_out = io.BytesIO()
             pisa_status = pisa.CreatePDF(html, dest=pdf_out)
-            
+
             if pisa_status.err:
-                raise Exception("PDF generation error")
-                
+                raise Exception("PDF generation failed")
+
             return pdf_out.getvalue()
-            
+
         except Exception as e:
             print(f"❌ PDF generation failed: {e}")
             raise

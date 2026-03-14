@@ -1,9 +1,9 @@
 """
-Slide Generation Service — Kimi-style agentic pipeline.
+Slide Generation Service — Premium presentation platform.
 
 Step 1: generate_outline()  — AI creates JSON slide structure
-Step 2: refine_content()    — AI writes full prose per slide
-Step 3: generate_images()   — Pollinations creates visuals
+Step 2: refine_content()    — AI writes full prose per slide (with contextual memory)
+Step 3: generate_images()   — Pollinations creates visuals (with art direction)
 Step 4: assemble_pptx()     — Design Engine builds the file
 """
 
@@ -13,6 +13,26 @@ from typing import Optional, Callable, Dict, List, Any
 from app.services.multi_provider import MultiProviderService
 from app.services.image_gen import ImageGenerationService
 from app.services.design_engine import DesignEngine
+
+# Phase 1: Premium Quality - Art Direction Styles
+ART_DIRECTION_STYLES = {
+    "corporate": "Professional corporate vector illustration, minimalist, flat design, white background, unified color palette, clean lines. No text.",
+    "photorealistic": "High-quality photorealistic render, professional studio lighting, clean composition, corporate setting, sharp focus. No text.",
+    "minimalist": "Ultra-minimalist line art, monochrome, geometric shapes, ample white space, elegant simplicity. No text.",
+    "isometric": "Isometric 3D illustration, soft shadows, pastel colors, clean modern style, technical precision. No text.",
+    "sketch": "Professional hand-drawn sketch style, blueprint aesthetic, technical drawing, white background. No text."
+}
+
+# Phase 1: Content Constraints - Rule of Three
+CONTENT_CONSTRAINTS = """
+STRICT CONTENT LIMITS (ENFORCED):
+- Maximum 3 bullet points per slide
+- Maximum 12 words per bullet point
+- Maximum 1 sentence per bullet point
+- No paragraph text - single concise statements only
+- Focus on ONE key concept per slide
+- Avoid generic buzzwords: use specific metrics, names, and data
+"""
 
 
 class SlideService:
@@ -31,6 +51,9 @@ class SlideService:
         self.ai = multi_provider
         self.image_gen = image_gen
         self.design = DesignEngine()
+        self._slide_context = []  # Phase 1: Track content to prevent repetition
+        self._used_phrases = set()  # Track used key phrases
+        self._vibe = "corporate"  # Phase 1: Default art direction style
     
     async def generate_outline(
         self,
@@ -52,15 +75,18 @@ class SlideService:
         elif context:
             source_context = f"\n\nAdditional context:\n{context}"
         
-        prompt = f"""Create a presentation outline on: "{topic}"
+        prompt = f"""Create a PREMIUM presentation outline on: "{topic}"
 Number of slides: {num_slides}
 {source_context}
+
+{CONTENT_CONSTRAINTS}
 
 Return ONLY valid JSON with this exact schema:
 {{
   "title": "Presentation Title",
   "subtitle": "Subtitle",
   "theme": "ocean_gradient",
+  "vibe": "corporate",
   "slides": [
     {{
       "slide_number": 1,
@@ -70,24 +96,33 @@ Return ONLY valid JSON with this exact schema:
       "bullets": ["Point 1", "Point 2"],
       "speaker_notes": "What to say...",
       "image_prompt": "description of image to generate, or null for no image",
+      "chart_data": null,
       "data": null
     }}
   ]
 }}
 
-Layout options: "title", "two_column", "bullets_only", "data_callout", "image_full"
+Layout options: "title", "two_column", "bullets_only", "data_callout", "image_full", "comparison", "timeline"
 Theme options: "ocean_gradient", "forest_moss", "coral_energy", "warm_terracotta",
                "charcoal_minimal", "teal_trust", "berry_cream", "sage_calm",
                "cherry_bold", "midnight_executive"
+Vibe options: "corporate", "photorealistic", "minimalist", "isometric", "sketch"
 
-Rules:
-- First slide MUST be layout "title"
-- Last slide should be "title" (conclusion/thank you)
-- Never have 3 consecutive slides with the same layout
-- Max 6 bullets per slide (split if more needed)
-- set image_prompt to null if the slide is text-heavy or doesn't benefit from a visual illustration. No generic placeholders.
-- image_prompt should describe a professional, high-fidelity scientific illustration or medical diagram.
-- For data_callout: include "data": {{"value": "85%", "label": "Patient Response Rate"}}
+MANDATORY RULES:
+1. First slide MUST be layout "title" - only presentation title and subtitle
+2. Last slide MUST be layout "title" - simple "Thank You" with contact placeholder, NO bullet points
+3. Never have 3 consecutive slides with the same layout
+4. MAXIMUM 3 bullets per slide - NEVER more
+5. Each bullet MAXIMUM 12 words
+6. Use SPECIFIC named entities - NO generic phrases like "many companies" or "various tools":
+   - Include at least 1 specific company name per slide (e.g., "Pfizer", "DeepMind", "Novartis")
+   - Include at least 1 specific technology/AI model name (e.g., "AlphaFold", "GPT-4", "BERT")
+   - Include real metrics with numbers (e.g., "85% accuracy", "3-month reduction")
+7. Each slide must advance the narrative - no repetition of concepts
+8. Closing slides (last 2 slides) should be minimal: title + brief subtitle only
+9. set image_prompt to null if text-heavy or no visual benefit
+10. image_prompt should describe professional scientific/medical illustration
+11. For data slides: include "chart_data": {{"type": "bar", "labels": ["A", "B"], "values": [10, 20]}}
 """
         
         response = await self.ai.generate(
