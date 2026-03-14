@@ -435,60 +435,76 @@ class ADMETProcessor:
         
         # Header label mapping (ADMETlab abbreviations)
         header_labels = {
-            "molecular_weight": "MW",
+            # Physicochemical
+            "molecular_weight": "Molecular Weight",
             "logP": "LogP",
-            "hydrogen_bond_donors": "H-Bond Donors",
-            "hydrogen_bond_acceptors": "H-Bond Acceptors",
-            "tpsa": "TPSA",
+            "hydrogen_bond_donors": "Hydrogen Bond Donors",
+            "hydrogen_bond_acceptors": "Hydrogen Bond Acceptors",
+            "tpsa": "Topological Polar Surface Area",
             "num_rotatable_bonds": "Rotatable Bonds",
-            "num_rings": "Rings",
+            "num_rings": "Ring Count",
             "num_heavy_atoms": "Heavy Atoms",
             "stereo_centers": "Stereo Centers",
-            "Lipinski": "Lipinski (Ro5)",
-            "QED": "QED",
-            "PAINS_alert": "PAINS",
-            "BRENK_alert": "BRENK",
-            "NIH_alert": "NIH",
-            "HIA_Hou": "HIA",
-            "Caco2_Wang": "Caco-2",
-            "PAMPA_NCATS": "PAMPA",
-            "Pgp_Broccatelli": "P-gp",
-            "BBB_Martins": "BBB",
-            "PPBR_AZ": "PPB",
-            "VDss_Lombardo": "VDss",
-            "CYP1A2_Veith": "CYP1A2",
-            "CYP2C9_Veith": "CYP2C9",
-            "CYP2C19_Veith": "CYP2C19",
-            "CYP2D6_Veith": "CYP2D6",
-            "CYP3A4_Veith": "CYP3A4",
+            
+            # Drug Likeness
+            "Lipinski": "Lipinski Rule of 5",
+            "QED": "Quantitative Estimate of Druglikeness",
+            "PAINS_alert": "PAINS Alerts",
+            "BRENK_alert": "BRENK Alerts",
+            "NIH_alert": "NIH Alerts",
+            
+            # Absorption
+            "HIA_Hou": "Human Intestinal Absorption",
+            "Caco2_Wang": "Cell Effective Permeability",
+            "PAMPA_NCATS": "PAMPA Permeability",
+            "Pgp_Broccatelli": "P-glycoprotein Inhibition",
+            "Solubility_AqSolDB": "Aqueous Solubility",
+            "Lipophilicity_AstraZeneca": "Lipophilicity",
+            "HydrationFreeEnergy_FreeSolv": "Hydration Free Energy",
+            "Bioavailability_Ma": "Oral Bioavailability",
+            
+            # Distribution
+            "BBB_Martins": "Blood-Brain Barrier Penetration",
+            "PPBR_AZ": "Plasma Protein Binding Rate",
+            "VDss_Lombardo": "Volume of Distribution",
+            
+            # Metabolism
+            "CYP1A2_Veith": "CYP1A2 Inhibition",
+            "CYP2C9_Veith": "CYP2C9 Inhibition",
+            "CYP2C19_Veith": "CYP2C19 Inhibition",
+            "CYP2D6_Veith": "CYP2D6 Inhibition",
+            "CYP3A4_Veith": "CYP3A4 Inhibition",
             "CYP2C9_Substrate_CarbonMangels": "CYP2C9 Substrate",
             "CYP2D6_Substrate_CarbonMangels": "CYP2D6 Substrate",
             "CYP3A4_Substrate_CarbonMangels": "CYP3A4 Substrate",
-            "Clearance_Hepatocyte_AZ": "Hepatic Clearance",
-            "Clearance_Microsome_AZ": "Microsomal Clearance",
-            "Half_Life_Obach": "Half-life",
-            "AMES": "Ames",
+            
+            # Excretion
+            "Clearance_Hepatocyte_AZ": "Drug Clearance (Hepatocyte)",
+            "Clearance_Microsome_AZ": "Drug Clearance (Microsome)",
+            "Half_Life_Obach": "Half Life",
+            
+            # Toxicity
+            "hERG": "hERG Blocking",
+            "AMES": "Mutagenicity",
+            "DILI": "Drug Induced Liver Injury",
+            "ClinTox": "Clinical Toxicity",
             "Carcinogens_Lagunin": "Carcinogenicity",
-            "ClinTox": "Clinical Tox",
-            "DILI": "DILI",
-            "hERG": "hERG",
-            "NR-AR": "NR-AR",
-            "NR-AR-LBD": "NR-AR-LBD",
-            "NR-AhR": "NR-AhR",
+            "LD50_Zhu": "Acute Toxicity LD50",
+            "Skin_Reaction": "Skin Reaction",
+            
+            # Tox21
+            "NR-AR": "Androgen Receptor (Full Length)",
+            "NR-AR-LBD": "Androgen Receptor (LBD)",
+            "NR-AhR": "Aryl Hydrocarbon Receptor",
             "NR-Aromatase": "Aromatase",
-            "NR-ER": "NR-ER",
-            "NR-ER-LBD": "NR-ER-LBD",
+            "NR-ER": "Estrogen Receptor (Full Length)",
+            "NR-ER-LBD": "Estrogen Receptor (LBD)",
             "NR-PPAR-gamma": "PPAR-γ",
-            "Skin_Reaction": "Skin Sens.",
-            "SR-ARE": "ARE",
+            "SR-ARE": "Antioxidant Response Element",
             "SR-ATAD5": "ATAD5",
-            "SR-HSE": "HSE",
-            "SR-MMP": "MMP",
-            "SR-p53": "p53",
-            "Solubility_AqSolDB": "Aq. Solubility",
-            "HydrationFreeEnergy_FreeSolv": "Hydration FE",
-            "Lipophilicity_AstraZeneca": "LogP (AZ)",
-            "Bioavailability_Ma": "Bioavailability",
+            "SR-HSE": "Heat Shock Factor Response",
+            "SR-MMP": "Mitochondrial Membrane Potential",
+            "SR-p53": "Tumor Protein p53",
         }
         
         # Check if flat format (ADMET-AI local engine)
@@ -561,6 +577,11 @@ class ADMETProcessor:
         """
         Map endpoint value to clinical interpretation with status symbol.
         
+        Uses DIRECTIONAL scoring:
+        - RISK_ENDPOINTS: Lower values = green (good), Higher = red (bad)
+        - BENEFIT_ENDPOINTS: Higher values = green (good), Lower = red (bad)
+        - PHYSICOCHEMICAL: Neutral - return empty string
+        
         Args:
             endpoint: The ADMET endpoint name
             value: The predicted value
@@ -577,78 +598,126 @@ class ADMETProcessor:
         except (TypeError, ValueError):
             return ""
         
-        # Define thresholds for different endpoints
-        thresholds = {
-            # Drug Likeness (higher is better)
-            "QED": [(0.6, "Good drug-likeness", "✅"), (0.3, "Moderate drug-likeness", "⚠️"), (0, "Poor drug-likeness", "❌")],
-            "Lipinski": [(3, "Passes Lipinski rule", "✅"), (2, "1 Lipinski violation", "⚠️"), (0, "Multiple Lipinski violations", "❌")],
-            
-            # Absorption (higher is generally better for permeability)
-            "HIA_Hou": [(0.9, "High intestinal absorption", "✅"), (0.5, "Moderate absorption", "⚠️"), (0, "Poor absorption", "❌")],
-            "Caco2_Wang": [(-4, "High permeability", "✅"), (-6, "Moderate permeability", "⚠️"), (-8, "Poor permeability", "❌")],
-            "PAMPA_NCATS": [(0.9, "High PAMPA permeability", "✅"), (0.5, "Moderate permeability", "⚠️"), (0, "Poor permeability", "❌")],
-            "Pgp_Broccatelli": [(0.5, "Not P-gp substrate", "✅"), (0.3, "Ambiguous", "⚠️"), (0, "P-gp substrate", "❌")],
-            
-            # Distribution (BBB - higher is better for brain penetration)
-            "BBB_Martins": [(0.7, "Crosses BBB", "✅"), (0.3, "Limited BBB penetration", "⚠️"), (0, "Does not cross BBB", "❌")],
-            "PPBR_AZ": [(10, "Low plasma protein binding", "✅"), (50, "Moderate binding", "⚠️"), (90, "High binding", "❌")],
-            "VDss_Lombardo": [(2, "Normal Vd", "✅"), (4, "Elevated Vd", "⚠️"), (8, "Very high Vd", "❌")],
-            
-            # Metabolism - CYP inhibition (lower is better)
-            "CYP1A2_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
-            "CYP2C9_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
-            "CYP2C19_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
-            "CYP2D6_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
-            "CYP3A4_Veith": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibitor", "⚠️"), (1.0, "Strong inhibitor", "❌")],
-            
-            # Metabolism - CYP substrates (higher = likely substrate)
-            "CYP2C9_Substrate_CarbonMangels": [(0.5, "Likely substrate", "⚠️"), (0.3, "Possible substrate", "⚠️"), (0, "Not substrate", "✅")],
-            "CYP2D6_Substrate_CarbonMangels": [(0.5, "Likely substrate", "⚠️"), (0.3, "Possible substrate", "⚠️"), (0, "Not substrate", "✅")],
-            "CYP3A4_Substrate_CarbonMangels": [(0.5, "Likely substrate", "⚠️"), (0.3, "Possible substrate", "⚠️"), (0, "Not substrate", "✅")],
-            
-            # Excretion (higher clearance = faster elimination)
-            "Clearance_Hepatocyte_AZ": [(30, "High clearance", "⚠️"), (15, "Moderate clearance", "✅"), (5, "Low clearance", "⚠️")],
-            "Half_Life_Obach": [(6, "Normal half-life", "✅"), (12, "Long half-life", "⚠️"), (24, "Very long half-life", "⚠️")],
-            
-            # Toxicity (lower is better)
-            "hERG": [(0.3, "Low hERG liability", "✅"), (0.6, "Moderate hERG concern", "⚠️"), (1.0, "High hERG liability - cardiac risk", "❌")],
-            "AMES": [(0.3, "Non-mutagenic (Ames negative)", "✅"), (0.6, "Ambiguous", "⚠️"), (1.0, "Mutagenic (Ames positive)", "❌")],
-            "DILI": [(0.3, "Low DILI concern", "✅"), (0.6, "Moderate DILI concern", "⚠️"), (1.0, "High DILI concern", "❌")],
-            "ClinTox": [(0.3, "Clinically non-toxic", "✅"), (0.6, "Moderate clinical toxicity", "⚠️"), (1.0, "Clinically toxic", "❌")],
-            "Carcinogens_Lagunin": [(0.3, "Non-carcinogenic", "✅"), (0.6, "Ambiguous", "⚠️"), (1.0, "Carcinogenic", "❌")],
-            
-            # Structural alerts (lower is better)
-            "PAINS_alert": [(0, "No PAINS alerts", "✅"), (1, "1 PAINS alert - potential assay interference", "⚠️"), (2, "Multiple PAINS alerts", "❌")],
-            "BRENK_alert": [(0, "No BRENK alerts", "✅"), (1, "1 BRENK alert", "⚠️"), (2, "Multiple BRENK alerts", "❌")],
-            "NIH_alert": [(0, "No NIH alerts", "✅"), (1, "1 NIH alert", "⚠️"), (2, "Multiple NIH alerts", "❌")],
-            
-            # Solubility (higher is better)
-            "Solubility_AqSolDB": [(-2, "Good aqueous solubility", "✅"), (-4, "Moderate solubility", "⚠️"), (-6, "Poor solubility", "❌")],
-            "Bioavailability_Ma": [(0.5, "Good oral bioavailability", "✅"), (0.3, "Moderate bioavailability", "⚠️"), (0, "Low oral bioavailability", "❌")],
-            
-            # Nuclear receptor toxicity
-            "NR-AR": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
-            "NR-AR-LBD": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
-            "NR-AhR": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
-            "NR-Aromatase": [(0.3, "Not inhibitor", "✅"), (0.6, "Moderate inhibition", "⚠️"), (1.0, "Strong inhibition", "❌")],
-            "NR-ER": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
-            "NR-ER-LBD": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
-            "NR-PPAR-gamma": [(0.3, "Not activator", "✅"), (0.6, "Moderate activation", "⚠️"), (1.0, "Strong activation", "❌")],
-            
-            # Stress response
-            "SR-ARE": [(0.3, "Low ARE activation", "✅"), (0.6, "Moderate ARE activation", "⚠️"), (1.0, "High ARE activation", "❌")],
-            "SR-ATAD5": [(0.3, "Low genotoxicity", "✅"), (0.6, "Moderate genotoxicity", "⚠️"), (1.0, "High genotoxicity", "❌")],
-            "SR-p53": [(0.3, "Low p53 activation", "✅"), (0.6, "Moderate p53 activation", "⚠️"), (1.0, "High p53 activation", "❌")],
-            "Skin_Reaction": [(0.3, "Low skin sensitization", "✅"), (0.6, "Moderate skin sensitization", "⚠️"), (1.0, "High skin sensitization", "❌")],
+        # === DIRECTIONAL CLASSIFICATION ===
+        
+        # RISK endpoints: Lower is better (low risk = green)
+        RISK_ENDPOINTS = {
+            "hERG", "AMES", "DILI", "ClinTox", "Carcinogens_Lagunin", "Skin_Reaction",
+            "CYP1A2_Veith", "CYP2C9_Veith", "CYP2C19_Veith", "CYP2D6_Veith", "CYP3A4_Veith",
+            "CYP2C9_Substrate_CarbonMangels", "CYP2D6_Substrate_CarbonMangels",
+            "CYP3A4_Substrate_CarbonMangels", "Pgp_Broccatelli",
+            "NR-AR", "NR-AR-LBD", "NR-AhR", "NR-Aromatase", "NR-ER", "NR-ER-LBD",
+            "NR-PPAR-gamma", "SR-ARE", "SR-ATAD5", "SR-HSE", "SR-MMP", "SR-p53",
         }
         
-        # Check if endpoint has thresholds defined
-        if endpoint in thresholds:
-            for threshold, message, symbol in thresholds[endpoint]:
-                if val >= threshold:
-                    return f"{symbol} {message}"
+        # BENEFIT endpoints: Higher is better
+        BENEFIT_ENDPOINTS = {
+            "HIA_Hou", "Bioavailability_Ma", "BBB_Martins", "PAMPA_NCATS",
+            "Lipinski", "QED"
+        }
+        
+        # PHYSICOCHEMICAL endpoints: Neutral - return empty
+        NEUTRAL_ENDPOINTS = {
+            "molecular_weight", "logP", "hydrogen_bond_acceptors", "hydrogen_bond_donors",
+            "tpsa", "stereo_centers", "num_rotatable_bonds", "num_rings", "num_heavy_atoms",
+            "PPBR_AZ", "VDss_Lombardo", "Half_Life_Obach", "Clearance_Hepatocyte_AZ",
+            "Clearance_Microsome_AZ", "LD50_Zhu", "Solubility_AqSolDB", "Lipophilicity_AstraZeneca",
+            "HydrationFreeEnergy_FreeSolv"
+        }
+        
+        # Structural alerts - special handling
+        ALERT_ENDPOINTS = {"PAINS_alert", "BRENK_alert", "NIH_alert"}
+        
+        # === APPLY DIRECTIONAL LOGIC ===
+        
+        # Neutral physicochemical properties
+        if endpoint in NEUTRAL_ENDPOINTS:
+            return ""
+        
+        # RISK endpoints: <0.3 = green, 0.3-0.7 = yellow, >=0.7 = red
+        if endpoint in RISK_ENDPOINTS:
+            if val < 0.3:
+                return f"✅ {self._get_risk_message(endpoint, val)}"
+            elif val < 0.7:
+                return f"⚠️ {self._get_risk_message(endpoint, val)}"
+            else:
+                return f"❌ {self._get_risk_message(endpoint, val)}"
+        
+        # BENEFIT endpoints: >=0.7 = green, 0.3-0.7 = yellow, <0.3 = red
+        if endpoint in BENEFIT_ENDPOINTS:
+            if val >= 0.7:
+                return f"✅ {self._get_benefit_message(endpoint, val)}"
+            elif val >= 0.3:
+                return f"⚠️ {self._get_benefit_message(endpoint, val)}"
+            else:
+                return f"❌ {self._get_benefit_message(endpoint, val)}"
+        
+        # Structural alerts
+        if endpoint in ALERT_ENDPOINTS:
+            if val == 0:
+                return f"✅ No {endpoint.replace('_alert', '')} alerts"
+            elif val == 1:
+                return f"⚠️ 1 {endpoint.replace('_alert', '')} alert"
+            else:
+                return f"❌ {int(val)} {endpoint.replace('_alert', '')} alerts"
+        
+        # Special thresholds for specific endpoints
+        if endpoint == "Caco2_Wang":
+            # Caco-2: Higher (less negative) = better permeability
+            if val >= -4:
+                return "✅ High permeability"
+            elif val >= -6:
+                return "⚠️ Moderate permeability"
+            else:
+                return "❌ Poor permeability"
+        
+        if endpoint == "Solubility_AqSolDB":
+            # Solubility: Higher (less negative) = better
+            if val >= -2:
+                return "✅ Good aqueous solubility"
+            elif val >= -4:
+                return "⚠️ Moderate solubility"
+            else:
+                return "❌ Poor solubility"
+        
+        if endpoint == "Lipinski":
+            # Lipinski: Higher = more violations (worse), but we store pass count
+            if val >= 3:
+                return "✅ Passes Lipinski rule"
+            elif val >= 2:
+                return "⚠️ 1 Lipinski violation"
+            else:
+                return "❌ Multiple Lipinski violations"
         
         return ""
+    
+    def _get_risk_message(self, endpoint: str, val: float) -> str:
+        """Get risk message for endpoint"""
+        messages = {
+            "hERG": "Low hERG liability" if val < 0.3 else ("Moderate hERG concern" if val < 0.7 else "High hERG liability - cardiac risk"),
+            "AMES": "Non-mutagenic" if val < 0.3 else ("Ambiguous" if val < 0.7 else "Mutagenic"),
+            "DILI": "Low DILI concern" if val < 0.3 else ("Moderate DILI concern" if val < 0.7 else "High DILI concern"),
+            "ClinTox": "Clinically non-toxic" if val < 0.3 else ("Moderate clinical toxicity" if val < 0.7 else "Clinically toxic"),
+            "Skin_Reaction": "Low skin sensitization" if val < 0.3 else ("Moderate skin sensitization" if val < 0.7 else "High skin sensitization"),
+            "Pgp_Broccatelli": "Not P-gp inhibitor" if val < 0.3 else ("Moderate P-gp inhibition" if val < 0.7 else "Strong P-gp inhibitor"),
+        }
+        # Generic message for other endpoints
+        if endpoint in messages:
+            return messages[endpoint]
+        return f"{endpoint.replace('_', ' ').title()} risk: {val:.2f}"
+    
+    def _get_benefit_message(self, endpoint: str, val: float) -> str:
+        """Get benefit message for endpoint"""
+        messages = {
+            "HIA_Hou": "High intestinal absorption",
+            "Bioavailability_Ma": "Good oral bioavailability",
+            "BBB_Martins": "Crosses BBB",
+            "PAMPA_NCATS": "High PAMPA permeability",
+            "QED": "Good drug-likeness" if val >= 0.7 else "Moderate drug-likeness",
+        }
+        if endpoint in messages:
+            return messages[endpoint]
+        return f"{endpoint.replace('_', ' ').title()}: {val:.2f}"
 
 
 # Singleton instance

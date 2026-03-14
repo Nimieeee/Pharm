@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import io
 
 from app.core.database import get_db
-from app.core.security import get_current_user, get_optional_user
+from app.core.security import get_current_user
 from app.models.user import User
 from supabase import Client
 
@@ -28,7 +28,7 @@ def get_admet_service(db: Client = Depends(get_db)):
 async def analyze_batch(
     file: UploadFile = File(None),
     smiles_list: Optional[str] = Form(None),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),
     admet_service = Depends(get_admet_service)
 ):
     """
@@ -70,7 +70,7 @@ async def analyze_batch(
 @router.post("/analyze")
 async def analyze_molecule(
     request: ADMETAnalysisRequest,
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),
     admet_service = Depends(get_admet_service)
 ):
     """
@@ -141,16 +141,20 @@ async def export_admet_csv(
         admet_data = await admet_service.predict_admet(smiles)
         
         # Convert to CSV
-        csv_content = admet_service.export_as_csv(admet_data)
+        csv_content = await admet_service.export_as_csv(admet_data)
         
         # Return as download
         file_stream = io.BytesIO(csv_content.encode('utf-8'))
         file_stream.seek(0)
         
+        # Determine filename
+        mol_name = admet_data.get("molecule_name") or f"admet_{smiles[:20]}"
+        filename = f"{mol_name}.csv".replace(" ", "_")
+        
         return StreamingResponse(
             file_stream,
             media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename=admet_{smiles[:20]}.csv"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
         
     except Exception as e:

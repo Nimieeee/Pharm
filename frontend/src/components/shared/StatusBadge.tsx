@@ -8,6 +8,7 @@ export type StatusType = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 interface StatusBadgeProps {
   status: StatusType;
   label: string;
+  showLabel?: boolean;
   className?: string;
 }
 
@@ -44,14 +45,14 @@ const statusConfig = {
   }
 };
 
-export default function StatusBadge({ status, label, className = '' }: StatusBadgeProps) {
+export default function StatusBadge({ status, label, showLabel = true, className = '' }: StatusBadgeProps) {
   const config = statusConfig[status] || statusConfig.neutral;
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border} ${className}`}>
+    <span title={label} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border} ${className}`}>
       <Icon className="w-3.5 h-3.5" />
-      {label}
+      {showLabel && <span className="capitalize">{label}</span>}
     </span>
   );
 }

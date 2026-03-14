@@ -494,10 +494,10 @@ Keep it concise and actionable."""
         
         try:
             # Use Mistral API directly for simple text generation
-            import os
             from mistralai import Mistral
+            from app.core.config import settings
             
-            api_key = os.environ.get("MISTRAL_API_KEY")
+            api_key = settings.MISTRAL_API_KEY
             if not api_key:
                 print("⚠️ No MISTRAL_API_KEY available")
                 return None

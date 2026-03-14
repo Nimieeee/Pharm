@@ -36,6 +36,7 @@ This file serves as Gemini's permanent memory of the Benchside codebase architec
 - **Decoupling Status**: ✅ COMPLETE - All services use ServiceContainer with lazy loading
 - **API Endpoints**: ✅ All endpoints use `container.get()` for service access
 - **Regression Tests**: ✅ 65+ tests, <2s run time
+- **ADMET Service**: Local ADMET-AI (Chemprop v2) — 46 endpoints + DrugBank percentiles, directional status scoring, RDKit SVG generation, AI interpretation via Mistral
 
 ### Key Integration Points
 - **Frontend → Backend**: API calls and SSE streams for real-time progress.
@@ -151,17 +152,15 @@ pytest
 ```
 
 **Regression Test Suite** (Fast - <10s target):
+
+> ⚠️ **ALL tests MUST be run on the VPS.** The local Mac lacks RDKit, ADMET-AI, and other backend dependencies. Always SSH into the VPS.
+
 ```bash
-# Run full regression suite
-./run_regression.sh
+# Run regression suite on VPS (MANDATORY)
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/ -v"
 
-# Or directly
-cd backend
-source .venv/bin/activate
-pytest tests/regression/ -v
-
-# Specific regression tests
-pytest tests/regression/test_mermaid.py -v  # 26 tests, <1s
+# Specific regression tests on VPS
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/test_mermaid.py -v"  # 26 tests, <1s
 ```
 
 **Specific Test Files**:
@@ -173,7 +172,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
 ## CONTEXT
 
 ### Current State
-1. **Recent Focus**: Post-Audit Fixes & ADMET Batch Support (2026-03-13)
+1. **Recent Focus**: ADMET Gold Standard V12.1 — Directional Scoring & AI Interpretation (2026-03-14)
 2. **Key Capabilities**:
    - **25k Token Reports**: Elite mode writer for massive academic reviews.
    - **PubMed Hardening**: API key integration for 10 req/s and 50 papers/query.
@@ -250,3 +249,8 @@ If you identify a task as "complex" but do not provide retrieval findings, the p
 ### LESSONS LEARNED / RECENT DISCOVERIES
 - **PM2 Naming**: Backend process is named `pharmgpt-api`, not `benchside-api` on the Lightsail VPS.
 - **Double Prefixes Filters**: FastApi `include_router(..., prefix="/foo")` + `@router.post("/foo/bar")` results in `/foo/foo/bar`. Endpoints should use relative paths.
+- **ADMET Directional Scoring**: Risk endpoints (toxicity, CYP inhibitors, Tox21) = low is good (🟢). Benefit endpoints (HIA, BBB, bioavailability) = high is good (🟢). NEVER use a single threshold direction for all endpoints.
+- **Pydantic vs os.environ**: Use `settings.MISTRAL_API_KEY` from `app.core.config`, NOT `os.environ.get()`. Pydantic parses `.env` but doesn't export to shell.
+- **DrugPool SMILES Only**: `drugPool.ts` must contain valid SMILES strings only. Peptide sequences (His-Aib-Glt-...) crash RDKit.
+- **ADMET-AI vs ADMETlab**: Local engine is ADMET-AI (Chemprop v2, 46 endpoints). Ototoxicity/Nephrotoxicity/Neurotoxicity/Hematotoxicity are ADMETlab-only — do NOT add fake endpoints.
+- **StatusBadge Text Spam**: When `ADMETPropertyCard` passes `status` as `label`, the word "neutral"/"warning" renders visibly. Use `showLabel={false}` for icon-only display.

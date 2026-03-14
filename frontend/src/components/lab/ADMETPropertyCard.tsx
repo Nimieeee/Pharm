@@ -42,7 +42,7 @@ export default function ADMETPropertyCard({ category, properties, icon: Icon }: 
               <span className="text-sm font-mono font-medium text-[var(--text-primary)]">
                 {prop.value}{prop.unit}
               </span>
-              <StatusBadge status={prop.status} label={prop.status} className="capitalize" />
+              <StatusBadge status={prop.status} label={prop.status} showLabel={false} className="capitalize" />
             </div>
           </div>
         ))}

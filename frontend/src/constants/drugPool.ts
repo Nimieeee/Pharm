@@ -53,8 +53,8 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Empagliflozin', smiles: 'CC1=CC=C(C=C1)S(=O)(=O)C1=CC(=NN1C)C1=CC=CC=C1C(=O)O', year: 2014, class: 'SGLT2 Inhibitor' },
   { name: 'Canagliflozin', smiles: 'Clc1ccc(cc1)C(=O)NCCn1ccnc1C1=NN(C1)Cc1ccc2ccccc2c1', year: 2013, class: 'SGLT2 Inhibitor' },
   { name: 'Dapagliflozin', smiles: 'CCOC1=CC=CC=C1C(=O)NCCn1ccnc1C1=NN(C1)Cc1ccc(F)cc1', year: 2012, class: 'SGLT2 Inhibitor' },
-  { name: 'Liraglutide', smiles: 'His-Aib-Glt-Thr-Lys-Phe-Ser-Ile-Glu-Trp', year: 2010, class: 'GLP-1 Agonist' },
-  { name: 'Semaglutide', smiles: 'Aib-Ser-His-Glu-Gly-Thr-Phe-Thr-Ser-Asp', year: 2017, class: 'GLP-1 Agonist' },
+  { name: 'Pioglitazone', smiles: 'O=C1NC(=O)C(CC2=CC=C(OCC3=CC=C(CC4SC=CN4)C=C3)C=C2)N1', year: 1999, class: 'Thiazolidinedione' },
+  { name: 'Rosiglitazone', smiles: 'CN(CCOC1=CC=C(CC2SC(=O)NC2=O)C=C1)C1=CC=CC=N1', year: 1999, class: 'Thiazolidinedione' },
   
   // FDA Approved - Oncology
   { name: 'Imatinib', smiles: 'Cc1ccc(Nc2ncc(C3=CC=NC=C3C(=O)N)cn2)cc1', year: 2001, class: 'Tyrosine Kinase Inhibitor' },

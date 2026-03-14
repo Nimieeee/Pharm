@@ -33,7 +33,7 @@ This file serves as Claude's permanent memory of the Benchside codebase architec
   - **Enhanced RAG**: Multi-format document ingestion (PDF, DOCX, PPTX, CSV, SDF).
   - **Mermaid Processor**: Centralized diagram validation/fixing (26 regression tests, <10ms).
   - **Research Tools**: Specialized integration with PubMed (API Key), Semantic Scholar, and Web Search (Tavily/Serper).
-  - **ADMET Service**: Local ADMET-AI (Chemprop v2) integration with fallback to RDKit
+  - **ADMET Service**: Local ADMET-AI (Chemprop v2) integration with fallback to RDKit (see ADMET Architecture below)
 - **Decoupling Status**: ✅ COMPLETE - All services use ServiceContainer with lazy loading
 - **API Endpoints**: ✅ All endpoints use `container.get()` for service access
 - **Regression Tests**: ✅ 65+ tests, <2s run time
@@ -177,17 +177,15 @@ pytest
 ```
 
 **Regression Test Suite** (Fast - <10s target):
+
+> ⚠️ **ALL tests MUST be run on the VPS.** The local Mac lacks RDKit, ADMET-AI, and other backend dependencies. Always SSH into the VPS to run tests.
+
 ```bash
-# Run full regression suite locally
-./run_regression.sh
+# Run regression suite on VPS (MANDATORY)
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/ -v"
 
-# Or directly
-cd backend
-source .venv/bin/activate
-pytest tests/regression/ -v
-
-# Specific regression tests
-pytest tests/regression/test_mermaid.py -v  # 26 tests, <1s
+# Specific regression tests on VPS
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/test_mermaid.py -v"  # 26 tests, <1s
 ```
 
 **Run Tests on VPS** (Recommended - faster execution):
@@ -208,7 +206,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
 ## CONTEXT
 
 ### Current State
-1. **Recent Focus**: Full Stack Decoupling Complete (2026-03-06)
+1. **Recent Focus**: ADMET Gold Standard V12.1 — Directional Scoring & AI Interpretation (2026-03-14)
 2. **Key Capabilities**:
    - **25k Token Reports**: Elite mode writer for massive academic reviews.
    - **PubMed Hardening**: API key integration for 10 req/s and 50 papers/query.
@@ -216,7 +214,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
    - **CoT Reasoning Store**: Local ChromaDB index of 400k reasoning patterns for expert-level logic.
    - **UI Decoupling**: Non-blocking research allowing parallel chat interaction.
    - **Full Decoupling**: All services use ServiceContainer with lazy loading.
-   - **Local ADMET Engine**: ADMET-AI (Chemprop v2) with 104 endpoints + DrugBank percentiles
+   - **Local ADMET Engine**: ADMET-AI (Chemprop v2) with 46 endpoints + DrugBank percentiles (see ADMET Architecture)
 4. **Recent Fixes (Phase 30)**:
    - **History Context**: Fixed thread loss by ensuring all message IDs are passed as `parent_id` (removed ID hyphen check).
    - **Mermaid Rendering**: Added heuristic to handle unquoted parentheses in node labels.
@@ -260,7 +258,7 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
 - **Postprocessing Module**: Centralized Mermaid, Markdown, Safety, ADMET processing
 - Molecular Pathway Mapping & Clinical Trial Binding logic
 - Mistral-Embed for vectorization
-- **ADMET Service**: Local ADMET-AI (Chemprop v2) with 104 endpoints + DrugBank percentiles
+- **ADMET Service**: Local ADMET-AI (Chemprop v2) — see ADMET Architecture section
 - **Regression Testing**: 65+ tests, <2s run time
 - **Lazy Loading**: All services with dependencies use @property lazy loading
 
@@ -537,12 +535,15 @@ npm test -- --testPathPattern=MyComponent
 #### **4.4 Pre-Commit Checklist**
 
 **MANDATORY BEFORE ANY COMMIT:**
-```bash
-# 1. Run regression suite
-./run_regression.sh
 
-# 2. Check for circular imports (backend)
-python -c "from app.services.ai import AIService; from app.services.enhanced_rag import EnhancedRAGService"
+> ⚠️ **ALL backend tests MUST be run on the VPS**, not locally. The local Mac lacks RDKit, ADMET-AI, and other dependencies.
+
+```bash
+# 1. Sync code to VPS first
+rsync -avz -e "ssh -i ~/.ssh/lightsail_key" --exclude '.venv' --exclude '__pycache__' --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.env' backend/ ubuntu@15.237.208.231:/var/www/benchside-backend/backend/
+
+# 2. Run regression suite ON VPS
+ssh -i ~/.ssh/lightsail_key ubuntu@15.237.208.231 "cd /var/www/benchside-backend/backend && source .venv/bin/activate && pytest tests/regression/ -v"
 
 # 3. Run frontend tests
 cd frontend && npm run test:regression
@@ -636,6 +637,9 @@ git diff HEAD~10..HEAD --stat
 | React stale closure | `setTimeout` reads old state, never triggers | Use `useRef` to track current state inside async callbacks. See Rule 3 below |
 | Double-append assembly | References section appears twice | Build output once, never append-then-strip-then-re-append. See Rule 4 below |
 | Missing ID validation | API call uses `"chat"` as UUID, returns 404 | Validate UUID format before any API call. See Rule 5 below |
+| ADMET status inversion | Skin Reaction 0.96 shows "Low risk" (green) | Use directional scoring: RISK endpoints low=🟢, BENEFIT endpoints high=🟢. See Rule 6 below |
+| ADMET missing API key | AI interpretation silently fails, returns null | Use `settings.MISTRAL_API_KEY` (pydantic), NOT `os.environ.get()`. See Rule 7 below |
+| Protein seq in SMILES | DrugPool peptide entries crash RDKit | Only use valid SMILES in drugPool.ts. Peptides (His-Aib-...) are NOT SMILES |
 
 ### 6. Implementation Error Prevention Rules
 
@@ -717,6 +721,81 @@ if (!conversationId || !UUID_REGEX.test(conversationId)) {
 
 // ❌ WRONG: Blindly interpolate into URL
 fetch(`/api/v1/conversations/${conversationId}/export`) // conversationId might be "chat" or undefined
+```
+
+#### Rule 6: ADMET Directional Status Scoring
+**ADMET classification endpoints have DIRECTION. Risk endpoints (toxicity, CYP inhibitors) use INVERTED scoring: low value = good (green). Benefit endpoints (absorption, bioavailability) use normal scoring: high value = good (green). NEVER apply a single threshold direction to all endpoints.**
+```python
+# ✅ CORRECT: Direction-aware scoring
+RISK_ENDPOINTS = {"hERG", "AMES", "DILI", "Skin_Reaction", "CYP1A2_Veith", ...}
+BENEFIT_ENDPOINTS = {"HIA_Hou", "Bioavailability_Ma", "BBB_Martins", ...}
+
+if endpoint in RISK_ENDPOINTS:
+    if val < 0.3: return "✅"   # Low risk = good
+    elif val < 0.7: return "⚠️" # Moderate
+    else: return "❌"            # High risk = bad
+
+# ❌ WRONG: Same direction for all
+if val > 0.5: return "✅"  # This makes Skin_Reaction 0.96 show as "good"!
+```
+
+#### Rule 7: Pydantic Settings vs os.environ
+**NEVER use `os.environ.get()` for API keys that are loaded via pydantic `Settings`. The `.env` file is parsed by pydantic, not exported to the shell. Always use `from app.core.config import settings` and access `settings.MISTRAL_API_KEY`.**
+```python
+# ✅ CORRECT: Use pydantic settings
+from app.core.config import settings
+api_key = settings.MISTRAL_API_KEY
+
+# ❌ WRONG: os.environ may be empty even though .env has the key
+import os
+api_key = os.environ.get("MISTRAL_API_KEY")  # Returns "" or None!
+```
+
+## ADMET Architecture
+
+### Overview
+The Molecular Lab (ADMET) uses **ADMET-AI (Chemprop v2)** as the primary prediction engine, running as a separate PM2 microservice on the VPS (`admet-engine` on port 7861).
+
+### Key Files
+| File | Purpose |
+|:---|:---|
+| `backend/app/services/admet_service.py` | Core service: prediction, SVG generation (RDKit), AI interpretation, CSV export |
+| `backend/app/services/postprocessing/admet_processor.py` | Report formatting, `get_interpretation()` directional scoring, CSV column mapping |
+| `backend/app/api/v1/endpoints/admet.py` | FastAPI endpoints: `/analyze`, `/export`, `/svg`, `/wash`, `/batch` |
+| `frontend/src/components/lab/LabDashboard.tsx` | Main UI: SMILES input, report parser, result grid |
+| `frontend/src/components/lab/ADMETPropertyCard.tsx` | Property display card with StatusBadge |
+| `frontend/src/components/shared/StatusBadge.tsx` | Color-coded status icons (success/warning/danger/neutral) |
+| `frontend/src/constants/drugPool.ts` | 500+ drug suggestions (SMILES must be valid, NO peptide sequences) |
+| `backend/tests/regression/test_admet_service.py` | 544-line regression test suite |
+
+### ADMET-AI Endpoints (46 total)
+The local engine returns flat keys with DrugBank percentiles. Endpoints are **directional**:
+
+**Physicochemical** (neutral — no good/bad): `molecular_weight`, `logP`, `hydrogen_bond_acceptors`, `hydrogen_bond_donors`, `tpsa`, `stereo_centers`
+
+**Drug Likeness** (benefit — higher is better): `Lipinski`, `QED`
+
+**Absorption** (mixed):
+- Benefit: `HIA_Hou`, `Bioavailability_Ma`, `PAMPA_NCATS`, `Solubility_AqSolDB`
+- Risk: `Pgp_Broccatelli` (P-gp inhibition — lower is better)
+- Special: `Caco2_Wang` (log scale, higher = better permeability)
+
+**Distribution** (mixed): `BBB_Martins` (benefit), `PPBR_AZ` (neutral), `VDss_Lombardo` (neutral)
+
+**Metabolism** (risk — lower is better): `CYP1A2_Veith`, `CYP2C9_Veith`, `CYP2C19_Veith`, `CYP2D6_Veith`, `CYP3A4_Veith`, `CYP2C9_Substrate_*`, `CYP2D6_Substrate_*`, `CYP3A4_Substrate_*`
+
+**Excretion** (neutral): `Half_Life_Obach`, `Clearance_Hepatocyte_AZ`, `Clearance_Microsome_AZ`
+
+**Toxicity** (risk — lower is better): `hERG`, `ClinTox`, `AMES`, `DILI`, `Carcinogens_Lagunin`, `LD50_Zhu`, `Skin_Reaction`
+
+**Tox21 Pathways** (risk — lower is better): `NR-AR`, `NR-AR-LBD`, `NR-AhR`, `NR-Aromatase`, `NR-ER`, `NR-ER-LBD`, `NR-PPAR-gamma`, `SR-ARE`, `SR-ATAD5`, `SR-HSE`, `SR-MMP`, `SR-p53`
+
+> **NOTE**: Ototoxicity, Nephrotoxicity, Neurotoxicity, Hematotoxicity are **ADMETlab 3.0-only** endpoints. They do NOT exist in ADMET-AI output. Do not add fake data for these.
+
+### Fallback Chain
+1. **Local ADMET-AI Engine** (port 7861) → 46 endpoints + percentiles
+2. **ADMETlab 3.0 API** (external) → 119 endpoints (different format)
+3. **RDKit** (local) → Basic physicochemical only (MW, LogP, TPSA, etc.)
 ```
 
 ### 5. Core Workflows & Output Standards

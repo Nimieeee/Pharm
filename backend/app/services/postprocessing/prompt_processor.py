@@ -108,7 +108,11 @@ class PromptProcessor:
         # Check for HLA alleles (e.g., HLA-B*57:01)
         if re.search(r'HLA-[A-Z0-9*:+]+', prompt, re.IGNORECASE):
             return True
-        
+            
+        # Check for CYP alleles (e.g., CYP2C19*2)
+        if re.search(r'CYP[0-9]+[A-Z]+[0-9]+\*[0-9]+', prompt, re.IGNORECASE):
+            return True
+            
         return False
     
     def estimate_tokens(self, prompt: str) -> int:
