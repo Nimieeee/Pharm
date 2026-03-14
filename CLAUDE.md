@@ -751,6 +751,41 @@ import os
 api_key = os.environ.get("MISTRAL_API_KEY")  # Returns "" or None!
 ```
 
+#### Rule 8: Frontend-Backend Contract Synchronization
+**When removing or renaming fields from backend API responses, ALWAYS update the corresponding frontend TypeScript interfaces and components BEFORE deployment. The frontend MUST handle both old and new structures or fail gracefully.**
+```typescript
+// ❌ WRONG: Frontend expects field that backend removed
+interface OldResult {
+  sas_score: number;  // Backend removed this - causes .toFixed() on undefined
+  gasa_prediction?: number;
+}
+// Error: Cannot read properties of undefined (reading 'toFixed')
+
+// ✅ CORRECT: Update frontend interface to match backend
+interface NewResult {
+  gasa?: {
+    prediction?: number;
+    easy_probability?: number;
+    hard_probability?: number;
+  };
+  simple_gasa?: {
+    prediction?: number;
+    easy_probability?: number;
+    hard_probability?: number;
+  };
+}
+// Use optional chaining and null checks
+const score = result.gasa?.prediction;
+const display = score?.toFixed(1) ?? 'N/A';
+```
+**CHECKLIST when removing backend fields:**
+- [ ] Search frontend for all references to the field
+- [ ] Update TypeScript interfaces
+- [ ] Update component rendering logic
+- [ ] Add null/undefined checks where needed
+- [ ] Test both old and new data structures
+- [ ] Deploy backend and frontend together
+
 ## ADMET Architecture
 
 ### Overview
