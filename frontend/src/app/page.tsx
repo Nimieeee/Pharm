@@ -12,6 +12,10 @@ import { useConversations } from '@/hooks/useSWRChat';
 import { getSuggestionPool } from '@/config/suggestionPrompts';
 import { API_BASE_URL } from '@/config/api';
 import { FlaskConical, Dna, Sparkles, Search, AlertTriangle } from 'lucide-react';
+import { ParticleNetwork } from '@/components/landing/ParticleNetwork';
+import { StatsShowcase } from '@/components/landing/StatsShowcase';
+import { HubsGrid } from '@/components/landing/HubsGrid';
+import { PipelineShowcase } from '@/components/landing/PipelineShowcase';
 
 const faqs = [
 
@@ -20,17 +24,12 @@ const faqs = [
   { q: "What is the token limit for RAG?", a: "We support context windows up to 128k tokens, allowing for analysis of extensive clinical trial reports." }
 ];
 
-const demoTabs = [
-  { id: 'discovery', label: 'Drug Discovery', content: 'Analyzing target protein structure... Found 3 potential binding sites. Generating ligand candidates...' },
-  { id: 'clinical', label: 'Clinical Trials', content: 'Scanning ClinicalTrials.gov... 1,240 matches found. Filtering for Phase 3 oncology trials in EU...' },
-  { id: 'market', label: 'Market Analysis', content: 'Competitor drug "X-200" approved in Japan. Projected impact on market share: -15% without innovation...' },
-];
+// Demo tabs removed in favor of HubsGrid
 
 export default function HomePage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [activeDemoTab, setActiveDemoTab] = useState(demoTabs[0].id);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -86,6 +85,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-atmospheric text-foreground selection:bg-orange-500/20">
+      <ParticleNetwork />
 
       {/* Navbar with Pill Design - Liquid Glass */}
       <nav className="!fixed top-0 left-0 right-0 rounded-none md:top-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[90%] md:max-w-5xl md:rounded-full z-50 glass-effect transition-all duration-300">
@@ -323,56 +323,10 @@ export default function HomePage() {
           <HeroQupe />
 
 
-          {/* Interactive Demo Section */}
-          < section className="py-24 px-6 relative" >
-            <div className="max-w-[1200px] mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl font-serif text-foreground mb-4">Research at the Speed of Thought</h2>
-                <p className="text-foreground-muted text-lg">See how Benchside adapts to your workflow.</p>
-              </div>
-
-              <div className="flex flex-col items-center">
-                <div className="flex flex-wrap justify-center gap-2 mb-8 bg-surface/50 p-1.5 rounded-full border border-border backdrop-blur-sm">
-                  {demoTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveDemoTab(tab.id)}
-                      className={`px-6 py-2 rounded-full text-sm font-serif font-medium transition-all duration-300 ${activeDemoTab === tab.id ? 'bg-foreground text-background shadow-lg' : 'text-foreground-muted hover:text-foreground'}`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <GlassCard className="w-full max-w-3xl aspect-[16/9] md:aspect-[2/1] p-8 flex flex-col relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 right-0 h-10 bg-orange-500/5 px-4 flex items-center gap-2 border-b border-orange-500/10">
-                    <div className="w-3 h-3 rounded-full bg-red-400/80" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
-                    <div className="w-3 h-3 rounded-full bg-green-400/80" />
-                  </div>
-                  <div className="mt-8 font-mono text-sm md:text-base text-foreground/90 whitespace-pre-wrap">
-                    <span className="text-orange-500 mr-2">{'>'}</span>
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={activeDemoTab}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {demoTabs.find(t => t.id === activeDemoTab)?.content}
-                      </motion.span>
-                    </AnimatePresence>
-                    <motion.span
-                      animate={{ opacity: [0, 1, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.8 }}
-                      className="inline-block w-2.5 h-4 ml-1 mx-1 bg-orange-500 align-middle"
-                    />
-                  </div>
-                </GlassCard>
-              </div>
-            </div>
-          </section >
+          {/* Showcase Sections */}
+          <StatsShowcase />
+          <HubsGrid />
+          <PipelineShowcase />
 
 
 

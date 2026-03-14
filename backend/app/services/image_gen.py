@@ -106,3 +106,9 @@ class ImageGenerationService:
                 logger.error(f"Pollinations Error {resp.status_code}: {resp.text}")
                 # Fallback to public if auth fails? No, public is dead.
                 raise Exception(f"Pollinations API Error: {resp.status_code}")
+
+
+# Factory function for dependency injection
+def get_image_gen() -> ImageGenerationService:
+    """Get ImageGenerationService singleton instance"""
+    return ImageGenerationService()

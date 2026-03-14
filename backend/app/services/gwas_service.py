@@ -124,7 +124,7 @@ class GWASService:
                 f"{self.GWAS_CATALOG_BASE}/associations",
                 params={
                     "rsId": rsid,
-                    "size": 20
+                    "size": 50
                 }
             )
             
@@ -326,15 +326,20 @@ class GWASService:
         gwas = result.get("gwas_associations", [])
         if gwas:
             lines.append(f"### Trait Associations ({len(gwas)} found)\n")
-            for assoc in gwas[:5]:  # Top 5
-                lines.append(f"- **{assoc.get('trait', 'Unknown trait')}**")
+            for assoc in gwas[:20]:  # Show up to 20
+                trait = assoc.get('trait', 'Unknown trait')
+                pubmed_id = assoc.get('pubmed_id')
+                pubmed_link = f" [PMID:{pubmed_id}](https://pubmed.ncbi.nlm.nih.gov/{pubmed_id})" if pubmed_id else ""
+                
+                lines.append(f"- **{trait}**{pubmed_link}")
                 lines.append(f"  - P-value: {assoc.get('p_value_formatted')}")
                 if assoc.get('odds_ratio'):
                     lines.append(f"  - OR: {assoc['odds_ratio']}")
-                if assoc.get('beta'):
+                elif assoc.get('beta'):
                     lines.append(f"  - Beta: {assoc['beta']}")
-            if len(gwas) > 5:
-                lines.append(f"\n*...and {len(gwas) - 5} more associations*")
+            
+            if len(gwas) > 20:
+                lines.append(f"\n*...and {len(gwas) - 20} more associations*")
         else:
             lines.append("### No GWAS associations found\n")
         

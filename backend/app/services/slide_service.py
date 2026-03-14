@@ -89,7 +89,7 @@ Rules:
 - For data_callout: include "data": {{"value": "85%", "label": "Patient Response Rate"}}
 """
         
-        response = await self.ai.chat_completion(
+        response = await self.ai.generate(
             mode="fast",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=4000,
@@ -216,7 +216,7 @@ Rules:
 - Return as JSON: {{"bullets": [...], "speaker_notes": "..."}}"""
         
         try:
-            response = await self.ai.chat_completion(
+            response = await self.ai.generate(
                 mode="detailed",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=500,

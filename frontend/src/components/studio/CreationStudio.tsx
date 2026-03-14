@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 // Shared Components
 import HubLayout from '../shared/HubLayout';
 import SkeletonLoader from '../shared/SkeletonLoader';
+import { LoadingAnimation } from '../shared/LoadingAnimation';
 
 import SlideOutlineEditor, { SlideOutline } from '../slides/SlideOutlineEditor';
 import SlideProgress from '../slides/SlideProgress';
@@ -277,25 +278,12 @@ export default function CreationStudio() {
           )}
 
           {step === 'generating_outline' && (
-            <motion.div
-              key="generating_outline"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="py-20 flex flex-col items-center text-center space-y-6"
-            >
-              <div className="relative">
-                <div className="w-24 h-24 rounded-3xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-10 h-10 text-teal-400" />
-                </div>
-                <div className="absolute inset-0 blur-2xl bg-teal-500/20 animate-pulse -z-10" />
+            <div className="py-20">
+              <LoadingAnimation label="Architecting narrative and identifying key scientific milestones..." />
+              <div className="max-w-md mx-auto mt-8">
+                <SkeletonLoader variant="list" count={4} />
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Architecting Content</h3>
-                <p className="text-slate-400">Structuring the narrative and identifying key scientific milestones...</p>
-              </div>
-              <SkeletonLoader variant="list" count={4} className="w-full max-w-md" />
-            </motion.div>
+            </div>
           )}
 
           {step === 'edit_outline' && (
@@ -372,21 +360,15 @@ export default function CreationStudio() {
                       </button>
                     </>
                   ) : (
-                    <>
-                      <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
-                        <div>
-                          <h3 className="text-xl font-bold text-[var(--text-primary)]">Generating Pages</h3>
-                          <p className="text-sm text-[var(--text-secondary)] mt-2">{progress.message || 'Synthesizing professional prose...'}</p>
-                        </div>
-                      </div>
+                    <div className="space-y-8">
+                      <LoadingAnimation label={progress.message || 'Synthesizing professional prose...'} />
                       <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden max-w-md mx-auto">
                         <motion.div 
                           className="h-full bg-teal-500" 
                           animate={{ width: `${(progress.current / (progress.total || 1)) * 100}%` }}
                         />
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               )}

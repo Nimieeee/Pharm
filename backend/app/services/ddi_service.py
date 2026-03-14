@@ -55,8 +55,29 @@ class DDIService:
             RxCUI string or None if not found
         """
         # Check cache first
-        if drug_name.lower() in self._rxcui_cache:
-            return self._rxcui_cache[drug_name.lower()]
+        name_lower = drug_name.lower().strip()
+        if name_lower in self._rxcui_cache:
+            return self._rxcui_cache[name_lower]
+        
+        # Hardcoded common mappings for broad terms
+        common_mappings = {
+            "calcium": "1901",
+            "aspirin": "1191",
+            "warfarin": "11289",
+            "simvastatin": "36567",
+            "ketoconazole": "6135",
+            "methotrexate": "6809",
+            "tetracycline": "10395",
+            "ibuprofen": "5640",
+            "acetaminophen": "161",
+            "naproxen": "7258",
+            "insulin": "5856"
+        }
+        
+        if name_lower in common_mappings:
+            rxcui = common_mappings[name_lower]
+            self._rxcui_cache[name_lower] = rxcui
+            return rxcui
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:

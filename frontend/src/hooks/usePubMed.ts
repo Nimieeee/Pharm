@@ -123,9 +123,57 @@ export function usePubMed() {
     }
   }, []);
 
+  const getPDFLink = useCallback(async (pmid: string): Promise<string | null> => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_BASE_URL}/api/v1/literature/pdf/link/${pmid}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.pdf_url;
+    } catch (err) {
+      return null;
+    }
+  }, []);
+
+  const downloadPDF = useCallback(async (pmid: string, title: string) => {
+    setLoading(true);
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_BASE_URL}/api/v1/literature/pdf/download/${pmid}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to download PDF');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download PDF');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     search,
     getArticle,
+    getPDFLink,
+    downloadPDF,
     loading,
     error,
     clearError: () => setError(null),

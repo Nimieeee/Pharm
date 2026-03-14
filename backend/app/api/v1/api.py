@@ -4,7 +4,7 @@ API v1 router configuration
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, chat, ai, admin, support, health, lab_report, transcription, visualize, export, research_tasks, slides, docs, admet
+from app.api.v1.endpoints import auth, chat, ai, admin, support, health, lab_report, transcription, visualize, export, research_tasks, slides, docs, admet, literature
 
 
 api_router = APIRouter()
@@ -23,3 +23,4 @@ api_router.include_router(research_tasks.router, prefix="/research", tags=["rese
 api_router.include_router(slides.router, prefix="/slides", tags=["slides"])
 api_router.include_router(docs.router, prefix="/docs", tags=["docs"])
 api_router.include_router(admet.router, prefix="/admet", tags=["admet"])
+api_router.include_router(literature.router, prefix="/literature", tags=["literature"])

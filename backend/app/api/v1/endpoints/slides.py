@@ -116,3 +116,47 @@ async def download_slides(job_id: str, current_user: User = Depends(get_current_
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
         headers={"Content-Disposition": f"attachment; filename=benchside_slides_{job_id[:8]}.pptx"}
     )
+
+@router.post("/outline/export/manuscript")
+async def export_outline_as_manuscript(
+    outline: SlideOutline,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Compatibility route to export a slide outline as a Word manuscript.
+    Proxies to ManuscriptFormatter logic.
+    """
+    try:
+        from app.services.manuscript_formatter import ManuscriptFormatter
+        from app.services.multi_provider import get_multi_provider
+        
+        formatter = ManuscriptFormatter(multi_provider=get_multi_provider())
+        
+        # Convert outline structure to a format the manuscript formatter can use
+        # We'll treat each slide as a 'message' context for restructuring
+        synthetic_messages = []
+        synthetic_messages.append({"role": "assistant", "content": f"Title: {outline.title}\nSubtitle: {outline.subtitle or ''}"})
+        
+        for slide in outline.slides:
+            slide_text = f"Slide: {slide.get('title')}\n"
+            if slide.get("bullets"):
+                slide_text += "\n".join([f"- {b}" for b in slide["bullets"]])
+            synthetic_messages.append({"role": "assistant", "content": slide_text})
+            
+        # Structure content with AI
+        structured = await formatter.structure_content(synthetic_messages, style="report")
+        
+        # Build DOCX
+        docx_bytes = formatter.build_docx(structured, style="report")
+        
+        return StreamingResponse(
+            io.BytesIO(docx_bytes),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename=manuscript_from_slides.docx"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to export manuscript from slides: {str(e)}"
+        )

@@ -184,8 +184,30 @@ class PubMedService:
             print(f"❌ PubMed article fetch failed for {pmid}: {e}")
         
         return None
-    
-    def _parse_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def get_pmcid(self, pmid: str) -> Optional[str]:
+        """
+        Resolve PMCID from PMID via ID Converter API.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/",
+                    params={
+                        "ids": pmid,
+                        "format": "json",
+                        "tool": "benchside",
+                        "email": "research-bot@benchside.com"
+                    }
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    records = data.get("records", [])
+                    if records:
+                        return records[0].get("pmcid")
+        except Exception as e:
+            print(f"❌ PMCID resolution failed for {pmid}: {e}")
+        return None
         """Parse PubMed ESummary response"""
         # Extract authors
         authors = []
@@ -355,3 +377,7 @@ class PubMedService:
 
 # Singleton instance
 pubmed_service = PubMedService()
+
+def get_pubmed_service() -> PubMedService:
+    """Get PubMedService singleton instance"""
+    return pubmed_service

@@ -11,6 +11,7 @@ import SkeletonLoader from '../shared/SkeletonLoader';
 import UploadZone from './UploadZone';
 import PharmGxReport, { PharmGxReport as PharmGxReportType } from '../chat/PharmGxReport';
 import GWASResult, { GWASVariant } from '../chat/GWASResult';
+import { LoadingAnimation } from '../shared/LoadingAnimation';
 
 import { API_BASE_URL } from '@/config/api';
 
@@ -149,9 +150,7 @@ export default function GeneticsDashboard() {
                 ) : (
                   <div className="space-y-6">
                     {isLoading && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <SkeletonLoader count={4} variant="card" />
-                      </div>
+                      <LoadingAnimation label="Sequencing raw genetic data and mapping variants..." />
                     )}
                     {pharmgxResult && (
                       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -230,14 +229,7 @@ export default function GeneticsDashboard() {
 
                 <AnimatePresence mode="wait">
                   {isLoading ? (
-                    <motion.div 
-                      key="loading"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="max-w-2xl mx-auto space-y-4 py-8"
-                    >
-                      <SkeletonLoader count={3} variant="list" />
-                    </motion.div>
+                    <LoadingAnimation label="Querying GWAS Catalog and Ensembl databases..." />
                   ) : gwasResult ? (
                     <motion.div 
                       key="result"

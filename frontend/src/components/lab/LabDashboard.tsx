@@ -10,6 +10,7 @@ import { getRandomDrugs, DrugSuggestion } from '@/constants/drugPool';
 // Shared & New Components
 import HubLayout from '../shared/HubLayout';
 import SkeletonLoader from '../shared/SkeletonLoader';
+import { LoadingAnimation } from '../shared/LoadingAnimation';
 import ADMETPropertyCard from './ADMETPropertyCard';
 import MoleculePreview from './MoleculePreview';
 import StreamingLogo from '../chat/StreamingLogo';
@@ -395,17 +396,7 @@ export default function LabDashboard() {
         <div className="lg:col-span-8 space-y-8">
           <AnimatePresence mode="wait">
             {isLoading ? (
-              <motion.div 
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="h-full flex flex-col items-center justify-center py-20 opacity-80 select-none"
-              >
-                <StreamingLogo className="w-24 h-24 mb-6" />
-                <h3 className="text-xl font-medium text-amber-500 animate-pulse">Analyzing...</h3>
-                <p className="text-sm max-w-xs text-center mt-2 text-[var(--text-secondary)]">Processing structural features across 119 ADMET endpoints</p>
-              </motion.div>
+              <LoadingAnimation label="Calculating ADMET predictions across 119 endpoints..." />
             ) : error ? (
               <motion.div
                 key="error"
