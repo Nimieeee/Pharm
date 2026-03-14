@@ -157,151 +157,38 @@ class ADMETProcessor:
         
         return svg.strip()
     
-    def format_csv_export(self, results: Dict[str, Any], legacy: bool = True) -> str:
+    def format_csv_export(self, results: Dict[str, Any]) -> str:
         """
         Convert ADMET results to CSV string.
         
-        Supports:
-        - Legacy format (ADMETlab 3.0 horizontal): 119+ columns
-        - Standard format (Vertical): Property,Value,Percentile
+        Uses vertical format: Property,Value,Percentile
         
         Args:
             results: ADMET prediction results dict
-            legacy: Whether to use the ADMETlab 3.0 horizontal format
             
         Returns:
             CSV-formatted string
         """
-        if not legacy:
-            # Vertical format implementation
-            lines = ["Property,Value,Percentile"]
-            exclude_keys = {"_engine", "_source", "error", "smiles"}
-            for key, value in results.items():
-                if key in exclude_keys or value is None:
-                    continue
-                if "_percentile" in key:
-                    continue
-                    
-                percentile_key = f"{key}_drugbank_approved_percentile"
-                percentile = results.get(percentile_key, "")
-                
-                if isinstance(value, float):
-                    val_str = f"{value:.4f}"
-                else:
-                    val_str = str(value).replace(',', ';')
-                
-                lines.append(f"{key},{val_str},{percentile}")
-            return '\n'.join(lines)
-
-        # ADMETlab 3.0 Horizontal Format Header
-        headers = [
-            "raw_smiles","smiles","MW","Vol","Dense","nHA","nHD","TPSA","nRot","nRing",
-            "MaxRing","nHet","fChar","nRig","Flex","nStereo","gasa","QED","Synth","Fsp3",
-            "MCE-18","Natural Product-likeness","Alarm_NMR","BMS","Chelating","PAINS","Lipinski",
-            "Pfizer","GSK","GoldenTriangle","logS","logD","logP","mp","bp","pka_acidic","pka_basic",
-            "caco2","MDCK","PAMPA","pgp_inh","pgp_sub","hia","f20","f30","f50","OATP1B1",
-            "OATP1B3","BCRP","BSEP","BBB","MRP1","PPB","logVDss","Fu","CYP1A2-inh","CYP1A2-sub",
-            "CYP2C19-inh","CYP2C19-sub","CYP2C9-inh","CYP2C9-sub","CYP2D6-inh","CYP2D6-sub",
-            "CYP3A4-inh","CYP3A4-sub","CYP2B6-inh","CYP2B6-sub","CYP2C8-inh","LM-human","cl-plasma",
-            "t0.5","BCF","IGC50","LC50DM","LC50FM","hERG","hERG-10um","DILI","Ames","ROA","FDAMDD",
-            "SkinSen","Carcinogenicity","EC","EI","Respiratory","H-HT","Neurotoxicity-DI","Ototoxicity",
-            "Hematotoxicity","Nephrotoxicity-DI","Genotoxicity","RPMI-8226","A549","HEK293","NR-AhR",
-            "NR-AR","NR-AR-LBD","NR-Aromatase","NR-ER","NR-ER-LBD","NR-PPAR-gamma","SR-ARE","SR-ATAD5",
-            "SR-HSE","SR-MMP","SR-p53","molstr","NonBiodegradable","NonGenotoxic_Carcinogenicity",
-            "SureChEMBL","LD50_oral","Skin_Sensitization","Acute_Aquatic_Toxicity","FAF-Drugs4 Rule",
-            "Genotoxic_Carcinogenicity_Mutagenicity","Aggregators","Fluc","Blue_fluorescence",
-            "Green_fluorescence","Reactive","Other_assay_interference","Promiscuous"
-        ]
-
-        # Key Mapping (Internal Key -> ADMETlab Header)
-        mapping = {
-            "molecular_weight": "MW",
-            "hydrogen_bond_acceptors": "nHA",
-            "hydrogen_bond_donors": "nHD",
-            "tpsa": "TPSA",
-            "num_rotatable_bonds": "nRot",
-            "num_rings": "nRing",
-            "stereo_centers": "nStereo",
-            "QED": "QED",
-            "PAINS_alert": "PAINS",
-            "Lipinski": "Lipinski",
-            "logP": "logP",
-            "Caco2_Wang": "caco2",
-            "PAMPA_NCATS": "PAMPA",
-            "HIA_Hou": "hia",
-            "BBB_Martins": "BBB",
-            "PPBR_AZ": "PPB",
-            "VDss_Lombardo": "logVDss",
-            "CYP1A2_Veith": "CYP1A2-inh",
-            "CYP2C19_Veith": "CYP2C19-inh",
-            "CYP2C9_Veith": "CYP2C9-inh",
-            "CYP2C9_Substrate_CarbonMangels": "CYP2C9-sub",
-            "CYP2D6_Veith": "CYP2D6-inh",
-            "CYP2D6_Substrate_CarbonMangels": "CYP2D6-sub",
-            "CYP3A4_Veith": "CYP3A4-inh",
-            "CYP3A4_Substrate_CarbonMangels": "CYP3A4-sub",
-            "Clearance_Hepatocyte_AZ": "cl-plasma",
-            "Half_Life_Obach": "t0.5",
-            "hERG": "hERG",
-            "DILI": "DILI",
-            "AMES": "Ames",
-            "NR-AR": "NR-AR",
-            "NR-AR-LBD": "NR-AR-LBD",
-            "NR-AhR": "NR-AhR",
-            "NR-Aromatase": "NR-Aromatase",
-            "NR-ER": "NR-ER",
-            "NR-ER-LBD": "NR-ER-LBD",
-            "NR-PPAR-gamma": "NR-PPAR-gamma",
-            "SR-ARE": "SR-ARE",
-            "SR-ATAD5": "SR-ATAD5",
-            "SR-HSE": "SR-HSE",
-            "SR-MMP": "SR-MMP",
-            "SR-p53": "SR-p53",
-            "Skin_Reaction": "SkinSen",
-            "LD50_Zhu": "LD50_oral",
-            "Solubility_AqSolDB": "logS"
-        }
-
-        # Value lookup table
-        column_to_key = {v: k for k, v in mapping.items()}
-        smiles = results.get("smiles", "")
-        raw_smiles = results.get("raw_smiles", smiles)
-        mol_svg = results.get("svg_raw", "") # We'll need to pass this in
+        lines = ["Property,Value,Percentile"]
+        exclude_keys = {"_engine", "_source", "error", "smiles", "raw_smiles", "svg_raw"}
         
-        row_values = []
-        for header in headers:
-            if header == "raw_smiles":
-                row_values.append(raw_smiles)
-            elif header == "smiles":
-                row_values.append(smiles)
-            elif header == "molstr":
-                # Clean SVG for CSV inclusion if it looks like XML
-                if mol_svg.startswith("<?xml") or "<svg" in mol_svg:
-                    cleaned_svg = mol_svg.replace('"', "'")
-                    row_values.append(f'"{cleaned_svg}"')
-                else:
-                    row_values.append('""')
-            elif header in column_to_key:
-                val = results.get(column_to_key[header], "")
+        for key, value in results.items():
+            if key in exclude_keys or value is None:
+                continue
+            if "_percentile" in key:
+                continue
                 
-                # Special handling for alerts to match ADMETlab style
-                if "alert" in column_to_key[header] or header in ["PAINS", "BMS", "Chelating"]:
-                    if isinstance(val, (int, float)) and val > 0.5:
-                        row_values.append("['Alert']") # Simplified alert list
-                    else:
-                        row_values.append("['-']")
-                elif isinstance(val, (int, float)):
-                    # Format: Integers as ints, floats with precision
-                    if val == int(val):
-                        row_values.append(f"{int(val)}")
-                    else:
-                        row_values.append(f"{val:.4f}")
-                else:
-                    row_values.append(str(val).replace(",", ";"))
+            percentile_key = f"{key}_drugbank_approved_percentile"
+            percentile = results.get(percentile_key, "")
+            
+            if isinstance(value, float):
+                val_str = f"{value:.4f}"
             else:
-                row_values.append('""' if header in ["Alarm_NMR", "BMS", "Chelating"] else '""')
+                val_str = str(value).replace(',', ';')
+            
+            lines.append(f"{key},{val_str},{percentile}")
         
-        return ",".join(headers) + "\n" + ",".join(row_values)
+        return '\n'.join(lines)
     
     def summarize_findings(self, admet_data: Dict[str, Any]) -> str:
         """
@@ -513,8 +400,12 @@ class ADMETProcessor:
         
         # Key Insights section - includes AI interpretation prominently
         if ai_interpretation:
-            parts.append("## Key Insights\n")
-            parts.append(f"{ai_interpretation}\n")
+            # Clean up the AI interpretation: remove excessive asterisks and normalized spacing
+            cleaned_ai = ai_interpretation.replace('**', '')
+            cleaned_ai = re.sub(r'\n{3,}', '\n\n', cleaned_ai).strip()
+            
+            parts.append("## Medicinal Chemistry Insights\n")
+            parts.append(f"{cleaned_ai}\n")
         
         # Clinical summary (red flags, QED, etc.)
         summary = self.summarize_findings(admet_data)

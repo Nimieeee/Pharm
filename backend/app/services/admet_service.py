@@ -1,13 +1,11 @@
 """
 ADMET Service
 
-Drug discovery ADMET prediction service with ToxMCP robustness patterns.
+Drug discovery ADMET prediction service.
 Integrates with:
 1. Local ADMET-AI Engine (Chemprop v2) - Primary
-2. ADMETlab 3.0 API - Fallback
-3. RDKit - Final fallback for basic properties
+2. RDKit - Final fallback for basic properties
 
-API Reference: https://admetlab3.scbdd.com
 Local Engine: http://localhost:7861 (admet-engine PM2 service)
 """
 
@@ -35,19 +33,16 @@ class RateLimiter:
 
 class ADMETService:
     """
-    ADMET prediction service with local engine + fallback architecture.
+    ADMET prediction service with local engine + RDKit fallback architecture.
     
     Features:
-    - Local ADMET-AI Engine (104 endpoints) - Primary
-    - Structure SVG generation
-    - 119 ADMET endpoint predictions (ADMETlab fallback)
-    - PAINS/structural alerts
+    - Local ADMET-AI Engine (46 endpoints) - Primary
+    - Structure SVG generation via RDKit
     - CSV export
     - Clinical report generation
     - AI-powered interpretation (via AIService)
     """
     
-    API_BASE = "https://admetlab3.scbdd.com/api"
     LOCAL_ENGINE_URL = os.environ.get("ADMET_ENGINE_URL", "http://localhost:7861")
     
     def __init__(self, db: Client = None):
@@ -110,7 +105,7 @@ class ADMETService:
             smiles: SMILES string
             
         Returns:
-            Dict with 104 ADMET predictions or None if failed
+            Dict with 46 ADMET predictions or None if failed
         """
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -135,45 +130,34 @@ class ADMETService:
     
     async def wash_molecule(self, smiles: str) -> Optional[str]:
         """
-        Standardize SMILES via /api/washmol.
+        Standardize SMILES using RDKit.
         
         Args:
             smiles: Input SMILES string
             
         Returns:
-            Standardized SMILES or None if failed
+            Standardized SMILES or original if failed
         """
         try:
-            await self._rate_limiter.wait_for_slot()
+            from rdkit import Chem
             
-            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
-                response = await client.post(
-                    f"{self.API_BASE}/washmol",
-                    json={"smiles": smiles}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    # Unwrap new ADMETlab 3.0 response format: {"code": 200, "status": "success", "data": [{..."washmol": "..."}]}
-                    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
-                        result_data = data["data"][0]
-                        if isinstance(result_data, dict) and "washmol" in result_data:
-                            return result_data["washmol"]
-                    # Fallback to old format for backward compatibility
-                    return data.get('washmol', smiles)
-                    
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                return smiles
+            
+            # Standardize and return canonical SMILES
+            return Chem.MolToSmiles(mol, canonical=True, isomericSmiles=False)
+            
+        except ImportError:
+            print("⚠️ RDKit not available for SMILES washing")
+            return smiles
         except Exception as e:
-            print(f"❌ ADMET wash molecule failed: {e}")
-        
-        return smiles  # Return original on failure
+            print(f"❌ SMILES washing failed: {e}")
+            return smiles
     
     async def get_svg(self, smiles: str) -> Optional[str]:
         """
-        Generate molecule SVG.
-        
-        Priority:
-        1. Local RDKit
-        2. External ADMETlab API
+        Generate molecule SVG using RDKit.
         
         Args:
             smiles: SMILES string
@@ -181,14 +165,7 @@ class ADMETService:
         Returns:
             SVG string or None if failed
         """
-        # 1. Try local RDKit
-        svg = await self._get_svg_rdkit(smiles)
-        if svg:
-            return svg
-            
-        # 2. Fallback to external API
-        print("⚠️ RDKit SVG failed, falling back to external API")
-        return await self._get_svg_external(smiles)
+        return await self._get_svg_rdkit(smiles)
     
     async def _get_svg_rdkit(self, smiles: str) -> Optional[str]:
         """Generate molecule SVG using local RDKit"""
@@ -211,36 +188,13 @@ class ADMETService:
             print(f"❌ RDKit SVG generation failed: {e}")
             return None
     
-    async def _get_svg_external(self, smiles: str) -> Optional[str]:
-        """Fallback to external ADMETlab API"""
-        try:
-            await self._rate_limiter.wait_for_slot()
-            
-            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
-                response = await client.post(
-                    f"{self.API_BASE}/molsvg",
-                    json={"smiles": smiles}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if data and isinstance(data, dict) and 'data' in data and data['data']:
-                        return data['data'][0]
-                    return None
-                    
-        except Exception as e:
-            print(f"❌ External SVG generation failed: {e}")
-        
-        return None
-    
     async def predict_admet(self, smiles: str) -> Dict[str, Any]:
         """
-        Get ADMET predictions with local engine + fallback.
+        Get ADMET predictions with local engine + RDKit fallback.
         
         Priority:
-        1. Local ADMET-AI Engine (104 endpoints) - Primary
-        2. ADMETlab 3.0 API (119 endpoints) - Fallback
-        3. RDKit basic properties - Final fallback
+        1. Local ADMET-AI Engine (46 endpoints) - Primary
+        2. RDKit basic properties - Final fallback
         
         Args:
             smiles: SMILES string
@@ -248,7 +202,7 @@ class ADMETService:
         Returns:
             Dict with ADMET predictions
         """
-        raw_smiles = smiles # Store original
+        raw_smiles = smiles  # Store original
         
         # 1. Try local ADMET-AI engine first
         if await self._check_local_engine():
@@ -258,35 +212,7 @@ class ADMETService:
                 print("✅ Using local ADMET-AI engine")
                 return result
         
-        # 2. Fallback to ADMETlab 3.0 API
-        try:
-            await self._rate_limiter.wait_for_slot()
-            
-            async with httpx.AsyncClient(timeout=60.0, verify=False) as client:
-                response = await client.post(
-                    f"{self.API_BASE}/admet",
-                    json={"smiles": smiles}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
-                        result = data["data"][0]
-                        result["_engine"] = "ADMETlab 3.0"
-                        result["_source"] = "api"
-                        result["smiles"] = smiles
-                        result["raw_smiles"] = raw_smiles
-                        print("✅ Using ADMETlab 3.0 API")
-                        return result
-                        
-        except httpx.TimeoutException:
-            print("⚠️ ADMETlab timeout - trying single endpoint fallback")
-            return await self._predict_single(smiles)
-            
-        except Exception as e:
-            print(f"⚠️ ADMETlab API failed: {e}")
-        
-        # 3. Final fallback: RDKit basic properties
+        # 2. Final fallback: RDKit basic properties
         print("⚠️ Using RDKit fallback for basic properties")
         return await self._predict_rdkit_fallback(smiles)
     
@@ -304,7 +230,7 @@ class ADMETService:
             "smiles": smiles,
             "_engine": "RDKit (fallback)",
             "_source": "local",
-            "error": "External ADMET services unavailable"
+            "error": "ADMET-AI engine unavailable"
         }
         
         try:
@@ -354,55 +280,6 @@ class ADMETService:
         
         return result
     
-    async def _predict_single(self, smiles: str) -> Dict[str, Any]:
-        """Fallback to single endpoint prediction"""
-        try:
-            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
-                response = await client.post(
-                    f"{self.API_BASE}/single/admet",
-                    json={"smiles": smiles}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
-                        return data["data"][0]
-                    return data
-        except Exception as e:
-            print(f"❌ Single endpoint fallback failed: {e}")
-        
-        return {}
-    
-    async def calculate_filters(self, smiles: str) -> Dict[str, Any]:
-        """
-        Calculate medchem filters (PAINS, Lipinski, etc.).
-        
-        Args:
-            smiles: SMILES string
-            
-        Returns:
-            Dict with filter results
-        """
-        try:
-            await self._rate_limiter.wait_for_slot()
-            
-            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
-                response = await client.post(
-                    f"{self.API_BASE}/filters",
-                    json={"smiles": smiles}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
-                        return data["data"][0]
-                    return data
-                    
-        except Exception as e:
-            print(f"❌ Filter calculation failed: {e}")
-        
-        return {}
-    
     async def generate_report(self, smiles: str, molecule_name: str = None) -> str:
         """
         Generate consolidated ADMET markdown report.
@@ -427,13 +304,6 @@ class ADMETService:
         # Add molecule name if provided
         if molecule_name:
             admet_data['molecule_name'] = molecule_name
-        
-        # For local engine, filters are already included in the prediction
-        # Only call calculate_filters if using ADMETlab API
-        if admet_data.get("_source") == "api":
-            filters = await self.calculate_filters(smiles)
-            if filters:
-                admet_data['filters'] = filters
         
         # Generate AI interpretation (if AI service available)
         ai_interpretation = None

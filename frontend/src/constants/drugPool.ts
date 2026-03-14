@@ -7,6 +7,9 @@
  * Format: { name: string, smiles: string, year?: number, class: string }
  * year = FDA approval year (if approved)
  * class = therapeutic class
+ * 
+ * NOTE: All entries must be valid small-molecule SMILES strings.
+ * Biologicals, vaccines, peptides, and protein sequences are excluded.
  */
 
 export interface DrugSuggestion {
@@ -116,8 +119,6 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Fluticasone', smiles: 'S(=O)(=O)CC1SC2C(C1F)C1C(C2=O)C(F)(F)C1C2=CC=CC=C2', year: 1994, class: 'Corticosteroid' },
   { name: 'Montelukast', smiles: 'CC(C)(C)C1=CC=CC=C1C(=O)OCC(O)C1=CC=CC=C1S(=O)(=O)CC1=CC=CC=C1', year: 1998, class: 'Leukotriene Antagonist' },
   { name: 'Tiotropium', smiles: 'C1CC2CCC1N2C(=O)OCC(O)(C)OC', year: 2004, class: 'Anticholinergic' },
-  { name: 'Omalizumab', smiles: 'APRSGTTSSVLLLLLLOAAAATEST', year: 2003, class: 'Monoclonal Antibody' },
-  { name: 'Dupilumab', smiles: 'ASTGLLPGPSLSFASCGLPGTEST', year: 2017, class: 'Monoclonal Antibody' },
   
   // FDA Approved - GI
   { name: 'Omeprazole', smiles: 'COc1ccc2nc(S(=O)(=O)N(C)C)nc2c1', year: 1989, class: 'PPI' },
@@ -142,11 +143,6 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Methotrexate', smiles: 'CNc1ccc2c(c1)C(=O)NCC(=O)NCC(=O)O', year: 1953, class: 'DMARD' },
   { name: 'Sulfasalazine', smiles: 'O=C(Nc1ccc(N=Nc2ccc(S(=O)(=O)N)cc2)cc1)C', year: 1950, class: 'DMARD' },
   { name: 'Hydroxychloroquine', smiles: 'CCN(CC)CCCC(C)N', year: 1955, class: 'DMARD' },
-  { name: 'Abatacept', smiles: 'PEPTIDESEQUENCE', year: 2005, class: 'Biologic' },
-  { name: 'Adalimumab', smiles: 'PROTEINSEQUENCE', year: 2002, class: 'Monoclonal Antibody' },
-  { name: 'Etanercept', smiles: 'PROTEINSEQUENCE', year: 1998, class: 'TNF Inhibitor' },
-  { name: 'Infliximab', smiles: 'PROTEINSEQUENCE', year: 1998, class: 'Monoclonal Antibody' },
-  { name: 'Tocilizumab', smiles: 'PROTEINSEQUENCE', year: 2010, class: 'Monoclonal Antibody' },
   
   // FDA Approved - Other
   { name: 'Sildenafil', smiles: 'CCCC1=NN=C2N1N=C(C2)N1CCN(CC1)C(=O)OCC', year: 1998, class: 'PDE5 Inhibitor' },
@@ -155,14 +151,13 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Colchicine', smiles: 'CC1=CC2C(C=C1)C1=CC(OC)=C(OC)C(OC)=C1C2', year: 1961, class: 'Gout' },
   { name: 'Isotretinoin', smiles: 'CC1=C(C(=O)O)C=CC1=CC=CC=CC=CC=CC=C(C)C', year: 1982, class: 'Retinoid' },
   { name: 'Mupirocin', smiles: 'CC(C)C1CC(O)C(C)C1C(=O)O', year: 1987, class: 'Antibiotic' },
-  { name: 'Amlodipine', smiles: 'CC1=CC2=C(C=C1)C(C)=C(C2C)OCC(=O)NCC', year: 1989, class: 'Calcium Channel Blocker' },
   { name: 'Hydroxyzine', smiles: 'Clc1ccc(C(c2ccccc2)N(CC)CCO)cc1', year: 1956, class: 'Antihistamine' },
   { name: 'Cetirizine', smiles: 'Clc1ccc(C(c2ccccc2)N2CCN(CC2)C(=O)O)cc1', year: 1987, class: 'Antihistamine' },
   { name: 'Loratadine', smiles: 'Clc1ccc2c(c1)N(CC2)C(=O)N(c1ccccc1)CC', year: 1981, class: 'Antihistamine' },
   { name: 'Rivastigmine', smiles: 'CC(C)N(CC)CC(=O)N', year: 2000, class: 'Cholinesterase Inhibitor' },
   { name: 'Donepezil', smiles: 'O=C1CC2=CC=CC=C2N1c1ccc(OC)cc1', year: 1996, class: 'Cholinesterase Inhibitor' },
   { name: 'Memantine', smiles: 'CC1CCNC1C', year: 2000, class: 'NMDA Antagonist' },
-  { name: ' Gabapentin', smiles: 'NCC1(C(=O)O)CCCCC1', year: 1993, class: 'Anticonvulsant' },
+  { name: 'Gabapentin', smiles: 'NCC1(C(=O)O)CCCCC1', year: 1993, class: 'Anticonvulsant' },
   { name: 'Pregabalin', smiles: 'NCC1(C(=O)O)CCCCC1', year: 2005, class: 'Anticonvulsant' },
   
   // Investigational Drugs (no FDA approval year)
@@ -173,53 +168,11 @@ export const drugPool: DrugSuggestion[] = [
   { name: 'Deucravacitinib', smiles: 'CC(C)(C)C1=NC=NC2=C1N=CC(=N2)C1=CC=CC=C1', year: 2022, class: 'TYK2 Inhibitor' },
   { name: 'Rimegepant', smiles: 'CC1=CC=C(C=C1)C(=O)NC(C)(C)C(=O)NCC(=O)N1CCC(CC1)C(F)(F)F', year: 2024, class: 'CGRP Antagonist' },
   { name: 'Zavegepant', smiles: 'CC(C)(C)C(=O)NC1=NC2=CC=CC=C2N1S(=O)(=O)C(F)(F)F', year: 2023, class: 'CGRP Antagonist' },
-  { name: 'Erenumab', smiles: 'PROTEINSEQUENCE', year: 2018, class: 'Monoclonal Antibody' },
-  { name: 'Fremanezumab', smiles: 'PROTEINSEQUENCE', year: 2018, class: 'Monoclonal Antibody' },
-  { name: 'Galcanezumab', smiles: 'PROTEINSEQUENCE', year: 2018, class: 'Monoclonal Antibody' },
-  { name: 'Eptifibatide', smiles: 'MPRPRLHRKSHTVGVLTP', year: 1998, class: 'GP IIb/IIIa Inhibitor' },
-  { name: 'Tirofiban', smiles: 'HOCH2CH2N(CH2)5CH2COOH', year: 1998, class: 'GP IIb/IIIa Inhibitor' },
-  { name: 'Andexanet alfa', smiles: 'RECOMBINANTPROTEIN', year: 2018, class: 'Factor Xa Inhibitor' },
-  { name: 'Ciraparantag', smiles: 'AC-PALCDGPR-CHO', year: 2023, class: 'Anticoagulant Reversal' },
-  { name: 'Luspatercept', smiles: 'RECOMBINANTFUSION', year: 2019, class: 'Erythroid Maturation Agent' },
   { name: 'Voxelotor', smiles: 'CC1=CC=C(C=C1)C(=O)NC(=O)Nc1ccc2ccccc2c1', year: 2019, class: 'Hemoglobin S Polymerization Inhibitor' },
-  { name: 'Crizanlizumab', smiles: 'PROTEINSEQUENCE', year: 2019, class: 'Monoclonal Antibody' },
   { name: 'Lusutrombopag', smiles: 'CC1=CC=C(C=C1)C(=O)C(=O)Nc1ccc(N2CCCCC2)cc1', year: 2019, class: 'TPO Receptor Agonist' },
   { name: 'Avatrombopag', smiles: 'CC1=CC=C(C=C1)C(=O)C(=O)Nc1ccc(N2CCCCC2)cc1', year: 2018, class: 'TPO Receptor Agonist' },
   { name: 'Rolapitant', smiles: 'C1CC1C(=O)NCC(O)C1=CC=CC=C1', year: 2015, class: 'NK-1 Antagonist' },
   { name: 'Netarsudil', smiles: 'NC(=N)N(CCO)c1ccc2ccccc2c1', year: 2017, class: 'Rho Kinase Inhibitor' },
-  { name: 'Abicipar pegol', smiles: 'PEPTIDESEQUENCE', year: 2020, class: 'VEGF Inhibitor' },
-  { name: 'Brolucizumab', smiles: 'PEPTIDESEQUENCE', year: 2019, class: 'VEGF Inhibitor' },
-  { name: 'Faricimab', smiles: 'PROTEINSEQUENCE', year: 2022, class: 'Bispecific Antibody' },
-  { name: 'Teprotumumab', smiles: 'PROTEINSEQUENCE', year: 2020, class: 'Monoclonal Antibody' },
-  { name: 'Satralizumab', smiles: 'PROTEINSEQUENCE', year: 2020, class: 'Monoclonal Antibody' },
-  { name: 'Inebilizumab', smiles: 'PROTEINSEQUENCE', year: 2020, class: 'Monoclonal Antibody' },
-  { name: 'Ravulizumab', smiles: 'PROTEINSEQUENCE', year: 2018, class: 'Monoclonal Antibody' },
-  { name: 'Eculizumab', smiles: 'PROTEINSEQUENCE', year: 2007, class: 'Monoclonal Antibody' },
-  { name: 'Efgartigimod', smiles: 'PROTEINSEQUENCE', year: 2021, class: 'FcRn Antagonist' },
-  { name: 'Rozanolixizumab', smiles: 'PROTEINSEQUENCE', year: 2023, class: 'FcRn Antagonist' },
-  { name: 'Atezolizumab', smiles: 'PROTEINSEQUENCE', year: 2016, class: 'PD-1 Inhibitor' },
-  { name: 'Pembrolizumab', smiles: 'PROTEINSEQUENCE', year: 2014, class: 'PD-1 Inhibitor' },
-  { name: 'Nivolumab', smiles: 'PROTEINSEQUENCE', year: 2014, class: 'PD-1 Inhibitor' },
-  { name: 'Cemiplimab', smiles: 'PROTEINSEQUENCE', year: 2018, class: 'PD-1 Inhibitor' },
-  { name: 'Dostarlimab', smiles: 'PROTEINSEQUENCE', year: 2020, class: 'PD-1 Inhibitor' },
-  { name: 'Avelumab', smiles: 'PROTEINSEQUENCE', year: 2017, class: 'PD-L1 Inhibitor' },
-  { name: 'Durvalumab', smiles: 'PROTEINSEQUENCE', year: 2017, class: 'PD-L1 Inhibitor' },
-  { name: 'Atezolizumab', smiles: 'PROTEINSEQUENCE', year: 2016, class: 'PD-L1 Inhibitor' },
-  { name: 'Ipilimumab', smiles: 'PROTEINSEQUENCE', year: 2011, class: 'CTLA-4 Inhibitor' },
-  { name: 'Tremelimumab', smiles: 'PROTEINSEQUENCE', year: 2022, class: 'CTLA-4 Inhibitor' },
-  { name: 'Belimumab', smiles: 'PROTEINSEQUENCE', year: 2011, class: 'Monoclonal Antibody' },
-  { name: 'Anifrolumab', smiles: 'PROTEINSEQUENCE', year: 2021, class: 'Monoclonal Antibody' },
-  { name: 'Benralizumab', smiles: 'PROTEINSEQUENCE', year: 2017, class: 'Monoclonal Antibody' },
-  { name: 'Mepolizumab', smiles: 'PROTEINSEQUENCE', year: 2015, class: 'Monoclonal Antibody' },
-  { name: 'Reslizumab', smiles: 'PROTEINSEQUENCE', year: 2016, class: 'Monoclonal Antibody' },
-  { name: 'Omalizumab', smiles: 'PROTEINSEQUENCE', year: 2003, class: 'Monoclonal Antibody' },
-  { name: 'Ligelizumab', smiles: 'PROTEINSEQUENCE', year: 2023, class: 'Monoclonal Antibody' },
-  { name: 'Tezepelumab', smiles: 'PROTEINSEQUENCE', year: 2021, class: 'Monoclonal Antibody' },
-  { name: 'Lebrikizumab', smiles: 'PROTEINSEQUENCE', year: 2023, class: 'Monoclonal Antibody' },
-  { name: 'Tralokinumab', smiles: 'PROTEINSEQUENCE', year: 2022, class: 'Monoclonal Antibody' },
-  { name: 'Nemolizumab', smiles: 'PROTEINSEQUENCE', year: 2022, class: 'Monoclonal Antibody' },
-  { name: 'Spikevax', smiles: 'MRNAVACCINE', year: 2022, class: 'Vaccine' },
-  { name: 'Comirnaty', smiles: 'MRNAVACCINE', year: 2021, class: 'Vaccine' },
 ];
 
 export function getRandomDrugs(count: number = 4): DrugSuggestion[] {
