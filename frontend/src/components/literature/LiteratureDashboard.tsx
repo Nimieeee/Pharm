@@ -70,58 +70,61 @@ export default function LiteratureDashboard() {
       <div className="max-w-5xl mx-auto">
         {/* Search Box */}
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-6">
-          <div className="flex gap-3 mb-3">
+          {/* Search Input - Mobile Responsive */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder={exampleQuery || "Search PubMed..."}
-              className="flex-1 px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="flex-1 w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <button
               onClick={handleSearch}
               disabled={loading || !query.trim()}
-              className="px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+              className="px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shrink-0 sm:w-auto w-full"
             >
               {loading ? <Search className="w-5 h-5 animate-pulse" /> : <Search className="w-5 h-5" />}
               Search
             </button>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
-              <span className="text-sm text-[var(--text-muted)]">Year:</span>
-              <input
-                type="number"
-                value={yearFrom}
-                onChange={(e) => setYearFrom(e.target.value ? parseInt(e.target.value) : '')}
-                placeholder="From"
-                min={1900}
-                max={2030}
-                className="w-20 px-3 py-1.5 text-sm rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-              <span className="text-[var(--text-muted)]">-</span>
-              <input
-                type="number"
-                value={yearTo}
-                onChange={(e) => setYearTo(e.target.value ? parseInt(e.target.value) : '')}
-                placeholder="To"
-                min={1900}
-                max={2030}
-                className="w-20 px-3 py-1.5 text-sm rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
+          {/* Filters - Mobile Responsive */}
+          <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Calendar className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+              <span className="text-sm text-[var(--text-muted)] shrink-0">Year:</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={yearFrom}
+                  onChange={(e) => setYearFrom(e.target.value ? parseInt(e.target.value) : '')}
+                  placeholder="From"
+                  min={1900}
+                  max={2030}
+                  className="w-16 sm:w-20 px-2 sm:px-3 py-1.5 text-sm rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <span className="text-[var(--text-muted)]">-</span>
+                <input
+                  type="number"
+                  value={yearTo}
+                  onChange={(e) => setYearTo(e.target.value ? parseInt(e.target.value) : '')}
+                  placeholder="To"
+                  min={1900}
+                  max={2030}
+                  className="w-16 sm:w-20 px-2 sm:px-3 py-1.5 text-sm rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[var(--text-muted)]" />
-              <span className="text-sm text-[var(--text-muted)]">Results:</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <FileText className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+              <span className="text-sm text-[var(--text-muted)] shrink-0">Results:</span>
               <select
                 value={maxResults}
                 onChange={(e) => setMaxResults(parseInt(e.target.value))}
-                className="px-3 py-1.5 text-sm rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-2 sm:px-3 py-1.5 text-sm rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500 shrink-0"
               >
                 <option value={10}>10</option>
                 <option value={20}>20</option>

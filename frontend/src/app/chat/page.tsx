@@ -104,7 +104,7 @@ function ChatContent() {
   // - Resumes when user returns to bottom
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
-  const shouldAutoScroll = isUserAtBottom && (isLoading || messages.length > 0);
+  const [forceScroll, setForceScroll] = useState(0); // Trigger for new messages
 
   const scrollToBottom = useCallback((behavior: 'auto' | 'smooth' = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -139,19 +139,15 @@ function ChatContent() {
 
   // Scroll on new messages - only if user is at bottom
   useEffect(() => {
-    if (shouldAutoScroll && messages.length > 0) {
+    if (isUserAtBottom && messages.length > 0) {
       // Use setTimeout to ensure DOM is updated
-      const timer = setTimeout(() => scrollToBottom('auto'), 50);
+      const timer = setTimeout(() => {
+        scrollToBottom('auto');
+        setForceScroll(prev => prev + 1); // Update force trigger
+      }, 50);
       return () => clearTimeout(timer);
     }
-  }, [messages, shouldAutoScroll, scrollToBottom]);
-
-  // Resume auto-scroll when user returns to bottom
-  useEffect(() => {
-    if (isUserAtBottom && shouldAutoScroll) {
-      scrollToBottom('smooth');
-    }
-  }, [isUserAtBottom, shouldAutoScroll, scrollToBottom]);
+  }, [messages.length, isUserAtBottom, scrollToBottom]);
 
   // Reset mode when conversation changes
   useEffect(() => {
