@@ -130,10 +130,10 @@ export default function DeepResearchUI({
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-surface rounded-xl overflow-hidden border border-border shadow-sm transition-all duration-300">
+    <div className="flex flex-col w-full bg-surface rounded-xl border border-border shadow-sm transition-all duration-300">
 
       {/* 1. Header (Always show toggle on mobile) */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-30">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface/80 backdrop-blur-sm z-30">
         <div className="flex items-center gap-2">
           {isLoading ? (
             <div className="flex items-center gap-2">
@@ -164,7 +164,7 @@ export default function DeepResearchUI({
       </div>
 
       {/* 2. Main Content Area */}
-      <div className="flex flex-1 overflow-hidden relative min-h-[500px]">
+      <div className="flex relative">
 
         {/* Mobile Backdrop */}
         <AnimatePresence>
@@ -180,7 +180,7 @@ export default function DeepResearchUI({
         </AnimatePresence>
 
         {/* LEFT PANEL: The Report */}
-        <div className={`flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth bg-surface ${sidebarCollapsed ? 'w-full' : ''}`}>
+        <div className={`flex-1 p-6 md:p-10 bg-surface ${sidebarCollapsed ? 'w-full' : ''}`}>
           <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-amber-600 dark:prose-a:text-amber-400 prose-img:rounded-xl">
             {isLoading && !reportContent ? (
               <LoadingState progress={progressStep} progressPercent={progressPercent} />
@@ -293,7 +293,7 @@ export default function DeepResearchUI({
           </div>
 
           {/* Source Cards */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
             {sources.length === 0 && (
               <div className="flex flex-col items-center justify-center h-48 text-center opacity-40">
                 {isLoading ? (
