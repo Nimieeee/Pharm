@@ -637,6 +637,9 @@ CRITICAL RULES:
             smiles = results.get("smiles", "Unknown")
             mol_name = results.get("molecule_name", "Drug Candidate")
 
+            # Generate SAS/GASA HTML section
+            sas_html = self._generate_sas_html(synthetic_accessibility) if synthetic_accessibility else ""
+
             # Pre-generate tables HTML to avoid nested f-string issues
             tables_html = ""
             for cat in categories:
