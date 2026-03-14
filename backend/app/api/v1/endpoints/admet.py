@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 import io
+import urllib.parse
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -138,21 +139,24 @@ async def analyze_molecule(
 
 @router.get("/svg")
 async def get_molecule_svg(
-    smiles: str = Query(..., description="SMILES string"),
+    smiles: str = Query(..., description="SMILES string (URL-encoded)"),
     admet_service = Depends(get_admet_service)
 ):
     """
     Generate SVG for molecule structure.
-    
-    - **smiles**: SMILES string
+
+    - **smiles**: SMILES string (URL-encoded, e.g., %3D for =)
     - Returns: SVG string
     """
     try:
-        svg = await admet_service.get_svg(smiles)
-        
+        # Decode URL-encoded SMILES
+        decoded_smiles = urllib.parse.unquote(smiles)
+
+        svg = await admet_service.get_svg(decoded_smiles)
+
         if not svg:
             raise HTTPException(400, "Failed to generate SVG")
-        
+
         return Response(content=svg, media_type="image/svg+xml")
         
     except HTTPException:
