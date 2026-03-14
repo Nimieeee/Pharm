@@ -98,53 +98,22 @@ function ChatContent() {
     clearMessages();
   };
 
-  // Smart auto-scroll: scroll during streaming ONLY if user is at the bottom
-  // If user scrolls away, stop auto-scrolling until they return to bottom
-  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  // Simple auto-scroll - scroll to bottom after each new message
+  // but allow user to scroll freely
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const isNearBottom = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return true;
-    const threshold = 150; // pixels from bottom
-    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-  }, []);
-
-  // Check if user has scrolled away from bottom
-  const handleScroll = useCallback(() => {
-    if (!isNearBottom()) {
-      setAutoScrollEnabled(false);
-    } else {
-      setAutoScrollEnabled(true);
-    }
-  }, [isNearBottom]);
-
-  // Scroll to bottom function
+  
   const scrollToBottom = useCallback((behavior: 'auto' | 'smooth' = 'auto') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
-  // Throttled scroll during streaming - only if autoScrollEnabled
+  // Scroll on new messages
   useEffect(() => {
-    if (!isLoading) {
-      // Always scroll when not streaming
-      scrollToBottom('auto');
-    } else if (autoScrollEnabled) {
-      // During streaming, only scroll if user is at bottom
-      const now = Date.now();
-      const lastScroll = (messagesEndRef.current as any)?._lastScroll || 0;
-      if (now - lastScroll >= 500) {
-        scrollToBottom('auto');
-        if (messagesEndRef.current) (messagesEndRef.current as any)._lastScroll = now;
-      }
+    if (messages.length > 0) {
+      // Use setTimeout to ensure DOM is updated
+      const timer = setTimeout(() => scrollToBottom('auto'), 50);
+      return () => clearTimeout(timer);
     }
-  }, [messages, isLoading, autoScrollEnabled, scrollToBottom]);
-
-  // Reset auto-scroll when user returns to bottom
-  useEffect(() => {
-    if (!isLoading && messages.length > 0) {
-      scrollToBottom('smooth');
-    }
-  }, [isLoading, messages.length, scrollToBottom]);
+  }, [messages, scrollToBottom]);
 
   // Reset mode when conversation changes
   useEffect(() => {
@@ -193,7 +162,6 @@ function ChatContent() {
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44"
-        onScroll={handleScroll}
         onClick={(e) => {
           // Refocus input when user clicks the empty chat background
           if (e.target === e.currentTarget) {
