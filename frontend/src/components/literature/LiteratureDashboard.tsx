@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Calendar, FileText, ExternalLink, Copy, BookOpen } from 'lucide-react';
 import HubLayout from '@/components/shared/HubLayout';
 import { LoadingAnimation } from '@/components/shared/LoadingAnimation';
+import { usePubMed, LiteratureArticle } from '@/hooks/usePubMed';
 
 const EXAMPLE_QUERIES = [
   'SGLT2 inhibitors diabetes',
@@ -17,7 +18,7 @@ export default function LiteratureDashboard() {
   const { search, loading, error, clearError } = usePubMed();
   
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PubMedArticle[]>([]);
+  const [results, setResults] = useState<LiteratureArticle[]>([]);
   const [resultCount, setResultCount] = useState(0);
   const [yearFrom, setYearFrom] = useState<number | ''>('');
   const [yearTo, setYearTo] = useState<number | ''>('');
@@ -53,7 +54,7 @@ export default function LiteratureDashboard() {
     }
   };
 
-  const copyCitation = (article: PubMedArticle) => {
+  const copyCitation = (article: LiteratureArticle) => {
     const authors = article.authors.slice(0, 3).join(', ') + (article.authors.length > 3 ? ' et al.' : '');
     const citation = `${authors} (${article.year}). ${article.title}. ${article.journal}. ${article.volume || ''}${article.issue ? `(${article.issue})` : ''}:${article.pages || ''}. DOI: ${article.doi || 'N/A'}`;
     navigator.clipboard.writeText(citation);
@@ -221,7 +222,7 @@ export default function LiteratureDashboard() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => setExpandedAbstract(article.pmid)}
+                          onClick={() => setExpandedAbstract(article.pmid || null)}
                           className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1"
                         >
                           <BookOpen className="w-4 h-4" />

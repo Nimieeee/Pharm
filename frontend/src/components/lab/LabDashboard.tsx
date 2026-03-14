@@ -14,6 +14,7 @@ import { LoadingAnimation } from '../shared/LoadingAnimation';
 import ADMETPropertyCard from './ADMETPropertyCard';
 import MoleculePreview from './MoleculePreview';
 import StreamingLogo from '../chat/StreamingLogo';
+import { ADMETParameterLegend } from './ADMETParameterLegend';
 
 interface SASResult {
   sas_score: number;
@@ -294,6 +295,64 @@ export default function LabDashboard() {
     }
   };
 
+  const handleExportPDF = async () => {
+    if (!result?.smiles) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/v1/admet/export/pdf?smiles=${encodeURIComponent(result.smiles)}`, {
+        method: 'GET',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) throw new Error('PDF Export failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `admet_report_${result.smiles.slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('PDF exported');
+    } catch (err: any) {
+      toast.error(`Export failed: ${err.message}`);
+    }
+  };
+
+  const handleExportDOCX = async () => {
+    if (!result?.smiles) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/v1/admet/export/docx?smiles=${encodeURIComponent(result.smiles)}`, {
+        method: 'GET',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) throw new Error('Word Export failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `admet_report_${result.smiles.slice(0, 10)}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Word document exported');
+    } catch (err: any) {
+      toast.error(`Export failed: ${err.message}`);
+    }
+  };
+
   return (
     <HubLayout 
       title="Molecular Lab" 
@@ -500,6 +559,20 @@ export default function LabDashboard() {
                       Markdown
                     </button>
                     <button
+                      onClick={handleExportPDF}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-600 text-sm font-medium transition-all"
+                    >
+                      <Download className="w-4 h-4" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={handleExportDOCX}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-600 text-sm font-medium transition-all"
+                    >
+                      <Download className="w-4 h-4" />
+                      Word
+                    </button>
+                    <button
                       onClick={() => { navigator.clipboard.writeText(result.report_markdown); toast.success('Report copied'); }}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-sm font-medium transition-all"
                     >
@@ -538,6 +611,9 @@ export default function LabDashboard() {
                     />
                   ))}
                 </div>
+
+                {/* ADMET Parameter Legend */}
+                <ADMETParameterLegend />
               </motion.div>
             ) : batchResults.length > 0 ? (
               <motion.div 

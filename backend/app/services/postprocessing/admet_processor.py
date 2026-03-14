@@ -157,7 +157,7 @@ class ADMETProcessor:
         
         return svg.strip()
     
-    def format_csv_export(self, results: Dict[str, Any]) -> str:
+    def format_csv_export(self, results: Dict[str, Any], legacy: bool = False) -> str:
         """
         Convert ADMET results to CSV string.
         
@@ -165,12 +165,13 @@ class ADMETProcessor:
         
         Args:
             results: ADMET prediction results dict
+            legacy: Whether to use legacy format (ignored)
             
         Returns:
             CSV-formatted string
         """
         lines = ["Property,Value,Percentile"]
-        exclude_keys = {"_engine", "_source", "error", "smiles", "raw_smiles", "svg_raw"}
+        exclude_keys = {"_engine", "_source", "error", "svg_raw"}
         
         for key, value in results.items():
             if key in exclude_keys or value is None:

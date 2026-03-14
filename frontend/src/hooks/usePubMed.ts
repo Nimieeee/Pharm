@@ -14,13 +14,16 @@ export interface LiteratureArticle {
   id: string;
   title: string;
   abstract: string;
-  authors: string;
+  authors: string[];
   journal: string;
   year: string;
   url: string;
   pdf_url?: string;
   pmid?: string;
   doi?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
   citation_count?: number;
   source: 'PubMed' | 'Semantic Scholar';
 }

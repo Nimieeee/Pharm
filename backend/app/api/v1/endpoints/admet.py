@@ -219,6 +219,86 @@ async def export_admet_csv(
         )
 
 
+@router.get("/export/pdf")
+async def export_admet_pdf(
+    smiles: str = Query(..., description="SMILES string"),
+    admet_service = Depends(get_admet_service)
+):
+    """
+    Export ADMET results as PDF.
+    """
+    try:
+        # Get full ADMET data
+        admet_data = await admet_service.predict_admet(smiles)
+        
+        # Calculate SAS score and AI interpretation as they are needed for the report
+        from app.services.sas_service import sas_calculator
+        admet_data["synthetic_accessibility"] = sas_calculator.calculate(smiles)
+        admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
+        
+        # Generate PDF
+        pdf_content = await admet_service.generate_pdf(admet_data)
+        
+        # Return as download
+        file_stream = io.BytesIO(pdf_content)
+        file_stream.seek(0)
+        
+        mol_name = admet_data.get("molecule_name") or f"admet_{smiles[:10]}"
+        filename = f"{mol_name}.pdf".replace(" ", "_")
+        
+        return StreamingResponse(
+            file_stream,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"PDF export failed: {str(e)}"
+        )
+
+
+@router.get("/export/docx")
+async def export_admet_docx(
+    smiles: str = Query(..., description="SMILES string"),
+    admet_service = Depends(get_admet_service)
+):
+    """
+    Export ADMET results as Word document.
+    """
+    try:
+        # Get full ADMET data
+        admet_data = await admet_service.predict_admet(smiles)
+        
+        # Calculate SAS score and AI interpretation
+        from app.services.sas_service import sas_calculator
+        admet_data["synthetic_accessibility"] = sas_calculator.calculate(smiles)
+        admet_data["ai_interpretation"] = await admet_service._generate_ai_interpretation(admet_data)
+        
+        # Generate DOCX
+        docx_content = await admet_service.generate_docx(admet_data)
+        
+        # Return as download
+        file_stream = io.BytesIO(docx_content)
+        file_stream.seek(0)
+        
+        mol_name = admet_data.get("molecule_name") or f"admet_{smiles[:10]}"
+        filename = f"{mol_name}.docx".replace(" ", "_")
+        
+        return StreamingResponse(
+            file_stream,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Word export failed: {str(e)}"
+        )
+
+
 @router.post("/export/batch")
 async def export_batch_csv(
     request: BatchExportRequest,

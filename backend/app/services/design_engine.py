@@ -330,30 +330,34 @@ class DesignEngine:
     
     def _build_title_slide(self, prs, data, theme, image_bytes=None):
         """Dark background, centered title, optional background image"""
+        # Use blank layout (index 6) for custom design
         slide_layout = prs.slide_layouts[6]  # Blank
         slide = prs.slides.add_slide(slide_layout)
-        
+
         # Dark background
         bg = slide.background
         bg.fill.solid()
         bg.fill.fore_color.rgb = RGBColor.from_string(theme["bg_dark"])
-        
+
         # Background image (dimmed) if available
         if image_bytes:
-            slide.shapes.add_picture(
-                io.BytesIO(image_bytes),
-                Inches(0), Inches(0),
-                prs.slide_width, prs.slide_height
-            )
-            # Add dark overlay
-            overlay = slide.shapes.add_shape(
-                MSO_SHAPE.RECTANGLE,
-                Inches(0), Inches(0),
-                prs.slide_width, prs.slide_height
-            )
-            overlay.fill.solid()
-            overlay.fill.fore_color.rgb = RGBColor.from_string(theme["bg_dark"])
-            overlay.fill.transparency = 0.5
+            try:
+                slide.shapes.add_picture(
+                    io.BytesIO(image_bytes),
+                    Inches(0), Inches(0),
+                    prs.slide_width, prs.slide_height
+                )
+                # Add dark overlay
+                overlay = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    Inches(0), Inches(0),
+                    prs.slide_width, prs.slide_height
+                )
+                overlay.fill.solid()
+                overlay.fill.fore_color.rgb = RGBColor.from_string(theme["bg_dark"])
+                overlay.fill.transparency = 0.5
+            except Exception as e:
+                print(f"⚠️ Title slide image failed: {e}")
         
         # Title text
         txBox = slide.shapes.add_textbox(
@@ -414,13 +418,16 @@ class DesignEngine:
         
         # Right column: Image (40% width)
         if image_bytes:
-            img_x = Inches(8.2)
-            img_w = Inches(4.8)
-            img_h = Inches(5.5)
-            slide.shapes.add_picture(
-                io.BytesIO(image_bytes),
-                img_x, Inches(1), img_w, img_h
-            )
+            try:
+                img_x = Inches(8.2)
+                img_w = Inches(4.8)
+                img_h = Inches(5.5)
+                slide.shapes.add_picture(
+                    io.BytesIO(image_bytes),
+                    img_x, Inches(1), img_w, img_h
+                )
+            except Exception as e:
+                print(f"⚠️ Two-column slide image failed: {e}")
     
     def _build_data_callout_slide(self, prs, data, theme):
         """Large metric/number display"""
