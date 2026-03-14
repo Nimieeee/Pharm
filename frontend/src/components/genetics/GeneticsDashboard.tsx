@@ -221,7 +221,7 @@ export default function GeneticsDashboard() {
                       disabled={isLoading || !rsid.trim()}
                       className="w-full py-4 rounded-2xl bg-purple-500 text-black font-bold hover:bg-purple-400 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                     >
-                      {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                      {isLoading ? <Search className="w-5 h-5 animate-pulse" /> : <Search className="w-5 h-5" />}
                       Search Database
                     </button>
                   </form>

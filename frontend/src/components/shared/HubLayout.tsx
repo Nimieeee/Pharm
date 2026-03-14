@@ -31,6 +31,7 @@ export default function HubLayout({
 }: HubLayoutProps) {
   const { theme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const accentClasses = colorMap[accentColor as keyof typeof colorMap] || colorMap.blue;
   const isDark = theme === 'dark';
 
@@ -38,7 +39,10 @@ export default function HubLayout({
     <div className={`flex h-screen overflow-hidden ${isDark ? 'bg-[#0a0a0b] text-slate-200' : 'bg-gray-50 text-slate-800'} selection:bg-blue-500/30`}>
       {/* Sidebar - Desktop */}
       <div className="hidden lg:block h-full shrink-0">
-        <ResearchSidebar />
+        <ResearchSidebar 
+          isCollapsed={isSidebarCollapsed} 
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+        />
       </div>
 
       {/* Sidebar - Mobile Overlay */}
@@ -83,7 +87,7 @@ export default function HubLayout({
           </button>
 
           <div className="flex items-center gap-4 ml-auto">
-            <ThemeToggle />
+            {/* Nav remains for other actions, ThemeToggle consolidated to Sidebar */}
           </div>
         </nav>
 

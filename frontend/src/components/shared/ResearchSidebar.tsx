@@ -13,20 +13,13 @@ import {
 
 const NAVIGATION = [
   { 
-    title: 'CORE HUBS', 
+    title: 'SCIENTIFIC HUB', 
     items: [
       { id: 'genetics', name: 'Genetics Hub', icon: Dna, path: '/genetics' },
       { id: 'lab', name: 'Molecular Lab', icon: FlaskConical, path: '/lab' },
       { id: 'studio', name: 'Creation Studio', icon: Box, path: '/studio' },
       { id: 'literature', name: 'Literature Engine', icon: BookOpen, path: '/literature' },
-    ]
-  },
-  {
-    title: 'RESEARCH TOOLS',
-    items: [
       { id: 'ddi', name: 'Interaction Checker', icon: Layers, path: '/ddi' },
-      { id: 'variant', name: 'Variant Lookup', icon: Search, path: '/genetics?tab=gwas' },
-      { id: 'docs', name: 'Documentation', icon: Microscope, path: '/docs' },
     ]
   }
 ];

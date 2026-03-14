@@ -104,9 +104,10 @@ Rules:
 - Maintain logical flow between sections
 """
         
-        response = await self.ai.chat_completion(
-            mode="fast",
-            messages=[{"role": "user", "content": prompt}],
+        response = await self.ai.generate(
+            prompt=prompt,
+            mode="detailed",
+            system_prompt="You are a professional medical scribe. Return ONLY JSON.",
             max_tokens=4000,
             temperature=0.3
         )
@@ -215,9 +216,10 @@ Rules:
 """
         
         try:
-            response = await self.ai.chat_completion(
+            response = await self.ai.generate(
+                prompt=prompt,
                 mode="detailed",
-                messages=[{"role": "user", "content": prompt}],
+                system_prompt="You are a medical writer. Return JSON.",
                 max_tokens=2000,
                 temperature=0.4
             )

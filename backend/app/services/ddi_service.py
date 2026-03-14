@@ -147,28 +147,48 @@ class DDIService:
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                # Check for interactions
+                # USAGE CHANGE: interaction/list.json is brittle. 
+                # Use interaction/interaction.json?rxcui=X which returns all interactions for X.
+                # Then we filter for Y in the results.
                 response = await client.get(
-                    f"{self.RXNAV_BASE}/interaction/list.json",
+                    f"{self.RXNAV_BASE}/interaction/interaction.json",
                     params={
-                        "rxcuis": f"{rxcui_a}+{rxcui_b}"
+                        "rxcui": rxcui_a,
+                        "sources": "ONCHigh" # High priority interactions
                     }
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    interaction_group = data.get("interactionTypeGroup", [])
+                    # Find interaction with drug_b
+                    interaction_group = data.get("onCHigh", [])
                     
+                    found_interaction = None
                     if interaction_group:
-                        interaction = self._parse_interaction(
-                            interaction_group, 
+                        # Scan for drug_b in the interactions list
+                        for item in interaction_group:
+                            pairs = item.get("interactionPair", [])
+                            for pair in pairs:
+                                # Check if drug_b's rxcui is in the concepts
+                                concepts = pair.get("interactionConcept", [])
+                                for concept in concepts:
+                                    c_rxcui = concept.get("minConceptItem", {}).get("rxcui")
+                                    if c_rxcui == rxcui_b:
+                                        found_interaction = pair
+                                        break
+                                if found_interaction: break
+                            if found_interaction: break
+
+                    if found_interaction:
+                        parsed = self._parse_interaction_pair(
+                            found_interaction, 
                             drug_a, 
                             drug_b,
                             rxcui_a,
                             rxcui_b
                         )
-                        self._cache[cache_key] = interaction
-                        return interaction
+                        self._cache[cache_key] = parsed
+                        return parsed
                     else:
                         # No interaction found
                         result = {

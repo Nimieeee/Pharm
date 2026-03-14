@@ -16,119 +16,131 @@ export const ParticleNetwork = () => {
 
     let animationFrameId: number;
     let particles: Particle[] = [];
-    const mouse = { x: 0, y: 0, radius: 150 };
+    const mouse = { x: 0, y: 0, radius: 200 }; // Increased radius for more reaction
 
-    // Responsive properties based on theme
-    const isDark = theme === 'dark';
-    const particleColor = isDark ? 'rgba(200, 91, 32, 0.4)' : 'rgba(200, 91, 32, 0.2)';
-    const lineColor = isDark ? 'rgba(200, 91, 32, 0.15)' : 'rgba(200, 91, 32, 0.08)';
-    const particleCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 100;
-    const connectionDistance = 150;
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
 
     class Particle {
       x: number;
       y: number;
-      vx: number;
-      vy: number;
       size: number;
+      baseX: number;
+      baseY: number;
+      density: number;
 
       constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
-        this.vx = (Math.random() - 0.5) * 0.8;
-        this.vy = (Math.random() - 0.5) * 0.8;
-        this.size = Math.random() * 2 + 1;
-      }
-
-      update(width: number, height: number, mouseX: number, mouseY: number) {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Wrap around screen instead of bouncing for a more "infinite" feel
-        if (this.x < 0) this.x = width;
-        if (this.x > width) this.x = 0;
-        if (this.y < 0) this.y = height;
-        if (this.y > height) this.y = 0;
-
-        // Mouse interaction (gentle repulsion)
-        const dx = mouseX - this.x;
-        const dy = mouseY - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < mouse.radius) {
-          const force = (mouse.radius - distance) / mouse.radius;
-          const angle = Math.atan2(dy, dx);
-          this.x -= Math.cos(angle) * force * 2;
-          this.y -= Math.sin(angle) * force * 2;
-        }
+        this.size = Math.random() * 1.5 + 0.5;
+        this.baseX = this.x;
+        this.baseY = this.y;
+        this.density = (Math.random() * 30) + 1;
       }
 
       draw() {
-        if (!ctx) return;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = particleColor;
-        ctx.fill();
+        // Use theme-aware color
+        ctx!.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(15, 23, 42, 0.4)';
+        ctx!.beginPath();
+        ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx!.closePath();
+        ctx!.fill();
+      }
+
+      update() {
+        let dx = mouse.x - this.x;
+        let dy = mouse.y - this.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        let forceDirectionX = dx / distance;
+        let forceDirectionY = dy / distance;
+        let maxDistance = mouse.radius;
+        let force = (maxDistance - distance) / maxDistance;
+        let directionX = forceDirectionX * force * this.density;
+        let directionY = forceDirectionY * force * this.density;
+
+        if (distance < mouse.radius) {
+          this.x -= directionX;
+          this.y -= directionY;
+        } else {
+          if (this.x !== this.baseX) {
+            let dx = this.x - this.baseX;
+            this.x -= dx / 15; // Faster return
+          }
+          if (this.y !== this.baseY) {
+            let dy = this.y - this.baseY;
+            this.y -= dy / 15;
+          }
+        }
       }
     }
 
     const init = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
       particles = [];
-      for (let i = 0; i < particleCount; i++) {
-        particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
+      const numberOfParticles = (canvas.width * canvas.height) / 6000; // Increased density
+      for (let i = 0; i < numberOfParticles; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        particles.push(new Particle(x, y));
       }
     };
 
-    const connect = () => {
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+        particles[i].draw();
+        particles[i].update();
+      }
+      connect();
+      animationFrameId = requestAnimationFrame(animate);
+    };
 
-          if (distance < connectionDistance) {
-            const opacity = 1 - distance / connectionDistance;
-            ctx.strokeStyle = lineColor.replace('0.15', (0.15 * opacity).toString()).replace('0.08', (0.08 * opacity).toString());
-            ctx.lineWidth = 1;
+    const connect = () => {
+      for (let a = 0; a < particles.length; a++) {
+        for (let b = a; b < particles.length; b++) {
+          let dx = particles[a].x - particles[b].x;
+          let dy = particles[a].y - particles[b].y;
+          let distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 120) { // Slightly longer connections
+            const opacity = 1 - (distance / 120);
+            ctx.strokeStyle = theme === 'dark' ? `rgba(255, 255, 255, ${opacity * 0.2})` : `rgba(15, 23, 42, ${opacity * 0.15})`;
+            ctx.lineWidth = 0.8;
             ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.moveTo(particles[a].x, particles[a].y);
+            ctx.lineTo(particles[b].x, particles[b].y);
             ctx.stroke();
           }
         }
       }
     };
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        p.update(canvas.width, canvas.height, mouse.x, mouse.y);
-        p.draw();
-      });
-      connect();
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
     const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
+      mouse.x = e.x;
+      mouse.y = e.y;
     };
 
-    const handleResize = () => {
+    const handleMouseOut = () => {
+      mouse.x = 0;
+      mouse.y = 0;
+    };
+
+    window.addEventListener('resize', () => {
+      resize();
       init();
-    };
-
+    });
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('mouseout', handleMouseOut);
 
+    resize();
     init();
     animate();
 
     return () => {
+      window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mouseout', handleMouseOut);
       cancelAnimationFrame(animationFrameId);
     };
   }, [theme]);

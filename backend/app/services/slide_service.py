@@ -85,7 +85,8 @@ Rules:
 - Last slide should be "title" (conclusion/thank you)
 - Never have 3 consecutive slides with the same layout
 - Max 6 bullets per slide (split if more needed)
-- image_prompt should describe a professional, relevant illustration
+- set image_prompt to null if the slide is text-heavy or doesn't benefit from a visual illustration. No generic placeholders.
+- image_prompt should describe a professional, high-fidelity scientific illustration or medical diagram.
 - For data_callout: include "data": {{"value": "85%", "label": "Patient Response Rate"}}
 """
         

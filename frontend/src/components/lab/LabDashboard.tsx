@@ -463,7 +463,7 @@ export default function LabDashboard() {
                   <section className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 to-blue-500/10 border border-amber-500/20 backdrop-blur-md">
                     <div className="flex items-center gap-2 mb-4">
                       <Sparkles className="w-5 h-5 text-amber-500" />
-                      <h3 className="text-sm font-semibold text-amber-600 uppercase tracking-wider">AI Interpretation</h3>
+                      <h3 className="text-sm font-semibold text-amber-600 uppercase tracking-wider">Medicinal Chemistry Insights</h3>
                     </div>
                     <p className="text-base text-[var(--text-primary)] leading-relaxed">
                       {result.ai_interpretation}

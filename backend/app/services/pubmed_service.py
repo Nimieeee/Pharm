@@ -66,11 +66,24 @@ class PubMedService:
         elif year_to:
             date_filter = f" AND (1800[PDAT] : {year_to}[PDAT])"
         
-        full_query = f"{query}{date_filter}" if date_filter else query
+        # Sanitize query: remove characters like [] that might be interpreted as tags unless they look like [PDAT]
+        sanitized_query = query.replace("[", " ").replace("]", " ").strip()
+        # Restore PDAT tags if they were there (very rough)
+        if year_from or year_to:
+            # We add them specifically below
+            pass
+
+        full_query = f"{sanitized_query}{date_filter}" if date_filter else sanitized_query
+        
+        headers = {
+            "User-Agent": "Benchside/1.0 (https://benchside.com; mailto:research-bot@benchside.com)",
+            "Accept": "application/json"
+        }
         
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=20.0, headers=headers) as client:
                 # Step 1: ESearch - get PMIDs
+                print(f"🔍 Searching PubMed for: {full_query}")
                 search_response = await client.get(
                     f"{self.BASE}/esearch.fcgi",
                     params={
@@ -78,7 +91,9 @@ class PubMedService:
                         "term": full_query,
                         "retmax": max_results,
                         "retmode": "json",
-                        "sort": "relevance"
+                        "sort": "relevance",
+                        "tool": "benchside",
+                        "email": "research-bot@benchside.com"
                     }
                 )
                 

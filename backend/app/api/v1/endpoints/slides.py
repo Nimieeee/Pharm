@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
@@ -29,7 +29,8 @@ class SlideGenerateRequest(BaseModel):
     generate_images: bool = True
 
 # --- Storage for in-progress jobs ---
-slide_jobs: dict = {}  # job_id -> {"status": ..., "pptx_bytes": ...}
+# Using a dictionary to store progress queues
+slide_jobs: dict = {}  # job_id -> {"status": ..., "pptx_bytes": ..., "queue": asyncio.Queue}
 
 # --- Endpoints ---
 
@@ -69,40 +70,69 @@ async def generate_slide_outline(
 @router.post("/generate")
 async def generate_slides(
     request: SlideGenerateRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ):
-    """Step 2-4: Generate PPTX from approved outline. Returns SSE progress."""
+    """Step 2-4: Start background PPTX generation. Returns job_id."""
     try:
-        from app.services.slide_service import get_slide_service
-        
-        slide_service = get_slide_service()
         job_id = str(uuid.uuid4())
-        slide_jobs[job_id] = {"status": "started", "pptx_bytes": None}
+        slide_jobs[job_id] = {
+            "status": "started", 
+            "pptx_bytes": None, 
+            "queue": asyncio.Queue(),
+            "current": 0,
+            "total": len(request.outline.slides),
+            "message": "Initializing..."
+        }
         
-        async def event_generator():
-            async def on_progress(data):
-                yield {"event": "progress", "data": json.dumps(data)}
-            
-            try:
-                pptx_bytes = await slide_service.generate_slides(
-                    outline=request.outline.dict(),
-                    generate_images=request.generate_images,
-                    on_progress=on_progress
-                )
-                slide_jobs[job_id]["pptx_bytes"] = pptx_bytes
-                slide_jobs[job_id]["status"] = "complete"
-                yield {"event": "complete", "data": json.dumps({"job_id": job_id})}
-            except Exception as e:
-                slide_jobs[job_id]["status"] = "error"
-                yield {"event": "error", "data": json.dumps({"error": str(e)})}
-        
-        return EventSourceResponse(event_generator())
+        background_tasks.add_task(run_slide_generation, job_id, request)
+        return {"job_id": job_id}
         
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate slides: {str(e)}"
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def run_slide_generation(job_id: str, request: SlideGenerateRequest):
+    from app.services.slide_service import get_slide_service
+    slide_service = get_slide_service()
+    
+    async def on_progress(data):
+        # Update internal state for polling
+        slide_jobs[job_id].update({
+            "current": data.get("current", 0),
+            "total": data.get("total", 0),
+            "message": data.get("message", "")
+        })
+        # Push to queue for SSE
+        await slide_jobs[job_id]["queue"].put(data)
+    
+    try:
+        pptx_bytes = await slide_service.generate_slides(
+            outline=request.outline.dict(),
+            generate_images=request.generate_images,
+            on_progress=on_progress
         )
+        slide_jobs[job_id]["pptx_bytes"] = pptx_bytes
+        slide_jobs[job_id]["status"] = "complete"
+        await slide_jobs[job_id]["queue"].put({"status": "complete", "job_id": job_id})
+    except Exception as e:
+        slide_jobs[job_id]["status"] = "error"
+        await slide_jobs[job_id]["queue"].put({"status": "error", "error": str(e)})
+
+@router.get("/status/{job_id}")
+async def get_slide_status(job_id: str):
+    """SSE endpoint for slide generation progress"""
+    if job_id not in slide_jobs:
+        raise HTTPException(404, "Job not found")
+
+    async def event_generator():
+        queue = slide_jobs[job_id]["queue"]
+        while True:
+            data = await queue.get()
+            yield {"event": "message", "data": json.dumps(data)}
+            if data.get("status") in ["complete", "error"]:
+                break
+    
+    return EventSourceResponse(event_generator())
 
 @router.get("/download/{job_id}")
 async def download_slides(job_id: str, current_user: User = Depends(get_current_user)):

@@ -109,13 +109,17 @@ export default function CreationStudio() {
       const data = await response.json();
       setJobId(data.job_id);
       
-      // Start polling/SSE
-      const eventSource = new EventSource(`${API_BASE_URL}/api/v1/slides/status/${data.job_id}`);
+      // Start polling/SSE - dynamic endpoint based on creationType
+      const statusPath = creationType === 'slides' ? 'slides' : 'docs';
+      const eventSource = new EventSource(`${API_BASE_URL}/api/v1/${statusPath}/status/${data.job_id}`);
+      
       eventSource.onmessage = (event) => {
         const update = JSON.parse(event.data);
+        
+        // Handle standard progress updates
         setProgress({
-          current: update.current_slide || 0,
-          total: update.total_slides || 0,
+          current: update.current || update.current_slide || 0,
+          total: update.total || update.total_slides || 0,
           message: update.message || ''
         });
 
@@ -123,13 +127,18 @@ export default function CreationStudio() {
           setStep('complete');
           eventSource.close();
           toast.success('Generation complete!');
+        } else if (update.status === 'error') {
+          setError(update.error || 'Generation failed');
+          setStep('edit_outline');
+          eventSource.close();
+          toast.error(update.error || 'Generation failed');
         }
       };
 
-      eventSource.onerror = () => {
-        setError('Connection lost while generating');
-        setStep('edit_outline');
-        eventSource.close();
+      eventSource.onerror = (e) => {
+        console.error('SSE Error:', e);
+        // Don't close immediately as browser might retry, 
+        // but if we are in started state for too long without message, it might be dead.
       };
     } catch (err: any) {
       setError(err.message);

@@ -452,6 +452,10 @@ class TestADMETLocalEngine:
         mock_crippen = MagicMock()
         mock_crippen.MolLogP.return_value = -0.001
 
+        mock_chem.Descriptors = mock_descriptors
+        mock_chem.Lipinski = mock_lipinski
+        mock_chem.Crippen = mock_crippen
+
         with mock_patch.dict('sys.modules', {
             'rdkit': mock_chem,
             'rdkit.Chem': mock_chem,

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Calendar, FileText, ExternalLink, Copy, Loader2, BookOpen } from 'lucide-react';
+import { Search, Calendar, FileText, ExternalLink, Copy, BookOpen } from 'lucide-react';
 import { usePubMed, PubMedArticle } from '@/hooks/usePubMed';
 import HubLayout from '@/components/shared/HubLayout';
+import { LoadingAnimation } from '@/components/shared/LoadingAnimation';
 
 const EXAMPLE_QUERIES = [
   'SGLT2 inhibitors diabetes',
@@ -83,7 +84,7 @@ export default function LiteratureDashboard() {
               disabled={loading || !query.trim()}
               className="px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              {loading ? <Search className="w-5 h-5 animate-pulse" /> : <Search className="w-5 h-5" />}
               Search
             </button>
           </div>
@@ -155,7 +156,13 @@ export default function LiteratureDashboard() {
 
         {/* Articles */}
         <div className="space-y-4">
-          {results.map((article) => (
+          {loading && (
+            <div className="py-20">
+              <LoadingAnimation label="Searching 30M+ biomedical records from PubMed..." />
+            </div>
+          )}
+          
+          {!loading && results.map((article) => (
             <div
               key={article.pmid}
               className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-teal-500/50 transition-colors"

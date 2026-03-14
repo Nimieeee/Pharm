@@ -63,7 +63,7 @@ function LoginContent() {
         }).catch(() => { });
       }
 
-      router.push('/chat');
+      router.push('/');
     } catch (err: any) {
       if (err.message === 'EMAIL_NOT_VERIFIED') {
         toast.info('Email not verified', {
