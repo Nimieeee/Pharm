@@ -32,7 +32,12 @@ export default function HubLayout({
   const { theme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
-  const accentClasses = colorMap[accentColor as keyof typeof colorMap] || colorMap.blue;
+
+  // Memoize accent classes to prevent flickering
+  const accentClasses = React.useMemo(() => {
+    return colorMap[accentColor as keyof typeof colorMap] || colorMap.blue;
+  }, [accentColor]);
+
   const isDark = theme === 'dark';
 
   return (
