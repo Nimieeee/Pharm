@@ -335,16 +335,16 @@ class ADMETService:
         # Add molecule name if provided
         if molecule_name:
             admet_data['molecule_name'] = molecule_name
-        
+
         # Generate AI interpretation (if AI service available)
         ai_interpretation = None
         try:
             ai_interpretation = await self._generate_ai_interpretation(admet_data, molecule_name)
         except Exception as e:
             print(f"⚠️ AI interpretation failed: {e}")
-        
-        # Format report with AI interpretation
-        return self.processor.format_report(admet_data, svg, ai_interpretation)
+
+        # Format report with AI interpretation and synthetic accessibility
+        return self.processor.format_report(admet_data, svg, ai_interpretation, synthetic_accessibility)
     
     async def _generate_ai_interpretation(self, admet_data: Dict[str, Any], molecule_name: str = None) -> str:
         """

@@ -378,49 +378,84 @@ class ADMETProcessor:
         
         return '\n'.join(summary_parts)
     
-    def format_report(self, admet_data: Dict[str, Any], svg: str = None, ai_interpretation: str = None) -> str:
+    def format_report(self, admet_data: Dict[str, Any], svg: str = None, ai_interpretation: str = None, synthetic_accessibility: Dict[str, Any] = None) -> str:
         """
         Generate complete markdown report.
-        
+
         Supports both:
         - Nested format (ADMETlab API): {"absorption": {"caco2": {...}}}
         - Flat format (ADMET-AI local): {"molecular_weight": 46.07, "logP": -0.001}
-        
+
         Args:
             admet_data: Full ADMET prediction results
             svg: Optional molecule structure SVG
             ai_interpretation: Optional AI-generated interpretation
-            
+            synthetic_accessibility: Optional dict with SAS and GASA scores
+
         Returns:
             Complete markdown report
         """
         parts = []
-        
+
         # Title
         parts.append("## ADMET Analysis Report\n")
-        
+
         # Key Insights section - includes AI interpretation prominently
         if ai_interpretation:
             # Clean up the AI interpretation: remove excessive asterisks and normalized spacing
             cleaned_ai = ai_interpretation.replace('**', '')
             cleaned_ai = re.sub(r'\n{3,}', '\n\n', cleaned_ai).strip()
-            
+
             parts.append("## Medicinal Chemistry Insights\n")
             parts.append(f"{cleaned_ai}\n")
-        
+
+        # Synthetic Accessibility Section (SAS + GASA)
+        if synthetic_accessibility:
+            parts.append("## Synthetic Accessibility\n")
+
+            # RDKit SAS Score
+            if 'sas_score' in synthetic_accessibility:
+                sas = synthetic_accessibility['sas_score']
+                sas_category = synthetic_accessibility.get('category', 'N/A').upper()
+                sas_interp = synthetic_accessibility.get('interpretation', '')
+
+                parts.append(f"**RDKit SAS Score**: {sas:.1f} ({sas_category})\n")
+                if sas_interp:
+                    parts.append(f"{sas_interp}\n")
+
+            # GASA Score
+            if 'gasa_prediction' in synthetic_accessibility:
+                gasa_pred = synthetic_accessibility['gasa_prediction']
+                gasa_easy = synthetic_accessibility.get('gasa_easy_probability', 0)
+                gasa_hard = synthetic_accessibility.get('gasa_hard_probability', 0)
+                gasa_interp = synthetic_accessibility.get('gasa_interpretation', '')
+
+                pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
+                parts.append(f"\n**GASA Prediction**: {pred_label}\n")
+                parts.append(f"- Easy probability: {gasa_easy * 100:.1f}%\n")
+                parts.append(f"- Hard probability: {gasa_hard * 100:.1f}%\n")
+                if gasa_interp:
+                    parts.append(f"{gasa_interp}\n")
+
+            # Consensus
+            if 'consensus' in synthetic_accessibility:
+                parts.append(f"\n**Consensus**: {synthetic_accessibility['consensus']}\n")
+
+            parts.append("")
+
         # Clinical summary (red flags, QED, etc.)
         summary = self.summarize_findings(admet_data)
         parts.append(summary)
-        
+
         # Detailed results
         parts.append("\n## Detailed Results\n")
-        
+
         # Metadata keys to exclude
-        exclude_keys = {"_engine", "_source", "error", "ai_interpretation", "molecule_name"}
-        
+        exclude_keys = {"_engine", "_source", "error", "ai_interpretation", "molecule_name", "synthetic_accessibility"}
+
         # Check if flat format (ADMET-AI local engine)
         is_flat_format = "molecular_weight" in admet_data
-        
+
         if is_flat_format:
             # Flat format - organize by property groups
             for group_name, keys in self.property_groups.items():
@@ -430,7 +465,7 @@ class ADMETProcessor:
                         val = admet_data[key]
                         if val is not None:
                             group_data[key] = val
-                
+
                 if group_data:
                     parts.append(f"\n### {group_name}\n")
                     for endpoint, value in group_data.items():
@@ -450,7 +485,7 @@ class ADMETProcessor:
                     continue
                 if isinstance(data, dict):
                     parts.append(f"\n### {category.replace('_', ' ').title()}\n")
-                    
+
                     for endpoint, value in data.items():
                         if isinstance(value, dict):
                             val = value.get('value', 'N/A')
@@ -461,7 +496,7 @@ class ADMETProcessor:
                                 parts.append(f"  - {interp}")
                         else:
                             parts.append(f"- **{endpoint.replace('_', ' ').title()}**: {value}")
-        
+
         return '\n'.join(parts)
 
     def get_interpretation(self, endpoint: str, value: Any) -> str:

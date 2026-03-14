@@ -573,14 +573,16 @@ class DesignEngine:
     def _add_slide_numbers(self, prs, theme):
         """Add slide numbers to content slides"""
         # Skip title slide (index 0)
-        for i, slide in enumerate(prs.slides[1:], start=2):
+        # Use range-based access to avoid prs.slides[1:] slicing bug in some pptx versions
+        for i in range(1, len(prs.slides)):
+            slide = prs.slides[i]
             # Add small textbox at bottom right
             num_box = slide.shapes.add_textbox(
                 Inches(12), Inches(7), Inches(1), Inches(0.4)
             )
             tf = num_box.text_frame
             p = tf.paragraphs[0]
-            p.text = str(i)
+            p.text = str(i + 1)
             p.font.size = Pt(10)
             p.font.color.rgb = RGBColor.from_string(theme["muted"])
             p.alignment = PP_ALIGN.RIGHT

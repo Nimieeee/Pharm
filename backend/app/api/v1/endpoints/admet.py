@@ -123,13 +123,7 @@ async def analyze_molecule(
         except Exception:
             pass
 
-        # 6. Build structured categories from raw data
-        categories = admet_service.processor.build_structured_categories(admet_data)
-
-        # 7. Also generate markdown for legacy support/copying
-        report_md = admet_service.processor.format_report(admet_data, svg, ai_interpretation)
-
-        # Build combined synthetic accessibility result
+        # 6. Build combined synthetic accessibility result
         synthetic_accessibility = sas_result
         if gasa_result:
             synthetic_accessibility['gasa_prediction'] = gasa_result['prediction']
@@ -145,6 +139,12 @@ async def analyze_molecule(
                 "Both methods agree: Difficult to synthesize" if (not sas_easy and not gasa_easy) else
                 "Mixed results: Check both scores"
             )
+
+        # 7. Build structured categories from raw data
+        categories = admet_service.processor.build_structured_categories(admet_data)
+
+        # 8. Generate markdown report WITH synthetic accessibility included
+        report_md = admet_service.processor.format_report(admet_data, svg, ai_interpretation, synthetic_accessibility)
 
         return {
             "success": True,

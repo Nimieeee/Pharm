@@ -114,24 +114,29 @@ export default function CreationStudio() {
       const eventSource = new EventSource(`${API_BASE_URL}/api/v1/${statusPath}/status/${data.job_id}`);
       
       eventSource.onmessage = (event) => {
-        const update = JSON.parse(event.data);
-        
-        // Handle standard progress updates
-        setProgress({
-          current: update.current || update.current_slide || 0,
-          total: update.total || update.total_slides || 0,
-          message: update.message || ''
-        });
+        try {
+          const update = JSON.parse(event.data);
+          
+          // Handle standard progress updates
+          setProgress({
+            current: update.current || update.current_slide || 0,
+            total: update.total || update.total_slides || 0,
+            message: update.message || ''
+          });
 
-        if (update.status === 'complete') {
-          setStep('complete');
-          eventSource.close();
-          toast.success('Generation complete!');
-        } else if (update.status === 'error') {
-          setError(update.error || 'Generation failed');
-          setStep('edit_outline');
-          eventSource.close();
-          toast.error(update.error || 'Generation failed');
+          if (update.status === 'complete') {
+            setStep('complete');
+            eventSource.close();
+            toast.success('Generation complete!');
+          } else if (update.status === 'error') {
+            setError(update.error || 'Generation failed');
+            setStep('edit_outline');
+            eventSource.close();
+            toast.error(update.error || 'Generation failed');
+          }
+        } catch (e) {
+          console.error('Failed to parse SSE message:', e, event.data);
+          // Don't crash the UI, just wait for next message
         }
       };
 
