@@ -580,14 +580,52 @@ CRITICAL RULES:
                 
         return self.processor.format_csv_export(results)
 
-    async def generate_pdf(self, results: Dict[str, Any]) -> bytes:
+    def _generate_sas_html(self, sas_data: Dict[str, Any]) -> str:
+        """Generate HTML for SAS/GASA section in PDF."""
+        if not sas_data:
+            return ""
+
+        html = '<div class="sas-section"><h3>Synthetic Accessibility</h3>'
+
+        # RDKit SAS
+        sas_score = sas_data.get('sas_score', 0)
+        sas_category = sas_data.get('category', 'N/A').upper()
+        sas_interp = sas_data.get('interpretation', '')
+
+        html += f'<p><strong>RDKit SAS Score:</strong> {sas_score:.1f} ({sas_category})</p>'
+        if sas_interp:
+            html += f'<p style="font-size: 9pt; margin: 5pt 0;">{sas_interp}</p>'
+
+        # GASA
+        if 'gasa_prediction' in sas_data:
+            gasa_pred = sas_data['gasa_prediction']
+            gasa_easy = sas_data.get('gasa_easy_probability', 0) * 100
+            gasa_hard = sas_data.get('gasa_hard_probability', 0) * 100
+            gasa_interp = sas_data.get('gasa_interpretation', '')
+
+            pred_label = "Easy to synthesize" if gasa_pred == 0 else "Hard to synthesize"
+            html += f'<p style="margin-top: 10pt;"><strong>GASA Prediction (ML):</strong> {pred_label}</p>'
+            html += f'<p style="font-size: 9pt; margin: 3pt 0;">Easy: {gasa_easy:.1f}% | Hard: {gasa_hard:.1f}%</p>'
+            if gasa_interp:
+                html += f'<p style="font-size: 9pt; margin: 3pt 0;">{gasa_interp}</p>'
+
+        # Consensus
+        if 'consensus' in sas_data:
+            html += f'<p style="margin-top: 10pt; font-weight: bold;">{sas_data["consensus"]}</p>'
+
+        html += '</div>'
+        return html
+
+    async def generate_pdf(self, results: Dict[str, Any], synthetic_accessibility: Dict[str, Any] = None) -> bytes:
         """
         Generate PDF report using xhtml2pdf.
 
         Features:
         - Proper column widths (Interpretation: 45%)
         - Word wrapping for long text
-        - Benchside logo watermark
+        - Benchside watermark (using @frame)
+        - No blue header line
+        - SAS/GASA scores included
         """
         try:
             from xhtml2pdf import pisa
@@ -630,7 +668,7 @@ CRITICAL RULES:
                 </table>
                 """
 
-            # HTML template with Benchside watermark
+            # HTML template with proper watermark using @frame
             html = f"""
             <html>
             <head>
@@ -638,17 +676,27 @@ CRITICAL RULES:
                     @page {{
                         size: A4;
                         margin: 1in;
-                        @frame footer {{
+                        @frame content_frame {{
+                            left: 50pt; top: 50pt;
+                            width: 500pt; height: 700pt;
+                        }}
+                        @frame watermark_frame {{
+                            -pdf-frame-content: watermark;
+                            left: 400pt; bottom: 50pt;
+                            width: 150pt; height: 50pt;
+                        }}
+                        @frame footer_frame {{
                             -pdf-frame-content: footer;
                             left: 50pt; bottom: 30pt;
                             width: 500pt;
                         }}
                     }}
                     body {{ font-family: Helvetica, Arial, sans-serif; color: #333; font-size: 10pt; }}
-                    h1 {{ color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; font-size: 18pt; }}
+                    h1 {{ color: #333; font-size: 18pt; margin-bottom: 10pt; }}
                     h2 {{ color: #1e40af; margin-top: 20px; font-size: 14pt; }}
                     .section {{ margin-bottom: 20px; }}
                     .interpretation {{ background: #f8fafc; padding: 15px; border-left: 5px solid #64748b; font-style: italic; margin-bottom: 20px; line-height: 1.5; }}
+                    .sas-section {{ background: #f0f9ff; padding: 15px; border: 1px solid #0ea5e9; margin: 20px 0; }}
                     table {{ width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }}
                     th, td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 9pt; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; }}
                     th {{ background-color: #f1f5f9; font-weight: bold; }}
@@ -659,8 +707,8 @@ CRITICAL RULES:
                     .status-success {{ color: #16a34a; font-weight: bold; }}
                     .status-warning {{ color: #ca8a04; font-weight: bold; }}
                     .status-danger {{ color: #dc2626; font-weight: bold; }}
-                    .watermark {{ position: fixed; bottom: 20pt; right: 40pt; opacity: 0.3; font-size: 8pt; color: #2563eb; }}
-                    #footer {{ text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10pt; }}
+                    #watermark {{ text-align: right; font-size: 14pt; color: #2563eb; opacity: 0.2; font-weight: bold; }}
+                    #footer {{ text-align: center; font-size: 8pt; color: #94a3b8; }}
                 </style>
             </head>
             <body>
@@ -675,13 +723,12 @@ CRITICAL RULES:
                     {ai_interpretation}
                 </div>
 
+                {self._generate_sas_html(synthetic_accessibility)}
+
                 {tables_html}
 
-                <div class="watermark">Benchside</div>
-
-                <div id="footer">
-                    Generated by Benchside Scientific &bull; Precision Pharmacological Intelligence &copy; 2026
-                </div>
+                <div id="watermark">Benchside</div>
+                <div id="footer">Generated by Benchside Scientific &bull; Precision Pharmacological Intelligence &copy; 2026</div>
             </body>
             </html>
             """
@@ -851,20 +898,50 @@ CRITICAL RULES:
             return []
 
     async def analyze_batch_structured(self, molecules: list) -> list:
-        """Batch analysis returning structured JSON per molecule."""
+        """
+        Batch analysis returning structured JSON per molecule.
+
+        Includes SAS and GASA scores for each molecule.
+        """
         results = []
-        
+
         for i, mol in enumerate(molecules):
             smiles = mol["smiles"] if isinstance(mol, dict) else mol
             name = mol.get("name") if isinstance(mol, dict) else (mol if isinstance(mol, str) else f"Molecule {i+1}")
-            
+
             try:
                 # 1. Get raw predictions (dict with 46 keys)
                 admet_data = await self.predict_admet(smiles)
-                
+
                 # 2. Build structured categories from raw data
                 categories = self.processor.build_structured_categories(admet_data)
-                
+
+                # 3. Calculate SAS score
+                synthetic_accessibility = None
+                try:
+                    from app.services.sas_service import sas_calculator
+                    from app.services.simple_gasa_service import simple_gasa_predictor
+
+                    sas_result = sas_calculator.calculate(smiles)
+                    if sas_result:
+                        synthetic_accessibility = sas_result
+
+                        # Calculate GASA (simple predictor, more reliable)
+                        gasa_result = simple_gasa_predictor.predict_single(smiles)
+                        if gasa_result:
+                            synthetic_accessibility.update({
+                                'gasa_prediction': gasa_result['prediction'],
+                                'gasa_easy_probability': gasa_result['easy_probability'],
+                                'gasa_hard_probability': gasa_result['hard_probability'],
+                                'gasa_interpretation': gasa_result['interpretation'],
+                                'consensus': "Both methods agree" if (
+                                    (sas_result['sas_score'] <= 5.0 and gasa_result['prediction'] == 0) or
+                                    (sas_result['sas_score'] > 5.0 and gasa_result['prediction'] == 1)
+                                ) else "Mixed results"
+                            })
+                except Exception as e:
+                    print(f"⚠️ SAS/GASA calculation failed for batch molecule {i+1}: {e}")
+
                 results.append({
                     "index": i + 1,
                     "smiles": smiles,
@@ -872,11 +949,12 @@ CRITICAL RULES:
                     "success": True,
                     "engine": admet_data.get("_engine", "Unknown"),
                     "categories": categories,
+                    "synthetic_accessibility": synthetic_accessibility,
                 })
-                
+
                 # Small delay to avoid rate limiting
                 await asyncio.sleep(0.1)
-                
+
             except Exception as e:
                 print(f"❌ Batch structured analysis failed for molecule {i + 1}: {e}")
                 results.append({
@@ -886,7 +964,7 @@ CRITICAL RULES:
                     "success": False,
                     "error": str(e),
                 })
-        
+
         return results
 
     async def analyze_batch(self, smiles_list: list) -> list:

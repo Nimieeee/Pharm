@@ -990,9 +990,10 @@ Return as JSON: {{"queries": ["query1", "query2", "query3"]}}"""
             
             for query in queries:
                 # Parallel Search: Semantic Scholar, PubMed, Web (Tavily), DuckDuckGo, Serper
+                # OPTIMIZED: Reduced result counts for faster response (Phase 1)
                 tasks = [
                     self.tools.search_semantic_scholar(query, max_results=20),
-                    self.tools.search_pubmed(query, max_results=50),
+                    self.tools.search_pubmed(query, max_results=20),  # Reduced from 50 to 20
                     self.tools.search_web(query, max_results=5),
                     self.tools.search_duckduckgo(query, max_results=5),
                     self.tools.search_serper(query, max_results=5)
@@ -1132,9 +1133,9 @@ Return as JSON: {{"queries": ["query1", "query2", "query3"]}}"""
             
             step.status = "completed"
             state.progress_log.append(f"[{datetime.now().isoformat()}] Found {step_findings_count} sources for: {step.topic}")
-            
-            # Rate limiting
-            await asyncio.sleep(0.5)
+
+            # OPTIMIZED: Reduced rate limiting delay from 0.5s to 0.1s
+            await asyncio.sleep(0.1)
         
         state.iteration_count += 1
         

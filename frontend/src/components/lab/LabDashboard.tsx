@@ -620,21 +620,6 @@ export default function LabDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => { 
-                        const blob = new Blob([result.report_markdown], { type: 'text/markdown' });
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `admet_report.md`;
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-sm font-medium transition-all"
-                    >
-                      <Download className="w-4 h-4" />
-                      Markdown
-                    </button>
-                    <button
                       onClick={handleExportPDF}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-600 text-sm font-medium transition-all"
                     >
@@ -647,13 +632,6 @@ export default function LabDashboard() {
                     >
                       <Download className="w-4 h-4" />
                       Word
-                    </button>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(result.report_markdown); toast.success('Report copied'); }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-sm font-medium transition-all"
-                    >
-                      <Share2 className="w-4 h-4" />
-                      Copy
                     </button>
                   </div>
                 </div>
