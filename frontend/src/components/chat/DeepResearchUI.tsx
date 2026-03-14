@@ -163,10 +163,10 @@ export default function DeepResearchUI({
         </button>
       </div>
 
-      {/* 2. Main Content Area */}
-      <div className="flex relative">
+      {/* 2. Main Content Area - Use static positioning to avoid scroll traps */}
+      <div className="flex">
 
-        {/* Mobile Backdrop */}
+        {/* Mobile Backdrop - Use fixed instead of absolute to avoid scroll context issues */}
         <AnimatePresence>
           {!sidebarCollapsed && (
             <motion.div
@@ -174,14 +174,14 @@ export default function DeepResearchUI({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarCollapsed(true)}
-              className="md:hidden absolute inset-0 bg-black/40 backdrop-blur-[2px] z-10"
+              className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-10"
             />
           )}
         </AnimatePresence>
 
         {/* LEFT PANEL: The Report */}
         <div className={`flex-1 p-6 md:p-10 bg-surface ${sidebarCollapsed ? 'w-full' : ''}`}>
-          <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-amber-600 dark:prose-a:text-amber-400 prose-img:rounded-xl">
+          <article className="prose prose-slate dark:prose-invert max-w-3xl mx-auto prose-sm md:prose-base prose-headings:font-semibold prose-a:text-amber-600 dark:prose-a:text-amber-400 prose-img:rounded-xl">
             {isLoading && !reportContent ? (
               <LoadingState progress={progressStep} progressPercent={progressPercent} />
             ) : (
@@ -265,10 +265,11 @@ export default function DeepResearchUI({
           }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className={`
-            fixed md:relative inset-y-0 right-0 md:inset-auto
+            fixed md:relative top-0 right-0 md:top-auto md:right-auto md:inset-auto
             ${sidebarCollapsed ? 'pointer-events-none' : 'pointer-events-auto'} 
             md:pointer-events-auto
             w-[85%] sm:w-80 md:w-72 lg:w-80
+            h-auto md:h-auto
             z-20 md:z-auto
             border-l border-slate-100 dark:border-slate-800 
             bg-surface 
