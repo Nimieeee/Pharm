@@ -15,6 +15,9 @@ from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.chart import XL_CHART_TYPE
+from pptx.chart.data import CategoryChartData
+from pptx.chart.series import Series
 
 
 class DesignEngine:
@@ -312,9 +315,34 @@ class DesignEngine:
         prs.slide_width = Inches(13.333)  # 16:9
         prs.slide_height = Inches(7.5)
         
+        # Filter out empty slides (no content)
+        valid_slides = []
         for i, slide_data in enumerate(outline["slides"]):
+            # Check if slide has content
+            has_content = (
+                slide_data.get("title") or
+                slide_data.get("bullets") or
+                slide_data.get("supporting_data") or
+                slide_data.get("chart_data") or
+                slide_data.get("mermaid_code") or
+                slide_data.get("subtitle_takeaway") or
+                slide_data.get("speaker_notes") or
+                images.get(i)  # Has an image
+            )
+            
+            # Always keep title slides (first and last)
+            is_title_slide = slide_data.get("layout") == "title"
+            is_first_or_last = i == 0 or i == len(outline["slides"]) - 1
+            
+            if has_content or (is_title_slide and is_first_or_last):
+                valid_slides.append((i, slide_data))
+            else:
+                print(f"⚠️ Removing empty slide {i+1}: '{slide_data.get('title', 'Untitled')}'")
+        
+        # Build slides
+        for idx, (original_idx, slide_data) in enumerate(valid_slides):
             layout = slide_data.get("layout", "bullets_only")
-            image_bytes = images.get(i)
+            image_bytes = images.get(original_idx)
             
             if layout == "title":
                 self._build_title_slide(prs, slide_data, theme, image_bytes)
@@ -398,6 +426,35 @@ class DesignEngine:
             p2.font.color.rgb = RGBColor.from_string(theme["text_on_dark"])
             p2.font.name = theme["body_font"]
             p2.alignment = PP_ALIGN.CENTER
+        
+        # Academic metadata (Student Name, Matriculation, Course Code, Date)
+        academic_meta = []
+        if data.get("student_name"):
+            academic_meta.append(f"Student: {data['student_name']}")
+        if data.get("matriculation_number"):
+            academic_meta.append(f"Matriculation: {data['matriculation_number']}")
+        if data.get("course_code"):
+            academic_meta.append(f"Course: {data['course_code']}")
+        if data.get("date"):
+            academic_meta.append(f"Date: {data['date']}")
+        elif data.get("presentation_date"):
+            academic_meta.append(f"Date: {data['presentation_date']}")
+        
+        if academic_meta:
+            # Add spacing
+            p_spacing = tf.add_paragraph()
+            p_spacing.text = ""
+            p_spacing.space_before = Pt(20)
+            
+            # Add academic metadata
+            for meta_text in academic_meta:
+                p_meta = tf.add_paragraph()
+                p_meta.text = meta_text
+                p_meta.font.size = Pt(14)
+                p_meta.font.color.rgb = RGBColor.from_string(theme["text_on_dark"])
+                p_meta.font.name = theme["body_font"]
+                p_meta.alignment = PP_ALIGN.CENTER
+                p_meta.space_after = Pt(4)
     
     def _build_two_column_slide(self, prs, data, theme, image_bytes=None):
         """Text left (60%), image right (40%)"""
@@ -648,7 +705,7 @@ class DesignEngine:
                 p.font.name = theme["body_font"]
     
     def _build_chart_slide(self, prs, data, theme):
-        """Chart/data visualization slide"""
+        """Chart/data visualization slide with actual chart rendering"""
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         
         # Light background
@@ -658,7 +715,7 @@ class DesignEngine:
         
         # Title
         title_box = slide.shapes.add_textbox(
-            Inches(0.8), Inches(0.5), Inches(11.7), Inches(1)
+            Inches(0.8), Inches(0.3), Inches(11.7), Inches(0.8)
         )
         tf = title_box.text_frame
         p = tf.paragraphs[0]
@@ -668,53 +725,89 @@ class DesignEngine:
         p.font.color.rgb = RGBColor.from_string(theme["primary"])
         p.font.name = theme["header_font"]
         
-        # Chart data display
+        # Chart data
         chart_data = data.get("chart_data", {})
-        if chart_data and chart_data.get("type"):
-            # Display chart metadata
-            chart_box = slide.shapes.add_textbox(
-                Inches(0.8), Inches(1.8), Inches(11.7), Inches(4)
-            )
-            tf = chart_box.text_frame
-            tf.word_wrap = True
-            
-            p = tf.paragraphs[0]
-            p.text = f"Chart Type: {chart_data.get('type', 'Unknown').upper()}"
-            p.font.size = Pt(14)
-            p.font.bold = True
-            p.font.color.rgb = RGBColor.from_string(theme["primary"])
-            
-            # Display labels and values
-            labels = chart_data.get("labels", [])
-            values = chart_data.get("values", [])
-            
-            if labels and values:
-                p = tf.add_paragraph()
-                p.text = "\nData Points:"
-                p.font.size = Pt(12)
-                p.font.bold = True
-                p.space_before = Pt(12)
+        if chart_data and chart_data.get("type") and chart_data.get("labels") and chart_data.get("values"):
+            try:
+                # Prepare chart data
+                labels = chart_data.get("labels", [])[:8]  # Max 8 categories
+                values = chart_data.get("values", [])[:8]
+                chart_type = chart_data.get("type", "bar").lower()
                 
-                for label, value in zip(labels[:8], values[:8]):  # Max 8 data points
-                    p = tf.add_paragraph()
-                    p.text = f"  • {label}: {value}"
-                    p.font.size = Pt(11)
-                    p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
+                if labels and values and len(labels) == len(values):
+                    # Create chart data object
+                    chart_data_obj = CategoryChartData()
+                    chart_data_obj.categories = labels
+                    chart_data_obj.add_series('Data', values)
+                    
+                    # Determine chart type
+                    if chart_type == "pie":
+                        xl_chart_type = XL_CHART_TYPE.PIE
+                    elif chart_type == "line":
+                        xl_chart_type = XL_CHART_TYPE.LINE_MARKERS
+                    elif chart_type == "column":
+                        xl_chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
+                    else:  # Default to bar
+                        xl_chart_type = XL_CHART_TYPE.BAR_CLUSTERED
+                    
+                    # Add chart to slide
+                    x, y, cx, cy = Inches(0.8), Inches(1.3), Inches(11.7), Inches(4.5)
+                    chart = slide.shapes.add_chart(
+                        xl_chart_type, x, y, cx, cy, chart_data_obj
+                    ).chart
+                    
+                    # Style the chart
+                    chart.has_legend = True
+                    chart.legend.include_in_layout = False
+                    
+                    # Style the title
+                    if chart.has_title:
+                        chart.chart_title.text_frame.text = chart_data.get("title", "")
+                else:
+                    # Fallback: Display data as text if chart creation fails
+                    self._display_chart_as_text(slide, chart_data, theme)
+            except Exception as e:
+                print(f"⚠️ Chart rendering failed: {e}. Falling back to text display.")
+                self._display_chart_as_text(slide, chart_data, theme)
         
         # Context bullets below chart
         if data.get("bullets"):
             bullet_box = slide.shapes.add_textbox(
-                Inches(0.8), Inches(6), Inches(11.7), Inches(1.5)
+                Inches(0.8), Inches(6), Inches(11.7), Inches(1.3)
             )
             tf = bullet_box.text_frame
             tf.word_wrap = True
-            for j, bullet in enumerate(data.get("bullets", [])[:3]):
+            for j, bullet in enumerate(data.get("bullets", [])[:2]):  # Max 2 bullets
                 p = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
                 p.text = f"• {bullet}"
-                p.font.size = Pt(14)
+                p.font.size = Pt(12)
                 p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
                 p.font.name = theme["body_font"]
-                p.space_after = Pt(6)
+                p.space_after = Pt(4)
+    
+    def _display_chart_as_text(self, slide, chart_data, theme):
+        """Fallback: Display chart data as formatted text"""
+        chart_box = slide.shapes.add_textbox(
+            Inches(0.8), Inches(1.8), Inches(11.7), Inches(4)
+        )
+        tf = chart_box.text_frame
+        tf.word_wrap = True
+        
+        p = tf.paragraphs[0]
+        p.text = f"Data: {chart_data.get('type', 'Unknown').upper()} Chart"
+        p.font.size = Pt(14)
+        p.font.bold = True
+        p.font.color.rgb = RGBColor.from_string(theme["primary"])
+        
+        labels = chart_data.get("labels", [])
+        values = chart_data.get("values", [])
+        
+        if labels and values:
+            for label, value in zip(labels[:8], values[:8]):
+                p = tf.add_paragraph()
+                p.text = f"  • {label}: {value}"
+                p.font.size = Pt(11)
+                p.font.color.rgb = RGBColor.from_string(theme["text_on_light"])
     
     def _add_slide_numbers(self, prs, theme):
         """Add slide numbers to content slides"""

@@ -27,13 +27,28 @@ ART_DIRECTION_STYLES = {
 # Research-Grade Content Constraints - Academic Standards
 CONTENT_CONSTRAINTS = """
 RESEARCH-GRADE CONTENT STANDARDS (ENFORCED):
-- Maximum 5-6 bullet points per slide (academic density)
-- Maximum 20 words per bullet point
+- Write 3 to 4 comprehensive bullet points per slide
+- Each bullet should clearly explain a specific mechanism, methodology, or outcome
+- Use **bold text** for key scientific terms to maintain readability
 - Include specific citations [Author, Year] or [PMID: XXXXX]
 - Use technical terminology appropriate for expert audiences
 - Include quantitative data with units where applicable
 - Avoid generic phrases - use specific research findings
 - Each slide MUST cite at least 1 source from provided research context
+
+REQUIRED STRUCTURE FOR TECHNICAL SLIDES:
+Each technical slide MUST include:
+1. CONCEPT bullet: Define the technology/concept (e.g., "**AlphaFold** is a deep learning system developed by DeepMind...")
+2. MECHANISM bullet: Explain how it works technically (e.g., "Uses attention-based neural networks to predict 3D protein structures from amino acid sequences...")
+3. IMPACT bullet: Explain why it matters and outcomes (e.g., "Reduced protein structure prediction time from years to hours, accelerating drug discovery timelines...")
+4. EVIDENCE bullet (optional): Include specific data, metrics, or citations
+
+SPEAKER NOTES REQUIREMENTS:
+- Generate detailed, 150 to 200 word presentation scripts
+- Include background context on the topic
+- Explain the data and findings shown on the slide
+- Provide a smooth transition to the next slide
+- Use academic language appropriate for university presentations
 """
 
 
@@ -170,33 +185,37 @@ MANDATORY RULES:
 3. Second-to-last slide MUST be "conclusion" layout with exactly 3-5 high-level thematic takeaways summarizing entire presentation
 4. Never have 3 consecutive slides with the same layout
 5. Each slide MUST have:
-   - subtitle_takeaway: ONE strong sentence (max 25 words) summarizing the slide's main point
-   - supporting_data: 3-5 specific data points with NUMBERS and CITATIONS (e.g., "85% accuracy [Smith, 2023]")
-   - speaker_notes: 3-4 sentence conversational paragraph explaining context and implications
+   - subtitle_takeaway: ONE strong sentence summarizing the slide's main point
+   - supporting_data: 3-4 comprehensive bullet points following CONCEPT/MECHANISM/IMPACT/EVIDENCE structure
+   - speaker_notes: Detailed 150-200 word presentation script with background, explanation, and transition
    - citations: List of [Author, Year] or [PMID: XXXXX] strings cited on this slide
 6. Use SPECIFIC named entities - NO generic phrases:
    - Include at least 1 specific research citation per slide
    - Include at least 1 specific technology/AI model name (e.g., "AlphaFold", "GPT-4", "BERT")
    - Include real metrics with numbers and units (e.g., "85% accuracy", "3-month reduction")
+   - Use **bold text** for key scientific terms
 7. Each slide must advance the narrative - no repetition of concepts
 8. Set image_prompt to null if text-heavy or no visual benefit
 9. Image prompt should describe professional scientific/medical illustration
 10. For data slides: include "chart_data": {{"type": "bar", "labels": ["A", "B"], "values": [10, 20]}}
 11. For technical flow diagrams: use layout "diagram" and include "mermaid_code": "flowchart TD..."
+12. NEVER create empty slides - every slide must have meaningful content
+13. Speaker notes must be substantive enough for a 10-minute presentation segment
 
-EXAMPLE GOOD SLIDE:
+EXAMPLE GOOD SLIDE (follow this structure):
 {{
   "slide_number": 3,
   "layout": "two_column",
-  "title": "AI in Clinical Trials",
-  "subtitle_takeaway": "Machine learning reduces trial costs by 40% through automated patient screening [Johnson et al., 2023].",
+  "title": "AlphaFold: Revolutionizing Protein Structure Prediction",
+  "subtitle_takeaway": "DeepMind's AlphaFold has solved the 50-year protein folding problem, accelerating drug discovery by predicting structures in hours rather than years.",
   "supporting_data": [
-    {{"bullet": "BERT predicts dropouts with 95% accuracy [Chen et al., 2022]", "context": "Early identification prevents costly late-stage failures"}},
-    {{"bullet": "NLP screening cuts recruitment by 40% [Smith et al., 2023]", "context": "Automated eligibility matching speeds enrollment"}},
-    {{"bullet": "$2.3B annual savings industry-wide [McKinsey, 2023]", "context": "Economic impact of AI adoption"}}
+    {{"bullet": "**AlphaFold** is a deep learning system developed by DeepMind that predicts 3D protein structures from amino acid sequences with near-experimental accuracy", "context": "Represents a fundamental breakthrough in computational biology"}},
+    {{"bullet": "Uses **attention-based neural networks** and evolutionary sequence analysis to model spatial relationships between amino acids, achieving CASP14 scores above 90 GDT", "context": "Technical mechanism enabling unprecedented prediction accuracy"}},
+    {{"bullet": "Has predicted structures for over 200 million proteins, bypassing traditional methods like X-ray crystallography that require months or years of laboratory work", "context": "Democratizing access to structural biology data"}},
+    {{"bullet": "Enabled identification of novel drug targets for COVID-19 within weeks, demonstrating 92% accuracy compared to experimental structures [Jumper et al., 2021]", "context": "Real-world impact on therapeutic development timelines"}}
   ],
-  "speaker_notes": "Traditional clinical trials face two major bottlenecks: patient recruitment and dropout prediction. As Chen et al. (2022) demonstrated, AI models like BERT can predict patient dropout with 95% accuracy by analyzing electronic health records. Meanwhile, Smith et al. (2023) showed NLP-powered screening reduces recruitment timelines by 40%. This translates to $2.3B in annual industry savings (McKinsey, 2023).",
-  "citations": ["Chen et al., 2022", "Smith et al., 2023", "McKinsey, 2023"]
+  "speaker_notes": "For decades, determining protein structures was one of biology's grand challenges. Experimental methods like X-ray crystallography and cryo-EM, while accurate, are time-consuming and expensive. AlphaFold represents a paradigm shift in structural biology. By training on known protein structures and using attention mechanisms similar to those in natural language processing, AlphaFold can predict protein folding patterns with remarkable accuracy. The system's impact extends beyond academia - pharmaceutical companies are now using AlphaFold predictions to identify drug binding sites and design targeted therapies. During the COVID-19 pandemic, AlphaFold predictions helped researchers understand the spike protein structure within weeks rather than months. As we move to the next slide, we'll explore how these predicted structures are being integrated into drug discovery pipelines and what this means for future therapeutic development.",
+  "citations": ["Jumper et al., 2021"]
 }}
 
 EXAMPLE BAD SLIDE (DO NOT CREATE):
@@ -292,6 +311,39 @@ EXAMPLE BAD SLIDE (DO NOT CREATE):
             # Refine bullet points into fuller content with contextual memory
             refined = await self._refine_slide_content(slide, outline["title"], prev_summary)
             content_results.append(refined)
+        
+        # Step 2.5: Retry empty slides
+        for i, slide in enumerate(outline["slides"]):
+            refined = content_results[i]
+            # Check if slide is effectively empty
+            has_no_content = (
+                not refined.get("bullets") or 
+                len(refined.get("bullets", [])) == 0 or
+                all(not bullet.strip() for bullet in refined.get("bullets", []))
+            ) and not refined.get("chart_data") and not refined.get("mermaid_code")
+            
+            if has_no_content and slide.get("layout") != "title":
+                print(f"⚠️ Slide {i+1} is empty. Retrying content generation...")
+                if on_progress:
+                    await on_progress({
+                        "step": "content_retry",
+                        "current": i + 1,
+                        "total": total_slides,
+                        "message": f"Retrying slide {i+1} (empty content detected)"
+                    })
+                
+                # Force retry with stronger prompt
+                retry_slide = slide.copy()
+                retry_slide["title"] = slide["title"] + " (RETRY)"
+                prev_summary = self._slide_context[-1]["summary"] if self._slide_context else None
+                refined_retry = await self._refine_slide_content(retry_slide, outline["title"], prev_summary)
+                
+                # If retry succeeded, use it
+                if refined_retry.get("bullets") and len(refined_retry.get("bullets", [])) > 0:
+                    content_results[i] = refined_retry
+                    print(f"✅ Slide {i+1} retry successful")
+                else:
+                    print(f"❌ Slide {i+1} retry failed - will be removed during assembly")
 
         # Step 3: Generate images via Pollinations with Global Art Direction Wrapper
         if generate_images:
@@ -313,6 +365,13 @@ EXAMPLE BAD SLIDE (DO NOT CREATE):
                     # Phase 1: Global Art Direction Wrapper
                     # Wrap user prompt with strict style definition
                     wrapped_prompt = self._wrap_image_prompt(prompt, outline.get("vibe", "corporate"))
+                    
+                    # BAN: Skip image generation for diagram/flowchart/text-heavy prompts
+                    # FLUX cannot generate readable text or logical diagrams
+                    if self._is_diagram_prompt(prompt):
+                        print(f"⚠️ Skipping image generation for slide {slide_idx}: Diagram/flowchart detected (FLUX cannot render text)")
+                        image_results[slide_idx] = None
+                        continue
 
                     img_bytes = await self.image_gen.fetch_image_from_pollinations(
                         prompt=wrapped_prompt,
@@ -375,6 +434,36 @@ EXAMPLE BAD SLIDE (DO NOT CREATE):
         # Combine user prompt with style wrapper
         return f"{prompt}. {style}"
     
+    def _is_diagram_prompt(self, prompt: str) -> bool:
+        """
+        Detect if prompt is asking for diagrams, flowcharts, or text-heavy images.
+        FLUX and other diffusion models cannot generate readable text or logical diagrams.
+        
+        Returns True if image generation should be skipped for this prompt.
+        """
+        if not prompt:
+            return False
+        
+        prompt_lower = prompt.lower()
+        
+        # Keywords that indicate diagram/flowchart/text content
+        diagram_keywords = [
+            'diagram', 'flowchart', 'flow chart', 'flow diagram',
+            'process map', 'workflow', 'decision tree', 'org chart',
+            'organizational chart', 'hierarchy chart', 'mind map',
+            'text', 'label', 'caption', 'title', 'word', 'phrase',
+            'chart with labels', 'annotated', 'with text', 'showing text',
+            'step 1', 'step 2', 'step 3', 'labeled', 'callout',
+            'arrow with text', 'box with text', 'containing text'
+        ]
+        
+        # Check for diagram-related keywords
+        for keyword in diagram_keywords:
+            if keyword in prompt_lower:
+                return True
+        
+        return False
+    
     async def _refine_slide_content(self, slide: dict, deck_title: str, prev_slide_summary: str = None) -> dict:
         """
         Multi-Agent Research Refinement: Researcher-Writer + Academic Reviewer.
@@ -411,19 +500,23 @@ Current supporting data: {bullets_json}
 Existing citations: {citations_json}
 {context_note}
 
-RESEARCHER-WRITER INSTRUCTIONS:
+        RESEARCHER-WRITER INSTRUCTIONS:
 1. Write for an EXPERT scientific audience (PhD-level researchers, industry scientists)
 2. Use technical terminology and domain-specific language
-3. Include 4-6 supporting data points (relaxed from 3 for academic density)
-4. Each bullet: 15-20 words with specific numbers, units, and citations [Author, Year]
-5. Include methodology details where relevant (e.g., "using 10-fold cross-validation on n=1,247 samples")
-6. Cite specific research papers using the existing citations or add new ones if needed
-7. Subtitle takeaway: ONE strong sentence (max 25 words) with key finding + citation
-8. Speaker notes: 4-5 sentence technical explanation including:
-   - Experimental methodology
-   - Statistical significance
-   - Clinical or practical implications
-   - Comparison to prior work
+3. Write 3 to 4 comprehensive bullet points per slide following this REQUIRED structure:
+   - CONCEPT bullet: Define the technology/concept with bold key terms (e.g., "**AlphaFold** is a deep learning system...")
+   - MECHANISM bullet: Explain how it works technically with specific methods
+   - IMPACT bullet: Explain why it matters with quantitative outcomes
+   - EVIDENCE bullet (optional): Include specific data, metrics, and citations
+4. Use **bold text** for key scientific terms to maintain readability
+5. Each bullet should be comprehensive - clearly explain the mechanism, methodology, or outcome
+6. Include specific research citations [Author, Year] in every bullet
+7. Subtitle takeaway: ONE strong sentence summarizing the slide's main contribution
+8. Speaker notes: Generate detailed 150-200 word presentation scripts including:
+   - Background context on the topic
+   - Explanation of the data and findings shown on the slide
+   - Smooth transition to the next slide
+   - Academic language appropriate for university presentations
 
 Return as JSON:
 {{
