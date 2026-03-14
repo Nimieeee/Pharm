@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, Trash2, Menu, Edit3, ChevronDown, Sparkles, MoreHorizontal, PanelLeft } from 'lucide-react';
@@ -98,21 +98,53 @@ function ChatContent() {
     clearMessages();
   };
 
-  // Throttled scroll - only scroll every 500ms during streaming to prevent layout thrashing
+  // Smart auto-scroll: scroll during streaming ONLY if user is at the bottom
+  // If user scrolls away, stop auto-scrolling until they return to bottom
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 150; // pixels from bottom
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  }, []);
+
+  // Check if user has scrolled away from bottom
+  const handleScroll = useCallback(() => {
+    if (!isNearBottom()) {
+      setAutoScrollEnabled(false);
+    } else {
+      setAutoScrollEnabled(true);
+    }
+  }, [isNearBottom]);
+
+  // Scroll to bottom function
+  const scrollToBottom = useCallback((behavior: 'auto' | 'smooth' = 'auto') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // Throttled scroll during streaming - only if autoScrollEnabled
   useEffect(() => {
     if (!isLoading) {
       // Always scroll when not streaming
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    } else {
-      // During streaming, throttle scroll updates
+      scrollToBottom('auto');
+    } else if (autoScrollEnabled) {
+      // During streaming, only scroll if user is at bottom
       const now = Date.now();
       const lastScroll = (messagesEndRef.current as any)?._lastScroll || 0;
       if (now - lastScroll >= 500) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        scrollToBottom('auto');
         if (messagesEndRef.current) (messagesEndRef.current as any)._lastScroll = now;
       }
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, autoScrollEnabled, scrollToBottom]);
+
+  // Reset auto-scroll when user returns to bottom
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      scrollToBottom('smooth');
+    }
+  }, [isLoading, messages.length, scrollToBottom]);
 
   // Reset mode when conversation changes
   useEffect(() => {
@@ -159,7 +191,9 @@ function ChatContent() {
 
       {/* Messages Area - Scrollable */}
       <div
+        ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 pt-24 pb-32 sm:pb-36 md:pb-44"
+        onScroll={handleScroll}
         onClick={(e) => {
           // Refocus input when user clicks the empty chat background
           if (e.target === e.currentTarget) {
