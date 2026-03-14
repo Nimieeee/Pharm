@@ -159,7 +159,7 @@ function EnhancedTable({ children, isAnimating, caption }: { children: React.Rea
       
       {/* Table Caption / Source Attribution - Theme Aware */}
       {caption && (
-        <div className="mt-2 px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)] italic dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+        <div className="mt-2 px-3 py-2 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)] italic">
           {caption}
         </div>
       )}
@@ -509,27 +509,27 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
             );
           },
           thead: ({ children }) => (
-            <thead className="bg-[var(--surface-highlight)] text-[var(--text-primary)] dark:bg-slate-800 dark:text-slate-100">
+            <thead className="bg-[var(--surface-highlight)] text-[var(--text-primary)]">
               {children}
             </thead>
           ),
           tbody: ({ children }) => (
-            <tbody className="bg-[var(--surface)] dark:bg-slate-900">
+            <tbody className="bg-[var(--surface)]">
               {children}
             </tbody>
           ),
           tr: ({ children }) => (
-            <tr className="border-b border-[var(--border)] hover:bg-[var(--surface-highlight)]/50 transition-colors dark:border-slate-700 dark:hover:bg-slate-800/50">
+            <tr className="border-b border-[var(--border)] hover:bg-[var(--surface-highlight)]/50 transition-colors">
               {children}
             </tr>
           ),
           th: ({ children }) => (
-            <th className="px-4 py-3 text-left font-semibold text-[var(--text-primary)] border border-[var(--border)] bg-[var(--surface-highlight)] whitespace-nowrap dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700">
+            <th className="px-4 py-3 text-left font-semibold text-[var(--text-primary)] border border-[var(--border)] bg-[var(--surface-highlight)] whitespace-nowrap">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-4 py-3 text-[var(--text-primary)] border border-[var(--border)] align-top dark:text-slate-300 dark:border-slate-700">
+            <td className="px-4 py-3 text-[var(--text-primary)] border border-[var(--border)] align-top">
               {children}
             </td>
           ),
