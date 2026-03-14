@@ -9,6 +9,7 @@ import { Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun } from 'lucide-
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 import { API_BASE_URL } from '@/config/api';
 
@@ -33,6 +34,38 @@ function LoginContent() {
       }, 2000);
     };
     warmup();
+  }, []);
+
+  // Confetti celebration on successful login
+  useEffect(() => {
+    const hasShownConfetti = sessionStorage.getItem('login_confetti');
+    if (!hasShownConfetti) {
+      const end = Date.now() + 3000;
+      const colors = ['#6366f1', '#a855f7', '#ec4899', '#f97316'];
+
+      (function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+
+      sessionStorage.setItem('login_confetti', 'true');
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

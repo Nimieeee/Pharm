@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
@@ -8,6 +8,7 @@ import { useTheme } from '@/lib/theme-context';
 import { User, Mail, Lock, ArrowRight, Loader2, AlertCircle, Moon, Sun, Check, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Link from 'next/link';
+import confetti from 'canvas-confetti';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,6 +39,38 @@ export default function RegisterPage() {
   };
 
   const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+
+  // Confetti celebration on registration page load (first time only)
+  useEffect(() => {
+    const hasShownConfetti = sessionStorage.getItem('register_confetti');
+    if (!hasShownConfetti) {
+      const end = Date.now() + 3000;
+      const colors = ['#6366f1', '#a855f7', '#ec4899', '#f97316'];
+
+      (function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+
+      sessionStorage.setItem('register_confetti', 'true');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
