@@ -1374,7 +1374,107 @@ Write the COMPLETE, EXHAUSTIVE report now. Do not stop until all sections are fu
                 logger.error(f"Tier 2 Fallback Report also failed: {e2}")
                 full_report_content = "The Research module encountered severe API rate limits across all providers and could not generate the text. However, the system successfully gathered the following bibliography:"
 
-        # --- STAGE 2.5: FILTER TO ACTUALLY-CITED REFERENCES ---
+        # --- STAGE 2.5: SANITIZE FORMATTING ERRORS ---
+        # Fix common LLM formatting issues like missing spaces between words
+        def sanitize_spacing(text):
+            # Fix camelCase concatenations (e.g., "spectrumsfrom" -> "spectrums from")
+            # Pattern: lowercase followed immediately by uppercase
+            text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+            
+            # Fix specific known concatenations in medical/biological context
+            replacements = [
+                (r'([a-z])from\b', r'\1 from'),  # spectrumsfrom -> spectrums from
+                (r'([a-z])to\b', r'\1 to'),      # resistantto -> resistant to
+                (r'([a-z])in\b', r'\1 in'),      # increasedin -> increased in
+                (r'([a-z])by\b', r'\1 by'),      # mediatedby -> mediated by
+                (r'([a-z])via\b', r'\1 via'),    # transportvia -> transport via
+                (r'([a-z])with\b', r'\1 with'),  # associatedwith -> associated with
+                (r'([a-z])on\b', r'\1 on'),      # dependenton -> dependent on
+                (r'([a-z])at\b', r'\1 at'),      # presentat -> present at
+                (r'([a-z])for\b', r'\1 for'),    # responsiblefor -> responsible for
+                (r'([a-z])as\b', r'\1 as'),      # suchas -> such as
+                (r'([a-z])the\b', r'\1 the'),    # againstthe -> against the
+                (r'([a-z])and\b', r'\1 and'),    # efficacyand -> efficacy and
+                (r'([a-z])have\b', r'\1 have'),  # patientshave -> patients have
+                (r'([a-z])has\b', r'\1 has'),    # resistancehas -> resistance has
+                (r'([a-z])been\b', r'\1 been'),  # hasbeen -> has been
+                (r'([a-z])were\b', r'\1 were'),  # theywere -> they were
+                (r'([a-z])are\b', r'\1 are'),    # theyare -> they are
+                (r'([a-z])was\b', r'\1 was'),    # itwas -> it was
+                (r'([a-z])is\b', r'\1 is'),      # itis -> it is
+                (r'([a-z])that\b', r'\1 that'),  # suggestedthat -> suggested that
+                (r'([a-z])this\b', r'\1 this'),  # notedthis -> noted this
+                (r'([a-z])these\b', r'\1 these'),  # usedthese -> used these
+                (r'([a-z])their\b', r'\1 their'),  # intheir -> in their
+                (r'([a-z])between\b', r'\1 between'),  # relationshipbetween -> relationship between
+                (r'([a-z])among\b', r'\1 among'),  # distributedamong -> distributed among
+                (r'([a-z])within\b', r'\1 within'),  # foundwithin -> found within
+                (r'([a-z])during\b', r'\1 during'),  # observedduring -> observed during
+                (r'([a-z])following\b', r'\1 following'),  # occurredfollowing -> occurred following
+                (r'([a-z])without\b', r'\1 without'),  # patientswithout -> patients without
+                (r'([a-z])under\b', r'\1 under'),  # studiedunder -> studied under
+                (r'([a-z])over\b', r'\1 over'),  # administeredover -> administered over
+                (r'([a-z])through\b', r'\1 through'),  # diffusedthrough -> diffused through
+                (r'([a-z])into\b', r'\1 into'),  # convertedinto -> converted into
+                (r'([a-z])onto\b', r'\1 onto'),  # loadedonto -> loaded onto
+                (r'([a-z])upon\b', r'\1 upon'),  # dependentupon -> dependent upon
+                (r'([a-z])across\b', r'\1 across'),  # distributedacross -> distributed across
+                (r'([a-z])against\b', r'\1 against'),  # activityagainst -> activity against
+                (r'([a-z])including\b', r'\1 including'),  # patientsincluding -> patients including
+                (r'([a-z])involving\b', r'\1 involving'),  # casesinvolving -> cases involving
+                (r'([a-z])requiring\b', r'\1 requiring'),  # interventionrequiring -> intervention requiring
+                (r'([a-z])resulting\b', r'\1 resulting'),  # changesresulting -> changes resulting
+                (r'([a-z])leading\b', r'\1 leading'),  # pathwayleading -> pathway leading
+                (r'([a-z])causing\b', r'\1 causing'),  # mutationcausing -> mutation causing
+                (r'([a-z])producing\b', r'\1 producing'),  # effectproducing -> effect producing
+                (r'([a-z])binding\b', r'\1 binding'),  # drugbinding -> drug binding
+                (r'([a-z])targeting\b', r'\1 targeting'),  # antibodytargeting -> antibody targeting
+                (r'([a-z])resistant\b', r'\1 resistant'),  # multidrugresistant -> multidrug resistant
+                (r'([a-z])sensitive\b', r'\1 sensitive'),  # antibioticsensitive -> antibiotic sensitive
+                (r'([a-z])positive\b', r'\1 positive'),  # Grampositive -> Gram positive
+                (r'([a-z])negative\b', r'\1 negative'),  # Gramnegative -> Gram negative
+                (r'([a-z])specific\b', r'\1 specific'),  # targetspecific -> target specific
+                (r'([a-z])dependent\b', r'\1 dependent'),  # pHdependent -> pH dependent
+                (r'([a-z])independent\b', r'\1 independent'),  # doseindependent -> dose independent
+                (r'([a-z])mediated\b', r'\1 mediated'),  # enzymemediated -> enzyme mediated
+                (r'([a-z])induced\b', r'\1 induced'),  # stressinduced -> stress induced
+                (r'([a-z])activated\b', r'\1 activated'),  # receptoractivated -> receptor activated
+                (r'([a-z])regulated\b', r'\1 regulated'),  # generegulated -> gene regulated
+                (r'([a-z])associated\b', r'\1 associated'),  # diseaseassociated -> disease associated
+                (r'([a-z])related\b', r'\1 related'),  # drugrelated -> drug related
+                (r'([a-z])induced\b', r'\1 induced'),  # druginduced -> drug induced
+                (r'([a-z])derived\b', r'\1 derived'),  # plantderived -> plant derived
+                (r'([a-z])based\b', r'\1 based'),  # evidencebased -> evidence based
+                (r'([a-z])coated\b', r'\1 coated'),  # filmcoated -> film coated
+                (r'([a-z])coated\b', r'\1 coated'),  # entericcoated -> enteric coated
+                (r'([a-z])released\b', r'\1 released'),  # timedreleased -> time released
+                (r'([a-z])soluble\b', r'\1 soluble'),  # watersoluble -> water soluble
+                (r'([a-z])insoluble\b', r'\1 insoluble'),  # waterinsoluble -> water insoluble
+                (r'([a-z])permeable\b', r'\1 permeable'),  # membranepermeable -> membrane permeable
+                (r'([a-z])impermeable\b', r'\1 impermeable'),  # membraneimpermeable -> membrane impermeable
+                (r'([a-z])selective\b', r'\1 selective'),  # nonselective -> non selective
+                (r'([a-z])competitive\b', r'\1 competitive'),  # uncompetitive -> un competitive
+                (r'([a-z])competitive\b', r'\1 competitive'),  # noncompetitive -> non competitive
+                (r'([a-z])specific\b', r'\1 specific'),  # nonspecific -> non specific
+            ]
+            
+            for pattern, replacement in replacements:
+                text = re.sub(pattern, replacement, text)
+            
+            # Fix double spaces created by the replacements
+            text = re.sub(r'  +', ' ', text)
+            
+            return text
+        
+        # Apply spacing sanitization
+        original_length = len(full_report_content)
+        full_report_content = sanitize_spacing(full_report_content)
+        sanitized_length = len(full_report_content)
+        
+        if sanitized_length != original_length:
+            logger.info(f"Sanitized report spacing: {original_length} -> {sanitized_length} chars ({sanitized_length - original_length} spacing fixes)")
+        
+        # --- STAGE 2.6: FILTER TO ACTUALLY-CITED REFERENCES ---
         # Scan the LLM-generated body for (Author, Year) patterns and only keep
         # citations that were actually referenced in-text.
         import re

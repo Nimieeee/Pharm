@@ -477,12 +477,12 @@ export function MermaidRenderer({ code }: { code: string }) {
         img.src = url;
     }, [svg]);
 
-    // Error state: show the raw code + error message
+    // Error state: show collapsed error message, not full code to prevent scroll issues
     if (error) {
         return (
             <div className="my-4 rounded-xl border border-red-500/30 bg-red-500/5 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 bg-red-500/10 border-b border-red-500/20">
-                    <span className="text-xs font-mono text-red-400">MERMAID (render error)</span>
+                <div className="flex items-center justify-between px-4 py-3 bg-red-500/10 border-b border-red-500/20">
+                    <span className="text-xs font-mono text-red-400">Diagram failed to render</span>
                     <button
                         onClick={handleManualRefresh}
                         className={`p-1.5 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1.5 ${
@@ -499,20 +499,11 @@ export function MermaidRenderer({ code }: { code: string }) {
                         <span className="text-xs font-medium">{isRepairing ? 'Repairing...' : 'Repair'}</span>
                     </button>
                 </div>
-                {isRepairing ? (
-                    <div className="flex items-center justify-center p-8 gap-3">
-                        <Loader2 className="animate-spin text-amber-500" size={24} />
+                {isRepairing && (
+                    <div className="flex items-center justify-center p-6 gap-3">
+                        <Loader2 className="animate-spin text-amber-500" size={20} />
                         <span className="text-sm font-medium text-amber-500/80">AI is repairing diagram...</span>
                     </div>
-                ) : (
-                    <>
-                        <pre className="p-4 overflow-x-auto">
-                            <code className="text-sm font-mono text-[var(--text-primary)] leading-relaxed">{code}</code>
-                        </pre>
-                        <div className="px-4 py-2 text-xs text-red-400 border-t border-red-500/20">
-                            {error}
-                        </div>
-                    </>
                 )}
             </div>
         );

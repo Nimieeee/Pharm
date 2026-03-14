@@ -273,7 +273,6 @@ export default function DeepResearchUI({
             border-l border-slate-100 dark:border-slate-800 
             bg-surface 
             shadow-2xl md:shadow-none
-            h-fit max-h-[80vh] overflow-hidden flex flex-col
           `}
         >
           {/* Sidebar Header */}
@@ -293,7 +292,7 @@ export default function DeepResearchUI({
           </div>
 
           {/* Source Cards */}
-          <div className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
+          <div className="p-3 space-y-2">
             {sources.length === 0 && (
               <div className="flex flex-col items-center justify-center h-48 text-center opacity-40">
                 {isLoading ? (

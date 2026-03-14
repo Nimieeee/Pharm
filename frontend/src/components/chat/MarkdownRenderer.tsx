@@ -151,7 +151,7 @@ function EnhancedTable({ children, isAnimating, caption }: { children: React.Rea
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+      <div className="rounded-xl border border-[var(--border)]">
         <table ref={tableRef} className="w-full border-collapse text-sm">
           {children}
         </table>
