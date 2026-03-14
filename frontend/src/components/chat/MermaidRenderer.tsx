@@ -35,8 +35,21 @@ function cleanMermaidSyntax(raw: string): string {
         .replace(/&#x2F;/g, '/');
 
     // 1.5) Fix "Smart Quotes" from AI models
-    cleanedText = cleanedText.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+    cleanedText = cleanedText.replace(/["”]/g, '"').replace(/['']/g, "'");
 
+    // CRITICAL FIX: Ensure 'end' keyword is always on its own line
+    // Fixes: "...synthesis persists"]endstyle A" → "...synthesis persists"]\nend\nstyle A"
+    cleanedText = cleanedText.replace(/"\s*end([a-zA-Z])/g, '"\nend\n$1');
+    cleanedText = cleanedText.replace(/\]\s*end([a-zA-Z])/g, ']\nend\n$1');
+    cleanedText = cleanedText.replace(/\)\s*end([a-zA-Z])/g, ')\nend\n$1');
+    cleanedText = cleanedText.replace(/\}\s*end([a-zA-Z])/g, '}\nend\n$1');
+    
+    // CRITICAL FIX: Handle quotes inside node labels
+    // If quotes appear inside a label, replace them with single quotes
+    cleanedText = cleanedText.replace(/\[("[^"]*"[^\]]*)\]/g, (match) => {
+        return match.replace(/"/g, "'").replace(/\[/, '["').replace(/\]/, '"]');
+    });
+    
     // 2) Initial trim & line split
     // Normalize line endings to handle \r\n from some providers
     let lines = cleanedText.trim().replace(/\r\n/g, '\n').split('\n');
