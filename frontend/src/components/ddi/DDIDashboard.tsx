@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Pill, Plus, X, Info } from 'lucide-react';
+import { AlertTriangle, Pill, Plus, X, Info, Loader2 } from 'lucide-react';
 import { useDDI, DDIInteraction, DRUG_PRESETS } from '@/hooks/useDDI';
 import HubLayout from '@/components/shared/HubLayout';
 import { LoadingAnimation } from '@/components/shared/LoadingAnimation';
