@@ -927,6 +927,42 @@ const emojiRegex = /([✀-➿]|[‑-⛿]|�[�-�])/g;
 // Or use a library like 'emoji-regex' that handles compatibility
 ```
 
+#### Rule 18: Nested Scroll Container Isolation
+**NEVER create nested scrollable containers within a scrolling parent without strict height constraints. This causes scroll jank, focus traps, and UX issues where users get stuck in sub-scroll areas.**
+```tsx
+// ❌ WRONG: Nested scroll without constraints
+<div className="overflow-y-auto"> {/* Parent scroll */}
+  <div className="overflow-y-auto"> {/* Child scroll - TRAP! */}
+    {hugeContent}
+  </div>
+</div>
+
+// ❌ WRONG: Fixed positioning with inset creates scroll context
+<div className="fixed inset-y-0 overflow-y-auto">
+  {/* This creates its own viewport! */}
+</div>
+
+// ✅ CORRECT: Constrain child height to prevent scroll interference
+<div className="overflow-y-auto"> {/* Parent controls scrolling */}
+  <div className="h-fit max-h-[80vh] overflow-hidden flex flex-col">
+    {/* Child is constrained and doesn't create scroll trap */}
+    <div className="flex-1 overflow-y-auto">
+      {content}
+    </div>
+  </div>
+</div>
+
+// ✅ CORRECT: Use sticky positioning instead of fixed where possible
+<div className="sticky top-0">
+  {/* Stays in document flow, no scroll trap */}
+</div>
+```
+**SYMPTOMS of nested scroll traps:**
+- Scrolling down then up then down again causes jank
+- User gets "stuck" in a small scrollable area
+- Only a portion of the page scrolls while rest is frozen
+- Mobile: touch scrolling feels "heavy" or unpredictable
+
 ## ADMET Architecture
 
 ### Overview
