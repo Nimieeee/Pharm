@@ -157,9 +157,9 @@ function EnhancedTable({ children, isAnimating, caption }: { children: React.Rea
         </table>
       </div>
       
-      {/* Table Caption / Source Attribution */}
+      {/* Table Caption / Source Attribution - Theme Aware */}
       {caption && (
-        <div className="mt-2 px-3 py-2 bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)] italic">
+        <div className="mt-2 px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)] italic dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
           {caption}
         </div>
       )}
@@ -379,9 +379,18 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   
   // 3.3 Remove all emojis from the content (including numbered emojis like 1️⃣, 2️⃣, etc.)
   // This removes emoji characters to keep reports professional
-  displayContent = displayContent.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]|[\u{238C}-\u{2454}]|[\u{20D0}-\u{20EF}]|[\u{2764}]|[\u{FE0F}]|[\u{23}\u{2A}\u{30}-\u{39}\u{FE0F}]/gu, '');
-  // Also remove specific numbered emoji patterns
-  displayContent = displayContent.replace(/[0-9]\u{FE0F}\u{20E3}/g, '');
+  // Use a simpler regex approach compatible with older JS targets
+  displayContent = displayContent.replace(/([✀-➿]|[-]|�[�-�]|�[�-�]|[‑-⛿]|�[�-�])/g, '');
+  // Also remove specific numbered emoji patterns (1️⃣, 2️⃣, etc.)
+  displayContent = displayContent.replace(/\d️\u20E3/g, '');
+  
+  // 3.4 Extract table captions and attach them to tables
+  // Look for patterns like: |...table...| followed by "Table adapted from..." or similar
+  const tableCaptionRegex = /(\|[^\n]+\|\n\|[-:|\s]+\|\n(?:\|[^\n]+\|\n)+)(\n?\*?Table[^\n]+)/gi;
+  displayContent = displayContent.replace(tableCaptionRegex, (match, table, caption) => {
+    // Store caption for the table (will be processed during rendering)
+    return table + '\n<!--caption:' + caption.trim().replace(/^\*?\s*/, '') + '-->';
+  });
 
   // 3. Deep Research specific handling
   const isDeepResearch = mode === 'deep_research';
@@ -491,34 +500,36 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
           },
           pre: ({ children }) => <>{children}</>,
 
-          // Tables with interactive features - Enforce styling
-          table: ({ children }) => (
-            <EnhancedTable isAnimating={isAnimating}>
-              {children}
-            </EnhancedTable>
-          ),
+          // Tables with interactive features - Enforce styling with caption support
+          table: ({ children }) => {
+            return (
+              <EnhancedTable isAnimating={isAnimating}>
+                {children}
+              </EnhancedTable>
+            );
+          },
           thead: ({ children }) => (
-            <thead className="bg-[var(--surface-highlight)] text-[var(--text-primary)]">
+            <thead className="bg-[var(--surface-highlight)] text-[var(--text-primary)] dark:bg-slate-800 dark:text-slate-100">
               {children}
             </thead>
           ),
           tbody: ({ children }) => (
-            <tbody className="bg-[var(--surface)]">
+            <tbody className="bg-[var(--surface)] dark:bg-slate-900">
               {children}
             </tbody>
           ),
           tr: ({ children }) => (
-            <tr className="border-b border-[var(--border)] hover:bg-[var(--surface-highlight)]/50 transition-colors">
+            <tr className="border-b border-[var(--border)] hover:bg-[var(--surface-highlight)]/50 transition-colors dark:border-slate-700 dark:hover:bg-slate-800/50">
               {children}
             </tr>
           ),
           th: ({ children }) => (
-            <th className="px-4 py-3 text-left font-semibold text-[var(--text-primary)] border border-[var(--border)] bg-[var(--surface-highlight)] whitespace-nowrap">
+            <th className="px-4 py-3 text-left font-semibold text-[var(--text-primary)] border border-[var(--border)] bg-[var(--surface-highlight)] whitespace-nowrap dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-4 py-3 text-[var(--text-primary)] border border-[var(--border)] align-top">
+            <td className="px-4 py-3 text-[var(--text-primary)] border border-[var(--border)] align-top dark:text-slate-300 dark:border-slate-700">
               {children}
             </td>
           ),
