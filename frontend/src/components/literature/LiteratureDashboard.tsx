@@ -215,7 +215,7 @@ export default function LiteratureDashboard() {
                   {/* Abstract */}
                   {article.abstract && (
                     <div className="mt-3">
-                      {expandedAbstract === article.pmid ? (
+                      {expandedAbstract === article.id ? (
                         <div>
                           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                             {article.abstract}
@@ -229,7 +229,7 @@ export default function LiteratureDashboard() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => setExpandedAbstract(article.pmid || null)}
+                          onClick={() => setExpandedAbstract(article.id || null)}
                           className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1"
                         >
                           <BookOpen className="w-4 h-4" />

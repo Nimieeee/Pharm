@@ -6,6 +6,7 @@ import { ExternalLink, BookOpen, ChevronDown, ChevronUp, Copy, Check } from 'luc
 import { toast } from 'sonner';
 
 export interface PubMedArticle {
+  id?: string;
   pmid: string;
   title: string;
   authors: string[];
@@ -155,10 +156,10 @@ export default function PubMedResults({ results, query, onCite }: PubMedResultsP
             {article.abstract_preview && (
               <div className="mt-3 pl-6">
                 <button
-                  onClick={() => setExpandedId(expandedId === article.pmid ? null : article.pmid)}
+                  onClick={() => setExpandedId(expandedId === article.id ? null : article.id as string)}
                   className="text-xs text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
                 >
-                  {expandedId === article.pmid ? (
+                  {expandedId === article.id ? (
                     <>
                       <ChevronUp className="w-3 h-3" />
                       Hide abstract
@@ -172,7 +173,7 @@ export default function PubMedResults({ results, query, onCite }: PubMedResultsP
                 </button>
 
                 <AnimatePresence>
-                  {expandedId === article.pmid && (
+                  {expandedId === article.id && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
