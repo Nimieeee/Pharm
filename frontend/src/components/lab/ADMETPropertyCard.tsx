@@ -6,8 +6,10 @@ import StatusBadge, { StatusType } from '../shared/StatusBadge';
 
 export interface ADMETProperty {
   name: string;
-  value: string | number;
-  status: StatusType;
+  key: string;
+  value: any;
+  status: 'success' | 'warning' | 'danger' | 'neutral';
+  interpretation: string;
   unit?: string;
 }
 
@@ -34,16 +36,23 @@ export default function ADMETPropertyCard({ category, properties, icon: Icon }: 
 
       <div className="space-y-4 flex-1">
         {properties.map((prop, i) => (
-          <div key={i} className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium text-[var(--text-secondary)]">
-              {prop.name}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-mono font-medium text-[var(--text-primary)]">
-                {prop.value}{prop.unit}
+          <div key={i} className="space-y-1">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
+                {prop.name}
               </span>
-              <StatusBadge status={prop.status} label={prop.status} showLabel={false} className="capitalize" />
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono font-medium text-[var(--text-primary)]">
+                  {prop.value}{prop.unit}
+                </span>
+                <StatusBadge status={prop.status} label={prop.status} showLabel={false} className="capitalize" />
+              </div>
             </div>
+            {prop.interpretation && (
+              <p className="text-[10px] text-[var(--text-muted)] italic leading-tight">
+                {prop.interpretation}
+              </p>
+            )}
           </div>
         ))}
       </div>

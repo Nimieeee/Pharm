@@ -56,7 +56,7 @@ export default function UploadZone({
           flex flex-col items-center justify-center text-center
           ${isDragging 
             ? 'border-purple-500 bg-purple-500/10 scale-[1.02]' 
-            : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'}
+            : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)]'}
           ${isLoading ? 'pointer-events-none' : ''}
         `}
       >
@@ -74,8 +74,8 @@ export default function UploadZone({
                 <div className="absolute inset-0 blur-xl bg-purple-500/50 animate-pulse" />
               </div>
               <div>
-                <p className="text-lg font-bold text-white">Analyzing DNA</p>
-                <p className="text-sm text-slate-400">Processing millions of variants...</p>
+                <p className="text-lg font-bold text-[var(--text-primary)]">Analyzing DNA</p>
+                <p className="text-sm text-[var(--text-secondary)]">Processing millions of variants...</p>
               </div>
             </motion.div>
           ) : (
@@ -90,18 +90,18 @@ export default function UploadZone({
               </div>
               
               <div>
-                <p className="text-xl font-bold text-white mb-1">{label}</p>
-                <p className="text-sm text-slate-400">
+                <p className="text-xl font-bold text-[var(--text-primary)] mb-1">{label}</p>
+                <p className="text-sm text-[var(--text-secondary)]">
                   Drop your 23andMe or AncestryDNA raw data file here
                 </p>
               </div>
 
               <div className="flex items-center justify-center gap-6 pt-6">
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                   <CheckCircle className="w-4 h-4 text-green-500/50" />
                   Supports .txt files
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                   <ShieldCheck className="w-4 h-4 text-blue-500/50" />
                   100% Client-side privacy
                 </div>
@@ -121,13 +121,13 @@ export default function UploadZone({
 
       {/* Subtle Bottom Information */}
       <div className="mt-4 flex items-center justify-between px-2">
-        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold flex items-center gap-1.5">
+        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-semibold flex items-center gap-1.5">
           <AlertCircle className="w-3 h-3" />
           No data is stored on our servers
         </p>
         <div className="flex gap-2">
           {['23andMe', 'AncestryDNA'].map(brand => (
-            <span key={brand} className="text-[9px] px-2 py-0.5 rounded bg-white/5 border border-white/5 text-slate-500 font-mono">
+            <span key={brand} className="text-[9px] px-2 py-0.5 rounded bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-muted)] font-mono">
               {brand}
             </span>
           ))}

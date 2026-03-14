@@ -320,7 +320,7 @@ export function MermaidRenderer({ code }: { code: string }) {
                 setIsRepairing(true);
                 try {
                     const token = typeof window !== 'undefined'
-                        ? localStorage.getItem('sb-access-token')
+                        ? localStorage.getItem('token')
                         : null;
 
                     const resp = await fetch('/api/v1/chat/mermaid/repair', {

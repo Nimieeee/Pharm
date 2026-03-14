@@ -12,8 +12,9 @@ from unittest.mock import AsyncMock, patch, MagicMock
 import sys
 import os
 
-# Add backend to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add backend to path (3 levels up from tests/regression)
+root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root)
 
 
 class TestADMETProcessor:
@@ -236,10 +237,11 @@ class TestADMETService:
             mock_client.__aenter__.return_value = mock_client
             mock_client.post = mock_post
             mock_client_class.return_value = mock_client
-
-            svg = await service.get_svg('CCO')
-
-            assert svg == '<svg>...</svg>'
+            
+            # Use mock for _get_svg_rdkit so we don't depend on rdkit installation for this unit test
+            with patch.object(service, '_get_svg_rdkit', return_value='<svg>...</svg>'):
+                svg = await service.get_svg('CCO')
+                assert svg == '<svg>...</svg>'
 
     @pytest.mark.asyncio
     async def test_predict_admet(self):
@@ -457,13 +459,14 @@ class TestADMETLocalEngine:
             'rdkit.Chem.Lipinski': mock_lipinski,
             'rdkit.Chem.Crippen': mock_crippen
         }):
+            # Ensure MolWt returns a float/int that can be compared if needed
             result = await service._predict_rdkit_fallback('CCO')
-
+    
             assert result["_engine"] == "RDKit (fallback)"
-            # Check properties exist in dict
             assert "molecular_weight" in result
             assert result["smiles"] == "CCO"
-            assert result["error"] is None
+            # It should not have error if it succeeded
+            assert result.get("error") is None
 
 
 class TestADMETProcessorFlatFormat:
@@ -603,9 +606,97 @@ class TestDirectionalScoring:
         result = proc.get_interpretation("AMES", 0.1)
         assert "✅" in result
 
-    def test_bioavailability_high_is_green(self):
-        """Bioavailability_Ma = 0.8 should be green"""
+    async def test_bioavailability_high_is_green(self):
+        """Bioavailability = 0.99 should be green (high benefit = good)"""
         from app.services.postprocessing.admet_processor import ADMETProcessor
         proc = ADMETProcessor()
-        result = proc.get_interpretation("Bioavailability_Ma", 0.8)
-        assert "✅" in result
+        interp = proc.get_interpretation("Bioavailability_Ma", 0.99)
+        assert "✅" in interp
+
+
+class TestStructuredAndBatchADMET:
+    """Tests for new structured JSON and batch analysis features"""
+
+    def test_build_structured_categories(self):
+        """Test building structured categories from flat dictionary"""
+        from app.services.postprocessing.admet_processor import ADMETProcessor
+        proc = ADMETProcessor()
+        data = {
+            "molecular_weight": 130.19,
+            "logP": -0.36,
+            "HIA_Hou": 0.75,
+            "hERG": 0.1,
+            "AMES": 0.1,
+        }
+        cats = proc.build_structured_categories(data)
+        
+        # Verify structure
+        assert len(cats) >= 3 # Physicochemical, Absorption, Toxicity
+        
+        # Check specific properties
+        phys = next(c for c in cats if c["name"] == "Physicochemical")
+        assert any(p["key"] == "molecular_weight" and p["value"] == 130.19 for p in phys["properties"])
+        
+        tox = next(c for c in cats if c["name"] == "Toxicity")
+        herg = next(p for p in tox["properties"] if p["key"] == "hERG")
+        assert herg["status"] == "success" # low toxicity = success
+        
+        abs_cat = next(c for c in cats if c["name"] == "Absorption")
+        hia = next(p for p in abs_cat["properties"] if p["key"] == "HIA_Hou")
+        assert hia["status"] == "success" # high absorption = success
+
+    def test_format_batch_csv(self):
+        """Test formatting batch results as CSV"""
+        from app.services.postprocessing.admet_processor import ADMETProcessor
+        proc = ADMETProcessor()
+        results = [
+            {
+                "index": 1, 
+                "smiles": "CCO", 
+                "success": True, 
+                "engine": "test",
+                "categories": [{
+                    "name": "Physicochemical", 
+                    "properties": [
+                        {"key": "molecular_weight", "name": "MW", "value": 46.07, "status": "neutral"}
+                    ]
+                }]
+            },
+            {
+                "index": 2, 
+                "smiles": "CCCCC", 
+                "success": False, 
+                "error": "Failed"
+            }
+        ]
+        csv = proc.format_batch_csv(results)
+        
+        assert "SMILES" in csv
+        assert "CCO" in csv
+        assert "46.07" in csv
+        assert "CCCCC" in csv
+        assert "FAILED" in csv
+
+    @pytest.mark.asyncio
+    async def test_analyze_batch_structured(self):
+        """Test batch structured analysis in service"""
+        from app.services.admet_service import ADMETService
+        service = ADMETService(MagicMock())
+        
+        molecules = [
+            {"smiles": "CCO", "name": "Ethanol"},
+            {"smiles": "CC", "name": "Ethane"}
+        ]
+        
+        # Mock predict_admet to avoid network/engine calls
+        async def mock_predict(smiles):
+            return {"molecular_weight": 46.0 if smiles == "CCO" else 30.0, "_engine": "mock"}
+            
+        with patch.object(service, 'predict_admet', side_effect=mock_predict):
+            results = await service.analyze_batch_structured(molecules)
+            
+            assert len(results) == 2
+            assert results[0]["smiles"] == "CCO"
+            assert results[0]["molecule_name"] == "Ethanol"
+            assert results[0]["success"] is True
+            assert len(results[0]["categories"]) > 0

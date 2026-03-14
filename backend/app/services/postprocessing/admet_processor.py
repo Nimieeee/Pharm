@@ -21,7 +21,100 @@ class ADMETProcessor:
     
     def __init__(self):
         """Initialize ADMETProcessor"""
-        pass
+        # Header label mapping (ADMETlab abbreviations)
+        self.header_labels = {
+            # Physicochemical
+            "molecular_weight": "Molecular Weight",
+            "logP": "LogP",
+            "hydrogen_bond_donors": "Hydrogen Bond Donors",
+            "hydrogen_bond_acceptors": "Hydrogen Bond Acceptors",
+            "tpsa": "Topological Polar Surface Area",
+            "num_rotatable_bonds": "Rotatable Bonds",
+            "num_rings": "Ring Count",
+            "num_heavy_atoms": "Heavy Atoms",
+            "stereo_centers": "Stereo Centers",
+            
+            # Drug Likeness
+            "Lipinski": "Lipinski Rule of 5",
+            "QED": "Quantitative Estimate of Druglikeness",
+            "PAINS_alert": "PAINS Alerts",
+            "BRENK_alert": "BRENK Alerts",
+            "NIH_alert": "NIH Alerts",
+            
+            # Absorption
+            "HIA_Hou": "Human Intestinal Absorption",
+            "Caco2_Wang": "Cell Effective Permeability",
+            "PAMPA_NCATS": "PAMPA Permeability",
+            "Pgp_Broccatelli": "P-glycoprotein Inhibition",
+            "Solubility_AqSolDB": "Aqueous Solubility",
+            "Lipophilicity_AstraZeneca": "Lipophilicity",
+            "HydrationFreeEnergy_FreeSolv": "Hydration Free Energy",
+            "Bioavailability_Ma": "Oral Bioavailability",
+            
+            # Distribution
+            "BBB_Martins": "Blood-Brain Barrier Penetration",
+            "PPBR_AZ": "Plasma Protein Binding Rate",
+            "VDss_Lombardo": "Volume of Distribution",
+            
+            # Metabolism
+            "CYP1A2_Veith": "CYP1A2 Inhibition",
+            "CYP2C9_Veith": "CYP2C9 Inhibition",
+            "CYP2C19_Veith": "CYP2C19 Inhibition",
+            "CYP2D6_Veith": "CYP2D6 Inhibition",
+            "CYP3A4_Veith": "CYP3A4 Inhibition",
+            "CYP2C9_Substrate_CarbonMangels": "CYP2C9 Substrate",
+            "CYP2D6_Substrate_CarbonMangels": "CYP2D6 Substrate",
+            "CYP3A4_Substrate_CarbonMangels": "CYP3A4 Substrate",
+            
+            # Excretion
+            "Clearance_Hepatocyte_AZ": "Drug Clearance (Hepatocyte)",
+            "Clearance_Microsome_AZ": "Drug Clearance (Microsome)",
+            "Half_Life_Obach": "Half Life",
+            
+            # Toxicity
+            "hERG": "hERG Blocking",
+            "AMES": "Mutagenicity",
+            "DILI": "Drug Induced Liver Injury",
+            "ClinTox": "Clinical Toxicity",
+            "Carcinogens_Lagunin": "Carcinogenicity",
+            "LD50_Zhu": "Acute Toxicity LD50",
+            "Skin_Reaction": "Skin Reaction",
+            
+            # Tox21
+            "NR-AR": "Androgen Receptor (Full Length)",
+            "NR-AR-LBD": "Androgen Receptor (LBD)",
+            "NR-AhR": "Aryl Hydrocarbon Receptor",
+            "NR-Aromatase": "Aromatase",
+            "NR-ER": "Estrogen Receptor (Full Length)",
+            "NR-ER-LBD": "Estrogen Receptor (LBD)",
+            "NR-PPAR-gamma": "PPAR-γ",
+            "SR-ARE": "Antioxidant Response Element",
+            "SR-ATAD5": "ATAD5",
+            "SR-HSE": "Heat Shock Factor Response",
+            "SR-MMP": "Mitochondrial Membrane Potential",
+            "SR-p53": "Tumor Protein p53",
+        }
+
+        # Organized by property groups
+        self.property_groups = {
+            "Physicochemical": ["molecular_weight", "logP", "hydrogen_bond_donors", 
+                               "hydrogen_bond_acceptors", "tpsa", "num_rotatable_bonds", 
+                               "num_rings", "num_heavy_atoms", "stereo_centers"],
+            "Drug Likeness": ["Lipinski", "QED", "PAINS_alert", "BRENK_alert", "NIH_alert"],
+            "Absorption": ["HIA_Hou", "Caco2_Wang", "PAMPA_NCATS", "Pgp_Broccatelli",
+                           "Solubility_AqSolDB", "HydrationFreeEnergy_FreeSolv", 
+                           "Lipophilicity_AstraZeneca", "Bioavailability_Ma"],
+            "Distribution": ["BBB_Martins", "PPBR_AZ", "VDss_Lombardo"],
+            "Metabolism": ["CYP1A2_Veith", "CYP2C9_Veith", "CYP2C19_Veith", "CYP2D6_Veith", 
+                          "CYP3A4_Veith", "CYP2C9_Substrate_CarbonMangels", 
+                          "CYP2D6_Substrate_CarbonMangels", "CYP3A4_Substrate_CarbonMangels"],
+            "Excretion": ["Clearance_Hepatocyte_AZ", "Clearance_Microsome_AZ", 
+                         "Half_Life_Obach"],
+            "Toxicity": ["AMES", "Carcinogens_Lagunin", "ClinTox", "DILI", "hERG",
+                        "NR-AR", "NR-AR-LBD", "NR-AhR", "NR-Aromatase", "NR-ER", 
+                        "NR-ER-LBD", "NR-PPAR-gamma", "Skin_Reaction",
+                        "SR-ARE", "SR-ATAD5", "SR-HSE", "SR-MMP", "SR-p53"],
+        }
     
     def format_svg_for_report(self, svg: str) -> str:
         """
@@ -433,106 +526,12 @@ class ADMETProcessor:
         # Metadata keys to exclude
         exclude_keys = {"_engine", "_source", "error", "ai_interpretation", "molecule_name"}
         
-        # Header label mapping (ADMETlab abbreviations)
-        header_labels = {
-            # Physicochemical
-            "molecular_weight": "Molecular Weight",
-            "logP": "LogP",
-            "hydrogen_bond_donors": "Hydrogen Bond Donors",
-            "hydrogen_bond_acceptors": "Hydrogen Bond Acceptors",
-            "tpsa": "Topological Polar Surface Area",
-            "num_rotatable_bonds": "Rotatable Bonds",
-            "num_rings": "Ring Count",
-            "num_heavy_atoms": "Heavy Atoms",
-            "stereo_centers": "Stereo Centers",
-            
-            # Drug Likeness
-            "Lipinski": "Lipinski Rule of 5",
-            "QED": "Quantitative Estimate of Druglikeness",
-            "PAINS_alert": "PAINS Alerts",
-            "BRENK_alert": "BRENK Alerts",
-            "NIH_alert": "NIH Alerts",
-            
-            # Absorption
-            "HIA_Hou": "Human Intestinal Absorption",
-            "Caco2_Wang": "Cell Effective Permeability",
-            "PAMPA_NCATS": "PAMPA Permeability",
-            "Pgp_Broccatelli": "P-glycoprotein Inhibition",
-            "Solubility_AqSolDB": "Aqueous Solubility",
-            "Lipophilicity_AstraZeneca": "Lipophilicity",
-            "HydrationFreeEnergy_FreeSolv": "Hydration Free Energy",
-            "Bioavailability_Ma": "Oral Bioavailability",
-            
-            # Distribution
-            "BBB_Martins": "Blood-Brain Barrier Penetration",
-            "PPBR_AZ": "Plasma Protein Binding Rate",
-            "VDss_Lombardo": "Volume of Distribution",
-            
-            # Metabolism
-            "CYP1A2_Veith": "CYP1A2 Inhibition",
-            "CYP2C9_Veith": "CYP2C9 Inhibition",
-            "CYP2C19_Veith": "CYP2C19 Inhibition",
-            "CYP2D6_Veith": "CYP2D6 Inhibition",
-            "CYP3A4_Veith": "CYP3A4 Inhibition",
-            "CYP2C9_Substrate_CarbonMangels": "CYP2C9 Substrate",
-            "CYP2D6_Substrate_CarbonMangels": "CYP2D6 Substrate",
-            "CYP3A4_Substrate_CarbonMangels": "CYP3A4 Substrate",
-            
-            # Excretion
-            "Clearance_Hepatocyte_AZ": "Drug Clearance (Hepatocyte)",
-            "Clearance_Microsome_AZ": "Drug Clearance (Microsome)",
-            "Half_Life_Obach": "Half Life",
-            
-            # Toxicity
-            "hERG": "hERG Blocking",
-            "AMES": "Mutagenicity",
-            "DILI": "Drug Induced Liver Injury",
-            "ClinTox": "Clinical Toxicity",
-            "Carcinogens_Lagunin": "Carcinogenicity",
-            "LD50_Zhu": "Acute Toxicity LD50",
-            "Skin_Reaction": "Skin Reaction",
-            
-            # Tox21
-            "NR-AR": "Androgen Receptor (Full Length)",
-            "NR-AR-LBD": "Androgen Receptor (LBD)",
-            "NR-AhR": "Aryl Hydrocarbon Receptor",
-            "NR-Aromatase": "Aromatase",
-            "NR-ER": "Estrogen Receptor (Full Length)",
-            "NR-ER-LBD": "Estrogen Receptor (LBD)",
-            "NR-PPAR-gamma": "PPAR-γ",
-            "SR-ARE": "Antioxidant Response Element",
-            "SR-ATAD5": "ATAD5",
-            "SR-HSE": "Heat Shock Factor Response",
-            "SR-MMP": "Mitochondrial Membrane Potential",
-            "SR-p53": "Tumor Protein p53",
-        }
-        
         # Check if flat format (ADMET-AI local engine)
         is_flat_format = "molecular_weight" in admet_data
         
         if is_flat_format:
             # Flat format - organize by property groups
-            property_groups = {
-                "Physicochemical": ["molecular_weight", "logP", "hydrogen_bond_donors", 
-                                   "hydrogen_bond_acceptors", "tpsa", "num_rotatable_bonds", 
-                                   "num_rings", "num_heavy_atoms", "stereo_centers"],
-                "Drug Likeness": ["Lipinski", "QED", "PAINS_alert", "BRENK_alert", "NIH_alert"],
-                "Absorption": ["HIA_Hou", "Caco2_Wang", "PAMPA_NCATS", "Pgp_Broccatelli"],
-                "Distribution": ["BBB_Martins", "PPBR_AZ", "VDss_Lombardo"],
-                "Metabolism": ["CYP1A2_Veith", "CYP2C9_Veith", "CYP2C19_Veith", "CYP2D6_Veith", 
-                              "CYP3A4_Veith", "CYP2C9_Substrate_CarbonMangels", 
-                              "CYP2D6_Substrate_CarbonMangels", "CYP3A4_Substrate_CarbonMangels"],
-                "Excretion": ["Clearance_Hepatocyte_AZ", "Clearance_Microsome_AZ", 
-                             "Half_Life_Obach"],
-                "Toxicity": ["AMES", "Carcinogens_Lagunin", "ClinTox", "DILI", "hERG",
-                            "NR-AR", "NR-AR-LBD", "NR-AhR", "NR-Aromatase", "NR-ER", 
-                            "NR-ER-LBD", "NR-PPAR-gamma", "Skin_Reaction",
-                            "SR-ARE", "SR-ATAD5", "SR-HSE", "SR-MMP", "SR-p53"],
-                "Solubility": ["Solubility_AqSolDB", "HydrationFreeEnergy_FreeSolv", 
-                             "Lipophilicity_AstraZeneca", "Bioavailability_Ma"]
-            }
-            
-            for group_name, keys in property_groups.items():
+            for group_name, keys in self.property_groups.items():
                 group_data = {}
                 for key in keys:
                     if key in admet_data:
@@ -543,7 +542,7 @@ class ADMETProcessor:
                 if group_data:
                     parts.append(f"\n### {group_name}\n")
                     for endpoint, value in group_data.items():
-                        label = header_labels.get(endpoint, endpoint.replace('_', ' ').title())
+                        label = self.header_labels.get(endpoint, endpoint.replace('_', ' ').title())
                         interp = self.get_interpretation(endpoint, value)
                         if isinstance(value, float):
                             line = f"- **{label}**: {value:.4f}"
@@ -718,6 +717,90 @@ class ADMETProcessor:
         if endpoint in messages:
             return messages[endpoint]
         return f"{endpoint.replace('_', ' ').title()}: {val:.2f}"
+
+    def build_structured_categories(self, admet_data: Dict[str, Any]) -> list:
+        """
+        Build structured JSON categories from raw ADMET prediction dict.
+        Returns list of {name, properties: [{name, key, value, unit, percentile, status, interpretation}]}
+        """
+        categories = []
+        for group_name, keys in self.property_groups.items():
+            props = []
+            for key in keys:
+                if key in admet_data and admet_data[key] is not None:
+                    val = admet_data[key]
+                    label = self.header_labels.get(key, key.replace('_', ' ').title())
+                    interp = self.get_interpretation(key, val)
+                    
+                    # Determine status from interpretation emoji
+                    status = "neutral"
+                    if "✅" in interp: status = "success"
+                    elif "⚠️" in interp: status = "warning"
+                    elif "❌" in interp: status = "danger"
+                    
+                    # Get percentile if available
+                    percentile_key = f"{key}_drugbank_approved_percentile"
+                    percentile = admet_data.get(percentile_key)
+                    
+                    props.append({
+                        "name": label,
+                        "key": key,
+                        "value": round(val, 4) if isinstance(val, float) else val,
+                        "percentile": round(percentile, 2) if percentile else None,
+                        "status": status,
+                        "interpretation": interp.replace("✅ ", "").replace("⚠️ ", "").replace("❌ ", ""),
+                    })
+            
+            if props:
+                categories.append({"name": group_name, "properties": props})
+        
+        return categories
+
+    def format_batch_csv(self, results: list) -> str:
+        """
+        Format batch results as CSV.
+        One row per molecule, columns = all unique property keys.
+        """
+        if not results:
+            return "No results"
+        
+        # Collect all unique property keys across all molecules
+        all_keys = []
+        for r in results:
+            if r.get("success") and r.get("categories"):
+                for cat in r["categories"]:
+                    for prop in cat["properties"]:
+                        if prop["key"] not in all_keys:
+                            all_keys.append(prop["key"])
+        
+        # Header
+        headers = ["#", "SMILES", "Name", "Engine"] + [
+            self.header_labels.get(k, k) for k in all_keys
+        ]
+        lines = [",".join(headers)]
+        
+        # Rows
+        for r in results:
+            if not r.get("success"):
+                row = [str(r["index"]), r["smiles"], r.get("molecule_name", ""), "FAILED"]
+                row += [""] * len(all_keys)
+                lines.append(",".join(row))
+                continue
+            
+            # Build lookup from categories
+            prop_lookup = {}
+            for cat in r.get("categories", []):
+                for prop in cat["properties"]:
+                    prop_lookup[prop["key"]] = prop["value"]
+            
+            row = [str(r["index"]), r["smiles"], r.get("molecule_name", ""), r.get("engine", "")]
+            for key in all_keys:
+                val = prop_lookup.get(key, "")
+                row.append(str(val) if val != "" else "")
+            
+            lines.append(",".join(row))
+        
+        return "\n".join(lines)
 
 
 # Singleton instance

@@ -54,7 +54,7 @@ export default function CreationStudio() {
     saveRecentTopic(topic.trim());
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const endpoint = creationType === 'slides' ? `${API_BASE_URL}/api/v1/slides/outline` : `${API_BASE_URL}/api/v1/docs/outline`;
       const body = creationType === 'slides' ? { topic: topic.trim(), num_slides: 12 } : { topic: topic.trim(), doc_type: 'report' };
 
@@ -88,7 +88,7 @@ export default function CreationStudio() {
     setError('');
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const endpoint = creationType === 'slides' ? `${API_BASE_URL}/api/v1/slides/generate` : `${API_BASE_URL}/api/v1/docs/generate`;
       const body = creationType === 'slides' 
         ? { outline: slideOutline, generate_images: true } 
@@ -139,7 +139,7 @@ export default function CreationStudio() {
 
   const handleDownload = async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const endpoint = creationType === 'slides' 
         ? `${API_BASE_URL}/api/v1/slides/download/${jobId}`
         : `${API_BASE_URL}/api/v1/docs/download/${jobId}`;
@@ -187,17 +187,17 @@ export default function CreationStudio() {
                     relative p-8 rounded-3xl border transition-all text-left group
                     ${creationType === 'slides' 
                       ? 'bg-teal-500/10 border-teal-500/50 shadow-2xl shadow-teal-500/10 scale-[1.02]' 
-                      : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'}
+                      : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)]'}
                   `}
                 >
                   <div className={`
                     w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border transition-all
-                    ${creationType === 'slides' ? 'bg-teal-500 text-black border-teal-400' : 'bg-white/5 text-slate-400 border-white/5'}
+                    ${creationType === 'slides' ? 'bg-teal-500 text-black border-teal-400' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] border-[var(--border)]'}
                   `}>
                     <Presentation className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Scientific Presentation</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
+                  <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Scientific Presentation</h3>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                     Create multi-slide PowerPoint decks with AI-generated imagery and speaker notes.
                   </p>
                   {creationType === 'slides' && (
@@ -213,17 +213,17 @@ export default function CreationStudio() {
                     relative p-8 rounded-3xl border transition-all text-left group
                     ${creationType === 'document' 
                       ? 'bg-teal-500/10 border-teal-500/50 shadow-2xl shadow-teal-500/10 scale-[1.02]' 
-                      : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'}
+                      : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)]'}
                   `}
                 >
                   <div className={`
                     w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border transition-all
-                    ${creationType === 'document' ? 'bg-teal-500 text-black border-teal-400' : 'bg-white/5 text-slate-400 border-white/5'}
+                    ${creationType === 'document' ? 'bg-teal-500 text-black border-teal-400' : 'bg-[var(--surface-highlight)] text-[var(--text-secondary)] border-[var(--border)]'}
                   `}>
                     <FileText className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Technical Document</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
+                  <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Technical Document</h3>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                     Generate structured reports, manuscripts, and whitepapers in Word format.
                   </p>
                   {creationType === 'document' && (
@@ -242,7 +242,7 @@ export default function CreationStudio() {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Describe your topic (e.g., The role of CRISPR in immunotherapy)..."
-                    className="w-full px-8 py-6 rounded-3xl bg-black/40 border border-white/10 text-white text-xl placeholder:text-slate-600 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all pr-20"
+                    className="w-full px-8 py-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500/50 outline-none transition-all pr-20 shadow-xl"
                   />
                   <button
                     onClick={handleGenerateOutline}
@@ -265,7 +265,7 @@ export default function CreationStudio() {
                       <button
                         key={i}
                         onClick={() => setTopic(t)}
-                        className="text-xs px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+                        className="text-xs px-4 py-2 rounded-xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-all flex items-center gap-2"
                       >
                         {t}
                       </button>
@@ -307,8 +307,8 @@ export default function CreationStudio() {
             >
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-2xl font-bold text-white">Review Outline</h3>
-                  <p className="text-sm text-slate-400">Fine-tune the structure before final assembly</p>
+                  <h3 className="text-2xl font-bold text-[var(--text-primary)]">Review Outline</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">Fine-tune the structure before final assembly</p>
                 </div>
                 <button 
                   onClick={() => setStep('input')}
@@ -343,7 +343,7 @@ export default function CreationStudio() {
               key="progress"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="max-w-3xl mx-auto rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl overflow-hidden"
+              className="max-w-3xl mx-auto rounded-3xl bg-[var(--surface)] border border-[var(--border)] backdrop-blur-xl overflow-hidden shadow-2xl"
             >
               {creationType === 'slides' ? (
                 <SlideProgress 
@@ -376,8 +376,8 @@ export default function CreationStudio() {
                       <div className="flex flex-col items-center gap-4">
                         <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
                         <div>
-                          <h3 className="text-xl font-bold text-white">Generating Pages</h3>
-                          <p className="text-sm text-slate-400 mt-2">{progress.message || 'Synthesizing professional prose...'}</p>
+                          <h3 className="text-xl font-bold text-[var(--text-primary)]">Generating Pages</h3>
+                          <p className="text-sm text-[var(--text-secondary)] mt-2">{progress.message || 'Synthesizing professional prose...'}</p>
                         </div>
                       </div>
                       <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden max-w-md mx-auto">

@@ -29,7 +29,7 @@ export default function GeneticsDashboard() {
     setIsLoading(true);
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const formData = new FormData();
       formData.append('file', selectedFile);
 
@@ -66,7 +66,7 @@ export default function GeneticsDashboard() {
     setError('');
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/gwas/lookup/${rsid.trim()}`, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       });
@@ -103,14 +103,14 @@ export default function GeneticsDashboard() {
     >
       <div className="space-y-8">
         {/* Hub Navigation / Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/5 border border-white/10 w-fit">
+        <div className="flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)] w-fit">
           <button
             onClick={() => setActiveTab('pharmgx')}
             className={`
               px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2
               ${activeTab === 'pharmgx' 
                 ? 'bg-purple-500 text-black shadow-lg shadow-purple-500/20' 
-                : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'}
             `}
           >
             <Pill className="w-4 h-4" />
@@ -122,7 +122,7 @@ export default function GeneticsDashboard() {
               px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2
               ${activeTab === 'gwas' 
                 ? 'bg-purple-500 text-black shadow-lg shadow-purple-500/20' 
-                : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'}
             `}
           >
             <TrendingUp className="w-4 h-4" />
@@ -161,13 +161,13 @@ export default function GeneticsDashboard() {
                               <ShieldCheck className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-lg font-bold text-white">Analysis Result</h3>
-                              <p className="text-xs text-slate-400 font-mono">{file?.name}</p>
+                              <h3 className="text-lg font-bold text-[var(--text-primary)]">Analysis Result</h3>
+                              <p className="text-xs text-[var(--text-secondary)] font-mono">{file?.name}</p>
                             </div>
                           </div>
                           <button 
                             onClick={() => { setPharmgxResult(null); setFile(null); }}
-                            className="text-xs text-slate-500 hover:text-white transition-colors"
+                            className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                           >
                             Upload Different File
                           </button>
@@ -186,9 +186,9 @@ export default function GeneticsDashboard() {
                 exit={{ opacity: 0, scale: 0.98 }}
                 className="space-y-8"
               >
-                <section className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md max-w-2xl mx-auto text-center">
-                  <h3 className="text-xl font-bold text-white mb-2">Variant Lookup</h3>
-                  <p className="text-sm text-slate-400 mb-8">Enter an rsID to explore trait associations and clinical info</p>
+                <section className="p-8 rounded-3xl bg-[var(--surface)] border border-[var(--border)] backdrop-blur-md max-w-2xl mx-auto text-center shadow-2xl shadow-purple-500/5">
+                  <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Variant Lookup</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-8">Enter an rsID to explore trait associations and clinical info</p>
                   
                   <form onSubmit={handleGWASSearch} className="space-y-6">
                     <div className="relative group">
@@ -197,7 +197,7 @@ export default function GeneticsDashboard() {
                         value={rsid}
                         onChange={(e) => setRsid(e.target.value)}
                         placeholder="e.g., rs7903146"
-                        className="w-full px-6 py-4 rounded-2xl bg-black/40 border border-white/10 text-white text-center text-lg placeholder:text-slate-600 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all"
+                        className="w-full px-6 py-4 rounded-2xl bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-primary)] text-center text-lg placeholder:text-[var(--text-muted)] focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all"
                       />
                       <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-purple-500 transition-colors" />
                     </div>
@@ -209,7 +209,7 @@ export default function GeneticsDashboard() {
                           key={variant.rsid}
                           type="button"
                           onClick={() => setRsid(variant.rsid)}
-                          className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                          className="text-xs px-3 py-1.5 rounded-full bg-[var(--surface-highlight)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-all"
                           title={variant.trait}
                         >
                           {variant.rsid}

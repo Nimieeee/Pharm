@@ -169,7 +169,11 @@ class ADMETService:
     
     async def get_svg(self, smiles: str) -> Optional[str]:
         """
-        Generate molecule SVG using local RDKit.
+        Generate molecule SVG.
+        
+        Priority:
+        1. Local RDKit
+        2. External ADMETlab API
         
         Args:
             smiles: SMILES string
@@ -177,25 +181,32 @@ class ADMETService:
         Returns:
             SVG string or None if failed
         """
+        # 1. Try local RDKit
+        svg = await self._get_svg_rdkit(smiles)
+        if svg:
+            return svg
+            
+        # 2. Fallback to external API
+        print("⚠️ RDKit SVG failed, falling back to external API")
+        return await self._get_svg_external(smiles)
+    
+    async def _get_svg_rdkit(self, smiles: str) -> Optional[str]:
+        """Generate molecule SVG using local RDKit"""
         try:
             from rdkit import Chem
             from rdkit.Chem.Draw import rdMolDraw2D
             
             mol = Chem.MolFromSmiles(smiles)
             if not mol:
-                print(f"❌ Invalid SMILES: {smiles}")
                 return None
             
             drawer = rdMolDraw2D.MolDraw2DSVG(400, 300)
             drawer.DrawMolecule(mol)
             drawer.FinishDrawing()
-            svg = drawer.GetDrawingText()
-            
-            return svg
+            return drawer.GetDrawingText()
             
         except ImportError:
-            print("⚠️ RDKit not available, falling back to external API")
-            return await self._get_svg_external(smiles)
+            return None
         except Exception as e:
             print(f"❌ RDKit SVG generation failed: {e}")
             return None
@@ -626,6 +637,45 @@ Keep it concise and actionable."""
             print(f"❌ SDF parsing failed: {e}")
             return []
 
+    async def analyze_batch_structured(self, molecules: list) -> list:
+        """Batch analysis returning structured JSON per molecule."""
+        results = []
+        
+        for i, mol in enumerate(molecules):
+            smiles = mol["smiles"] if isinstance(mol, dict) else mol
+            name = mol.get("name") if isinstance(mol, dict) else (mol if isinstance(mol, str) else f"Molecule {i+1}")
+            
+            try:
+                # 1. Get raw predictions (dict with 46 keys)
+                admet_data = await self.predict_admet(smiles)
+                
+                # 2. Build structured categories from raw data
+                categories = self.processor.build_structured_categories(admet_data)
+                
+                results.append({
+                    "index": i + 1,
+                    "smiles": smiles,
+                    "molecule_name": name,
+                    "success": True,
+                    "engine": admet_data.get("_engine", "Unknown"),
+                    "categories": categories,
+                })
+                
+                # Small delay to avoid rate limiting
+                await asyncio.sleep(0.1)
+                
+            except Exception as e:
+                print(f"❌ Batch structured analysis failed for molecule {i + 1}: {e}")
+                results.append({
+                    "index": i + 1,
+                    "smiles": smiles,
+                    "molecule_name": name,
+                    "success": False,
+                    "error": str(e),
+                })
+        
+        return results
+
     async def analyze_batch(self, smiles_list: list) -> list:
         """
         Batch ADMET analysis for multiple molecules.
@@ -640,8 +690,8 @@ Keep it concise and actionable."""
 
         for i, smiles in enumerate(smiles_list):
             try:
-                # Limit to prevent timeouts (max 20 molecules)
-                if i >= 20:
+                # Limit to prevent timeouts (increased to 100 as per plan)
+                if i >= 100:
                     break
 
                 # Get full report for each molecule
@@ -655,7 +705,7 @@ Keep it concise and actionable."""
                 })
 
                 # Small delay to avoid rate limiting
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.1)
 
             except Exception as e:
                 print(f"❌ Batch analysis failed for molecule {i + 1}: {e}")

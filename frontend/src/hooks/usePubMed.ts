@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@/config/api';
 
 const getToken = () => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('sb-access-token');
+    return localStorage.getItem('token');
   }
   return null;
 };
