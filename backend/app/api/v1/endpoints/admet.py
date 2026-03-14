@@ -89,7 +89,7 @@ async def analyze_molecule(
 ):
     """
     Full ADMET analysis for a molecule.
-    
+
     - **smiles**: SMILES string of the molecule
     - **include_svg**: Whether to include structure SVG (default: True)
     - Returns: Structured JSON with ADMET predictions + legacy markdown
@@ -97,7 +97,7 @@ async def analyze_molecule(
     try:
         # 1. Get raw predictions (dict with 46 keys)
         admet_data = await admet_service.predict_admet(request.smiles)
-        
+
         # 2. Get SVG
         svg = None
         if request.include_svg:
@@ -105,20 +105,23 @@ async def analyze_molecule(
                 svg = await admet_service.get_svg(request.smiles)
             except Exception:
                 pass
-        
-        # 3. Get AI interpretation
+
+        # 3. Calculate SAS score
+        sas_result = sas_calculator.calculate(request.smiles)
+
+        # 4. Get AI interpretation
         ai_interpretation = None
         try:
             ai_interpretation = await admet_service._generate_ai_interpretation(admet_data)
         except Exception:
             pass
-        
-        # 4. Build structured categories from raw data
+
+        # 5. Build structured categories from raw data
         categories = admet_service.processor.build_structured_categories(admet_data)
-        
-        # 5. Also generate markdown for legacy support/copying
+
+        # 6. Also generate markdown for legacy support/copying
         report_md = admet_service.processor.format_report(admet_data, svg, ai_interpretation)
-        
+
         return {
             "success": True,
             "smiles": request.smiles,
@@ -127,9 +130,10 @@ async def analyze_molecule(
             "categories": categories,
             "ai_interpretation": ai_interpretation,
             "report_markdown": report_md,
-            "report": report_md # alias for backward compatibility
+            "report": report_md, # alias for backward compatibility
+            "synthetic_accessibility": sas_result
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -139,26 +143,34 @@ async def analyze_molecule(
 
 @router.get("/svg")
 async def get_molecule_svg(
-    smiles: str = Query(..., description="SMILES string (URL-encoded)"),
+    smiles: str = Query(..., description="SMILES string"),
     admet_service = Depends(get_admet_service)
 ):
     """
     Generate SVG for molecule structure.
 
-    - **smiles**: SMILES string (URL-encoded, e.g., %3D for =)
+    - **smiles**: SMILES string (auto-detects URL encoding)
     - Returns: SVG string
     """
     try:
-        # Decode URL-encoded SMILES
-        decoded_smiles = urllib.parse.unquote(smiles)
+        # Auto-detect and decode URL-encoded SMILES
+        # Check if smiles contains % (URL-encoded)
+        if '%' in smiles:
+            decoded_smiles = urllib.parse.unquote(smiles)
+        else:
+            decoded_smiles = smiles
 
         svg = await admet_service.get_svg(decoded_smiles)
 
         if not svg:
-            raise HTTPException(400, "Failed to generate SVG")
+            # Return placeholder SVG for invalid SMILES
+            return Response(
+                content='<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><text x="50%" y="50%" text-anchor="middle" fill="#999">Invalid SMILES</text></svg>',
+                media_type="image/svg+xml"
+            )
 
         return Response(content=svg, media_type="image/svg+xml")
-        
+
     except HTTPException:
         raise
     except Exception as e:

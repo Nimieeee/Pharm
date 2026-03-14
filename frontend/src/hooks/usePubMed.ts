@@ -10,31 +10,29 @@ const getToken = () => {
   return null;
 };
 
-export interface PubMedArticle {
-  pmid: string;
+export interface LiteratureArticle {
+  id: string;
   title: string;
-  authors: string[];
+  abstract: string;
+  authors: string;
   journal: string;
   year: string;
-  volume?: string;
-  issue?: string;
-  pages?: string;
+  url: string;
+  pdf_url?: string;
+  pmid?: string;
   doi?: string;
-  abstract?: string;
+  citation_count?: number;
+  source: 'PubMed' | 'Semantic Scholar';
 }
 
-export interface PubMedSearchResult {
+export interface LiteratureSearchResult {
   query: string;
   count: number;
-  results: PubMedArticle[];
+  results: LiteratureArticle[];
   filters: {
     year_from: number | null;
     year_to: number | null;
   };
-}
-
-export interface PubMedArticleDetail extends PubMedArticle {
-  abstract: string;
 }
 
 export function usePubMed() {
@@ -48,7 +46,7 @@ export function usePubMed() {
       yearFrom?: number;
       yearTo?: number;
     }
-  ): Promise<PubMedSearchResult | null> => {
+  ): Promise<LiteratureSearchResult | null> => {
     if (!query.trim()) {
       setError('Please enter a search query');
       return null;
@@ -71,7 +69,7 @@ export function usePubMed() {
       }
 
       const token = getToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/pubmed/search?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/literature/search?${params}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -94,39 +92,21 @@ export function usePubMed() {
     }
   }, []);
 
-  const getArticle = useCallback(async (pmid: string): Promise<PubMedArticleDetail | null> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const token = getToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/pubmed/article/${pmid}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch article: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
-      setError(message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
+  const getArticle = useCallback(async (id: string, source: string): Promise<LiteratureArticle | null> => {
+    // For now, search results include abstracts, so we can often find it in local state if we had one
+    // But for a unified detail view, we can implement a specific endpoint if needed.
+    // Given current backend, we just reuse the search-provided abstract.
+    return null; 
   }, []);
 
-  const getPDFLink = useCallback(async (pmid: string): Promise<string | null> => {
+  const getPDFLink = useCallback(async (pmid?: string, doi?: string): Promise<string | null> => {
     try {
       const token = getToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/literature/pdf/link/${pmid}`, {
+      const params = new URLSearchParams();
+      if (pmid) params.append('pmid', pmid);
+      if (doi) params.append('doi', doi);
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/literature/pdf/link?${params}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -141,11 +121,15 @@ export function usePubMed() {
     }
   }, []);
 
-  const downloadPDF = useCallback(async (pmid: string, title: string) => {
+  const downloadPDF = useCallback(async (pmid: string | undefined, doi: string | undefined, title: string) => {
     setLoading(true);
     try {
       const token = getToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/literature/pdf/download/${pmid}`, {
+      const params = new URLSearchParams();
+      if (pmid) params.append('pmid', pmid);
+      if (doi) params.append('doi', doi);
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/literature/pdf/download?${params}`, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },

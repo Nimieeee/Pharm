@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Calendar, FileText, ExternalLink, Copy, BookOpen } from 'lucide-react';
-import { usePubMed, PubMedArticle } from '@/hooks/usePubMed';
 import HubLayout from '@/components/shared/HubLayout';
 import { LoadingAnimation } from '@/components/shared/LoadingAnimation';
 

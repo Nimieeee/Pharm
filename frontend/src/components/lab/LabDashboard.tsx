@@ -15,6 +15,56 @@ import ADMETPropertyCard from './ADMETPropertyCard';
 import MoleculePreview from './MoleculePreview';
 import StreamingLogo from '../chat/StreamingLogo';
 
+interface SASResult {
+  sas_score: number;
+  interpretation: string;
+  category: string;
+}
+
+const getSASColor = (score: number) => {
+  if (score <= 3) return 'bg-green-500';
+  if (score <= 5) return 'bg-yellow-500';
+  if (score <= 7) return 'bg-orange-500';
+  return 'bg-red-500';
+};
+
+const SASDisplay: React.FC<{ sas: SASResult }> = ({ sas }) => (
+  <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
+    <div className="flex items-center gap-2 mb-3">
+      <FlaskConical className="w-4 h-4 text-purple-600" />
+      <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-200">Synthetic Accessibility</h4>
+    </div>
+
+    {/* SAS Score */}
+    <div className="mb-3">
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-purple-700 dark:text-purple-300">RDKit SAS Score</span>
+        <span className="font-bold text-purple-900 dark:text-purple-100">{sas.sas_score.toFixed(1)}</span>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+        <div
+          className={`h-2.5 rounded-full transition-all ${getSASColor(sas.sas_score)}`}
+          style={{ width: `${(sas.sas_score / 10) * 100}%` }}
+        />
+      </div>
+      <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{sas.interpretation}</p>
+    </div>
+
+    {/* Category Badge */}
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-purple-700 dark:text-purple-300">Category:</span>
+      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+        sas.category === 'easy' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' :
+        sas.category === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200' :
+        sas.category === 'difficult' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200' :
+        'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
+      }`}>
+        {sas.category.replace('_', ' ').toUpperCase()}
+      </span>
+    </div>
+  </div>
+);
+
 interface ADMETProperty {
   name: string;
   key: string;
@@ -37,6 +87,7 @@ interface ADMETResult {
   report_markdown: string;
   molecule_name?: string;
   error?: string;
+  synthetic_accessibility?: SASResult;
 }
 
 interface BatchADMETResponse {
@@ -469,6 +520,11 @@ export default function LabDashboard() {
                       {result.ai_interpretation}
                     </p>
                   </section>
+                )}
+
+                {/* Synthetic Accessibility */}
+                {result.synthetic_accessibility && (
+                  <SASDisplay sas={result.synthetic_accessibility} />
                 )}
 
                 {/* Property Grid */}

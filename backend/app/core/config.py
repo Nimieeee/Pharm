@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
     SERP_API_KEY: str = os.getenv("SERP_API_KEY", "")
     SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
+    SEMANTIC_SCHOLAR_API_KEY: str = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "")
+    PUBMED_API_KEY: str = os.getenv("PUBMED_API_KEY", "")
     HF_API_KEY: str = os.getenv("HF_API_KEY", "")  # Hugging Face Inference API (kept as fallback)
     POLLINATIONS_API_KEY: str = os.getenv("POLLINATIONS_API_KEY", "")  # Pollinations.ai (primary image gen)
     

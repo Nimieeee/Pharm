@@ -99,15 +99,17 @@ function ChatContent() {
   };
 
   // Smart Auto-Scroll Implementation
-  // - Auto-scrolls during streaming when at bottom
-  // - Pauses when user scrolls up to read
-  // - Resumes when user returns to bottom
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
-  const [forceScroll, setForceScroll] = useState(0); // Trigger for new messages
+  const isAutoScrolling = useRef(false);
 
   const scrollToBottom = useCallback((behavior: 'auto' | 'smooth' = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+    if (messagesEndRef.current) {
+      isAutoScrolling.current = true;
+      messagesEndRef.current.scrollIntoView({ behavior });
+      // Reset auto-scroll flag after a short delay
+      setTimeout(() => { isAutoScrolling.current = false; }, 100);
+    }
   }, []);
 
   // Check if user is at bottom of chat
@@ -115,7 +117,7 @@ function ChatContent() {
     const container = messagesContainerRef.current;
     if (!container) return true;
 
-    const threshold = 100; // pixels from bottom to consider "at bottom"
+    const threshold = 150; // pixels from bottom
     const scrollTop = container.scrollTop;
     const scrollHeight = container.scrollHeight;
     const clientHeight = container.clientHeight;
@@ -123,31 +125,29 @@ function ChatContent() {
     return scrollHeight - scrollTop - clientHeight < threshold;
   }, []);
 
-  // Handle scroll events - detect when user manually scrolls
+  // Handle scroll events
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
-      const atBottom = checkIsAtBottom();
-      setIsUserAtBottom(atBottom);
+      // Only update if not caused by our own auto-scroll
+      if (!isAutoScrolling.current) {
+        const atBottom = checkIsAtBottom();
+        setIsUserAtBottom(atBottom);
+      }
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
   }, [checkIsAtBottom]);
 
-  // Scroll on new messages - only if user is at bottom
+  // Combined effect for new messages AND streaming content
   useEffect(() => {
     if (isUserAtBottom && messages.length > 0) {
-      // Use setTimeout to ensure DOM is updated
-      const timer = setTimeout(() => {
-        scrollToBottom('auto');
-        setForceScroll(prev => prev + 1); // Update force trigger
-      }, 50);
-      return () => clearTimeout(timer);
+      scrollToBottom('auto');
     }
-  }, [messages.length, isUserAtBottom, scrollToBottom]);
+  }, [messages, isUserAtBottom, scrollToBottom]);
 
   // Reset mode when conversation changes
   useEffect(() => {

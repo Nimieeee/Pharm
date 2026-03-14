@@ -112,6 +112,34 @@ class DDIService:
         except Exception as e:
             print(f"❌ RxNorm drug resolution failed for '{drug_name}': {e}")
             return None
+
+    def _parse_interaction_pair(
+        self, 
+        pair: Dict[str, Any], 
+        drug_a: str, 
+        drug_b: str,
+        rxcui_a: str,
+        rxcui_b: str
+    ) -> Dict[str, Any]:
+        """Parse interaction pair from RxNav"""
+        severity = pair.get("severity", "unknown").lower()
+        description = pair.get("description", "")
+        
+        mapped_severity = self.SEVERITY_MAP.get(severity, "Unknown")
+        
+        return {
+            "drug_a": drug_a,
+            "drug_b": drug_b,
+            "rxcui_a": rxcui_a,
+            "rxcui_b": rxcui_b,
+            "interaction_found": True,
+            "severity": mapped_severity,
+            "description": description or "Interaction detected",
+            "mechanism": "",
+            "evidence_level": self._estimate_evidence(description),
+            "alternatives": self._suggest_alternatives(drug_a, drug_b, mapped_severity),
+            "clinical_significance": self._get_clinical_significance(mapped_severity)
+        }
     
     async def check_interaction(
         self, 
@@ -147,29 +175,33 @@ class DDIService:
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                # USAGE CHANGE: interaction/list.json is brittle. 
-                # Use interaction/interaction.json?rxcui=X which returns all interactions for X.
-                # Then we filter for Y in the results.
+                # Use plural sources for better coverage
                 response = await client.get(
                     f"{self.RXNAV_BASE}/interaction/interaction.json",
                     params={
                         "rxcui": rxcui_a,
-                        "sources": "ONCHigh" # High priority interactions
+                        "sources": "ONCHigh DrugBank" 
                     }
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    # Find interaction with drug_b
-                    interaction_group = data.get("onCHigh", [])
                     
                     found_interaction = None
-                    if interaction_group:
-                        # Scan for drug_b in the interactions list
-                        for item in interaction_group:
-                            pairs = item.get("interactionPair", [])
+                    
+                    # Search through common group keys in RxNav response
+                    # onCHigh is used for high priority, interactionTypeGroup for general
+                    groups = []
+                    if "onCHigh" in data:
+                        groups.extend(data["onCHigh"])
+                    if "interactionTypeGroup" in data:
+                        groups.extend(data["interactionTypeGroup"])
+                    
+                    for group in groups:
+                        type_items = group.get("interactionType", [])
+                        for type_item in type_items:
+                            pairs = type_item.get("interactionPair", [])
                             for pair in pairs:
-                                # Check if drug_b's rxcui is in the concepts
                                 concepts = pair.get("interactionConcept", [])
                                 for concept in concepts:
                                     c_rxcui = concept.get("minConceptItem", {}).get("rxcui")
@@ -178,6 +210,7 @@ class DDIService:
                                         break
                                 if found_interaction: break
                             if found_interaction: break
+                        if found_interaction: break
 
                     if found_interaction:
                         parsed = self._parse_interaction_pair(
@@ -190,6 +223,7 @@ class DDIService:
                         self._cache[cache_key] = parsed
                         return parsed
                     else:
+                        # No interaction found
                         # No interaction found
                         result = {
                             "drug_a": drug_a,

@@ -225,6 +225,7 @@ class PubMedService:
         except Exception as e:
             print(f"❌ PMCID resolution failed for {pmid}: {e}")
         return None
+    def _parse_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse PubMed ESummary response"""
         # Extract authors
         authors = []

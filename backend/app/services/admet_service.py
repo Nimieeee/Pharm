@@ -17,6 +17,7 @@ from supabase import Client
 
 from app.core.container import container
 from app.services.postprocessing import admet_processor
+from app.services.sas_service import sas_calculator
 
 
 class RateLimiter:
@@ -362,16 +363,20 @@ class ADMETService:
         name_str = f" for {molecule_name}" if molecule_name else ""
         properties_str = "\n".join(f"- {prop}" for prop in key_props) if key_props else "No properties available"
         
-        prompt = f"""You are a medicinal chemistry expert. Provide a brief clinical interpretation of the following ADMET analysis for a drug candidate{name_str}.
+        prompt = f"""You are a medicinal chemistry expert. Provide a professional, peer-review style clinical interpretation of the following ADMET analysis for a drug candidate{name_str}.
 
 {properties_str}
 
-Provide a 2-3 sentence summary focusing on:
-1. Drug-likeness and developability
-2. Key safety concerns (if any)
-3. Recommendations for progression
+Provide a concise 2-3 sentence expert summary covering:
+1. Physicochemical profile and developability (Lipinski/QED).
+2. Toxicological liabilities if any (specifically hERG, DILI, or mutagenicity).
+3. Strategic assessment for downstream progression.
 
-Keep it concise and actionable."""
+CRITICAL INSTRUCTIONS:
+- Use formal, scientific terminology (e.g., 'pharmacokinetic profile', 'elevated toxicological liability').
+- DO NOT use any markdown formatting like bolding (**) or italics (*).
+- Output only the text of the interpretation.
+- Keep it concise and actionable for a research team."""
         
         try:
             # Use Mistral API directly for simple text generation
@@ -388,7 +393,7 @@ Keep it concise and actionable."""
             chat_response = client.chat.complete(
                 model="mistral-small-latest",
                 messages=[
-                    {"role": "system", "content": "You are a medicinal chemistry expert providing brief, actionable clinical interpretations of ADMET analysis results."},
+                    {"role": "system", "content": "You are a medicinal chemistry expert providing formal, actionable clinical interpretations of ADMET results. You communicate in a professional, peer-review style without using markdown formatting."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=300,
@@ -396,7 +401,10 @@ Keep it concise and actionable."""
             )
             
             if chat_response and chat_response.choices and chat_response.choices[0].message.content:
-                return chat_response.choices[0].message.content.strip()
+                text = chat_response.choices[0].message.content.strip()
+                # Final cleanup to remove any stray asterisks
+                text = text.replace('*', '')
+                return text
             
         except ImportError:
             print("⚠️ Mistral SDK not available for AI interpretation")
