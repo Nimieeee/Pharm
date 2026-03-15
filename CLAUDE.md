@@ -963,6 +963,167 @@ const emojiRegex = /([✀-➿]|[‑-⛿]|�[�-�])/g;
 - Only a portion of the page scrolls while rest is frozen
 - Mobile: touch scrolling feels "heavy" or unpredictable
 
+#### Rule 19: AI JSON Response Parsing
+**When parsing JSON from AI responses, ALWAYS handle markdown wrapping, nested structures, and truncation properly. AI rarely returns clean JSON.**
+```python
+# ❌ WRONG: Simple JSON parsing
+outline = json.loads(response)  # Fails if wrapped in markdown or truncated
+
+# ✅ CORRECT: Robust JSON extraction with multiple fallback strategies
+json_str = response.strip()
+
+# 1. Extract from markdown code blocks
+if "```" in json_str:
+    match = re.search(r"```(?:json)?\s*(\{[\s\S]*\})\s*```", json_str, re.DOTALL)
+    if match:
+        json_str = match.group(1)
+
+# 2. Strip text before first {
+start_idx = json_str.find('{')
+if start_idx > 0:
+    json_str = json_str[start_idx:]
+
+# 3. Find matching closing brace (accounting for nested objects and strings)
+brace_count = 0
+in_string = False
+escape_next = False
+end_pos = 0
+
+for i, char in enumerate(json_str):
+    if escape_next:
+        escape_next = False
+        continue
+    if char == '\\':
+        escape_next = True
+        continue
+    if char == '"' and not in_string:
+        in_string = True
+    elif char == '"' and in_string:
+        in_string = False
+    elif not in_string:
+        if char == '{':
+            brace_count += 1
+        elif char == '}':
+            brace_count -= 1
+            if brace_count == 0:
+                end_pos = i + 1
+                break
+
+if end_pos > 0:
+    json_str = json_str[:end_pos]
+
+# 4. Validate structure after parsing
+parsed = json.loads(json_str)
+if 'slides' not in parsed:
+    # Handle AI returning single object instead of expected structure
+    if 'slide_number' in parsed:
+        parsed = {'title': 'Presentation', 'slides': [parsed]}
+```
+
+#### Rule 20: Token Limit Planning for AI Structured Output
+**ALWAYS calculate token requirements for structured AI output. Large JSON structures with detailed content need significantly more tokens than expected.**
+```python
+# ❌ WRONG: Underestimating token needs
+max_tokens=4000  # 30 slides with detailed content = ~20,000 chars = ~5,000 tokens
+# Result: "Unterminated string" error - JSON truncated mid-stream
+
+# ✅ CORRECT: Calculate tokens based on content density
+# Rough estimate: 1 token ≈ 4 characters for English text
+# 30 slides × (title + 3 bullets + speaker notes + citations) ≈ 30 × 600 chars = 18,000 chars
+# 18,000 chars ÷ 4 = 4,500 tokens minimum
+# Add 50% buffer for JSON formatting and safety
+max_tokens=8000  # Safe for 30 detailed slides
+
+# Alternative: Generate in chunks for very large outputs
+slides_1_10 = await generate_slides_chunk(topic, start=1, end=10)
+slides_11_20 = await generate_slides_chunk(topic, start=11, end=20)
+slides_21_30 = await generate_slides_chunk(topic, start=21, end=30)
+```
+
+#### Rule 21: Prompt Engineering for Structured Output
+**When asking AI to generate structured data (JSON), be EXPLICIT about structure and avoid confusing examples with placeholder comments.**
+```python
+# ❌ WRONG: Using placeholder comments that confuse AI
+prompt = """
+Generate a presentation with {num_slides} slides:
+{
+  "slides": [
+    // Slide 1 (title)
+    {"slide_number": 1, ...},
+    // Slides 2-{num_slides-1} (content)
+    {"slide_number": 2, ...},
+    // ... (generate all remaining slides)
+    // Slide {num_slides} (thank you)
+    {"slide_number": {num_slides}, ...}
+  ]
+}
+"""
+# AI interprets comments as instructions and may only return 1 example slide
+
+# ✅ CORRECT: Explicit instructions without confusing placeholders
+prompt = f"""
+CRITICAL: Generate EXACTLY {num_slides} slides total.
+
+Return ONLY valid JSON. The "slides" array MUST contain exactly {num_slides} slide objects:
+{{
+  "title": "Presentation Title",
+  "slides": [
+    {{
+      "slide_number": 1,
+      "layout": "title",
+      "title": "{topic}",
+      ...
+    }},
+    {{
+      "slide_number": 2,
+      "layout": "two_column",
+      ...
+    }},
+    // Continue this pattern for all {num_slides} slides
+    {{
+      "slide_number": {num_slides},
+      "layout": "title",
+      "title": "Thank You",
+      ...
+    }}
+  ]
+}}
+
+REMEMBER: You MUST generate exactly {num_slides} slides.
+"""
+```
+
+## Documentation Requirement: Lessons Learned
+
+**AFTER FIXING ANY BUG OR ERROR, you MUST document it in this CLAUDE.md file.**
+
+### Checklist for Every Fix:
+- [ ] Identify which Rule (1-21) was violated or needs to be created
+- [ ] Add the new Rule to CLAUDE.md if it's a new pattern
+- [ ] Update existing Rule if the fix reveals a nuance
+- [ ] Include code examples showing ❌ WRONG and ✅ CORRECT approaches
+- [ ] Explain WHY the fix works (not just what was changed)
+
+### Why This Matters:
+1. **Prevents Regression**: Future developers (including yourself) won't repeat the same mistake
+2. **Builds Institutional Knowledge**: The codebase learns from every bug
+3. **Speeds Up Debugging**: When similar errors occur, the solution is already documented
+4. **Improves Code Quality**: Patterns become visible, anti-patterns become obvious
+
+### Template for New Rules:
+```markdown
+#### Rule N: [Descriptive Name]
+**[One-line summary of the rule]**
+```[language]
+// ❌ WRONG: [What not to do]
+[code example]
+
+// ✅ CORRECT: [What to do instead]
+[code example]
+```
+**[Explanation of why this matters and what problems it prevents]**
+```
+
 ## ADMET Architecture
 
 ### Overview
