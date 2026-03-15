@@ -185,3 +185,7 @@ vps_logs_full.txt
 # Kiro IDE
 .kiro/
 
+# Claude AI memory file (contains codebase knowledge, keep private)
+CLAUDE.md
+CLAUDE_COMPLIANCE_REPORT.md
+
