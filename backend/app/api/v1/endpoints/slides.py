@@ -52,7 +52,11 @@ async def generate_slide_outline(
             from app.services.enhanced_rag import EnhancedRAGService
             from app.core.database import get_db
             rag = EnhancedRAGService(get_db())
-            context = await rag.get_conversation_context(request.conversation_id)
+            context = await rag.get_conversation_context(
+                query=request.topic,
+                conversation_id=request.conversation_id,
+                user_id=current_user.id
+            )
         
         outline = await slide_service.generate_outline(
             topic=request.topic,

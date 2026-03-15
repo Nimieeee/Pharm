@@ -36,6 +36,7 @@
   /* Legacy aliases for backward compatibility */
   --text-primary: var(--foreground);
   --text-secondary: var(--foreground-muted);
+  --text-muted: var(--foreground-muted);
 
   /* Accent colors */
   --accent: #D7712A;
@@ -81,6 +82,7 @@
   /* Legacy aliases for backward compatibility */
   --text-primary: var(--foreground);
   --text-secondary: var(--foreground-muted);
+  --text-muted: var(--foreground-muted);
 
   /* Accent colors */
   --accent: #D9D9D6;

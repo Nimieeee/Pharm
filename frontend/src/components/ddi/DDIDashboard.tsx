@@ -176,18 +176,18 @@ export default function DDIDashboard() {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={addDrug}
                   disabled={drugs.length >= 10}
-                  className="px-4 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-muted)] hover:border-red-500 hover:text-red-500 transition-colors flex items-center gap-2"
+                  className="px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-muted)] hover:border-red-500 hover:text-red-500 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4" /> Add Drug
                 </button>
                 <button
                   onClick={handlePolyCheck}
                   disabled={loading || drugs.filter(d => d.trim()).length < 2}
-                  className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors w-full"
                 >
                   {loading ? <Pill className="w-5 h-5 animate-pulse" /> : <Pill className="w-5 h-5" />}
                   Check All Interactions

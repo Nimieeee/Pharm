@@ -693,7 +693,7 @@ class TestPerformanceRegressionComprehensive:
     
     def test_security_guard_under_1ms(self):
         """Test security guard check under 1ms"""
-        from app.services.security_guard import LLMSecurityGuard
+        from app.security import LLMSecurityGuard
         import time
         
         guard = LLMSecurityGuard()

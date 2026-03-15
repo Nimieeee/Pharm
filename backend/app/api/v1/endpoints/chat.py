@@ -758,7 +758,8 @@ async def check_ddi(
     - Returns: Interaction details with severity, mechanism, clinical significance
     """
     try:
-        from app.services.ddi_service import ddi_service
+        from app.core.container import container
+        ddi_service = container.get("ddi_service")
 
         interaction = await ddi_service.check_interaction(
             drug_a=request.drug_a,
@@ -796,7 +797,8 @@ async def check_polypharmacy(
     - Returns: All pairwise interactions sorted by severity
     """
     try:
-        from app.services.ddi_service import ddi_service
+        from app.core.container import container
+        ddi_service = container.get("ddi_service")
 
         if len(request.drugs) < 2:
             raise HTTPException(

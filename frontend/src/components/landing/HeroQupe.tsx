@@ -104,11 +104,11 @@ export function HeroQupe() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                    className="text-4xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
+                    className="text-3xl md:text-7xl lg:text-8xl font-serif text-foreground tracking-tight mb-8 max-w-5xl relative z-10 mt-12"
                 >
                     The AI Workspace for <br className="hidden md:block" />
                     {/* Text Highlight using specific User Color - Sliding Animation */}
-                    <div className="inline-block relative h-[1.1em] overflow-hidden align-bottom max-w-full">
+                    <div className="inline-block relative h-[1.2em] md:h-[1.1em] overflow-hidden align-bottom max-w-full">
                         <AnimatePresence mode="wait">
                             <motion.span
                                 key={wordIndex}
@@ -116,7 +116,7 @@ export function HeroQupe() {
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: '-100%', opacity: 0 }}
                                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                                className="text-[#C85B20] block whitespace-nowrap"
+                                className="text-[#C85B20] block whitespace-normal md:whitespace-nowrap leading-[1.2] md:leading-none"
                             >
                                 {dynamicWords[wordIndex]}.
                             </motion.span>

@@ -1508,75 +1508,16 @@ Write the COMPLETE, EXHAUSTIVE report now. Do not stop until all sections are fu
         for i, c in enumerate(actually_cited):
             c.id = i + 1
 
-        # --- STAGE 3: ASSEMBLE REFERENCES ---
-        refs_section = "## References\n\n"
+        # --- STAGE 3: REFERENCES SECTION REMOVED ---
+        # The long list of 978+ references has been removed per user request.
+        # In-text citations (e.g., [1], [2]) are still present in the report.
+        # Full reference details are available in the sidebar/sources panel.
         
-        for citation in actually_cited:
-            # No longer filtering out Tavily here to ensure all cited sources appear in list
-            
-            # Handle Authors
-            authors = citation.authors.strip() if citation.authors else ""
-            if not authors or authors.lower() == "unknown":
-                author_part = ""
-            else:
-                # TRUNCATE MASSIVE AUTHOR LISTS (e.g., global consortium papers)
-                # If there are more than 20 commas, assume >20 authors
-                if authors.count(',') > 20:
-                    first_author = authors.split(',')[0].strip()
-                    authors = f"{first_author} et al."
-                    
-                author_part = authors if authors.endswith('.') else f"{authors}."
-                author_part += " "
-            
-            # Handle Title
-            title = citation.title.strip() if citation.title else ""
-            title_part = title if title.endswith('.') else f"{title}."
-            title_part += " "
-            
-            # Handle Source (Journal/Website)
-            source = citation.source.strip() if citation.source else ""
-            if source and source.lower() not in ["web", "unknown"]:
-                # Remove common prefixes from journal titles if needed, but keeping it raw is safer
-                source_part = f"{source} "
-            else:
-                source_part = ""
-            
-            # Handle Year
-            year = citation.year.strip() if citation.year else ""
-            year_part = f"({year}). " if year else "(n.d.). "
-                
-            # Handle Link — PREFER PubMed URL over DOI for accuracy.
-            # Semantic Scholar DOIs are sometimes misattributed in their database.
-            # PubMed URLs (pubmed.ncbi.nlm.nih.gov/{pmid}) are always accurate.
-            link = ""
-            if citation.pmid:
-                link = f"https://pubmed.ncbi.nlm.nih.gov/{citation.pmid}/"
-            elif citation.doi:
-                doi_str = citation.doi.strip()
-                link = f"https://doi.org/{doi_str}" if doi_str.startswith("10.") else doi_str
-            elif citation.url:
-                link = citation.url.strip()
-                
-            # Assemble the exact format requested: Author. Title. Journal (Year). Link
-            if author_part:
-                ref_line = f"{citation.id}. {author_part}{title_part}{source_part}{year_part}{link}"
-            else:
-                # If no author, title goes first
-                ref_line = f"{citation.id}. {title_part}{source_part}{year_part}{link}"
-                
-            logger.debug(f"REF LOOP: {ref_line}")
-            refs_section += ref_line.strip() + "\n"
-
-        logger.debug(f"REFS_SECTION LEN: {len(refs_section)}")
-
-        # Strip any LLM-generated references section (single source of truth = programmatic refs)
+        # Strip any LLM-generated references section if present
         response = full_report_content.strip()
         ref_header_index = response.rfind("## References")
         if ref_header_index != -1:
             response = response[:ref_header_index].rstrip()
-
-        # Append programmatic references section
-        response += f"\n\n---\n\n{refs_section}"
 
         # FIX: Title cleanup - Remove any "Deeply Researched Report:" prefix
         # and ensure the H1 matches the research question exactly

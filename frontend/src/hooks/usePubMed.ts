@@ -125,7 +125,6 @@ export function usePubMed() {
   }, []);
 
   const downloadPDF = useCallback(async (pmid: string | undefined, doi: string | undefined, title: string) => {
-    setLoading(true);
     try {
       const token = getToken();
       const params = new URLSearchParams();
@@ -151,8 +150,6 @@ export function usePubMed() {
       document.body.removeChild(a);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to download PDF');
-    } finally {
-      setLoading(false);
     }
   }, []);
 

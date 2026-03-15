@@ -223,12 +223,11 @@ class MermaidProcessor:
             # Example: A["label"]text|B["label"] → A["label"] --> text|B["label"]
             line = re.sub(r'([\]\)\}]+)\s*([A-Za-z][A-Za-z0-9_-]*)\s*\|([A-Za-z0-9_-])', r'\1 --> \2|\3', line)
 
-            # Fix 1: Spaces in node IDs
-            line = re.sub(r'\b([A-Za-z]+)\s+(\d+)\s*(\[|\(|\{)', r'\1\2\3', line)
+            # Fix 1: Spaces in node IDs (only at start of line or after arrows)
+            line = re.sub(r'(^|-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)\s*([A-Za-z]+)\s+(\d+)\s*(\[|\(|\{)', r'\1\2\3\4', line)
 
-            # Fix 1A: Node IDs with spaces before label
-            # AI sometimes outputs: Beta-Lactam Ring["label"] instead of BetaLactamRing["label"]
-            line = re.sub(r'\b([A-Za-z][A-Za-z0-9_-]*)\s+([A-Za-z][A-Za-z0-9_-]*)\s*(\[[^\]]*\]|\([^\)]*\))', r'\1\2\3', line)
+            # Fix 1A: Node IDs with spaces before label (only at start of line or after arrows)
+            line = re.sub(r'(^|-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)\s*([A-Za-z][A-Za-z0-9_-]*)\s+([A-Za-z][A-Za-z0-9_-]*)\s*(\[[^\]]*\]|\([^\)]*\))', r'\1\2\3\4', line)
 
             # Fix 2: Spaces before brackets
             line = re.sub(r'([A-Za-z0-9_]+)\s+(\[")', r'\1\2', line)
@@ -294,84 +293,83 @@ class MermaidProcessor:
             line
         )
 
-    def _quote_unquoted_labels(self, line: str) -> str:
-        """
-        Quote unquoted node labels to prevent Mermaid parse errors.
-
-        Fixes:
-        - B[walKR (yycFG)] → B["walKR (yycFG)"]
-        - A[[mutations]] → A[["mutations"]]
-        - A[(gene)] → A[["gene"]]
-
-        This MUST run before _escape_labels to ensure all labels are quoted.
-        """
-        def replacer(match):
-            prefix = match.group(1)
-            bracket_open = match.group(2)
-            content = match.group(3)
-            bracket_close = match.group(4)
-
-            # Already quoted - leave as is
-            if (content.startswith('"') and content.endswith('"')) or \
-               (content.startswith("'") and content.endswith("'")):
-                return match.group(0)
-
-            # Remove existing single quotes but preserve content
-            if content.startswith("'") and content.endswith("'"):
-                content = content[1:-1]
-
-            return f'{prefix}{bracket_open}"{content}"{bracket_close}'
-
-        # Split by arrows to avoid matching arrow syntax
+    def _process_labels(self, line: str, callback: callable) -> str:
+        """Helper to identify and process Mermaid node labels accurately"""
+        # Split by arrows to avoid matching across multiple nodes
         parts = re.split(r'(-->|--|<-->|<--|\.->|-.->|==>|==|\.\.>|\.\.)', line)
         fixed_parts = []
 
         for part in parts:
-            # Skip arrow tokens
             if part in ['-->', '--', '<-->', '<--', '.->', '-.->', '==>', '==', '..>', '..']:
                 fixed_parts.append(part)
-            # Process node declarations with brackets/parentheses/braces
-            # Handle: [content], (content), {content}, [[content]], ((content)), [{content}], etc.
-            elif re.search(r'[\[\(\{]+.*?[\]\)\}]+', part):
-                # Match: NodeID[content] or NodeID[[content]] or NodeID(content) etc.
-                # Use non-greedy match and preserve all content including spaces
-                fixed_part = re.sub(
-                    r'([A-Za-z0-9_-]+)\s*([\[\(\{]+)(.*?)([\]\)\}]+)\s*$',
-                    replacer,
-                    part
-                )
-                fixed_parts.append(fixed_part)
+                continue
+            
+            # Find start of label: NodeID [ ( or {
+            match = re.search(r'([A-Za-z0-9_-]+)\s*([\[\(\{]+)', part)
+            if match:
+                prefix = part[:match.start(1)]
+                node_id = match.group(1)
+                bracket_open = match.group(2)
+                
+                # Find the matching closing bracket(s)
+                # We look for the last occurrence of the closure set in this part
+                closure_map = {'[': ']', '(': ')', '{': '}'}
+                target_close = ''.join([closure_map[c] for c in reversed(bracket_open)])
+                
+                start_content = match.end(2)
+                last_close_idx = part.rfind(target_close)
+                
+                if last_close_idx > start_content:
+                    content = part[start_content:last_close_idx]
+                    suffix = part[last_close_idx + len(target_close):]
+                    
+                    new_content = callback(node_id, bracket_open, content, target_close)
+                    fixed_parts.append(f"{prefix}{new_content}{suffix}")
+                else:
+                    # Fallback to regex if manual find fails
+                    fixed_parts.append(part)
             else:
                 fixed_parts.append(part)
 
         return ''.join(fixed_parts)
+
+    def _quote_unquoted_labels(self, line: str) -> str:
+        """Quote unquoted labels"""
+        def quote_callback(node_id, bracket_open, content, bracket_close):
+            # Already quoted - leave as is
+            if (content.startswith('"') and content.endswith('"')) or \
+               (content.startswith("'") and content.endswith("'")):
+                return f"{node_id}{bracket_open}{content}{bracket_close}"
+            
+            # Remove single quotes if present
+            if content.startswith("'") and content.endswith("'"):
+                content = content[1:-1]
+                
+            return f'{node_id}{bracket_open}"{content}"{bracket_close}'
+
+        return self._process_labels(line, quote_callback)
     
     def _escape_labels(self, line: str) -> str:
-        """Escape special characters in node labels"""
-        def fix_label_content(match):
-            prefix = match.group(1)
-            label_content = match.group(2)
-            suffix = match.group(3)
-
+        """Escape labels and balance parentheses"""
+        def escape_callback(node_id, bracket_open, content, bracket_close):
+            # Strip outer quotes if present
+            is_quoted = False
+            if content.startswith('"') and content.endswith('"'):
+                content = content[1:-1]
+                is_quoted = True
+            
             # Balance parentheses
-            open_count = label_content.count('(')
-            close_count = label_content.count(')')
+            open_count = content.count('(')
+            close_count = content.count(')')
             if open_count != close_count:
-                label_content = label_content + ')' * (open_count - close_count)
-
+                content = content + ')' * (open_count - close_count)
+            
             # Escape backslashes
-            label_content = label_content.replace('\\', '\\\\')
+            content = content.replace('\\', '\\\\')
+            
+            return f'{node_id}{bracket_open}"{content}"{bracket_close}'
 
-            # Label is already quoted, just fix the content
-            return f'{prefix}"{label_content}"{suffix}'
-
-        # Only match UNQUOTED labels (no quotes inside brackets)
-        # This prevents double-quoting already quoted labels
-        return re.sub(
-            r'([A-Za-z0-9_]+\s*\[)([^"\[\]]*?)(\])',
-            fix_label_content,
-            line
-        )
+        return self._process_labels(line, escape_callback)
     
     def _validate(self, code: str) -> Tuple[bool, List[str]]:
         """Validate Mermaid syntax"""

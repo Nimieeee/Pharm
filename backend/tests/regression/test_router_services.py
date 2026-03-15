@@ -145,13 +145,13 @@ class TestRouterService:
         assert result == "pollinations"
 
     def test_detailed_mode_privacy_routes_to_local(self):
-        """Detailed mode + privacy signal routes to LOCAL"""
+        """Detailed mode + privacy signal routes to LOCAL (mocked availability)"""
         from app.services.router_service import RouterService
         
         router = RouterService()
-        result = router.route("My CYP2D6 genotype is *4/*4", 50, "detailed")
-        
-        assert result == "local"
+        with patch.object(RouterService, '_is_local_available', return_value=True):
+            result = router.route("My CYP2D6 genotype is *4/*4", 50, "detailed")
+            assert result == "local"
 
     def test_elite_mode_always_pollinations(self):
         """Elite mode always routes to POLLINATIONS"""
@@ -163,13 +163,13 @@ class TestRouterService:
         assert result == "pollinations"
 
     def test_should_use_local_helper(self):
-        """Test should_use_local helper method"""
+        """Test should_use_local helper method (mocked availability)"""
         from app.services.router_service import RouterService
         
         router = RouterService()
-        
-        # Private data should use local
-        assert router.should_use_local("My genotype results", "detailed")
+        with patch.object(RouterService, '_is_local_available', return_value=True):
+            # Private data should use local
+            assert router.should_use_local("My genotype results", "detailed")
 
 
 class TestLocalInferenceQueue:

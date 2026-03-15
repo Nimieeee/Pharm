@@ -15,10 +15,11 @@ const EXAMPLE_QUERIES = [
 ];
 
 export default function LiteratureDashboard() {
-  const { search, loading, error, clearError } = usePubMed();
+  const { search, loading, error, clearError, downloadPDF } = usePubMed();
   
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LiteratureArticle[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [resultCount, setResultCount] = useState(0);
   const [yearFrom, setYearFrom] = useState<number | ''>('');
   const [yearTo, setYearTo] = useState<number | ''>('');
@@ -59,6 +60,15 @@ export default function LiteratureDashboard() {
     const authors = authorsArr.slice(0, 3).join(', ') + (authorsArr.length > 3 ? ' et al.' : '');
     const citation = `${authors} (${article.year}). ${article.title}. ${article.journal}. ${article.volume || ''}${article.issue ? `(${article.issue})` : ''}:${article.pages || ''}. DOI: ${article.doi || 'N/A'}`;
     navigator.clipboard.writeText(citation);
+  };
+
+  const handleDownload = async (article: LiteratureArticle) => {
+    setDownloadingId(article.id || article.pmid || '');
+    try {
+      await downloadPDF(article.pmid, article.doi, article.title);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
@@ -183,7 +193,7 @@ export default function LiteratureDashboard() {
                     <ExternalLink className="w-4 h-4 mt-1 flex-shrink-0" />
                   </a>
                   
-                  <p className="text-sm text-[var(--text-muted)] mt-1">
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
                     {Array.isArray(article.authors) ? (
                       <>
                         {article.authors.slice(0, 3).join(', ')}
@@ -230,7 +240,7 @@ export default function LiteratureDashboard() {
                       ) : (
                         <button
                           onClick={() => setExpandedAbstract(article.id || null)}
-                          className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1"
+                          className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1"
                         >
                           <BookOpen className="w-4 h-4" />
                           Show abstract
@@ -238,16 +248,39 @@ export default function LiteratureDashboard() {
                       )}
                     </div>
                   )}
-                </div>
 
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => copyCitation(article)}
-                    className="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-teal-500/50 transition-colors text-[var(--text-muted)] hover:text-teal-600"
-                    title="Copy citation"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-3 border-t border-[var(--border)]">
+                    <button
+                      onClick={() => handleDownload(article)}
+                      disabled={downloadingId === (article.id || article.pmid)}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-teal-600/5 hover:bg-teal-600/10 border border-teal-600/20 hover:border-teal-600/40 transition-all text-teal-700 dark:text-teal-400 font-medium flex items-center justify-center gap-2 group disabled:opacity-50"
+                    >
+                      {downloadingId === (article.id || article.pmid) ? (
+                        <div className="w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                      )}
+                      <span>Download PDF</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => copyCitation(article)}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-teal-500/50 transition-colors text-[var(--text-secondary)] hover:text-teal-600 flex items-center justify-center gap-2"
+                    >
+                      <Copy className="w-4 h-4" />
+                      <span>Copy Citation</span>
+                    </button>
+
+                    <a
+                      href={`https://pubmed.ncbi.nlm.nih.gov/${article.pmid}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-teal-500/50 transition-colors text-[var(--text-secondary)] hover:text-teal-600 flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>PubMed</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

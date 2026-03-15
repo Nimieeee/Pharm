@@ -92,6 +92,7 @@ class ServiceContainer:
             from app.services.postprocessing.prompt_processor import PromptProcessor, prompt_processor
             from app.services.router_service import RouterService, router_service
             from app.services.local_queue import LocalInferenceQueue, local_queue
+            from app.services.ddi_service import DDIService
 
             # Core services (no inter-dependencies) - initialized first
             self._services['chat_service'] = ChatService(db)
@@ -193,6 +194,9 @@ class ServiceContainer:
 
             self._services['local_queue'] = local_queue
             logger.info("✅ Registered: local_queue")
+
+            self._services['ddi_service'] = DDIService()
+            logger.info("✅ Registered: ddi_service")
 
             # Multi-provider LLM (depends on settings, not other services)
             try:

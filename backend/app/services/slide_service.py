@@ -139,39 +139,70 @@ class SlideService:
             source_context = f"\n\nAdditional context:\n{context}"
         
         prompt = f"""Create a RESEARCH-GRADE presentation outline on: "{topic}"
-Number of slides: {num_slides}
+
+CRITICAL: Generate EXACTLY {num_slides} slides total. Do not generate fewer or more than {num_slides}.
+
 {source_context}
 {research_context_str}
 
 {CONTENT_CONSTRAINTS}
 
-Return ONLY valid JSON with this exact schema:
+Return ONLY valid JSON. The "slides" array MUST contain exactly {num_slides} slide objects:
 {{
   "title": "Presentation Title",
-  "subtitle": "Subtitle",
+  "subtitle": "Subtitle", 
   "theme": "{theme}",
   "vibe": "corporate",
   "slides": [
+    // Slide 1 (Title slide)
     {{
       "slide_number": 1,
       "layout": "title",
-      "title": "Slide Title",
+      "title": "{topic}",
+      "subtitle_takeaway": "",
+      "supporting_data": [],
+      "speaker_notes": "",
+      "bullets": [],
+      "image_prompt": null,
+      "chart_data": null,
+      "citations": []
+    }},
+    // Slides 2 through {num_slides-1} (Content slides with detailed information)
+    {{
+      "slide_number": 2,
+      "layout": "two_column",
+      "title": "Section Title",
       "subtitle_takeaway": "One strong sentence summarizing this slide's main point",
       "supporting_data": [
-        {{
-          "bullet": "Specific stat or fact with numbers [Author, Year]",
-          "context": "Brief explanation of why this matters"
-        }}
+        {{"bullet": "CONCEPT: **Key term** definition with citation [Author, Year]", "context": "Brief explanation"}},
+        {{"bullet": "MECHANISM: How it works technically with specific data", "context": "Technical details"}},
+        {{"bullet": "IMPACT: Why it matters with quantitative outcomes", "context": "Significance"}}
       ],
-      "speaker_notes": "Full conversational paragraph explaining the why and how with citations. Should be 3-4 sentences minimum.",
-      "bullets": ["Point 1 with citation", "Point 2 with citation"],
-      "image_prompt": "description of professional scientific illustration",
+      "speaker_notes": "Detailed 150-200 word presentation script with background context, data explanation, and smooth transition to next slide.",
+      "bullets": ["Point 1 with citation", "Point 2 with citation", "Point 3 with citation"],
+      "image_prompt": "description of professional scientific illustration or null",
       "chart_data": null,
-      "data": null,
-      "citations": ["Author et al., Year (Journal)"]
+      "citations": ["Author et al., Year"]
+    }},
+    // Continue for slides 3, 4, 5... up to slide {num_slides-1}
+    // ... (generate all remaining content slides)
+    // Slide {num_slides} (Thank You slide)
+    {{
+      "slide_number": {num_slides},
+      "layout": "title",
+      "title": "Thank You",
+      "subtitle_takeaway": "Questions? Contact: [placeholder]",
+      "supporting_data": [],
+      "speaker_notes": "",
+      "bullets": [],
+      "image_prompt": null,
+      "chart_data": null,
+      "citations": []
     }}
   ]
 }}
+
+REMEMBER: You MUST generate exactly {num_slides} slides. First slide is title, last slide is thank you, middle slides are content with detailed research-backed information.
 
 Layout options: "title", "two_column", "bullets_only", "data_callout", "image_full", "comparison", "timeline", "diagram"
 Theme options: "ocean_gradient", "forest_moss", "coral_energy", "warm_terracotta",
@@ -229,7 +260,7 @@ EXAMPLE BAD SLIDE (DO NOT CREATE):
         response = await self.ai.generate(
             mode="fast",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=4000,
+            max_tokens=8000,
             temperature=0.3
         )
         
@@ -238,25 +269,83 @@ EXAMPLE BAD SLIDE (DO NOT CREATE):
         try:
             # Look for JSON block if it's wrapped in markdown
             if "```" in json_str:
-                # Try to find content between ```json and ``` or just ``` and ```
                 import re
-                blocks = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", json_str, re.DOTALL)
-                if blocks:
-                    json_str = blocks[0]
+                # Extract everything between ```json and ``` or ``` and ```
+                # Use greedy match to get everything including nested braces
+                match = re.search(r"```(?:json)?\s*(\{[\s\S]*\})\s*```", json_str)
+                if match:
+                    json_str = match.group(1)
                 else:
                     # Fallback: just strip the markers
                     json_str = json_str.split("```")[1]
                     if json_str.startswith("json"):
                         json_str = json_str[4:]
             
-            # Final attempt: find the first { and last } to isolate the JSON object
-            if not (json_str.strip().startswith("{") and json_str.strip().endswith("}")):
-                import re
-                match = re.search(r"(\{.*\})", json_str, re.DOTALL)
-                if match:
-                    json_str = match.group(1)
+            # Strip any text before the first { and after the last }
+            json_str = json_str.strip()
+            start_idx = json_str.find('{')
+            if start_idx > 0:
+                json_str = json_str[start_idx:]
             
-            outline = json.loads(json_str)
+            # Find the matching closing brace for the root object
+            brace_count = 0
+            in_string = False
+            escape_next = False
+            end_pos = 0
+            
+            for i, char in enumerate(json_str):
+                if escape_next:
+                    escape_next = False
+                    continue
+                if char == '\\':
+                    escape_next = True
+                    continue
+                if char == '"' and not in_string:
+                    in_string = True
+                elif char == '"' and in_string:
+                    in_string = False
+                elif not in_string:
+                    if char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            end_pos = i + 1
+                            break
+            
+            # Only use up to the end of the complete JSON object
+            if end_pos > 0:
+                json_str = json_str[:end_pos]
+            
+            parsed = json.loads(json_str)
+            
+            # Validate and fix outline structure
+            if isinstance(parsed, dict):
+                if 'slides' not in parsed and 'slide_number' in parsed:
+                    # AI returned a single slide instead of full outline - wrap it
+                    import logging
+                    logger = logging.getLogger("app.slide_service")
+                    logger.warning("AI returned single slide instead of outline structure. Wrapping...")
+                    logger.error(f"RAW AI RESPONSE THAT CAUSED SINGLE SLIDE: {response[:2000]}")
+                    outline = {
+                        "title": parsed.get('title', 'Presentation'),
+                        "subtitle": parsed.get('subtitle', ''),
+                        "theme": "ocean_gradient",
+                        "vibe": "corporate",
+                        "slides": [parsed]
+                    }
+                elif 'slides' not in parsed:
+                    # Missing slides key entirely
+                    import logging
+                    logger = logging.getLogger("app.slide_service")
+                    logger.error(f"AI response missing 'slides' key. Keys: {list(parsed.keys())}")
+                    logger.error(f"Full response: {parsed}")
+                    raise Exception(f"AI response missing 'slides' key. Got keys: {list(parsed.keys())}")
+                else:
+                    outline = parsed
+            else:
+                raise Exception(f"AI response must be a JSON object, got {type(parsed)}")
+                
         except (json.JSONDecodeError, IndexError, Exception) as e:
             import logging
             logger = logging.getLogger("app.slide_service")

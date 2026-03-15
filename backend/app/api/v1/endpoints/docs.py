@@ -52,7 +52,11 @@ async def generate_doc_outline(
         if request.conversation_id:
             from app.services.enhanced_rag import EnhancedRAGService
             rag = EnhancedRAGService(db)
-            context = await rag.get_conversation_context(request.conversation_id)
+            context = await rag.get_conversation_context(
+                query=request.topic,
+                conversation_id=request.conversation_id,
+                user_id=current_user.id
+            )
         
         outline = await doc_service.generate_outline(
             topic=request.topic,

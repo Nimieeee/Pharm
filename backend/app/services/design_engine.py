@@ -17,7 +17,6 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
-from pptx.chart.series import Series
 
 
 class DesignEngine:
@@ -252,7 +251,21 @@ class DesignEngine:
         - Enforce layout variety (no 3 consecutive same)
         - Renumber slides after adjustments
         """
-        slides = outline["slides"]
+        # Validate outline structure
+        if not isinstance(outline, dict):
+            raise ValueError(f"Outline must be a dict, got {type(outline)}")
+        
+        slides = outline.get("slides")
+        if slides is None:
+            # Log the full outline for debugging
+            import logging
+            logger = logging.getLogger("app.design_engine")
+            logger.error(f"Outline missing 'slides' key. Keys found: {list(outline.keys())}")
+            logger.error(f"Full outline: {outline}")
+            raise ValueError(f"Outline missing 'slides' key. Available keys: {list(outline.keys())}")
+        
+        if not isinstance(slides, list):
+            raise ValueError(f"'slides' must be a list, got {type(slides)}")
         adjusted = []
         prev = None
         prev_prev = None

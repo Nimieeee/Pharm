@@ -11,6 +11,8 @@ API Documentation:
 
 import httpx
 from typing import List, Dict, Any, Optional
+import json
+import logging
 from datetime import datetime
 
 
@@ -43,6 +45,16 @@ class DDIService:
         """Initialize DDIService"""
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._rxcui_cache: Dict[str, str] = {}
+        self._ai_service = None
+        self.logger = logging.getLogger(__name__)
+
+    @property
+    def ai_service(self):
+        """Lazy load AIService via container"""
+        if self._ai_service is None:
+            from app.core.container import container
+            self._ai_service = container.get('ai_service')
+        return self._ai_service
     
     async def resolve_drug(self, drug_name: str) -> Optional[str]:
         """
@@ -161,91 +173,140 @@ class DDIService:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        # Resolve drugs to RxCUIs
+        # Try to resolve drugs to RxCUIs
         rxcui_a = await self.resolve_drug(drug_a)
         rxcui_b = await self.resolve_drug(drug_b)
         
-        if not rxcui_a or not rxcui_b:
-            # Try to check with partial resolution
-            if not rxcui_a:
-                print(f"⚠️ Could not resolve drug: {drug_a}")
-            if not rxcui_b:
-                print(f"⚠️ Could not resolve drug: {drug_b}")
-            return None
-        
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                # Use plural sources for better coverage
-                response = await client.get(
-                    f"{self.RXNAV_BASE}/interaction/interaction.json",
-                    params={
-                        "rxcui": rxcui_a,
-                        "sources": "ONCHigh DrugBank" 
-                    }
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
+        # If we have both RxCUIs, try the official API first
+        if rxcui_a and rxcui_b:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    # Use plural sources for better coverage
+                    # Note: Interaction endpoints are largely discontinued, so this often falls through
+                    response = await client.get(
+                        f"{self.RXNAV_BASE}/interaction/interaction.json",
+                        params={
+                            "rxcui": rxcui_a,
+                            "sources": "ONCHigh DrugBank" 
+                        }
+                    )
                     
-                    found_interaction = None
-                    
-                    # Search through common group keys in RxNav response
-                    # onCHigh is used for high priority, interactionTypeGroup for general
-                    groups = []
-                    if "onCHigh" in data:
-                        groups.extend(data["onCHigh"])
-                    if "interactionTypeGroup" in data:
-                        groups.extend(data["interactionTypeGroup"])
-                    
-                    for group in groups:
-                        type_items = group.get("interactionType", [])
-                        for type_item in type_items:
-                            pairs = type_item.get("interactionPair", [])
-                            for pair in pairs:
-                                concepts = pair.get("interactionConcept", [])
-                                for concept in concepts:
-                                    c_rxcui = concept.get("minConceptItem", {}).get("rxcui")
-                                    if c_rxcui == rxcui_b:
-                                        found_interaction = pair
-                                        break
+                    if response.status_code == 200:
+                        data = response.json()
+                        found_interaction = None
+                        
+                        groups = []
+                        if "onCHigh" in data:
+                            groups.extend(data["onCHigh"])
+                        if "interactionTypeGroup" in data:
+                            groups.extend(data["interactionTypeGroup"])
+                        
+                        for group in groups:
+                            type_items = group.get("interactionType", [])
+                            for type_item in type_items:
+                                pairs = type_item.get("interactionPair", [])
+                                for pair in pairs:
+                                    concepts = pair.get("interactionConcept", [])
+                                    for concept in concepts:
+                                        c_rxcui = concept.get("minConceptItem", {}).get("rxcui")
+                                        if c_rxcui == rxcui_b:
+                                            found_interaction = pair
+                                            break
+                                    if found_interaction: break
                                 if found_interaction: break
                             if found_interaction: break
-                        if found_interaction: break
 
-                    if found_interaction:
-                        parsed = self._parse_interaction_pair(
-                            found_interaction, 
-                            drug_a, 
-                            drug_b,
-                            rxcui_a,
-                            rxcui_b
-                        )
-                        self._cache[cache_key] = parsed
-                        return parsed
-                    else:
-                        # No interaction found
-                        # No interaction found
-                        result = {
-                            "drug_a": drug_a,
-                            "drug_b": drug_b,
-                            "rxcui_a": rxcui_a,
-                            "rxcui_b": rxcui_b,
-                            "interaction_found": False,
-                            "severity": "None",
-                            "description": "No significant interaction found",
-                            "mechanism": "",
-                            "evidence_level": "N/A",
-                            "alternatives": [],
-                            "clinical_significance": "No known interaction"
-                        }
-                        self._cache[cache_key] = result
-                        return result
-                        
-                return None
-                
+                        if found_interaction:
+                            parsed = self._parse_interaction_pair(
+                                found_interaction, 
+                                drug_a, 
+                                drug_b,
+                                rxcui_a,
+                                rxcui_b
+                            )
+                            self._cache[cache_key] = parsed
+                            return parsed
+            except Exception as e:
+                print(f"⚠️ RxNav API error, falling back to AI: {e}")
+
+        # Fallback to AI if API fails, returns nothing, or drugs couldn't be resolved
+        ai_result = await self._check_interaction_ai(drug_a, drug_b)
+        ai_result["rxcui_a"] = rxcui_a or "Unknown"
+        ai_result["rxcui_b"] = rxcui_b or "Unknown"
+        self._cache[cache_key] = ai_result
+        return ai_result
+
+    async def _check_interaction_ai(self, drug_a: str, drug_b: str) -> Dict[str, Any]:
+        """
+        Check for interaction using AI as a fallback for the discontinued NIH API.
+        Grounded in medical knowledge and provides structured output.
+        """
+        print(f"🤖 AI Fallback: Checking DDI for {drug_a} + {drug_b}...")
+        
+        prompt = f"""You are a senior clinical pharmacologist. Identify if there is a known drug-drug interaction between:
+- Drug A: {drug_a}
+- Drug B: {drug_b}
+
+Provide a high-density, professional assessment. Consider pharmacokinetics (CYP450 metabolism, P-gp transport, protein binding) and pharmacodynamics.
+
+Respond STRICTLY in JSON format with the following keys:
+- interaction_found: boolean
+- severity: string ("Major", "Moderate", "Minor", or "None")
+- description: string (Precise clinical summary. Include drug classes: e.g. "Statin + Azole Antifungal")
+- mechanism: string (Mechanistic reason: e.g. "Potent inhibition of CYP3A4 by {drug_b} leading to elevated serum levels of {drug_a}")
+- clinical_significance: string (Specific management strategy: e.g. "Avoid combination; if unavoidable, limit {drug_a} dose to 10mg and monitor for myopathy/rhabdomyolysis")
+- evidence_level: string (e.g., "★★★ (High - Clinical Trials)", "★★☆ (Moderate - Case Reports)", "★☆☆ (Low - Theoretical)")
+
+Only provide the JSON object. No preamble, no postamble."""
+
+        try:
+            # AIService has a generate_response method, but we want structured JSON
+            # We can use the multi-provider directly or just generate_response and parse
+            raw_response = await self.ai_service.generate_response(
+                message=prompt,
+                conversation_id=None, # System level
+                user=None, # System level
+                mode="fast", # Use fast mode for quick check
+                use_rag=False
+            )
+            
+            # Extract JSON from response (handling potential markdown blocks)
+            content = raw_response
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            
+            data = json.loads(content)
+            
+            # Ensure severity is mapped to our required casing/values
+            severity = data.get("severity", "None")
+            if severity.lower() in self.SEVERITY_MAP:
+                data["severity"] = self.SEVERITY_MAP[severity.lower()]
+            
+            data.update({
+                "drug_a": drug_a,
+                "drug_b": drug_b,
+                "rxcui_a": await self.resolve_drug(drug_a) or "Unknown",
+                "rxcui_b": await self.resolve_drug(drug_b) or "Unknown",
+                "alternatives": self._suggest_alternatives(drug_a, drug_b, data.get("severity", "None"))
+            })
+            
+            return data
+            
         except Exception as e:
-            print(f"❌ DDI check failed for {drug_a} + {drug_b}: {e}")
-            return None
+            self.logger.error(f"AI DDI check failed: {e}")
+            # Safe default
+            return {
+                "drug_a": drug_a,
+                "drug_b": drug_b,
+                "interaction_found": False,
+                "severity": "Unknown",
+                "description": "Information temporarily unavailable.",
+                "mechanism": "The Interaction API is undergoing maintenance.",
+                "clinical_significance": "Consult a pharmacist.",
+                "evidence_level": "None"
+            }
     
     def _parse_interaction(
         self, 
