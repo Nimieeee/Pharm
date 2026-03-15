@@ -117,22 +117,27 @@ class LiteratureService:
                     if "application/pdf" in content_type:
                         return resp.content
                     else:
-                        logger.warning(f"URL returned 200 but Content-Type is not PDF: {content_type} ({pdf_url})")
-                        raise Exception(f"URL did not return a PDF (type: {content_type})")
+                        logger.error(f"Failed to fetch PDF from {pdf_url}: URL returned {content_type} instead of PDF")
+                        # Many publishers (Nature, Springer) serve an HTML challenge page instead of PDF
+                        raise Exception("PDF download unavailable: The publisher's site is currently restricted or requiring a bot check.")
                 
                 logger.error(f"Failed to fetch PDF from {pdf_url}: HTTP {resp.status_code}")
                 # Log a snippet of the error page if it's not a PDF
-                if resp.status_code != 200:
-                    try:
-                        error_body = resp.text[:200]
-                        logger.error(f"Error body snippet: {error_body}")
-                    except:
-                        pass
+                try:
+                    error_body = resp.text[:200]
+                    logger.error(f"Error body snippet: {error_body}")
+                except:
+                    pass
                 
-                raise Exception(f"HTTP {resp.status_code}: PDF download restricted or unavailable")
+                if resp.status_code == 403:
+                    raise Exception("Access Denied: This PDF is behind a paywall or institutional login.")
+                elif resp.status_code == 404:
+                    raise Exception("Not Found: The PDF file could not be located on the publisher's server.")
+                else:
+                    raise Exception(f"HTTP {resp.status_code}: PDF download restricted or unavailable")
         except httpx.HTTPError as e:
             logger.error(f"HTTP error fetching PDF from {pdf_url}: {str(e)}")
-            raise Exception(f"Network error: {str(e)}")
+            raise Exception(f"Network error while connecting to publisher: {str(e)}")
         except Exception as e:
             logger.error(f"Unexpected error fetching PDF from {pdf_url}: {str(e)}")
             raise e

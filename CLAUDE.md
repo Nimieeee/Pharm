@@ -222,6 +222,10 @@ python /tmp/test_pubmed_standalone.py # Validates PubMed API key & results yield
    - **Diagram Suppression**: Toned down system prompt to prevent redundant Mermaid charts.
    - **RAG Fallback**: Hardened RAG context ingestion to fall back to broad conversation chunks if semantic search yields no results.
    - **Mobile UI**: Aligned mode buttons into a unified capsule and fixed attachment menu overlap.
+7. **Recent Fixes (Phase 31-33)**:
+   - **Slide Outline (Phase 31)**: Fixed "Unterminated string" JSON errors by switching to `detailed` mode and truncating large context inputs.
+   - **Literature PDF (Phase 32)**: Fixed `500` and `502` errors by catching `403 Forbidden` and detecting HTML challenge pages masquerading as PDFs. Conditionally show button based on `pdf_available` flag.
+   - **DDI Safety (Phase 33)**: Fixed `AttributeError: 'NoneType'` by adding null checks for `user` in `AIService` (critical for system-triggered services).
 5. **Architecture Decoupling (✅ ALL PHASES COMPLETE)**:
    - **Service Container**: 24 services registered, centralized DI
    - **Mermaid Processor**: Centralized with 26 regression tests (<10ms)
@@ -640,6 +644,8 @@ git diff HEAD~10..HEAD --stat
 | ADMET status inversion | Skin Reaction 0.96 shows "Low risk" (green) | Use directional scoring: RISK endpoints low=🟢, BENEFIT endpoints high=🟢. See Rule 6 below |
 | ADMET missing API key | AI interpretation silently fails, returns null | Use `settings.MISTRAL_API_KEY` (pydantic), NOT `os.environ.get()`. See Rule 7 below |
 | Protein seq in SMILES | DrugPool peptide entries crash RDKit | Only use valid SMILES in drugPool.ts. Peptides (His-Aib-...) are NOT SMILES |
+| Non-PDF Response | `502 Bad Gateway` on PDF download | Check `Content-Type` headers; detect HTML challenge pages and return descriptive error. See Rule 10 below |
+| System User Trigger | `AttributeError: NoneType` in AIService | Always null-check `user` object before accessing `.id` or `.first_name`. See Rule 11 below |
 
 ### 6. Implementation Error Prevention Rules
 
@@ -798,6 +804,16 @@ const content = "1️⃣ In vivo Metabolite Profiling: Limited data..."; // Show
 const sanitized = content
   .replace(/([✀-➿]|[‑-⛿])/g, '') // Remove emojis
   .replace(/\|([^|]+)=([^|]+)\|/g, '|$1|$2|'); // Fix table delimiters
+```
+
+#### Rule 10: PDF Content Validation
+**NEVER assume a 200 OK response from a publisher URL is a PDF. ALWAYS check the `Content-Type` header (must contain `application/pdf`). Publishers like Nature/Springer often serve HTML challenge pages to bots.**
+
+#### Rule 11: System-Level Context Safety
+**System-triggered service calls (like DDI checks or background tasks) often pass `user=None`. ALWAYS null-check the `user` object before accessing properties like `.id` or `.first_name`.**
+
+#### Rule 12: Mandatory Error Documentation
+**IMMEDIATELY after verifying a bug fix or resolving a regression, the agent MUST update `CLAUDE.md` (this file) in the "Recent Fixes" and "Known Regression Patterns" sections. This ensures collective memory and prevents recurrence.**
 ```
 
 #### Rule 10: Theme-Aware Component Styling
