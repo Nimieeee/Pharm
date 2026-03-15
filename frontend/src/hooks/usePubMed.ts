@@ -25,6 +25,7 @@ export interface LiteratureArticle {
   issue?: string;
   pages?: string;
   citation_count?: number;
+  pdf_available?: boolean;
   source: 'PubMed' | 'Semantic Scholar';
 }
 

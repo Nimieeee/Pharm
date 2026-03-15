@@ -262,9 +262,18 @@ class PubMedService:
         
         pmid = data.get("pubmedurl", "").split("/")[-1] if "pubmedurl" in data else ""
         
+        # Check for PMC ID to indicate PDF availability
+        pmc_id = ""
+        if "articleids" in data:
+            for article_id in data["articleids"]:
+                if article_id.get("idtype") == "pmc":
+                    pmc_id = article_id.get("value", "")
+                    break
+
         return {
             "id": pmid,
             "pmid": pmid,
+            "pmcid": pmc_id,
             "title": data.get("title", ""),
             "authors": authors,
             "journal": journal,
@@ -277,6 +286,7 @@ class PubMedService:
             "pubdate": pubdate,
             "abstract_preview": abstract_preview,
             "has_abstract": bool(full_abstract),
+            "pdf_available": bool(pmc_id),
             "source": "pubmed"
         }
     

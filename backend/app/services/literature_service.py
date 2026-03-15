@@ -103,15 +103,39 @@ class LiteratureService:
         return None
 
     async def fetch_pdf_bytes(self, pdf_url: str) -> bytes:
-        """Fetch PDF bytes from a direct URL"""
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            }
-            resp = await client.get(pdf_url, headers=headers)
-            if resp.status_code == 200:
-                return resp.content
-            raise Exception(f"Failed to fetch PDF: {resp.status_code}")
+        """Fetch PDF bytes from a direct URL with robust error handling"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                    "Accept": "application/pdf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                }
+                resp = await client.get(pdf_url, headers=headers)
+                
+                if resp.status_code == 200:
+                    content_type = resp.headers.get("Content-Type", "").lower()
+                    if "application/pdf" in content_type:
+                        return resp.content
+                    else:
+                        logger.warning(f"URL returned 200 but Content-Type is not PDF: {content_type} ({pdf_url})")
+                        raise Exception(f"URL did not return a PDF (type: {content_type})")
+                
+                logger.error(f"Failed to fetch PDF from {pdf_url}: HTTP {resp.status_code}")
+                # Log a snippet of the error page if it's not a PDF
+                if resp.status_code != 200:
+                    try:
+                        error_body = resp.text[:200]
+                        logger.error(f"Error body snippet: {error_body}")
+                    except:
+                        pass
+                
+                raise Exception(f"HTTP {resp.status_code}: PDF download restricted or unavailable")
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error fetching PDF from {pdf_url}: {str(e)}")
+            raise Exception(f"Network error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error fetching PDF from {pdf_url}: {str(e)}")
+            raise e
 
 # Singleton Instance
 literature_service = LiteratureService()

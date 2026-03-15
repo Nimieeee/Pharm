@@ -108,7 +108,7 @@ class SlideService:
         
         Features:
         - Fetches 5-10 PubMed abstracts for citation support
-        - Uses Groq fast mode for speed (~2-3 seconds)
+        - Uses detailed mode for better JSON compliance and massive context (~10-15 seconds)
         - Includes slide-level citations in output schema
         """
         source_context = ""
@@ -132,11 +132,11 @@ class SlideService:
                 
                 research_context_str = "\n\nRESEARCH CONTEXT (Cite these in slides):\n" + "\n".join(research_summaries)
         
+        # Truncate contexts to avoid "lost in middle" and token limits
         if uploaded_text:
-            # Truncate to 8000 chars for fast mode token limit
-            source_context = f"\n\nSource material to distill:\n{uploaded_text[:8000]}"
+            source_context = f"\n\nSource material to distill:\n{uploaded_text[:6000]}"
         elif context:
-            source_context = f"\n\nAdditional context:\n{context}"
+            source_context = f"\n\nAdditional context:\n{context[:4000]}"
         
         prompt = f"""Create a RESEARCH-GRADE presentation outline on: "{topic}"
 
@@ -174,12 +174,12 @@ Return ONLY valid JSON. The "slides" array MUST contain exactly {num_slides} sli
       "title": "Section Title",
       "subtitle_takeaway": "One strong sentence summarizing this slide's main point",
       "supporting_data": [
-        {{"bullet": "CONCEPT: **Key term** definition with citation [Author, Year]", "context": "Brief explanation"}},
-        {{"bullet": "MECHANISM: How it works technically with specific data", "context": "Technical details"}},
-        {{"bullet": "IMPACT: Why it matters with quantitative outcomes", "context": "Significance"}}
+        {{"bullet": "CONCEPT: **Key term**", "context": "Brief explanation"}},
+        {{"bullet": "MECHANISM: Technical flow", "context": "Details"}},
+        {{"bullet": "IMPACT: Outcome", "context": "Significance"}}
       ],
-      "speaker_notes": "Detailed 150-200 word presentation script with background context, data explanation, and smooth transition to next slide.",
-      "bullets": ["Point 1 with citation", "Point 2 with citation", "Point 3 with citation"],
+      "speaker_notes": "Brief overview (2-3 sentences max). FULL NOTES WILL BE GENERATED IN REFINEMENT PHASE. DO NOT WRITE LONG SCRIPTS HERE.",
+      "bullets": ["Point 1", "Point 2", "Point 3"],
       "image_prompt": "description of professional scientific illustration or null",
       "chart_data": null,
       "citations": ["Author et al., Year"]
@@ -258,7 +258,7 @@ EXAMPLE BAD SLIDE (DO NOT CREATE):
 """
         
         response = await self.ai.generate(
-            mode="fast",
+            mode="detailed",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=8000,
             temperature=0.3

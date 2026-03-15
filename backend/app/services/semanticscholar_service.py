@@ -95,6 +95,7 @@ class SemanticScholarService:
                         "pmid": pmid,
                         "doi": doi,
                         "citation_count": paper.get("citationCount", 0),
+                        "pdf_available": bool(pdf_url),
                         "source": "Semantic Scholar"
                     }
                     results.append(result)

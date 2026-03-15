@@ -68,4 +68,10 @@ async def download_pdf(
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch PDF: {str(e)}")
+        error_msg = str(e)
+        if "restricted" in error_msg.lower() or "403" in error_msg:
+            raise HTTPException(status_code=403, detail="PDF download is restricted by the publisher (e.g. paywall or institutional access required)")
+        elif "404" in error_msg:
+            raise HTTPException(status_code=404, detail="PDF not found on the publisher's server")
+        else:
+            raise HTTPException(status_code=502, detail=f"Failed to fetch PDF from source: {error_msg}")
